@@ -84,6 +84,13 @@ WhatSon is an LVRS-based Qt Quick application.
   `windowInteractions.sidebarHierarchy`) so shortcut mutations no longer bypass the LVRS ownership registry.
 - The desktop `BodyLayout.qml` now also paints a thin top border from the shared splitter token so the transparent
   content HStack still reads as a separate surface below `NavigationBarLayout.qml`.
+- Editor tag-management shortcut normalization now canonicalizes macOS Option-modified body-tag keys and
+  `KeyEvent.text`, so `Cmd+Option+C` inserts the static `<callout></callout>` RAW pair even when the native key event
+  arrives as `ç`/`Ç`; the C++ input controller filters only explicit tag-management shortcuts before the native text
+  item can commit those symbols as prose.
+- Editor tag generation now lives in the shortcut-independent `ContentsEditorTagMutationBuilder`; shortcut handlers
+  only resolve a canonical tag name before calling the shared RAW mutation builder, so future menu or toolbar commands
+  can add the same tags without depending on key events.
 - `src/app/qml/Main.qml` now lazy-loads the macOS-native menu bar via `Qt.resolvedUrl("window/MacNativeMenuBar.qml")`
   instead of holding a static `WindowView.MacNativeMenuBar` type reference in the root shell; this keeps the iOS
   static QML bundle from parsing the macOS-only `Qt.labs.platform` module while preserving the native `Onboarding`
@@ -377,6 +384,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - Legacy `.wsnbody` semantic tags now resolve through one shared registry across persistence and editor HTML read paths,
   so tags such as `<next/>`, `<title>`, `<subTitle>`, and `<eventTitle>` no longer render as literal XML in one path
   while being interpreted semantically in another.
+- Editor callout presentation now treats RAW `<callout>...</callout>` as a renderer-only transparent tag and projects it
+  to the Figma `Callout` block: a `#262728` surface that fills the editor frame width, hugs rendered content height,
+  keeps `4px` vertical padding, a `12px` content gap, a `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12`
+  white text. The `.wsnbody` source remains unchanged.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

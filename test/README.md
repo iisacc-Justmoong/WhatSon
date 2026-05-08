@@ -95,6 +95,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Focused editor tag-management coverage now also pins direct RAW body-tag shortcuts for agenda, callout, and break
   insertion, plus press-phase right-click context-menu requests, so formatting commands do not depend on a later
   platform-specific click signal.
+- macOS body-tag shortcut coverage now also pins Option-modified key codes and `KeyEvent.text`, so `Cmd+Option+C`
+  still resolves to the callout insertion command even when Qt reports the key as `ç`/`Ç`; QML coverage also locks the
+  focused native-editor event-filter path that prevents those characters from being committed as ordinary prose.
+- Tag-generation coverage now pins `ContentsEditorTagMutationBuilder` as the shortcut-independent RAW payload builder,
+  while `ContentsEditorTagInsertionController` is limited to shortcut-to-tag resolution and compatibility delegation.
 - Structured tag-management coverage now also requires the RAW mutation handler to accept inline-format/body-tag
   mutations before those commands report success, and verifies that explicit tag mutations bind the selected note
   session and request immediate persistence.
@@ -358,6 +363,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Editor rendering now also pins stored inline-style projection: RAW `<bold>` / `<italic>` tags must reach the
   editor surface as RichText style spans in `documentHtml`, `htmlTokens`, and `normalizedHtmlBlocks`, not as escaped
   literal XML-tag text.
+- Editor rendering now also pins callout projection: RAW `<callout>...</callout>` remains a transparent `.wsnbody`
+  pair tag, but `ContentsHtmlBlockRenderPipeline` and the legacy editor-surface path must publish the Figma `Callout`
+  presentation HTML instead of literal XML. Callout width fills the editor frame and height remains content-hugging,
+  so tests must reject fixed sample sizes such as `295x22`.
 - Runtime logging now has local dependency trace coverage: the app installs a Qt message filter that suppresses
   default-off `iiXml::*` debug chatter while preserving warnings and allowing `WHATSON_IIXML_TRACE_MODE=1` opt-in
   diagnosis.
@@ -387,5 +396,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   `ContentsEditorGeometryProvider.logicalGeometryYForVisualY(...)`를 통해 검증한다.
 - editor renderer 회귀에는 RAW `<bold>` / `<italic>` 인라인 스타일 태그가 literal XML 문자열이 아니라
   RichText 스타일 span으로 투영되는지 확인하는 케이스가 포함된다.
+- editor renderer 회귀에는 RAW `<callout>...</callout>`가 저장 포맷에서는 투명 쌍태그로 남고, 표시 계층에서는
+  Figma `Callout` 블록 HTML로 투영되는지 확인하는 케이스가 포함된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

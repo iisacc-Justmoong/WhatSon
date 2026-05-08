@@ -1,6 +1,7 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
+#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
 #include "app/models/display/paper/ContentsPaperSelection.hpp"
@@ -143,6 +144,8 @@ namespace
                 QStringLiteral("ContentsInlineStyleOverlayRenderer")),
             whatsonInternalCreatableType<ContentsPlainTextSourceMutator>(
                 QStringLiteral("ContentsPlainTextSourceMutator")),
+            whatsonInternalCreatableType<ContentsEditorTagMutationBuilder>(
+                QStringLiteral("ContentsEditorTagMutationBuilder")),
             whatsonInternalCreatableType<ContentsEditorTagInsertionController>(
                 QStringLiteral("ContentsEditorTagInsertionController")),
             whatsonInternalCreatableType<ContentsStructuredBlockRenderer>(

@@ -9,6 +9,7 @@
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
+#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
 
 #include <QDir>
 #include <QDirIterator>
@@ -73,6 +74,7 @@ namespace
             qmlRegisterType<ContentsInlineStyleOverlayRenderer>("WhatSon.App.Internal", 1, 0, "ContentsInlineStyleOverlayRenderer");
             qmlRegisterType<ContentsPlainTextSourceMutator>("WhatSon.App.Internal", 1, 0, "ContentsPlainTextSourceMutator");
             qmlRegisterType<ContentsEditorTagInsertionController>("WhatSon.App.Internal", 1, 0, "ContentsEditorTagInsertionController");
+            qmlRegisterType<ContentsEditorTagMutationBuilder>("WhatSon.App.Internal", 1, 0, "ContentsEditorTagMutationBuilder");
             qmlRegisterType<ContentsInlineFormatEditorController>("WhatSon.App.Internal", 1, 0, "ContentsInlineFormatEditorController");
             qmlRegisterType<ContentsWysiwygEditorPolicy>("WhatSon.App.Internal", 1, 0, "ContentsWysiwygEditorPolicy");
             qmlRegisterType<ContentsEditorGeometryProvider>("WhatSon.App.Internal", 1, 0, "ContentsEditorGeometryProvider");
@@ -184,7 +186,8 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function triggerPrimaryTagManagementShortcut(key, extraModifiers)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("event.accepted = false;")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("standardPrimaryShortcutModifier")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequest")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequestWithText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.text")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("\"standardModifiers\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("\"nativeModifiers\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("sequence: control.platformShortcutSequence(\"B\")")));
@@ -2008,6 +2011,19 @@ Item {
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
     QVERIFY(!(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::MetaModifier)));
     QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::MetaModifier));
+
+    rootObject->setProperty("handled", false);
+    rootObject->setProperty("handledKey", -1);
+    rootObject->setProperty("handledModifiers", 0);
+    rootObject->setProperty("handledNativeModifiers", 0);
+
+    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::MetaModifier | Qt::AltModifier);
+
+    QTRY_VERIFY(rootObject->property("handled").toBool());
+    QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_C));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
+    QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::AltModifier));
+    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::MetaModifier));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange()
@@ -2178,6 +2194,24 @@ Item {
 
     QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Cedilla\nCallout"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Cedilla\nCallout"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 0),
+        Q_ARG(QVariant, 7),
+        Q_ARG(QVariant, 7)));
+    QVERIFY(restoreResult.toBool());
+    QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
+
+    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::MetaModifier | Qt::AltModifier);
+
+    QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Cedilla</callout>\nCallout"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Cedilla</callout>\nCallout"));
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
@@ -2894,13 +2928,17 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsKeyboardSelectionAndO
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function shouldRejectFocusedProgrammaticTextSync(nextText)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("inlineEditorController.setProgrammaticText(resolvedText)")));
     QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("ContentsEditorInputPolicyAdapter")));
-    QVERIFY(!inlineEditorControllerHeader.contains(QStringLiteral("eventFilter")));
+    QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("eventFilter")));
     QVERIFY(inlineEditorControllerHeader.contains(QStringLiteral("m_localSelectionInteractionSinceFocus")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("nativeSelectionActive() const")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("invokeRenderedBackspaceMutation")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("applyRenderedBackspaceMutation")));
-    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("installEventFilter")));
-    QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("removeEventFilter")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("installEventFilter")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("removeEventFilter")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("tagManagementShortcutCanDispatch")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("event->type() != QEvent::KeyPress")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("nativeCompositionActive()")));
+    QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("\"triggerTagManagementShortcut\"")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("m_localSelectionInteractionSinceFocus || nativeSelectionActive()")));
     QVERIFY(inlineEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController::programmaticTextSyncPolicy")));
     QVERIFY(!inlineEditorControllerSource.contains(QStringLiteral("invokeHelper")));

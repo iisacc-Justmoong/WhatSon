@@ -27,6 +27,11 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - Explicit tag-management mutations use `applyTagManagementMutationPayload(...)`, which bypasses host-side sync
   deferral because the command is initiated by the focused editor itself, restores the returned source selection, and
   emits the normal `textEdited(...)` signal for RAW persistence.
+- Tag-management key events pass both native modifiers and `KeyEvent.text` to the C++ input controller. The QML surface
+  does not interpret macOS Option-produced symbols such as `ç`; it only forwards the native event shape so C++ can
+  normalize `Cmd+Option+C` into the callout command.
+- Because the native text item can consume Option-produced symbol input before item-level `Keys` handlers run, the
+  C++ input controller also filters the focused native editor item for explicit tag-management shortcuts only.
 - Native text edits in rendered mode are diffed against the visible logical projection and converted into a RAW
   `.wsnbody` splice by `ContentsWysiwygEditorPolicy.visibleTextMutationPayload(...)`. Backspace therefore stays on the
   OS/Qt text-editing path, but the committed source mutation deletes the previous visible glyph instead of hidden

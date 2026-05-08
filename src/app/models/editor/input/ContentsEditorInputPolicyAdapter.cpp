@@ -43,6 +43,44 @@ bool shortcutKeyIsPureModifier(const int key) noexcept
         || key == Qt::Key_Shift;
 }
 
+int tagManagementShortcutKey(const int key) noexcept
+{
+    switch (key)
+    {
+    case Qt::Key_Ccedilla:
+    case 0x00e7:
+        return Qt::Key_C;
+    case Qt::Key_Aring:
+    case 0x00e5:
+        return Qt::Key_A;
+    case 0x222b:
+        return Qt::Key_B;
+    default:
+        return key;
+    }
+}
+
+int tagManagementShortcutKey(const int key, const QString& shortcutText)
+{
+    const QString text = shortcutText.trimmed();
+    if (text.size() == 1)
+    {
+        switch (text.at(0).toLower().unicode())
+        {
+        case 0x00e7:
+            return Qt::Key_C;
+        case 0x00e5:
+            return Qt::Key_A;
+        case 0x222b:
+            return Qt::Key_B;
+        default:
+            break;
+        }
+    }
+
+    return tagManagementShortcutKey(key);
+}
+
 int primaryModifierCleared(const int modifiers) noexcept
 {
     return modifiers
@@ -161,26 +199,37 @@ QVariantMap ContentsEditorInputPolicyAdapter::tagManagementShortcutRequest(
     const int nativeModifiers,
     const QString& platformName) const
 {
+    return tagManagementShortcutRequestWithText(key, nativeModifiers, platformName, QString());
+}
+
+QVariantMap ContentsEditorInputPolicyAdapter::tagManagementShortcutRequestWithText(
+    const int key,
+    const int nativeModifiers,
+    const QString& platformName,
+    const QVariant& shortcutText) const
+{
+    const int shortcutKey = tagManagementShortcutKey(key, normalizedText(shortcutText));
     const int standardModifiers = standardShortcutModifiers(nativeModifiers, platformName);
-    const bool pureModifierKey = shortcutKeyIsPureModifier(key);
+    const bool pureModifierKey = shortcutKeyIsPureModifier(shortcutKey);
     const bool primaryHeld = (standardModifiers & standardPrimaryShortcutModifierValue) != 0;
     const bool optionHeld = (standardModifiers & static_cast<int>(Qt::AltModifier)) != 0;
     const bool shiftHeld = (standardModifiers & static_cast<int>(Qt::ShiftModifier)) != 0;
-    const bool returnKey = key == Qt::Key_Return || key == Qt::Key_Enter;
+    const bool returnKey = shortcutKey == Qt::Key_Return || shortcutKey == Qt::Key_Enter;
     const bool inlineFormatShortcut = !pureModifierKey
         && primaryHeld
         && !optionHeld
-        && (key == Qt::Key_B
-            || key == Qt::Key_I
-            || key == Qt::Key_U
-            || (shiftHeld && key == Qt::Key_E));
+        && (shortcutKey == Qt::Key_B
+            || shortcutKey == Qt::Key_I
+            || shortcutKey == Qt::Key_U
+            || (shiftHeld && shortcutKey == Qt::Key_E));
     const bool bodyTagShortcut = !pureModifierKey
         && ((standardModifiers != 0 && returnKey) || (primaryHeld && optionHeld));
 
     return {
         {QStringLiteral("bodyTagShortcut"), bodyTagShortcut},
         {QStringLiteral("inlineFormatShortcut"), inlineFormatShortcut},
-        {QStringLiteral("key"), key},
+        {QStringLiteral("key"), shortcutKey},
+        {QStringLiteral("nativeKey"), key},
         {QStringLiteral("nativeModifiers"), nativeModifiers},
         {QStringLiteral("platformName"), platformName},
         {QStringLiteral("platformPrimaryModifier"), platformPrimaryShortcutModifier(platformName)},

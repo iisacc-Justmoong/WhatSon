@@ -36,10 +36,12 @@
   document renderer contract.
 - `format/ContentsPlainTextSourceMutator.*` owns plain-text RAW span replacement so ordinary typing no longer calls a
   renderer object to rewrite source.
-- `tags/ContentsEditorTagInsertionController.*` owns RAW tag insertion payloads for formatting tags such as `<bold>`
-  and `<italic>`, transparent paired tags such as `<callout>` and `<agenda><task>...</task></agenda>`, break/resource
-  tag insertion, and selected-range tag wrapping. `.wsnbody` direct body-block serialization for body-level
-  resource/break tags remains owned by `src/app/models/file/note`.
+- `tags/ContentsEditorTagMutationBuilder.*` owns shortcut-independent RAW tag insertion payloads for formatting tags
+  such as `<bold>` and `<italic>`, transparent paired tags such as `<callout>` and
+  `<agenda><task>...</task></agenda>`, break/resource tag insertion, and selected-range tag wrapping.
+  `tags/ContentsEditorTagInsertionController.*` only maps shortcut keys to canonical tag names and delegates legacy
+  payload calls to the builder. `.wsnbody` direct body-block serialization for body-level resource/break tags remains
+  owned by `src/app/models/file/note`.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `minimap/ContentsEditorVisualLineMetrics.*` owns minimap-facing visual-line row normalization from measured

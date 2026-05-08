@@ -10,9 +10,14 @@ Owns editor tag-management helpers.
   text-editor behavior.
 - `<break>` canonicalization and structured verification.
 - `<resource ... />` RAW source insertion and canonical resource-tag text generation.
-- `ContentsEditorTagInsertionController` builds the common next-source RAW tag insertion payloads for inline
-  formatting, generated break insertion, and selected-range tag wrapping. Formatting commands use
-  this same RAW tag insertion model instead of a separate formatting mutation model.
+- `ContentsEditorTagMutationBuilder` builds the common shortcut-independent next-source RAW tag insertion payloads for
+  inline formatting, generated break insertion, and selected-range tag wrapping. Formatting commands, body-tag
+  shortcuts, and future non-shortcut entry points must use this same RAW tag insertion model instead of separate
+  mutation paths.
+- `ContentsEditorTagInsertionController` resolves explicit shortcut keys to canonical tag names and delegates legacy
+  payload API calls to `ContentsEditorTagMutationBuilder`.
+- Body-tag shortcuts are resolved from canonical command letters even when macOS Option modifies the delivered key
+  code, so `Cmd+Option+C` still dispatches the static `<callout></callout>` insertion command.
 - Inline formatting re-application normalizes the selected source span to existing inline-style tag boundaries before
   writing the next RAW snapshot, so WYSIWYG selections cannot split a hidden `<bold>` / `<highlight>` token and expose
   malformed source text.
@@ -20,6 +25,7 @@ Owns editor tag-management helpers.
 
 ## Current Modules
 - `ContentsEditorTagInsertionController.*`
+- `ContentsEditorTagMutationBuilder.*`
 - `ContentsStructuredTagValidator.*`
 - `WhatSonStructuredTagLinter.*`
 - `ContentsResourceTagTextGenerator.*`
@@ -50,3 +56,7 @@ Owns editor tag-management helpers.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
 - 최근 기준: inline formatting 재적용은 기존 RAW inline-style 태그 토큰 경계를 먼저 정규화한 뒤 source
   mutation을 생성해 숨겨진 `<highlight>`류 태그가 쪼개져 노출되지 않도록 한다.
+- 최근 기준: macOS Option 조합이 `ç`처럼 변형된 key code를 보내도 C++ 입력/태그 정책이 표준 command key로
+  보정해 callout 같은 body-tag 단축키를 RAW source mutation으로 처리한다.
+- 최근 기준: 태그 생성은 `ContentsEditorTagMutationBuilder`가 shortcut-independent payload로 만들며,
+  단축키 컨트롤러는 canonical tag 이름 해석만 맡는다.

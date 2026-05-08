@@ -546,7 +546,8 @@ namespace
         const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
         return normalizedTagName == QStringLiteral("contents")
             || normalizedTagName == QStringLiteral("body")
-            || SemanticTags::isTransparentContainerTagName(rawTagName);
+            || (normalizedTagName != QStringLiteral("callout")
+                && SemanticTags::isTransparentContainerTagName(rawTagName));
     }
 
     bool shouldSkipIiXmlDocumentNode(const QString& rawTagName)

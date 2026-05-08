@@ -10,6 +10,7 @@
 #include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
 #include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
+#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
 #include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
 #include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
 #include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
@@ -1301,6 +1302,7 @@ private slots:
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
     void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
+    void editorRendererPipeline_rendersCalloutTagsAsFigmaCalloutBlocks();
     void editorRendererPipeline_rendersInlineStyleTagsAsRichTextHtml();
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();

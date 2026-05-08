@@ -19,6 +19,7 @@ void WhatSonCppRegressionTests::qmlInternalTypeRegistrar_usesLvrsManifestRegistr
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorGeometryProvider")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsLineNumberRailMetrics")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagInsertionController")));
+    QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorTagMutationBuilder")));
     QVERIFY(registrarSource.contains(QStringLiteral("ContentsEditorDisplayBackend")));
     QVERIFY(registrarSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
     QVERIFY(interactionControllerHeader.contains(QStringLiteral("class SidebarHierarchyInteractionController : public QObject")));
@@ -368,24 +369,24 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirec
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor()
 {
-    const QString tagInsertionControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"));
+    const QString tagMutationBuilderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.cpp"));
 
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("buildTagInsertionPayload")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("openingTag + closingTag")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("canonicalSourceForGeneratedBodyTag")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("cursorPosition")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("openingTag + closingTag")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("canonicalSourceForGeneratedBodyTag")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("cursorPosition")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_wrapsSelectedTextIntoRawInlineStyleTags()
 {
-    const QString tagInsertionControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"));
+    const QString tagMutationBuilderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.cpp"));
 
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("buildTagInsertionPayload")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("source.left(start) + fullReplacementSourceText + source.mid(end)")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("unsupported-tag-kind")));
-    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("nextSourceText")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("source.left(start) + fullReplacementSourceText + source.mid(end)")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("unsupported-tag-kind")));
+    QVERIFY(tagMutationBuilderSource.contains(QStringLiteral("nextSourceText")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations()
@@ -458,6 +459,26 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
     QCOMPARE(
         macBoldRequest.value(QStringLiteral("standardModifiers")).toInt(),
         static_cast<int>(Qt::ControlModifier));
+    const QVariantMap macOptionCcedillaRequest = adapter.tagManagementShortcutRequest(
+        static_cast<int>(Qt::Key_Ccedilla),
+        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        QStringLiteral("osx"));
+    QVERIFY(macOptionCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
+    QCOMPARE(macOptionCcedillaRequest.value(QStringLiteral("key")).toInt(), static_cast<int>(Qt::Key_C));
+    QCOMPARE(macOptionCcedillaRequest.value(QStringLiteral("nativeKey")).toInt(), static_cast<int>(Qt::Key_Ccedilla));
+    const QVariantMap macOptionLowerCcedillaRequest = adapter.tagManagementShortcutRequest(
+        0x00e7,
+        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        QStringLiteral("osx"));
+    QVERIFY(macOptionLowerCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
+    QCOMPARE(macOptionLowerCcedillaRequest.value(QStringLiteral("key")).toInt(), static_cast<int>(Qt::Key_C));
+    const QVariantMap macOptionTextCcedillaRequest = adapter.tagManagementShortcutRequestWithText(
+        static_cast<int>(Qt::Key_unknown),
+        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        QStringLiteral("osx"),
+        QString(QChar(0x00e7)));
+    QVERIFY(macOptionTextCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
+    QCOMPARE(macOptionTextCcedillaRequest.value(QStringLiteral("key")).toInt(), static_cast<int>(Qt::Key_C));
     const QVariantMap windowsMetaRequest = adapter.tagManagementShortcutRequest(
         static_cast<int>(Qt::Key_B),
         static_cast<int>(Qt::MetaModifier),
@@ -465,7 +486,8 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
     QVERIFY(!windowsMetaRequest.value(QStringLiteral("inlineFormatShortcut")).toBool());
     QVERIFY(inlineEditorSource.contains(QStringLiteral("shortcutPlatformName: Qt.platform.os")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("standardizedTagManagementKeyEvent")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequest")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementShortcutRequestWithText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("event.text")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow()
@@ -476,11 +498,12 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_routesInlineFormatShortcutT
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
 
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsEditorTagInsertionController {")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsEditorTagMutationBuilder {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("ContentsInlineFormatEditor {")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("tagManagementKeyPressHandler: function (event)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function applyInlineFormatShortcut(event)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("function applyBodyTagShortcut(event)")));
-    QVERIFY(documentFlowSource.contains(QStringLiteral("buildTagInsertionPayload")));
+    QVERIFY(documentFlowSource.contains(QStringLiteral("tagMutationBuilder.buildTagInsertionPayload")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("tagNameForBodyShortcutKey")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("editor.applyTagManagementMutationPayload(payload)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("onTextEdited: function (text)")));

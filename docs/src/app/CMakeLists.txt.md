@@ -57,6 +57,7 @@
 - `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
   evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
   `editor/tags/ContentsEditorTagInsertionController.hpp`,
+  `editor/tags/ContentsEditorTagMutationBuilder.hpp`,
   `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are

@@ -1,5 +1,6 @@
 #include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 
+#include "app/models/editor/format/ContentsCalloutHtmlRenderer.hpp"
 #include "app/models/editor/format/ContentsTextFormatRendererInternal.hpp"
 #include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
@@ -18,6 +19,7 @@
 
 namespace
 {
+    namespace Callouts = WhatSon::ContentsCalloutHtmlRenderer;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
     constexpr int kResourceEditorPlaceholderLineCount = 1;
@@ -122,6 +124,19 @@ namespace
         return htmlProjection.isEmpty() ? QStringLiteral("&nbsp;") : htmlProjection;
     }
 
+    QString calloutBodyHtml(const QString& innerSourceText)
+    {
+        const QString htmlProjection = textFragmentHtml(innerSourceText);
+        return htmlProjection.isEmpty() ? QStringLiteral("&nbsp;") : htmlProjection;
+    }
+
+    bool isCalloutTextBlock(const QVariantMap& block)
+    {
+        return block.value(QStringLiteral("tagName")).toString().trimmed().toCaseFolded()
+                == QStringLiteral("callout")
+            || Callouts::singleCalloutSpan(block.value(QStringLiteral("sourceText")).toString()).valid;
+    }
+
     QString wrapSemanticTextHtml(const QString& blockType, const QString& htmlFragment)
     {
         const QString openingHtml = SemanticTags::semanticTextOpeningHtml(blockType);
@@ -134,8 +149,22 @@ namespace
         return openingHtml + htmlFragment + closingHtml;
     }
 
-    QString textFragmentParagraphFlowHtml(const QString& blockType, const QString& sourceText)
+    QString textFragmentParagraphFlowHtml(const QVariantMap& block)
     {
+        const QString blockType = normalizedBlockType(block);
+        const QString sourceText = block.value(QStringLiteral("sourceText")).toString();
+        if (block.value(QStringLiteral("tagName")).toString().trimmed().toCaseFolded()
+            == QStringLiteral("callout"))
+        {
+            return Callouts::renderCalloutBlockHtml(calloutBodyHtml(sourceText));
+        }
+
+        const Callouts::CalloutSourceSpan calloutSpan = Callouts::singleCalloutSpan(sourceText);
+        if (calloutSpan.valid)
+        {
+            return Callouts::renderCalloutBlockHtml(calloutBodyHtml(calloutSpan.innerSource));
+        }
+
         const QString htmlProjection = textFragmentHtml(sourceText);
         const QStringList lines = htmlProjection.split(QStringLiteral("<br/>"), Qt::KeepEmptyParts);
         QStringList paragraphs;
@@ -152,9 +181,7 @@ namespace
 
     QString renderTextBlockHtml(const QVariantMap& block)
     {
-        const QString blockType = normalizedBlockType(block);
-        const QString sourceText = block.value(QStringLiteral("sourceText")).toString();
-        return textFragmentParagraphFlowHtml(blockType, sourceText);
+        return textFragmentParagraphFlowHtml(block);
     }
 
     QString renderResourceBlockHtml(const QVariantMap&)
@@ -179,6 +206,15 @@ namespace
         const QString blockType = normalizedBlockType(block);
         const QString sourceText = block.value(QStringLiteral("sourceText")).toString();
         if (!SemanticTags::semanticTextOpeningHtml(blockType).isEmpty())
+        {
+            return true;
+        }
+        if (block.value(QStringLiteral("tagName")).toString().trimmed().toCaseFolded()
+            == QStringLiteral("callout"))
+        {
+            return true;
+        }
+        if (Callouts::containsCalloutTag(sourceText))
         {
             return true;
         }
@@ -231,6 +267,9 @@ namespace
         token.insert(QStringLiteral("ownsBlockFlow"), htmlFragmentOwnsBlockFlow(htmlFragment));
         token.insert(QStringLiteral("overlayVisible"), overlayVisible);
         token.insert(QStringLiteral("html"), htmlFragment);
+        token.insert(
+            QStringLiteral("calloutBlock"),
+            renderDelegateType == QStringLiteral("text") && isCalloutTextBlock(block));
         token.insert(QStringLiteral("semanticTagName"), block.value(QStringLiteral("semanticTagName")));
         token.insert(QStringLiteral("plainText"), block.value(QStringLiteral("plainText")));
         return token;

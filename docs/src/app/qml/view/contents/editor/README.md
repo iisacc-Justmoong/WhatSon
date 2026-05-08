@@ -46,6 +46,10 @@ Editor-facing QML view components for the center content surface.
   wrap proprietary RAW tags before the normal session persistence path runs. These commands read the live inline editor
   buffer when constructing payloads so consecutive tag commands do not combine fresh selection offsets with stale parent
   `sourceText` bindings.
+  The inline editor forwards `KeyEvent.text` with shortcut requests so C++ can canonicalize macOS Option-produced
+  symbols like `ç` into the same body-tag command letters. The C++ input controller also filters the focused native
+  editor item for explicit tag-management shortcuts because the native text item can consume those Option-produced
+  symbols before item-level key handlers run.
 - The center document slot owns a vertical `Flickable` viewport around `ContentsStructuredDocumentFlow.qml`; long note
   bodies scroll inside that viewport. The viewport may be reset only for actual note identity changes requested by
   `ContentsEditorDisplayBackend`; typing and same-note projection refreshes preserve the current `contentY`. The inline
@@ -190,4 +194,7 @@ objects.
   적용한 뒤 일반 `sourceTextEdited` 경로로 저장한다. payload 생성은 live editor buffer를 기준으로 하며,
   C++ input controller가 native modifier를 표준 shortcut event로 정규화한다. macOS/iOS의 Meta와
   Windows/Linux/기타의 Control은 내부적으로 같은 primary로 처리하고 하이라이트는 primary+`Shift+E`를 사용한다.
+  macOS Option 조합이 만든 `KeyEvent.text`도 C++로 전달해 `ç` 같은 문자를 callout 명령 키로 보정한다.
+  native text item이 item-level key handler보다 먼저 Option 문자를 소비할 수 있으므로 C++ input controller가
+  focused native editor item에서 명시적 tag-management shortcut만 필터링한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

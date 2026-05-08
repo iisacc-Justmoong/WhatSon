@@ -1,5 +1,6 @@
 #include "app/models/editor/format/ContentsTextFormatRendererInternal.hpp"
 
+#include "app/models/editor/format/ContentsCalloutHtmlRenderer.hpp"
 #include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 #include "app/models/editor/format/ContentsTextHighlightRenderer.hpp"
 #include "app/models/file/note/WhatSonNoteBodyWebLinkSupport.hpp"
@@ -18,6 +19,7 @@ using WhatSon::ContentsTextFormatRendererInternal::LiteralRenderMode;
 
 namespace
 {
+    namespace Callouts = WhatSon::ContentsCalloutHtmlRenderer;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
     namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
@@ -377,6 +379,9 @@ namespace
     }
 
     QString renderInlineStyleEditingSurfaceHtmlImpl(const QString& sourceText);
+    QString renderStructuredLiteralTextToHtml(
+        const QString& sourceText,
+        LiteralRenderMode renderMode);
 
     QString canonicalInlineStyleTagName(const QString& elementName)
     {
@@ -1186,6 +1191,15 @@ namespace
         if (normalizedLine.trimmed().isEmpty())
         {
             return whitespaceToHtml(normalizedLine);
+        }
+
+        const Callouts::CalloutSourceSpan calloutSpan = Callouts::singleCalloutSpan(normalizedLine);
+        if (calloutSpan.valid)
+        {
+            const QString calloutBodyHtml = renderStructuredLiteralTextToHtml(
+                calloutSpan.innerSource,
+                renderMode);
+            return Callouts::renderCalloutBlockHtml(calloutBodyHtml);
         }
 
         const QString lineHtml = renderInlineTaggedTextFragmentToHtmlImpl(normalizedLine, renderMode);

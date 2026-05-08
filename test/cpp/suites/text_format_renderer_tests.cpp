@@ -102,10 +102,17 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<callout")));
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<agenda")));
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<task")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("background-color:#262728")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("width:100%")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("width:295")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("height:22px")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("white-space:nowrap")));
     QVERIFY(projection.htmlTokens().size() >= 3);
     QVERIFY(projection.normalizedHtmlBlocks().size() >= 3);
 
     bool foundResourceBlock = false;
+    bool foundCalloutBlock = false;
     for (const QVariant& blockValue : projection.normalizedHtmlBlocks())
     {
         const QVariantMap block = blockValue.toMap();
@@ -116,6 +123,11 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
         QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
         QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("callout"));
         QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("agenda"));
+        if (block.value(QStringLiteral("calloutBlock")).toBool())
+        {
+            foundCalloutBlock = true;
+            QVERIFY(block.value(QStringLiteral("htmlBlockHtml")).toString().contains(QStringLiteral("#262728")));
+        }
         if (block.value(QStringLiteral("renderDelegateType")).toString() == QStringLiteral("resource"))
         {
             foundResourceBlock = true;
@@ -124,6 +136,19 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
         }
     }
     QVERIFY(foundResourceBlock);
+    QVERIFY(foundCalloutBlock);
+
+    ContentsTextFormatRenderer legacyRenderer;
+    legacyRenderer.setSourceText(
+        QStringLiteral(
+            "<paragraph><bold>Alpha</bold></paragraph>\n"
+            "<callout>Beta</callout>"));
+    QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("<strong style=\"font-weight:900;\">Alpha")));
+    QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("background-color:#262728")));
+    QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("width:100%")));
+    QVERIFY(!legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("height:22px")));
+    QVERIFY(!legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("<callout")));
 
     const QString projectionHeaderSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/projection/ContentsEditorPresentationProjection.hpp"));
@@ -213,9 +238,9 @@ void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlin
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/editor/format/ContentsRawInlineStyleMutationSupport.js.md"))));
 
-    ContentsEditorTagInsertionController controller;
+    ContentsEditorTagMutationBuilder mutationBuilder;
 
-    const QVariantMap boldPayload = controller.buildTagInsertionPayload(
+    const QVariantMap boldPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Alpha beta"),
         0,
         5,
@@ -225,7 +250,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlin
         boldPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold>Alpha</bold> beta"));
 
-    const QVariantMap markdownPayload = controller.buildTagInsertionPayload(
+    const QVariantMap markdownPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("# Title"),
         0,
         7,
@@ -235,7 +260,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlin
         markdownPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold># Title</bold>"));
 
-    const QVariantMap unsupportedPayload = controller.buildTagInsertionPayload(
+    const QVariantMap unsupportedPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Alpha beta"),
         0,
         5,
@@ -280,12 +305,13 @@ void WhatSonCppRegressionTests::editorTagInsertionController_replacesLegacyInlin
     const QString formatReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/editor/format/README.md"));
     const QString tagsReadme = readUtf8SourceFile(QStringLiteral("docs/src/app/models/editor/tags/README.md"));
     QVERIFY(!formatReadme.contains(QStringLiteral("ContentsRawInlineStyleMutationSupport")));
-    QVERIFY(tagsReadme.contains(QStringLiteral("ContentsEditorTagInsertionController")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("ContentsEditorTagMutationBuilder")));
 }
 
 void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourceWrapMutations()
 {
     ContentsEditorTagInsertionController controller;
+    ContentsEditorTagMutationBuilder mutationBuilder;
 
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_B), QStringLiteral("bold"));
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_I), QStringLiteral("italic"));
@@ -293,10 +319,10 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourc
     QCOMPARE(controller.tagNameForShortcutKey(Qt::Key_E), QStringLiteral("highlight"));
     QVERIFY(controller.tagNameForShortcutKey(Qt::Key_H).isEmpty());
     QVERIFY(controller.tagNameForShortcutKey(Qt::Key_C).isEmpty());
-    QCOMPARE(controller.normalizedTagName(QStringLiteral("callout")), QStringLiteral("callout"));
-    QCOMPARE(controller.normalizedTagName(QStringLiteral("agenda")), QStringLiteral("agenda"));
+    QCOMPARE(mutationBuilder.normalizedTagName(QStringLiteral("callout")), QStringLiteral("callout"));
+    QCOMPARE(mutationBuilder.normalizedTagName(QStringLiteral("agenda")), QStringLiteral("agenda"));
 
-    const QVariantMap boldPayload = controller.buildWrappedTagInsertionPayload(
+    const QVariantMap boldPayload = mutationBuilder.buildWrappedTagInsertionPayload(
         QStringLiteral("Alpha beta"),
         0,
         5,
@@ -311,7 +337,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourc
     QCOMPARE(boldPayload.value(QStringLiteral("tagName")).toString(), QStringLiteral("bold"));
     QCOMPARE(boldPayload.value(QStringLiteral("wrappedSourceText")).toString(), QStringLiteral("Alpha"));
 
-    const QVariantMap collapsedPayload = controller.buildWrappedTagInsertionPayload(
+    const QVariantMap collapsedPayload = mutationBuilder.buildWrappedTagInsertionPayload(
         QStringLiteral("Alpha beta"),
         5,
         5,
@@ -330,13 +356,13 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsShortcutSourc
 
 void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting()
 {
-    ContentsEditorTagInsertionController controller;
+    ContentsEditorTagMutationBuilder mutationBuilder;
 
     const QString highlightedSource = QStringLiteral("<highlight>STAR structure</highlight>");
     const int highlightOpeningEnd = QStringLiteral("<highlight>").size();
     const int highlightClosingStart = highlightedSource.indexOf(QStringLiteral("</highlight>"));
 
-    const QVariantMap startInsideOpeningPayload = controller.buildTagInsertionPayload(
+    const QVariantMap startInsideOpeningPayload = mutationBuilder.buildTagInsertionPayload(
         highlightedSource,
         QStringLiteral("<highligh").size(),
         highlightClosingStart,
@@ -347,7 +373,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagB
         QStringLiteral("<highlight><bold>STAR structure</bold></highlight>"));
     QVERIFY(!startInsideOpeningPayload.value(QStringLiteral("nextSourceText")).toString().contains(QStringLiteral("<highligh<")));
 
-    const QVariantMap endInsideClosingPayload = controller.buildTagInsertionPayload(
+    const QVariantMap endInsideClosingPayload = mutationBuilder.buildTagInsertionPayload(
         highlightedSource,
         highlightOpeningEnd,
         highlightClosingStart + 3,
@@ -357,7 +383,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagB
         endInsideClosingPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<highlight><italic>STAR structure</italic></highlight>"));
 
-    const QVariantMap partialPrefixPayload = controller.buildTagInsertionPayload(
+    const QVariantMap partialPrefixPayload = mutationBuilder.buildTagInsertionPayload(
         highlightedSource,
         0,
         highlightOpeningEnd + QStringLiteral("STAR").size(),
@@ -367,7 +393,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagB
         partialPrefixPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<highlight><underline>STAR</underline> structure</highlight>"));
 
-    const QVariantMap balancedWholeTagPayload = controller.buildTagInsertionPayload(
+    const QVariantMap balancedWholeTagPayload = mutationBuilder.buildTagInsertionPayload(
         highlightedSource,
         0,
         highlightedSource.size(),
@@ -378,7 +404,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_preservesInlineTagB
         QStringLiteral("<bold><highlight>STAR structure</highlight></bold>"));
 
     const QString crossingSource = QStringLiteral("<bold>Alpha</bold> Beta");
-    const QVariantMap crossingPayload = controller.buildTagInsertionPayload(
+    const QVariantMap crossingPayload = mutationBuilder.buildTagInsertionPayload(
         crossingSource,
         QStringLiteral("<bold>Al").size(),
         crossingSource.size(),

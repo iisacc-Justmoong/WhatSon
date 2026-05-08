@@ -1,22 +1,18 @@
 #pragma once
 
-#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
-
 #include <QObject>
 #include <QString>
 #include <QVariant>
 #include <QVariantMap>
 #include <qqmlregistration.h>
 
-class ContentsEditorTagInsertionController : public QObject
+class ContentsEditorTagMutationBuilder : public QObject
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(ContentsEditorTagInsertionController)
-    Q_PROPERTY(QObject* mutationBuilder READ mutationBuilder CONSTANT FINAL)
+    QML_NAMED_ELEMENT(ContentsEditorTagMutationBuilder)
 
 public:
-    explicit ContentsEditorTagInsertionController(QObject* parent = nullptr);
-    QObject* mutationBuilder() noexcept;
+    explicit ContentsEditorTagMutationBuilder(QObject* parent = nullptr);
 
     Q_INVOKABLE QVariantMap buildTagInsertionPayload(
         const QVariant& sourceText,
@@ -24,8 +20,6 @@ public:
         int selectionEnd,
         const QVariant& tagName);
     Q_INVOKABLE QString normalizedTagName(const QVariant& tagName) const;
-    Q_INVOKABLE QString tagNameForBodyShortcutKey(int key) const;
-    Q_INVOKABLE QString tagNameForShortcutKey(int key) const;
     Q_INVOKABLE QVariantMap buildWrappedTagInsertionPayload(
         const QVariant& sourceText,
         int selectionStart,
@@ -34,7 +28,4 @@ public:
 
 signals:
     void tagInsertionPayloadBuilt(const QVariantMap& payload);
-
-private:
-    ContentsEditorTagMutationBuilder m_mutationBuilder;
 };

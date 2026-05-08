@@ -16,6 +16,10 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
              QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagInsertionController.hpp.md"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp.md"),
+             QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.cpp"),
+             QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp.md"),
+             QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagMutationBuilder.cpp.md"),
              QStringLiteral("src/app/models/editor/tags/ContentsStructuredTagValidator.hpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsStructuredTagValidator.cpp"),
              QStringLiteral("src/app/models/editor/tags/WhatSonStructuredTagLinter.hpp"),
@@ -67,6 +71,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
     QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp")));
     QVERIFY(testCmakeSource.contains(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.cpp")));
+    QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/WhatSonStructuredTagLinter.cpp")));
     QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsResourceTagTextGenerator.cpp")));
@@ -85,6 +91,8 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
         QStringLiteral("app/models/editor/tags/ContentsCalloutBackend.hpp")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsEditorTagInsertionController.hpp")));
+    QVERIFY(registrarSource.contains(
+        QStringLiteral("app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsStructuredTagValidator.hpp")));
     QVERIFY(registrarSource.contains(
@@ -124,6 +132,10 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
 
     const QString tagsReadme = readUtf8SourceFile(
         QStringLiteral("docs/src/app/models/editor/tags/README.md"));
+    const QString tagInsertionControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"));
+    const QString tagMutationBuilderHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"));
     QVERIFY(tagsReadme.contains(QStringLiteral("Editor tag insertion")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<bold>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<italic>")));
@@ -135,6 +147,12 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
     QVERIFY(tagsReadme.contains(QStringLiteral("generated break insertion")));
     QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsRawBodyTagMutationSupport.js")));
     QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsEditorBodyTagInsertionPlanner")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("shortcut-independent")));
+    QVERIFY(tagInsertionControllerSource.contains(QStringLiteral("m_mutationBuilder.buildTagInsertionPayload")));
+    QVERIFY(!tagInsertionControllerSource.contains(QStringLiteral("openingTag + closingTag")));
+    QVERIFY(!tagInsertionControllerSource.contains(QStringLiteral("InlineTagMutation")));
+    QVERIFY(!tagMutationBuilderHeader.contains(QStringLiteral("tagNameForShortcutKey")));
+    QVERIFY(!tagMutationBuilderHeader.contains(QStringLiteral("tagNameForBodyShortcutKey")));
 
     const QString validatorReadme = readUtf8SourceFile(
         QStringLiteral("docs/src/app/models/file/validator/README.md"));
@@ -149,14 +167,20 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
 void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsertionPayloads()
 {
     ContentsEditorTagInsertionController controller;
+    ContentsEditorTagMutationBuilder mutationBuilder;
 
     QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_A), QStringLiteral("agenda"));
     QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_C), QStringLiteral("callout"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Ccedilla), QStringLiteral("callout"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(0x00e7), QStringLiteral("callout"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Aring), QStringLiteral("agenda"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(0x00e5), QStringLiteral("agenda"));
     QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Return), QStringLiteral("break"));
     QCOMPARE(controller.tagNameForBodyShortcutKey(Qt::Key_Enter), QStringLiteral("break"));
+    QCOMPARE(controller.tagNameForBodyShortcutKey(0x222b), QStringLiteral("break"));
     QVERIFY(controller.tagNameForBodyShortcutKey(Qt::Key_X).isEmpty());
 
-    const QVariantMap calloutPayload = controller.buildTagInsertionPayload(
+    const QVariantMap calloutPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Intro"),
         5,
         5,
@@ -168,7 +192,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
     QCOMPARE(calloutPayload.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Intro<callout>").size());
     QCOMPARE(calloutPayload.value(QStringLiteral("tagName")).toString(), QStringLiteral("callout"));
 
-    const QVariantMap wrappedCalloutPayload = controller.buildTagInsertionPayload(
+    const QVariantMap wrappedCalloutPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Alpha\nBeta\nGamma"),
         6,
         10,
@@ -182,7 +206,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         wrappedCalloutPayload.value(QStringLiteral("wrappedSourceText")).toString(),
         QStringLiteral("Beta"));
 
-    const QVariantMap nestedCalloutWrapPayload = controller.buildTagInsertionPayload(
+    const QVariantMap nestedCalloutWrapPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("<callout>inside</callout>\nTail"),
         9,
         15,
@@ -192,7 +216,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         nestedCalloutWrapPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<callout><callout>inside</callout></callout>\nTail"));
 
-    const QVariantMap agendaPayload = controller.buildTagInsertionPayload(
+    const QVariantMap agendaPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Intro"),
         5,
         5,
@@ -203,7 +227,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         QStringLiteral("Intro<agenda><task></task></agenda>"));
     QCOMPARE(agendaPayload.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Intro<agenda><task>").size());
 
-    const QVariantMap wrappedAgendaPayload = controller.buildTagInsertionPayload(
+    const QVariantMap wrappedAgendaPayload = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Alpha\nBeta\nGamma"),
         6,
         10,
@@ -215,7 +239,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
     QCOMPARE(wrappedAgendaPayload.value(QStringLiteral("wrappedSourceText")).toString(), QStringLiteral("Beta"));
 
     const QString structuredSource = QStringLiteral("<agenda><task>inside</task></agenda>\nTail");
-    const QVariantMap nestedBreakPayload = controller.buildTagInsertionPayload(
+    const QVariantMap nestedBreakPayload = mutationBuilder.buildTagInsertionPayload(
         structuredSource,
         14,
         14,
@@ -226,7 +250,7 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         nestedBreakPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<agenda><task>\n</break>\ninside</task></agenda>\nTail"));
 
-    const QVariantMap rejectedCallout = controller.buildTagInsertionPayload(
+    const QVariantMap rejectedCallout = mutationBuilder.buildTagInsertionPayload(
         QStringLiteral("Alpha"),
         5,
         5,

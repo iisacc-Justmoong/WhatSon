@@ -3,6 +3,7 @@
 #include "app/models/editor/resource/ContentsEditorDynamicObjectSupport.hpp"
 
 #include <QEvent>
+#include <QKeyEvent>
 #include <QMetaObject>
 #include <QMetaProperty>
 #include <QVariant>
@@ -42,6 +43,27 @@ bool invokeTextEdited(QObject* control, const QString& text)
         return true;
 
     return QMetaObject::invokeMethod(control, "textEdited", Q_ARG(QVariant, QVariant(text)));
+}
+
+bool tagManagementShortcutCanDispatch(const QVariantMap& request)
+{
+    const int key = request.value(QStringLiteral("key")).toInt();
+    if (request.value(QStringLiteral("inlineFormatShortcut")).toBool())
+    {
+        return key == Qt::Key_B
+            || key == Qt::Key_I
+            || key == Qt::Key_U
+            || key == Qt::Key_E;
+    }
+    if (request.value(QStringLiteral("bodyTagShortcut")).toBool())
+    {
+        return key == Qt::Key_A
+            || key == Qt::Key_B
+            || key == Qt::Key_C
+            || key == Qt::Key_Enter
+            || key == Qt::Key_Return;
+    }
+    return false;
 }
 
 }
@@ -86,11 +108,13 @@ void ContentsInlineFormatEditorController::setTextInput(QObject* value)
     if (m_textInput)
     {
         QObject::disconnect(m_textInput, nullptr, this, nullptr);
+        m_textInput->removeEventFilter(this);
     }
 
     m_textInput = value;
     if (m_textInput)
     {
+        m_textInput->installEventFilter(this);
         connectPropertyNotify(m_textInput, "cursorPosition", "handleTextInputCursorPositionChanged()");
         connectPropertyNotify(m_textInput, "selectionStart", "handleTextInputSelectionChanged()");
         connectPropertyNotify(m_textInput, "selectionEnd", "handleTextInputSelectionChanged()");
@@ -238,6 +262,61 @@ QVariantMap ContentsInlineFormatEditorController::tagManagementShortcutRequest(
     const QString& platformName) const
 {
     return m_inputPolicyAdapter.tagManagementShortcutRequest(key, nativeModifiers, platformName);
+}
+
+QVariantMap ContentsInlineFormatEditorController::tagManagementShortcutRequestWithText(
+    const int key,
+    const int nativeModifiers,
+    const QString& platformName,
+    const QVariant& shortcutText) const
+{
+    return m_inputPolicyAdapter.tagManagementShortcutRequestWithText(
+        key,
+        nativeModifiers,
+        platformName,
+        shortcutText);
+}
+
+bool ContentsInlineFormatEditorController::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched != m_textInput || event == nullptr || event->type() != QEvent::KeyPress)
+    {
+        return QObject::eventFilter(watched, event);
+    }
+
+    auto* const keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->isAutoRepeat() || nativeCompositionActive() || !m_control)
+    {
+        return QObject::eventFilter(watched, event);
+    }
+
+    const int nativeModifiers = static_cast<int>(keyEvent->modifiers());
+    const QString platformName =
+        WhatSon::Editor::DynamicObjectSupport::stringProperty(m_control, "shortcutPlatformName");
+    const QVariantMap request = m_inputPolicyAdapter.tagManagementShortcutRequestWithText(
+        keyEvent->key(),
+        nativeModifiers,
+        platformName,
+        keyEvent->text());
+    if (!tagManagementShortcutCanDispatch(request))
+    {
+        return QObject::eventFilter(watched, event);
+    }
+
+    QVariant handled;
+    const bool invoked = QMetaObject::invokeMethod(
+        m_control,
+        "triggerTagManagementShortcut",
+        Q_RETURN_ARG(QVariant, handled),
+        Q_ARG(QVariant, request.value(QStringLiteral("key")).toInt()),
+        Q_ARG(QVariant, nativeModifiers));
+    if (!invoked || !handled.toBool())
+    {
+        return QObject::eventFilter(watched, event);
+    }
+
+    keyEvent->accept();
+    return true;
 }
 
 int ContentsInlineFormatEditorController::clampLogicalPosition(const int position, const int maximumLength) const

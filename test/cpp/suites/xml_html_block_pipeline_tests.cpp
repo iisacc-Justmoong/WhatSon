@@ -84,6 +84,55 @@ void WhatSonCppRegressionTests::editorRendererPipeline_materializesEnterNewlines
     QCOMPARE(paragraphCount, 4);
 }
 
+void WhatSonCppRegressionTests::editorRendererPipeline_rendersCalloutTagsAsFigmaCalloutBlocks()
+{
+    const ContentsHtmlBlockRenderPipeline pipeline;
+    const ContentsHtmlBlockRenderPipeline::RenderResult result = pipeline.renderEditorDocument(
+        QStringLiteral("<callout>This is callout text</callout>"));
+
+    QVERIFY(!result.documentHtml.isEmpty());
+    QVERIFY(result.documentHtml.contains(QStringLiteral("This is callout text")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<callout")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("background-color:#262728")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("width:100%")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("width:295")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("height:22px")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("white-space:nowrap")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("font-family:Pretendard")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("font-size:12px")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("line-height:12px")));
+
+    const ContentsHtmlBlockRenderPipeline::RenderResult multilineResult = pipeline.renderEditorDocument(
+        QStringLiteral("<callout>First line\nSecond line</callout>"));
+    QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("First line")));
+    QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("<br/>")));
+    QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("Second line")));
+    QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("width:100%")));
+    QVERIFY(!multilineResult.documentHtml.contains(QStringLiteral("height:22px")));
+
+    QVERIFY(!result.htmlTokens.isEmpty());
+    const QVariantMap token = result.htmlTokens.first().toMap();
+    QVERIFY(token.value(QStringLiteral("overlayVisible")).toBool());
+    QVERIFY(token.value(QStringLiteral("calloutBlock")).toBool());
+    QCOMPARE(token.value(QStringLiteral("renderDelegateType")).toString(), QStringLiteral("text"));
+    QVERIFY(token.value(QStringLiteral("html")).toString().startsWith(QStringLiteral("<table")));
+
+    bool foundCalloutBlock = false;
+    for (const QVariant& blockValue : result.normalizedHtmlBlocks)
+    {
+        const QVariantMap block = blockValue.toMap();
+        if (block.value(QStringLiteral("calloutBlock")).toBool())
+        {
+            foundCalloutBlock = true;
+            QVERIFY(block.value(QStringLiteral("htmlBlockHtml")).toString().contains(QStringLiteral("#262728")));
+            QVERIFY(block.value(QStringLiteral("htmlBlockHtml")).toString().contains(QStringLiteral("#d9d9d9")));
+        }
+    }
+    QVERIFY(foundCalloutBlock);
+}
+
 void WhatSonCppRegressionTests::editorRendererPipeline_rendersInlineStyleTagsAsRichTextHtml()
 {
     const ContentsHtmlBlockRenderPipeline pipeline;

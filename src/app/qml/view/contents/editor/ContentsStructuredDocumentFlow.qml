@@ -50,7 +50,7 @@ Item {
 
         const currentSourceText = editor.currentPlainText();
         const selectedRange = editor.selectedSourceRange();
-        const payload = tagInsertionController.buildTagInsertionPayload(
+        const payload = tagMutationBuilder.buildTagInsertionPayload(
                     currentSourceText,
                     Number(selectedRange.start) || 0,
                     Number(selectedRange.end) || 0,
@@ -65,7 +65,7 @@ Item {
 
         const currentSourceText = editor.currentPlainText();
         const selectedRange = editor.selectedSourceRange();
-        const payload = tagInsertionController.buildTagInsertionPayload(
+        const payload = tagMutationBuilder.buildTagInsertionPayload(
                     currentSourceText,
                     Number(selectedRange.start) || 0,
                     Number(selectedRange.end) || 0,
@@ -160,6 +160,10 @@ Item {
 
     ContentsEditorTagInsertionController {
         id: tagInsertionController
+    }
+
+    ContentsEditorTagMutationBuilder {
+        id: tagMutationBuilder
     }
 
     MouseArea {

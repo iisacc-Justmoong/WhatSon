@@ -15,12 +15,13 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path. The inline editor receives RAW
   `sourceText`, but in rendered mode its native text surface edits the visible logical projection and reports mapped
   RAW cursor/selection offsets back to this host.
-- Mounts `ContentsEditorTagInsertionController` and binds the inline editor's tag-management key hook to the
-  document flow.
+- Mounts `ContentsEditorTagInsertionController` for shortcut-to-tag resolution and
+  `ContentsEditorTagMutationBuilder` for shortcut-independent RAW tag payload generation, then binds the inline
+  editor's tag-management key hook to the document flow.
 - Passes `shortcutPlatformName` into the inline editor so tests and platform shells can verify native-to-standard
   Command/Ctrl shortcut compensation without duplicating shortcut policy in the document flow.
-- Handles explicit formatting/body tag shortcuts by asking the tag insertion controller to build the next RAW tag
-  insertion payload from the live inline editor buffer, then applying that payload through the same live editor. The
+- Handles explicit formatting/body tag shortcuts by asking the shortcut controller for a canonical tag name, then
+  asking the mutation builder to build the next RAW tag insertion payload from the live inline editor buffer. The
   payload source must not lag behind the focused editor text while parent session bindings catch up.
 - Passes projection-ready logical display text into the inline editor's display-geometry probe for pointer hit testing
   and visible-logical selection mapping. The flow keeps the last ready logical text and editor-surface HTML while

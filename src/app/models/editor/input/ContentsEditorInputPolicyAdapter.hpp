@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariant>
 #include <QVariantMap>
 #include <qqmlregistration.h>
 
@@ -53,6 +54,11 @@ public:
         int key,
         int nativeModifiers,
         const QString& platformName) const;
+    Q_INVOKABLE QVariantMap tagManagementShortcutRequestWithText(
+        int key,
+        int nativeModifiers,
+        const QString& platformName,
+        const QVariant& shortcutText) const;
     Q_INVOKABLE QVariantMap programmaticTextSyncPolicy(
         const QVariant& currentText,
         const QVariant& nextText,

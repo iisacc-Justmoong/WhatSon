@@ -135,6 +135,10 @@ QString canonicalDocumentBlockTypeName(const QString& elementName)
     {
         return QStringLiteral("break");
     }
+    if (normalizedName == QStringLiteral("callout"))
+    {
+        return QStringLiteral("paragraph");
+    }
     return canonicalRenderedTextBlockTagName(elementName);
 }
 

@@ -8,6 +8,8 @@
 #include <QVariantMap>
 #include <qqmlregistration.h>
 
+class QEvent;
+
 class ContentsInlineFormatEditorController : public QObject
 {
     Q_OBJECT
@@ -43,6 +45,11 @@ public:
         int key,
         int nativeModifiers,
         const QString& platformName) const;
+    Q_INVOKABLE QVariantMap tagManagementShortcutRequestWithText(
+        int key,
+        int nativeModifiers,
+        const QString& platformName,
+        const QVariant& shortcutText) const;
     Q_INVOKABLE int setCursorPositionPreservingNativeInput(int position) const;
     Q_INVOKABLE bool selectionCursorUsesStartEdge(int cursorPosition, int selectionStart, int selectionEnd) const;
     Q_INVOKABLE bool restoreSelectionRange(int selectionStart, int selectionEnd, int cursorPosition) const;
@@ -59,6 +66,9 @@ public:
 signals:
     void controlChanged();
     void textInputChanged();
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void handleControlFocusedChanged();

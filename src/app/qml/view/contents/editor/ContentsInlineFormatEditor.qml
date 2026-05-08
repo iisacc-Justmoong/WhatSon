@@ -143,10 +143,14 @@ Item {
         const nativeModifiers = event.nativeModifiers !== undefined
                 ? Number(event.nativeModifiers) || 0
                 : Number(event.modifiers) || 0;
-        return inlineEditorController.tagManagementShortcutRequest(
+        const shortcutText = event.text !== undefined && event.text !== null
+                ? String(event.text)
+                : "";
+        return inlineEditorController.tagManagementShortcutRequestWithText(
                     Number(event.key) || 0,
                     nativeModifiers,
-                    control.shortcutPlatformName);
+                    control.shortcutPlatformName,
+                    shortcutText);
     }
 
     function standardizedTagManagementKeyEvent(event, source) {
