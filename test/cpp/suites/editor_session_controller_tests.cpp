@@ -59,7 +59,7 @@ void WhatSonCppRegressionTests::editorSessionController_commitsRawMutationsThrou
 
     controller.setEditorBoundNoteId(QStringLiteral("note-1"));
     QVERIFY(controller.commitRawEditorTextMutation(QStringLiteral("<task></task>")));
-    QCOMPARE(controller.editorText(), QStringLiteral("<task> </task>"));
+    QCOMPARE(controller.editorText(), QStringLiteral("<task></task>"));
     QVERIFY(controller.localEditorAuthority());
     QVERIFY(controller.pendingBodySave());
     QVERIFY(editorTextChangedSpy.count() >= 1);
@@ -67,8 +67,8 @@ void WhatSonCppRegressionTests::editorSessionController_commitsRawMutationsThrou
 
     editorTextChangedSpy.clear();
     localAuthorityChangedSpy.clear();
-    QVERIFY(!controller.commitRawEditorTextMutation(QStringLiteral("<task> </task>")));
-    QCOMPARE(controller.editorText(), QStringLiteral("<task> </task>"));
+    QVERIFY(!controller.commitRawEditorTextMutation(QStringLiteral("<task></task>")));
+    QCOMPARE(controller.editorText(), QStringLiteral("<task></task>"));
     QCOMPARE(editorTextChangedSpy.count(), 0);
     QCOMPARE(localAuthorityChangedSpy.count(), 0);
 }

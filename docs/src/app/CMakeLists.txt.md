@@ -56,14 +56,14 @@
   the shard build directory rather than the owned source directory.
 - `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
   evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
-  `editor/tags/ContentsAgendaBackend.hpp`, `editor/tags/ContentsCalloutBackend.hpp`, and
+  `editor/tags/ContentsEditorTagInsertionController.hpp`,
   `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
   registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
   `models/sidebar`, and `models/file/hierarchy/*`.
-- Editor body-format tag command and validation sources are grouped under `src/app/models/editor/tags`; agenda and callout
-  no longer use separate build shards.
+- Editor tag command and validation sources are grouped under `src/app/models/editor/tags`; agenda/callout no longer
+  have dedicated backend shards.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.

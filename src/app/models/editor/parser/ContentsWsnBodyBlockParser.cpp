@@ -3,7 +3,6 @@
 #include "app/models/file/note/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "app/models/editor/tags/WhatSonStructuredTagLinter.hpp"
 
-#include <QDate>
 #include <QRegularExpression>
 #include <QStringList>
 
@@ -18,23 +17,11 @@ namespace
 {
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
-    const QRegularExpression kTaskOpenTagPattern(
-        QStringLiteral(R"(<task\b([^>]*)>)"),
-        QRegularExpression::CaseInsensitiveOption);
-
     struct DocumentBlockSpan final
     {
         int end = 0;
         QVariantMap payload;
         int start = 0;
-    };
-
-    struct AgendaParseStats final
-    {
-        int confirmedAgendaCount = 0;
-        int confirmedCalloutCount = 0;
-        int confirmedTaskCount = 0;
-        int invalidAgendaChildCount = 0;
     };
 
     int boundedQStringSize(const QString& text)
@@ -71,11 +58,6 @@ namespace
     {
         const std::size_t boundedOffset = std::min<std::size_t>(offset, static_cast<std::size_t>(bytes.size()));
         return boundedQSizeToInt(QString::fromUtf8(bytes.constData(), static_cast<qsizetype>(boundedOffset)).size());
-    }
-
-    QString defaultDatePlaceholder()
-    {
-        return QStringLiteral("yyyy-mm-dd");
     }
 
     QString normalizePlainText(QString text)
@@ -179,89 +161,6 @@ namespace
     {
         const QString iiXmlValue = extractIiXmlAttributeValue(parseBytes, fields, attributeNames);
         return iiXmlValue.isEmpty() ? extractXmlAttributeValue(tagText, attributeNames) : iiXmlValue;
-    }
-
-    QString tagAttributeValue(const QString& rawAttributes, const QString& attributeName)
-    {
-        if (attributeName.trimmed().isEmpty())
-        {
-            return {};
-        }
-
-        const QRegularExpression attributePattern(
-            QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR")
-                .arg(QRegularExpression::escape(attributeName.trimmed())),
-            QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch match = attributePattern.match(rawAttributes);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
-        {
-            if (match.capturedStart(captureIndex) < 0)
-            {
-                continue;
-            }
-            return decodeSourceEntities(match.captured(captureIndex));
-        }
-        return {};
-    }
-
-    bool parseBooleanAttributeValue(const QString& rawValue)
-    {
-        const QString normalizedValue = rawValue.trimmed().toCaseFolded();
-        return normalizedValue == QStringLiteral("true")
-            || normalizedValue == QStringLiteral("1")
-            || normalizedValue == QStringLiteral("yes");
-    }
-
-    QString visibleAgendaTaskText(QString rawTaskInnerText)
-    {
-        rawTaskInnerText = normalizePlainText(rawTaskInnerText);
-        rawTaskInnerText.replace(
-            QRegularExpression(
-                QStringLiteral(R"(<\s*br\s*/?\s*>)"),
-                QRegularExpression::CaseInsensitiveOption),
-            QStringLiteral("\n"));
-        rawTaskInnerText.remove(QRegularExpression(QStringLiteral(R"(<[^>]*>)")));
-        rawTaskInnerText = decodeSourceEntities(rawTaskInnerText);
-        return normalizePlainText(rawTaskInnerText).trimmed();
-    }
-
-    QString visibleCalloutText(QString rawCalloutInnerText)
-    {
-        rawCalloutInnerText = normalizePlainText(rawCalloutInnerText);
-        rawCalloutInnerText.replace(
-            QRegularExpression(
-                QStringLiteral(R"(<\s*br\s*/?\s*>)"),
-                QRegularExpression::CaseInsensitiveOption),
-            QStringLiteral("\n"));
-        rawCalloutInnerText.remove(QRegularExpression(QStringLiteral(R"(<[^>]*>)")));
-        rawCalloutInnerText = decodeSourceEntities(rawCalloutInnerText);
-        return normalizePlainText(rawCalloutInnerText).trimmed();
-    }
-
-    bool agendaContainsOnlyTaskChildren(QString agendaInnerSourceText)
-    {
-        agendaInnerSourceText.remove(
-            QRegularExpression(
-                QStringLiteral(R"(<task\b[^>]*>[\s\S]*?</task>)"),
-                QRegularExpression::CaseInsensitiveOption));
-        agendaInnerSourceText.replace(QRegularExpression(QStringLiteral("\\s+")), QString());
-        return agendaInnerSourceText.isEmpty();
-    }
-
-    QString normalizedAgendaDateForDisplay(const QString& rawDate)
-    {
-        const QString decodedDate = decodeSourceEntities(rawDate).trimmed();
-        const QDate parsedDate = QDate::fromString(decodedDate, QStringLiteral("yyyy-MM-dd"));
-        if (parsedDate.isValid())
-        {
-            return parsedDate.toString(QStringLiteral("yyyy-MM-dd"));
-        }
-        return defaultDatePlaceholder();
     }
 
     QString resolvedDocumentBlockTypeName(const QString& normalizedTypeName)
@@ -463,201 +362,6 @@ namespace
         return payload;
     }
 
-    QVariantMap buildCalloutPayload(
-        const QString& sourceText,
-        const int sourceStart,
-        const int openTagEnd,
-        const int sourceEnd,
-        const bool hasCloseTag)
-    {
-        const int boundedStart = boundedTextIndex(sourceText, sourceStart);
-        const int boundedOpenEnd = boundedTextIndex(sourceText, std::max(boundedStart, openTagEnd));
-        const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedOpenEnd, sourceEnd));
-        const int closeTagSize = QStringLiteral("</callout>").size();
-        const int calloutCloseStart = hasCloseTag ? std::max(boundedOpenEnd, boundedEnd - closeTagSize) : -1;
-        const int calloutContentEnd = hasCloseTag ? calloutCloseStart : boundedEnd;
-
-        QVariantMap payload = documentBlockPayload(
-            sourceText,
-            boundedStart,
-            boundedEnd,
-            QStringLiteral("callout"),
-            QStringLiteral("callout"));
-        payload.insert(QStringLiteral("contentStart"), boundedOpenEnd);
-        payload.insert(QStringLiteral("contentEnd"), calloutContentEnd);
-        payload.insert(QStringLiteral("openTagStart"), boundedStart);
-        payload.insert(QStringLiteral("openTagEnd"), boundedOpenEnd);
-        payload.insert(QStringLiteral("closeTagStart"), calloutCloseStart);
-        payload.insert(
-            QStringLiteral("closeTagEnd"),
-            hasCloseTag ? calloutCloseStart + closeTagSize : -1);
-        payload.insert(QStringLiteral("hasCloseTag"), hasCloseTag);
-        payload.insert(QStringLiteral("focusSourceOffset"), boundedOpenEnd);
-        payload.insert(QStringLiteral("tagVerified"), hasCloseTag);
-        payload.insert(
-            QStringLiteral("text"),
-            visibleCalloutText(
-                sourceText.mid(
-                    boundedOpenEnd,
-                    std::max(0, calloutContentEnd - boundedOpenEnd))));
-        applyDocumentBlockTraits(
-            &payload,
-            QStringLiteral("callout"),
-            payload.value(QStringLiteral("text")).toString());
-        return payload;
-    }
-
-    QVariantMap buildAgendaPayload(
-        const QString& sourceText,
-        const QString& openTagText,
-        const int sourceStart,
-        const int openTagEnd,
-        const int sourceEnd,
-        const bool hasCloseTag,
-        AgendaParseStats* stats)
-    {
-        const int boundedStart = boundedTextIndex(sourceText, sourceStart);
-        const int boundedOpenEnd = boundedTextIndex(sourceText, std::max(boundedStart, openTagEnd));
-        const int boundedEnd = boundedTextIndex(sourceText, std::max(boundedOpenEnd, sourceEnd));
-        const int closeTagSize = QStringLiteral("</agenda>").size();
-        const int agendaCloseStart = hasCloseTag ? std::max(boundedOpenEnd, boundedEnd - closeTagSize) : -1;
-        const int agendaContentEnd = hasCloseTag ? agendaCloseStart : boundedEnd;
-        const QString innerSource = sourceText.mid(
-            boundedOpenEnd,
-            std::max(0, agendaContentEnd - boundedOpenEnd));
-        const bool containsOnlyTaskChildren = agendaContainsOnlyTaskChildren(innerSource);
-
-        if (stats != nullptr)
-        {
-            if (hasCloseTag)
-            {
-                ++stats->confirmedAgendaCount;
-            }
-            if (!containsOnlyTaskChildren)
-            {
-                ++stats->invalidAgendaChildCount;
-            }
-        }
-
-        QVariantMap payload = documentBlockPayload(
-            sourceText,
-            boundedStart,
-            boundedEnd,
-            QStringLiteral("agenda"),
-            QStringLiteral("agenda"));
-        payload.insert(QStringLiteral("contentStart"), boundedOpenEnd);
-        payload.insert(QStringLiteral("contentEnd"), agendaContentEnd);
-        payload.insert(QStringLiteral("sourceStart"), boundedStart);
-        payload.insert(QStringLiteral("sourceEnd"), boundedEnd);
-        payload.insert(QStringLiteral("openTagStart"), boundedStart);
-        payload.insert(QStringLiteral("openTagEnd"), boundedOpenEnd);
-        payload.insert(QStringLiteral("closeTagStart"), agendaCloseStart);
-        payload.insert(
-            QStringLiteral("closeTagEnd"),
-            hasCloseTag ? agendaCloseStart + closeTagSize : -1);
-        payload.insert(QStringLiteral("hasCloseTag"), hasCloseTag);
-        payload.insert(
-            QStringLiteral("date"),
-            normalizedAgendaDateForDisplay(tagAttributeValue(openTagText, QStringLiteral("date"))));
-
-        QVariantList tasks;
-        QStringList visibleTaskLines;
-        int focusSourceOffset = boundedOpenEnd;
-        QRegularExpressionMatchIterator taskIterator = kTaskOpenTagPattern.globalMatch(innerSource);
-        while (taskIterator.hasNext())
-        {
-            const QRegularExpressionMatch taskMatch = taskIterator.next();
-            if (!taskMatch.hasMatch())
-            {
-                continue;
-            }
-
-            const int taskOpenTagStart = boundedOpenEnd + std::max(0, boundedQSizeToInt(taskMatch.capturedStart(0)));
-            const int taskOpenTagEnd = boundedOpenEnd + std::max(0, boundedQSizeToInt(taskMatch.capturedEnd(0)));
-            const QRegularExpressionMatch nextTaskMatch = kTaskOpenTagPattern.match(sourceText, taskOpenTagEnd);
-            const int nextTaskOpenStart = nextTaskMatch.hasMatch()
-                ? std::max(0, boundedQSizeToInt(nextTaskMatch.capturedStart(0)))
-                : -1;
-            const int taskCloseStart = sourceText.indexOf(
-                QStringLiteral("</task>"),
-                taskOpenTagEnd,
-                Qt::CaseInsensitive);
-
-            int taskContentEnd = agendaContentEnd;
-            if (taskCloseStart >= 0 && taskCloseStart < agendaContentEnd)
-            {
-                taskContentEnd = std::min(taskContentEnd, taskCloseStart);
-            }
-            if (nextTaskOpenStart >= 0 && nextTaskOpenStart < agendaContentEnd)
-            {
-                taskContentEnd = std::min(taskContentEnd, nextTaskOpenStart);
-            }
-
-            const bool taskHasCloseTag = taskCloseStart >= 0 && taskCloseStart == taskContentEnd;
-            if (taskHasCloseTag && stats != nullptr)
-            {
-                ++stats->confirmedTaskCount;
-            }
-
-            QVariantMap taskEntry;
-            taskEntry.insert(
-                QStringLiteral("done"),
-                parseBooleanAttributeValue(tagAttributeValue(taskMatch.captured(1), QStringLiteral("done"))));
-            taskEntry.insert(QStringLiteral("contentStart"), taskOpenTagEnd);
-            taskEntry.insert(QStringLiteral("contentEnd"), taskContentEnd);
-            taskEntry.insert(QStringLiteral("hasSourceTag"), true);
-            taskEntry.insert(QStringLiteral("hasCloseTag"), taskHasCloseTag);
-            taskEntry.insert(QStringLiteral("closeTagStart"), taskHasCloseTag ? taskCloseStart : -1);
-            taskEntry.insert(
-                QStringLiteral("closeTagEnd"),
-                taskHasCloseTag ? taskCloseStart + QStringLiteral("</task>").size() : -1);
-            taskEntry.insert(QStringLiteral("openTagStart"), taskOpenTagStart);
-            taskEntry.insert(QStringLiteral("openTagEnd"), taskOpenTagEnd);
-            taskEntry.insert(QStringLiteral("tagVerified"), taskHasCloseTag);
-            taskEntry.insert(
-                QStringLiteral("text"),
-                visibleAgendaTaskText(
-                    sourceText.mid(
-                        taskOpenTagEnd,
-                        std::max(0, taskContentEnd - taskOpenTagEnd))));
-            visibleTaskLines.push_back(taskEntry.value(QStringLiteral("text")).toString());
-            tasks.push_back(taskEntry);
-
-            if (focusSourceOffset <= boundedOpenEnd)
-            {
-                focusSourceOffset = taskOpenTagEnd;
-            }
-        }
-
-        if (tasks.isEmpty())
-        {
-            QVariantMap placeholderTaskEntry;
-            placeholderTaskEntry.insert(QStringLiteral("done"), false);
-            placeholderTaskEntry.insert(QStringLiteral("hasSourceTag"), false);
-            placeholderTaskEntry.insert(QStringLiteral("hasCloseTag"), false);
-            placeholderTaskEntry.insert(QStringLiteral("contentStart"), boundedOpenEnd);
-            placeholderTaskEntry.insert(QStringLiteral("contentEnd"), agendaContentEnd);
-            placeholderTaskEntry.insert(QStringLiteral("closeTagStart"), -1);
-            placeholderTaskEntry.insert(QStringLiteral("closeTagEnd"), -1);
-            placeholderTaskEntry.insert(QStringLiteral("openTagStart"), -1);
-            placeholderTaskEntry.insert(QStringLiteral("openTagEnd"), -1);
-            placeholderTaskEntry.insert(QStringLiteral("tagVerified"), false);
-            placeholderTaskEntry.insert(QStringLiteral("text"), visibleAgendaTaskText(innerSource));
-            visibleTaskLines.push_back(placeholderTaskEntry.value(QStringLiteral("text")).toString());
-            tasks.push_back(placeholderTaskEntry);
-        }
-
-        payload.insert(QStringLiteral("focusSourceOffset"), std::max(0, focusSourceOffset));
-        payload.insert(QStringLiteral("tagVerified"), hasCloseTag && containsOnlyTaskChildren);
-        payload.insert(QStringLiteral("tasks"), tasks);
-        applyDocumentBlockTraits(
-            &payload,
-            QStringLiteral("agenda"),
-            visibleTaskLines.join(QLatin1Char('\n')),
-            std::max(1, static_cast<int>(tasks.size())));
-        return payload;
-    }
-
     bool isFormattingWhitespaceBetweenExplicitBlocks(
         const QString& sourceText,
         const int sourceStart,
@@ -783,10 +487,7 @@ namespace
         const int blockEnd,
         const int closeTagStart,
         const bool hasCloseTag,
-        int* resourceIndex,
-        AgendaParseStats* agendaStats,
-        QVariantList* renderedAgendas,
-        QVariantList* renderedCallouts)
+        int* resourceIndex)
     {
         QVariantMap payload;
         if (canonicalTypeName == QStringLiteral("resource"))
@@ -803,38 +504,6 @@ namespace
             if (resourceIndex != nullptr)
             {
                 *resourceIndex = nextResourceIndex + 1;
-            }
-        }
-        else if (canonicalTypeName == QStringLiteral("agenda"))
-        {
-            payload = buildAgendaPayload(
-                sourceText,
-                fullTagToken,
-                blockStart,
-                openTagEnd,
-                blockEnd,
-                hasCloseTag,
-                agendaStats);
-            if (renderedAgendas != nullptr)
-            {
-                renderedAgendas->push_back(payload);
-            }
-        }
-        else if (canonicalTypeName == QStringLiteral("callout"))
-        {
-            payload = buildCalloutPayload(
-                sourceText,
-                blockStart,
-                openTagEnd,
-                blockEnd,
-                hasCloseTag);
-            if (hasCloseTag && agendaStats != nullptr)
-            {
-                ++agendaStats->confirmedCalloutCount;
-            }
-            if (renderedCallouts != nullptr)
-            {
-                renderedCallouts->push_back(payload);
             }
         }
         else if (SemanticTags::isRenderedTextBlockElement(canonicalTypeName))
@@ -882,8 +551,7 @@ namespace
 
     bool shouldSkipIiXmlDocumentNode(const QString& rawTagName)
     {
-        return SemanticTags::isTaskTagName(rawTagName)
-            || !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
+        return !SemanticTags::canonicalInlineStyleTagName(rawTagName).isEmpty()
             || SemanticTags::isRenderedLineBreakTagName(rawTagName);
     }
 
@@ -913,10 +581,7 @@ namespace
         const QByteArray& parseBytes,
         const std::vector<iiXml::Parser::TagNode>& nodes,
         std::vector<DocumentBlockSpan>* explicitSpans,
-        int* resourceIndex,
-        AgendaParseStats* agendaStats,
-        QVariantList* renderedAgendas,
-        QVariantList* renderedCallouts)
+        int* resourceIndex)
     {
         if (explicitSpans == nullptr)
         {
@@ -933,10 +598,7 @@ namespace
                     parseBytes,
                     node.Children,
                     explicitSpans,
-                    resourceIndex,
-                    agendaStats,
-                    renderedAgendas,
-                    renderedCallouts);
+                    resourceIndex);
                 continue;
             }
             if (shouldSkipIiXmlDocumentNode(rawTagName))
@@ -988,20 +650,14 @@ namespace
                     blockEnd,
                     closeTagStart,
                     hasCloseTag,
-                    resourceIndex,
-                    agendaStats,
-                    renderedAgendas,
-                    renderedCallouts));
+                    resourceIndex));
         }
     }
 
     bool collectExplicitSpansFromIiXmlDocument(
         const QString& sourceText,
         std::vector<DocumentBlockSpan>* explicitSpans,
-        int* resourceIndex,
-        AgendaParseStats* agendaStats,
-        QVariantList* renderedAgendas,
-        QVariantList* renderedCallouts)
+        int* resourceIndex)
     {
         if (sourceText.trimmed().isEmpty())
         {
@@ -1025,10 +681,7 @@ namespace
             parseBytes,
             parsedDocument.Document.value().Nodes,
             explicitSpans,
-            resourceIndex,
-            agendaStats,
-            renderedAgendas,
-            renderedCallouts);
+            resourceIndex);
         return true;
     }
 
@@ -1042,7 +695,6 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
 {
     const WhatSonStructuredTagLinter tagLinter;
     ParseResult result;
-    AgendaParseStats agendaStats;
     int resourceIndex = 0;
 
     result.correctedSourceText = tagLinter.normalizeStructuredSourceText(sourceText);
@@ -1052,10 +704,7 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
     collectExplicitSpansFromIiXmlDocument(
         sourceText,
         &explicitSpans,
-        &resourceIndex,
-        &agendaStats,
-        &result.renderedAgendas,
-        &result.renderedCallouts);
+        &resourceIndex);
 
     std::sort(
         explicitSpans.begin(),
@@ -1116,17 +765,6 @@ ContentsWsnBodyBlockParser::ParseResult ContentsWsnBodyBlockParser::parse(const 
             false);
     }
 
-    result.agendaParseVerification = tagLinter.buildAgendaVerification(
-        sourceText,
-        agendaStats.confirmedAgendaCount,
-        agendaStats.confirmedTaskCount,
-        agendaStats.invalidAgendaChildCount);
-    result.calloutParseVerification = tagLinter.buildCalloutVerification(
-        sourceText,
-        agendaStats.confirmedCalloutCount);
-    result.structuredParseVerification = tagLinter.buildStructuredVerification(
-        result.agendaParseVerification,
-        result.calloutParseVerification,
-        sourceText);
+    result.structuredParseVerification = tagLinter.buildStructuredVerification(sourceText);
     return result;
 }

@@ -165,9 +165,7 @@ namespace
         {
             return QStringLiteral("#");
         }
-        if (SemanticTags::isAgendaTagName(tagName)
-            || SemanticTags::isTaskTagName(tagName)
-            || SemanticTags::isCalloutTagName(tagName))
+        if (SemanticTags::isTransparentContainerTagName(tagName))
         {
             return {};
         }
@@ -189,9 +187,7 @@ namespace
         {
             return {};
         }
-        if (SemanticTags::isAgendaTagName(tagName)
-            || SemanticTags::isTaskTagName(tagName)
-            || SemanticTags::isCalloutTagName(tagName))
+        if (SemanticTags::isTransparentContainerTagName(tagName))
         {
             return {};
         }
@@ -216,9 +212,7 @@ namespace
                     const bool recognizedTag = !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
                         || SemanticTags::isWebLinkTagName(tagName)
                         || SemanticTags::isHashtagTagName(tagName)
-                        || SemanticTags::isAgendaTagName(tagName)
-                        || SemanticTags::isTaskTagName(tagName)
-                        || SemanticTags::isCalloutTagName(tagName)
+                        || SemanticTags::isTransparentContainerTagName(tagName)
                         || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();
                     if (SemanticTags::isRenderedLineBreakTagName(tagName))
                     {
@@ -273,9 +267,6 @@ namespace
                     const bool recognizedTag = !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
                         || SemanticTags::isWebLinkTagName(tagName)
                         || SemanticTags::isHashtagTagName(tagName)
-                        || SemanticTags::isAgendaTagName(tagName)
-                        || SemanticTags::isTaskTagName(tagName)
-                        || SemanticTags::isCalloutTagName(tagName)
                         || SemanticTags::isTransparentContainerTagName(tagName)
                         || SemanticTags::isRenderedTextBlockElement(tagName)
                         || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();
@@ -451,61 +442,6 @@ namespace
         return attributes.join(QLatin1Char(' '));
     }
 
-    QString bodyFormatSourceProjectionFromNode(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagNode& node,
-        const QString& tagName)
-    {
-        const QString normalizedTagName = tagName.trimmed().toCaseFolded();
-        const QString attributes = serializeAttributes(document, node);
-        const QString openingTag = attributes.isEmpty()
-            ? QStringLiteral("<%1>").arg(normalizedTagName)
-            : QStringLiteral("<%1 %2>").arg(normalizedTagName, attributes);
-        return openingTag
-            + decodeInlineSourceFragment(IiXml::stringFromUtf8View(document.ValueView(node)))
-            + QStringLiteral("</%1>").arg(normalizedTagName);
-    }
-
-    QString plainTextFromStructuredNodeValue(
-        const iiXml::Parser::TagDocument& document,
-        const iiXml::Parser::TagNode& node)
-    {
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-            renderInlineSourceToPlainText(
-                decodeInlineSourceFragment(IiXml::stringFromUtf8View(document.ValueView(node)))));
-    }
-
-    QString sourceProjectionFromStructuredBodyBlockLine(const QString& blockLine)
-    {
-        const QString wrappedDocument = QStringLiteral("<contents id=\"projection\"><body>%1</body></contents>")
-            .arg(blockLine);
-        const iiXml::Parser::TagDocumentResult parsedDocument = parseBodyDocument(wrappedDocument);
-        if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed
-            || !parsedDocument.Document.has_value())
-        {
-            return decodeInlineSourceFragment(blockLine);
-        }
-
-        const iiXml::Parser::TagDocument& document = parsedDocument.Document.value();
-        const iiXml::Parser::TagNode* bodyNode = bodyNodeFromDocument(document);
-        if (bodyNode == nullptr || bodyNode->Children.empty())
-        {
-            return decodeInlineSourceFragment(blockLine);
-        }
-
-        const iiXml::Parser::TagNode& childNode = bodyNode->Children.front();
-        const QString tagName = nodeName(childNode);
-        if (SemanticTags::isCalloutTagName(tagName))
-        {
-            return bodyFormatSourceProjectionFromNode(document, childNode, QStringLiteral("callout"));
-        }
-        if (SemanticTags::isAgendaTagName(tagName))
-        {
-            return bodyFormatSourceProjectionFromNode(document, childNode, QStringLiteral("agenda"));
-        }
-        return decodeInlineSourceFragment(blockLine);
-    }
-
     QString serializeDirectBodyNodeToSource(const iiXml::Parser::TagDocument& document, const iiXml::Parser::TagNode& node)
     {
         const QString tagName = nodeName(node).trimmed();
@@ -539,16 +475,6 @@ namespace
                        : QStringLiteral("<resource %1 />").arg(attributes);
         }
 
-        if (SemanticTags::isCalloutTagName(tagName))
-        {
-            return bodyFormatSourceProjectionFromNode(document, node, QStringLiteral("callout"));
-        }
-
-        if (SemanticTags::isAgendaTagName(tagName))
-        {
-            return bodyFormatSourceProjectionFromNode(document, node, QStringLiteral("agenda"));
-        }
-
         const QString text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(IiXml::nodeText(document, &node));
         if (text.isEmpty())
         {
@@ -574,10 +500,6 @@ namespace
         static const QRegularExpression breakLinePattern(
             QStringLiteral(R"(^\s*<(?:break|hr)\b[^>]*?/?>\s*$)"),
             QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression structuredBodyBlockLinePattern(
-            QStringLiteral(R"(^\s*((?:<callout\b[^>]*>[\s\S]*</callout>|<callout\b[^>]*/\s*>|<agenda\b[^>]*>[\s\S]*</agenda>|<agenda\b[^>]*/\s*>))\s*$)"),
-            QRegularExpression::CaseInsensitiveOption);
-
         const QString normalizedDocumentText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyDocumentText);
         const QStringList documentLines = normalizedDocumentText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
         bool insideBody = false;
@@ -615,13 +537,6 @@ namespace
                 continue;
             }
 
-            QRegularExpressionMatch structuredBodyBlockMatch = structuredBodyBlockLinePattern.match(line);
-            if (structuredBodyBlockMatch.hasMatch())
-            {
-                rawLines.push_back(
-                    sourceProjectionFromStructuredBodyBlockLine(structuredBodyBlockMatch.captured(1).trimmed()));
-                continue;
-            }
         }
 
         if (!rawLines.isEmpty())
@@ -680,16 +595,6 @@ namespace
                 lines.push_back(QString());
                 continue;
             }
-            if (SemanticTags::isCalloutTagName(tagName))
-            {
-                lines.push_back(plainTextFromStructuredNodeValue(document, childNode));
-                continue;
-            }
-            if (SemanticTags::isAgendaTagName(tagName))
-            {
-                lines.push_back(plainTextFromStructuredNodeValue(document, childNode));
-                continue;
-            }
             lines.push_back(WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
                 renderInlineSourceToPlainText(IiXml::nodeText(document, &childNode))));
         }
@@ -738,97 +643,6 @@ namespace
             QStringLiteral(R"(^(?:</\s*break\s*>|<\s*break\s*/\s*>|<\s*hr\b[^>]*?/\s*>)$)"),
             QRegularExpression::CaseInsensitiveOption);
         return breakPattern.match(trimmedLine).hasMatch();
-    }
-
-    QString bodyFormatOpeningTag(QString rawOpeningTag, const QString& canonicalTagName)
-    {
-        rawOpeningTag = rawOpeningTag.trimmed();
-        if (rawOpeningTag.endsWith(QLatin1Char('>')))
-        {
-            rawOpeningTag.chop(1);
-        }
-
-        int cursor = 0;
-        if (cursor < rawOpeningTag.size() && rawOpeningTag.at(cursor) == QLatin1Char('<'))
-        {
-            ++cursor;
-        }
-        while (cursor < rawOpeningTag.size() && rawOpeningTag.at(cursor).isSpace())
-        {
-            ++cursor;
-        }
-        while (cursor < rawOpeningTag.size())
-        {
-            const QChar ch = rawOpeningTag.at(cursor);
-            if (!(ch.isLetterOrNumber()
-                  || ch == QLatin1Char('_')
-                  || ch == QLatin1Char('.')
-                  || ch == QLatin1Char(':')
-                  || ch == QLatin1Char('-')))
-            {
-                break;
-            }
-            ++cursor;
-        }
-
-        const QString attributes = rawOpeningTag.mid(cursor).trimmed();
-        return attributes.isEmpty()
-            ? QStringLiteral("<%1>").arg(canonicalTagName)
-            : QStringLiteral("<%1 %2>").arg(canonicalTagName, attributes);
-    }
-
-    QString bodyFormatCalloutBlockXml(const QString& trimmedLine)
-    {
-        static const QRegularExpression calloutBlockPattern(
-            QStringLiteral(R"(^(<\s*callout\b[^>]*>)([\s\S]*)</\s*callout\s*>$)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression selfClosingCalloutPattern(
-            QStringLiteral(R"(^(<\s*callout\b[^>]*)/\s*>$)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const QRegularExpressionMatch selfClosingMatch = selfClosingCalloutPattern.match(trimmedLine);
-        if (selfClosingMatch.hasMatch())
-        {
-            return bodyFormatOpeningTag(selfClosingMatch.captured(1), QStringLiteral("callout"))
-                + QStringLiteral("</callout>");
-        }
-
-        const QRegularExpressionMatch match = calloutBlockPattern.match(trimmedLine);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        return bodyFormatOpeningTag(match.captured(1), QStringLiteral("callout"))
-            + encodeInlineSourceFragment(match.captured(2))
-            + QStringLiteral("</callout>");
-    }
-
-    QString bodyFormatAgendaBlockXml(const QString& trimmedLine)
-    {
-        static const QRegularExpression agendaBlockPattern(
-            QStringLiteral(R"(^(<\s*agenda\b[^>]*>)([\s\S]*)</\s*agenda\s*>$)"),
-            QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression selfClosingAgendaPattern(
-            QStringLiteral(R"(^(<\s*agenda\b[^>]*)/\s*>$)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const QRegularExpressionMatch selfClosingMatch = selfClosingAgendaPattern.match(trimmedLine);
-        if (selfClosingMatch.hasMatch())
-        {
-            return bodyFormatOpeningTag(selfClosingMatch.captured(1), QStringLiteral("agenda"))
-                + QStringLiteral("</agenda>");
-        }
-
-        const QRegularExpressionMatch match = agendaBlockPattern.match(trimmedLine);
-        if (!match.hasMatch())
-        {
-            return {};
-        }
-
-        return bodyFormatOpeningTag(match.captured(1), QStringLiteral("agenda"))
-            + encodeInlineSourceFragment(match.captured(2))
-            + QStringLiteral("</agenda>");
     }
 
     QString serializeParagraphLine(const QString& line)
@@ -881,18 +695,6 @@ namespace WhatSon::NoteBodyPersistence
             if (isStandaloneBreakLine(trimmedLine))
             {
                 text += QStringLiteral("    <break />\n");
-                continue;
-            }
-            const QString calloutBlockXml = bodyFormatCalloutBlockXml(trimmedLine);
-            if (!calloutBlockXml.isEmpty())
-            {
-                text += QStringLiteral("    ") + calloutBlockXml + QLatin1Char('\n');
-                continue;
-            }
-            const QString agendaBlockXml = bodyFormatAgendaBlockXml(trimmedLine);
-            if (!agendaBlockXml.isEmpty())
-            {
-                text += QStringLiteral("    ") + agendaBlockXml + QLatin1Char('\n');
                 continue;
             }
             text += serializeParagraphLine(line);

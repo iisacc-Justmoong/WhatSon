@@ -126,14 +126,6 @@ QString canonicalRenderedTextBlockTagName(const QString& elementName)
 QString canonicalDocumentBlockTypeName(const QString& elementName)
 {
     const QString normalizedName = normalizedTagName(elementName);
-    if (normalizedName == QStringLiteral("agenda"))
-    {
-        return QStringLiteral("agenda");
-    }
-    if (normalizedName == QStringLiteral("callout"))
-    {
-        return QStringLiteral("callout");
-    }
     if (normalizedName == QStringLiteral("resource"))
     {
         return QStringLiteral("resource");
@@ -166,21 +158,6 @@ bool isResourceTagName(const QString& elementName)
 bool isWebLinkTagName(const QString& elementName)
 {
     return normalizedTagName(elementName) == QStringLiteral("weblink");
-}
-
-bool isAgendaTagName(const QString& elementName)
-{
-    return normalizedTagName(elementName) == QStringLiteral("agenda");
-}
-
-bool isTaskTagName(const QString& elementName)
-{
-    return normalizedTagName(elementName) == QStringLiteral("task");
-}
-
-bool isCalloutTagName(const QString& elementName)
-{
-    return normalizedTagName(elementName) == QStringLiteral("callout");
 }
 
 bool isSourceProjectionLineBreakTagName(const QString& elementName)
@@ -231,7 +208,11 @@ bool isExplicitDocumentBlockTypeName(const QString& typeName)
 
 bool isTransparentContainerTagName(const QString& elementName)
 {
-    return normalizedTagName(elementName) == QStringLiteral("event");
+    const QString normalizedName = normalizedTagName(elementName);
+    return normalizedName == QStringLiteral("event")
+        || normalizedName == QStringLiteral("callout")
+        || normalizedName == QStringLiteral("agenda")
+        || normalizedName == QStringLiteral("task");
 }
 
 bool isSourceSemanticPassThroughTagName(const QString& elementName)

@@ -574,14 +574,17 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_backspaceDeletesPreviousRes
     QVERIFY(inlineEditorSource.contains(QStringLiteral("tagManagementKeyPressHandler")));
 }
 
-void WhatSonCppRegressionTests::qmlStructuredEditors_deletesEmptyCalloutWithBackspace()
+void WhatSonCppRegressionTests::qmlStructuredEditors_leaveCalloutAsPlainPairedTag()
 {
     const QString sessionSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
     const QString inlineEditorSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
+    const QString registrarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
 
-    QVERIFY(sessionSource.contains(QStringLiteral("kEmptyCalloutPattern")));
+    QVERIFY(!sessionSource.contains(QStringLiteral("kEmptyCalloutPattern")));
+    QVERIFY(!registrarSource.contains(QStringLiteral("ContentsCalloutBackend")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("Qt.Key_Backspace")));
 }
 

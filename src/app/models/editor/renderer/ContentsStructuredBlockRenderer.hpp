@@ -10,19 +10,13 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
-    Q_PROPERTY(QVariantList renderedAgendas READ renderedAgendas NOTIFY renderedBlocksChanged)
-    Q_PROPERTY(QVariantList renderedCallouts READ renderedCallouts NOTIFY renderedBlocksChanged)
     Q_PROPERTY(QVariantList renderedDocumentBlocks READ renderedDocumentBlocks NOTIFY renderedBlocksChanged)
-    Q_PROPERTY(QVariantMap agendaParseVerification READ agendaParseVerification NOTIFY agendaParseVerificationChanged)
-    Q_PROPERTY(QVariantMap calloutParseVerification READ calloutParseVerification NOTIFY calloutParseVerificationChanged)
     Q_PROPERTY(QVariantMap structuredParseVerification READ structuredParseVerification NOTIFY structuredParseVerificationChanged)
     Q_PROPERTY(QString correctedSourceText READ correctedSourceText NOTIFY correctedSourceTextChanged)
     Q_PROPERTY(bool correctionSuggested READ correctionSuggested NOTIFY correctionSuggestedChanged)
     Q_PROPERTY(bool backgroundRefreshEnabled READ backgroundRefreshEnabled WRITE setBackgroundRefreshEnabled NOTIFY backgroundRefreshEnabledChanged)
     Q_PROPERTY(bool renderPending READ renderPending NOTIFY renderPendingChanged)
     Q_PROPERTY(QVariantMap lastRenderProfile READ lastRenderProfile NOTIFY lastRenderProfileChanged)
-    Q_PROPERTY(int agendaCount READ agendaCount NOTIFY renderedBlocksChanged)
-    Q_PROPERTY(int calloutCount READ calloutCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasRenderedBlocks READ hasRenderedBlocks NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasNonResourceRenderedBlocks READ hasNonResourceRenderedBlocks NOTIFY renderedBlocksChanged)
 
@@ -33,11 +27,7 @@ public:
     QString sourceText() const;
     void setSourceText(const QString& sourceText);
 
-    QVariantList renderedAgendas() const;
-    QVariantList renderedCallouts() const;
     QVariantList renderedDocumentBlocks() const;
-    QVariantMap agendaParseVerification() const;
-    QVariantMap calloutParseVerification() const;
     QVariantMap structuredParseVerification() const;
     QString correctedSourceText() const;
     bool correctionSuggested() const noexcept;
@@ -45,8 +35,6 @@ public:
     void setBackgroundRefreshEnabled(bool enabled);
     bool renderPending() const noexcept;
     QVariantMap lastRenderProfile() const;
-    int agendaCount() const noexcept;
-    int calloutCount() const noexcept;
     bool hasRenderedBlocks() const noexcept;
     bool hasNonResourceRenderedBlocks() const noexcept;
 
@@ -56,16 +44,12 @@ public slots:
 signals:
     void sourceTextChanged();
     void renderedBlocksChanged();
-    void agendaParseVerificationChanged();
-    void calloutParseVerificationChanged();
     void structuredParseVerificationChanged();
     void correctedSourceTextChanged();
     void correctionSuggestedChanged();
     void backgroundRefreshEnabledChanged();
     void renderPendingChanged();
     void lastRenderProfileChanged();
-    void agendaParseVerificationReported(const QVariantMap& verification);
-    void calloutParseVerificationReported(const QVariantMap& verification);
     void structuredParseVerificationReported(const QVariantMap& verification);
     void structuredCorrectionSuggested(
         const QString& sourceText,
@@ -81,8 +65,6 @@ private:
     void handleAsyncRenderFinished(const RenderResult& result);
     void publishPlaceholderDocumentBlocks();
     void refreshRenderedBlocks();
-    void updateAgendaParseVerification(const QVariantMap& verification);
-    void updateCalloutParseVerification(const QVariantMap& verification);
     void updateStructuredParseVerification(const QVariantMap& verification);
     void updateCorrectedSourceText(const QString& correctedSourceText);
     void updateRenderPending(bool pending);
@@ -90,11 +72,7 @@ private:
     bool shouldRenderInBackground() const noexcept;
 
     QString m_sourceText;
-    QVariantList m_renderedAgendas;
-    QVariantList m_renderedCallouts;
     QVariantList m_renderedDocumentBlocks;
-    QVariantMap m_agendaParseVerification;
-    QVariantMap m_calloutParseVerification;
     QVariantMap m_structuredParseVerification;
     QString m_correctedSourceText;
     QVariantMap m_lastRenderProfile;

@@ -17,8 +17,8 @@ Owns editor-body inline formatting logic.
 ## Boundary
 - This directory owns read-side rendering for body text formatting such as bold, italic, underline, strikethrough, and
   highlight.
-- Formatting writes are editor tag insertions and live under `src/app/models/editor/tags` with callout, agenda, break,
-  and resource tag insertion helpers.
+- Formatting writes are editor tag insertions and live under `src/app/models/editor/tags` with callout/agenda paired
+  tag insertion plus break and resource tag helpers.
 - Paper and print geometry remain in `src/app/models/display/paper` and `src/app/models/display/paper/print`.
 - The formatter may derive presentation from RAW source, but it must not own persisted formatting writes.
 

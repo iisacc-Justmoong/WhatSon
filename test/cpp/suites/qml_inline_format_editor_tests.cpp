@@ -2194,8 +2194,9 @@ Item {
 
     QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
 
-    QTRY_VERIFY(rootObject->property("committedText").toString().startsWith(QStringLiteral("Intro\n<agenda date=\"")));
-    QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("Intro<agenda><task></task></agenda>"));
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Meta agenda"));
@@ -2214,9 +2215,8 @@ Item {
     QTest::keyClick(&window, Qt::Key_A, Qt::MetaModifier | Qt::AltModifier);
 
     QTRY_VERIFY_WITH_TIMEOUT(
-        rootObject->property("committedText").toString().startsWith(QStringLiteral("Meta agenda\n<agenda date=\"")),
+        rootObject->property("committedText").toString() == QStringLiteral("Meta agenda<agenda><task></task></agenda>"),
         5000);
-    QVERIFY(rootObject->property("committedText").toString().contains(QStringLiteral("<task done=\"false\"> </task></agenda>")));
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Glow text"));

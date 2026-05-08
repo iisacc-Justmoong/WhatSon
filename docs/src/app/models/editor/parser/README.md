@@ -20,10 +20,10 @@
 - `ContentsWsnBodyBlockParser` is the new editor-side read parser for `.wsnbody`.
 - It now prefers an `iiXml::Parser::TagParser` document tree for supported explicit body tags, then emits one ordered
   `renderedDocumentBlocks` list for the structured QML editor host.
-- The older token scan is retained only as a recovery lane for transient malformed edit states that cannot yet produce an
-  iiXml tree.
-- Agenda/callout payloads are now also derived in that same pass instead of being reparsed by independent read-side
-  backends before the renderer can merge them.
+- The older token scan was removed; transient malformed edit states that cannot yet produce an iiXml tree remain
+  ordinary RAW prose until the next parseable turn.
+- Agenda/task and callout wrappers are no longer parser blocks and stay in the surrounding prose source as transparent
+  paired tags.
 - Explicit semantic text blocks now expose:
   - wrapper geometry through `blockSourceStart` / `blockSourceEnd` plus open/close-tag offsets
   - editable content geometry through `sourceStart` / `sourceEnd` / `sourceText`

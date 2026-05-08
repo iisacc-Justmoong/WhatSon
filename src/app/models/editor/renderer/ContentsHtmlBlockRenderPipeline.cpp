@@ -85,9 +85,7 @@ namespace
 
     QString renderDelegateTypeForBlock(const QString& blockType)
     {
-        if (blockType == QStringLiteral("agenda")
-            || blockType == QStringLiteral("callout")
-            || blockType == QStringLiteral("resource")
+        if (blockType == QStringLiteral("resource")
             || blockType == QStringLiteral("break"))
         {
             return blockType;
@@ -159,33 +157,6 @@ namespace
         return textFragmentParagraphFlowHtml(blockType, sourceText);
     }
 
-    QString renderAgendaBlockHtml(const QVariantMap& block)
-    {
-        const QVariantList tasks = block.value(QStringLiteral("tasks")).toList();
-        QStringList renderedTasks;
-        renderedTasks.reserve(tasks.size());
-
-        for (const QVariant& taskValue : tasks)
-        {
-            const QVariantMap task = taskValue.toMap();
-            renderedTasks.push_back(textFragmentHtml(task.value(QStringLiteral("text")).toString()));
-        }
-
-        if (renderedTasks.isEmpty())
-        {
-            renderedTasks.push_back(textFragmentHtml(block.value(QStringLiteral("text")).toString()));
-        }
-
-        return QStringLiteral("<div style=\"margin:0;padding:27px 16px 8px 39px;\">%1</div>")
-            .arg(renderedTasks.join(QStringLiteral("<br/>")));
-    }
-
-    QString renderCalloutBlockHtml(const QVariantMap& block)
-    {
-        return QStringLiteral("<div style=\"margin:0;padding:4px 4px 4px 17px;\">%1</div>")
-            .arg(textFragmentHtml(block.value(QStringLiteral("text")).toString()));
-    }
-
     QString renderResourceBlockHtml(const QVariantMap&)
     {
         QStringList placeholderParagraphs;
@@ -236,15 +207,7 @@ namespace
 
         QString htmlFragment;
         bool overlayVisible = false;
-        if (renderDelegateType == QStringLiteral("agenda"))
-        {
-            htmlFragment = renderAgendaBlockHtml(block);
-        }
-        else if (renderDelegateType == QStringLiteral("callout"))
-        {
-            htmlFragment = renderCalloutBlockHtml(block);
-        }
-        else if (renderDelegateType == QStringLiteral("resource"))
+        if (renderDelegateType == QStringLiteral("resource"))
         {
             htmlFragment = renderResourceBlockHtml(block);
         }

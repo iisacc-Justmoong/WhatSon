@@ -20,14 +20,15 @@ Implements common RAW tag insertion payload construction for editor commands.
   parser/render projection contract and prevents partially inserted tags from becoming visible editor text.
 - A non-empty selection such as `Alpha` with `bold` becomes `<bold>Alpha</bold>`.
 - A collapsed cursor inserts an empty pair such as `<bold></bold>` and returns a cursor position between the tags.
-- A collapsed body-tag command inserts the canonical generated source, for example `<callout> </callout>` or
-  `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>`.
+- Collapsed callout and agenda commands insert plain paired tags at the cursor:
+  `<callout></callout>` and `<agenda><task></task></agenda>`.
+- Collapsed generated body-tag commands are limited to break insertion (`</break>`).
 - The returned payload carries `nextSourceText`, `selectionStart`, `selectionEnd`, `cursorPosition`, `tagName`,
   `insertedSourceText`, and optional wrapped/replacement text fields.
 
 ## Boundary
 
-The controller treats formatting tags and body tags as the same RAW insertion category. Specialized body-tag helpers
-may still generate richer canonical source snippets, but they must feed the same next-source mutation path. Inline
+The controller treats formatting tags and transparent paired tags as the same RAW insertion category. Specialized break
+helpers may still generate canonical source snippets, but they must feed the same next-source mutation path. Inline
 formatting may inspect existing RAW tag tokens only to preserve balanced source boundaries; it must not serialize the
 rendered RichText/iiHtmlBlock projection back into `.wsnbody`.

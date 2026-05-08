@@ -13,10 +13,10 @@ Declares the editor's common RAW tag insertion controller.
 - `tagNameForBodyShortcutKey(...)` maps explicit tag-management shortcut keys to canonical body tag names such as
   `callout`, `agenda`, and `break`.
 - `buildTagInsertionPayload(...)` is the preferred entry point. It emits paired formatting/body wraps for selected
-  ranges and canonical body-tag snippets for collapsed cursor insertions.
+  ranges and canonical generated snippets only for collapsed break insertion.
 - `buildWrappedTagInsertionPayload(...)` wraps the selected source range with a paired tag such as
-  `<bold>...</bold>` or inserts an empty paired tag at a collapsed cursor. Generated body tags still use the canonical
-  body snippet path at collapsed cursors.
+  `<bold>...</bold>`, `<callout>...</callout>`, or `<agenda><task>...</task></agenda>`, or inserts an empty paired tag
+  at a collapsed cursor. Generated body tags still use the canonical break snippet path at collapsed cursors.
 - `normalizedTagName(...)` keeps canonical names for both inline formatting tags and body tags.
 
 ## Boundary

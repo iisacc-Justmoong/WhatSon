@@ -13,11 +13,6 @@ namespace
         return value.typeId() == QMetaType::QVariantMap ? value.toMap() : QVariantMap{};
     }
 
-    QVariantList normalizedTasks(const QVariantMap& blockEntry)
-    {
-        const QVariant tasksValue = blockEntry.value(QStringLiteral("tasks"));
-        return tasksValue.typeId() == QMetaType::QVariantList ? tasksValue.toList() : QVariantList{};
-    }
 }
 
 ContentsStructuredDocumentFocusPolicy::ContentsStructuredDocumentFocusPolicy(QObject* parent)
@@ -53,18 +48,6 @@ int ContentsStructuredDocumentFocusPolicy::focusTargetBlockIndex(
     if (explicitTargetBlockIndex >= 0 && explicitTargetBlockIndex < blocks.size())
     {
         return explicitTargetBlockIndex;
-    }
-
-    const int taskOpenTagStart = normalizedFocusTaskOpenTagStart(request);
-    if (taskOpenTagStart >= 0)
-    {
-        for (int index = 0; index < blocks.size(); ++index)
-        {
-            if (blockContainsTaskOpenTagStart(normalizedMap(blocks.at(index)), taskOpenTagStart))
-            {
-                return index;
-            }
-        }
     }
 
     const int sourceOffset = normalizedFocusSourceOffset(request);
@@ -257,14 +240,6 @@ QVariantList ContentsStructuredDocumentFocusPolicy::normalizedBlocks(
                                          : QVariantList{};
 }
 
-int ContentsStructuredDocumentFocusPolicy::normalizedFocusTaskOpenTagStart(
-    const QVariantMap& request) const
-{
-    bool ok = false;
-    const int value = request.value(QStringLiteral("taskOpenTagStart")).toInt(&ok);
-    return ok ? value : -1;
-}
-
 int ContentsStructuredDocumentFocusPolicy::normalizedFocusTargetBlockIndex(
     const QVariantMap& request) const
 {
@@ -297,30 +272,6 @@ bool ContentsStructuredDocumentFocusPolicy::requestPrefersNearestTextBlock(
     const QVariantMap& request) const
 {
     return request.value(QStringLiteral("preferNearestTextBlock")).toBool();
-}
-
-bool ContentsStructuredDocumentFocusPolicy::blockContainsTaskOpenTagStart(
-    const QVariantMap& blockEntry,
-    const int taskOpenTagStart) const
-{
-    if (taskOpenTagStart < 0)
-    {
-        return false;
-    }
-
-    const QVariantList tasks = normalizedTasks(blockEntry);
-    for (const QVariant& taskValue : tasks)
-    {
-        const QVariantMap taskData = normalizedMap(taskValue);
-        if (m_collectionPolicy->floorNumberOrFallback(
-                taskData.value(QStringLiteral("openTagStart")),
-                -1)
-            == taskOpenTagStart)
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool ContentsStructuredDocumentFocusPolicy::blockUsesExclusiveTrailingBoundary(

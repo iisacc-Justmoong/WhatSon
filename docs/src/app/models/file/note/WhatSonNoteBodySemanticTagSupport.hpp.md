@@ -14,15 +14,17 @@ the same tag-classification rules.
 - Distinguishes source-only passthrough tags that must survive note-body serialization without being escaped:
   - `next`
   - `event`
+  - `callout`
   - `title`
   - `subTitle` / `subtitle`
   - `eventTitle`
   - `eventDescription`
 - Classifies body-format document blocks shared by persistence, parser, and renderer:
-  - `agenda` / `task`
-  - `callout`
   - `resource`
   - `break` / `hr`
+- Classifies transparent paired wrappers shared by persistence and read-side renderers:
+  - `agenda` / `task`
+  - `callout`
 - Exposes semantic HTML open/close helpers so read-side HTML projections do not hardcode their own heading styling.
 
 ## Why It Exists

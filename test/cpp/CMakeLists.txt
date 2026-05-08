@@ -24,8 +24,6 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/whatson_cpp_regression_test_support.cpp"
         ${WHATSON_CPP_REGRESSION_SUITE_SOURCES}
         "${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsAgendaBackend.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/models/editor/tags/ContentsCalloutBackend.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsA4PaperBackground.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/display/paper/ContentsPaperSelection.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedNoteSensorSupport.cpp"

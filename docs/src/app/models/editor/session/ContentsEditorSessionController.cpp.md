@@ -5,13 +5,12 @@
   lose continuity even though the behavior moved from QML to C++.
 - `ContentsEditorSelectionBridge` is consumed as a typed collaborator rather than through loosely-typed JavaScript
   property checks. That removes one layer of QML `undefined`-style branching from the save path.
-- Creation-time collaborator wiring is now traced explicitly for both `selectionBridge` and `agendaBackend`, including
-  the collaborator pointer, runtime class name, and QML `objectName`, so editor bootstrap logs show which concrete
-  objects were attached before the first note-body mount attempt.
-- Agenda placeholder normalization stays delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`, but the
-  decision of when that normalization applies is now controller-owned.
-- Empty `<task>` / `<callout>` anchor normalization is now compiled regex work in C++, keeping save/model-sync text
-  normalization off the QML hot path.
+- Creation-time collaborator wiring is traced for `selectionBridge`, including the collaborator pointer, runtime class
+  name, and QML `objectName`, so editor bootstrap logs show which concrete object was attached before the first
+  note-body mount attempt.
+- Agenda/task and callout source is no longer normalized by the session. `<agenda><task>...</task></agenda>` and
+  `<callout>...</callout>` are ordinary transparent paired tags, so save/model-sync payloads preserve the authored RAW
+  wrappers exactly.
 - Same-note model sync now keeps honoring `localEditorAuthority` even after the typing-idle window has elapsed, so a
   delayed RAW refresh cannot reclaim editor-owned text merely because the user paused typing for a moment.
 - The session controller now also tracks `editorBoundNoteDirectoryPath`.

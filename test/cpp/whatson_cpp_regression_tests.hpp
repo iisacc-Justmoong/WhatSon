@@ -46,8 +46,6 @@
 #include "app/models/editor/persistence/ContentsEditorSaveCoordinator.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
-#include "app/models/editor/tags/ContentsAgendaBackend.hpp"
-#include "app/models/editor/tags/ContentsCalloutBackend.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
@@ -1171,7 +1169,6 @@ private slots:
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
     void editorTagsBoundary_groupsEditorTagInsertionResponsibilities();
-    void contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor();
     void editorTagInsertionController_buildsBodyTagInsertionPayloads();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
@@ -1242,7 +1239,7 @@ private slots:
     void qmlStructuredEditors_pressRightClickRequestsContextMenuAndFocusedBodyTagShortcuts();
     void qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick();
     void qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock();
-    void qmlStructuredEditors_deletesEmptyCalloutWithBackspace();
+    void qmlStructuredEditors_leaveCalloutAsPlainPairedTag();
     void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();
     void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();
     void qmlEditorViewDirectory_containsOnlyViewSurfaceFiles();
@@ -1296,7 +1293,7 @@ private slots:
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
-    void noteBodyPersistence_persistsCalloutAndAgendaAsDirectBodyFormatBlocks();
+    void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();

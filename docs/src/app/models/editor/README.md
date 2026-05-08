@@ -25,8 +25,7 @@
 
 ## Current Notes
 - `parser/ContentsWsnBodyBlockParser.*` is the dedicated `.wsnbody` block-parser layer. It prefers an iiXml document
-  tree for top-level semantic body tags, emits one ordered `renderedDocumentBlocks` projection, and keeps the legacy
-  `renderedAgendas` / `renderedCallouts` side payloads only as compatibility views over that same parse pass.
+  tree for top-level semantic body tags and emits one ordered `renderedDocumentBlocks` projection.
 - `renderer/ContentsHtmlBlockRenderPipeline.*` is the explicit RAW editor render-pipeline stage that sits between
   parser output and final RichText/QML consumption.
 - `projection/ContentsEditorPresentationProjection.*` republishes renderer output to QML, including `htmlTokens` and
@@ -38,8 +37,9 @@
 - `format/ContentsPlainTextSourceMutator.*` owns plain-text RAW span replacement so ordinary typing no longer calls a
   renderer object to rewrite source.
 - `tags/ContentsEditorTagInsertionController.*` owns RAW tag insertion payloads for formatting tags such as `<bold>`
-  and `<italic>`, body-format tags such as `<agenda>`, `<callout>`, and `<break>`, and selected-range body tag
-  wrapping. `.wsnbody` direct body-block serialization for those tags remains owned by `src/app/models/file/note`.
+  and `<italic>`, transparent paired tags such as `<callout>` and `<agenda><task>...</task></agenda>`, break/resource
+  tag insertion, and selected-range tag wrapping. `.wsnbody` direct body-block serialization for body-level
+  resource/break tags remains owned by `src/app/models/file/note`.
 - `structure/ContentsStructuredDocument*` owns the structured document host, collection policy, focus policy, mutation
   policy, and blocks model used by `ContentsStructuredDocumentFlow.qml`.
 - `minimap/ContentsEditorVisualLineMetrics.*` owns minimap-facing visual-line row normalization from measured

@@ -24,8 +24,8 @@
 - The implementation now also builds a logical-text-to-source offset table:
   - inline tags are treated as zero-width source tokens
   - `<br>`, canonical `</break>`, and legacy `<hr>` each count as one logical line-break character
-  - inside `<agenda>`, each later `<task>` start now also emits one synthetic logical line-break step before that
-    task body, matching the plain-text projection produced by `NoteBodyPersistence`
+  - `<agenda>` and `<task>` are transparent paired tags, so they do not emit synthetic logical line breaks or card
+    boundaries
   - `<resource ... />` now reserves exactly one logical line, matching the structured block parser and fallback editor
     projection instead of expanding into a multi-line placeholder span
   - `<tag>` emits one logical `#` glyph so tag markers still occupy cursor space
@@ -68,9 +68,9 @@
   toolchains.
 - When source contains canonical `</break>` divider tags, the offset cache must still expose one logical
   character step per divider so selection-to-source splices stay aligned.
-- When source contains multiple `<task>` children inside one `<agenda>`, the offset cache must expose one
-  logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
-  intended task instead of drifting to surrounding text.
+- When source contains multiple `<task>` children inside one `<agenda>`, the offset cache must treat task boundaries
+  the same way it treats ordinary zero-width paired tags, preserving source splices without creating synthetic visible
+  rows.
 - When source contains `<resource ... />`, `logicalText` and the internal offset cache must reserve one atomic
   U+FFFC object-replacement placeholder for the authored resource tag. The placeholder gives cursor, selection, gutter,
   and mutation mapping one logical element instead of a zero-width blank line or a height-derived run of fake text.

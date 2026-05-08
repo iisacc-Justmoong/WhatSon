@@ -12,9 +12,6 @@ namespace WhatSon::NoteBodySemanticTagSupport
     bool isBreakDividerTagName(const QString& elementName);
     bool isResourceTagName(const QString& elementName);
     bool isWebLinkTagName(const QString& elementName);
-    bool isAgendaTagName(const QString& elementName);
-    bool isTaskTagName(const QString& elementName);
-    bool isCalloutTagName(const QString& elementName);
 
     bool isSourceProjectionLineBreakTagName(const QString& elementName);
     bool isRenderedLineBreakTagName(const QString& elementName);

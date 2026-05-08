@@ -376,8 +376,6 @@ QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
     QString logicalText;
     logicalText.reserve(normalizedText.size());
 
-    bool insideAgenda = false;
-    int agendaTaskCount = 0;
     int sourceOffset = 0;
     while (sourceOffset < normalizedText.size())
     {
@@ -390,31 +388,6 @@ QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
                 const QStringView tagToken(normalizedText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
                 const QString normalizedTagName = normalizedHtmlTagName(tagToken);
                 const bool closingTag = isClosingHtmlTagToken(tagToken);
-
-                if (normalizedTagName == QStringLiteral("agenda"))
-                {
-                    insideAgenda = !closingTag;
-                    if (!insideAgenda)
-                    {
-                        agendaTaskCount = 0;
-                    }
-                    sourceOffset = tagEnd + 1;
-                    continue;
-                }
-
-                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
-                {
-                    if (!closingTag)
-                    {
-                        if (agendaTaskCount > 0)
-                        {
-                            logicalText += QLatin1Char('\n');
-                        }
-                        ++agendaTaskCount;
-                    }
-                    sourceOffset = tagEnd + 1;
-                    continue;
-                }
 
                 if (normalizedTagName == QStringLiteral("resource"))
                 {
@@ -486,8 +459,6 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
     offsets.reserve(safeLogicalTextLength + 1);
     offsets.push_back(0);
 
-    bool insideAgenda = false;
-    int agendaTaskCount = 0;
     int logicalOffset = 0;
     int sourceOffset = 0;
     while (sourceOffset < normalizedText.size() && logicalOffset < safeLogicalTextLength)
@@ -501,35 +472,6 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
                 const QStringView tagToken(normalizedText.constData() + sourceOffset, tagEnd - sourceOffset + 1);
                 const QString normalizedTagName = normalizedHtmlTagName(tagToken);
                 const bool closingTag = isClosingHtmlTagToken(tagToken);
-
-                if (normalizedTagName == QStringLiteral("agenda"))
-                {
-                    insideAgenda = !closingTag;
-                    if (!insideAgenda)
-                    {
-                        agendaTaskCount = 0;
-                    }
-                    sourceOffset = tagEnd + 1;
-                    continue;
-                }
-
-                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
-                {
-                    if (!closingTag)
-                    {
-                        if (agendaTaskCount > 0 && logicalOffset < safeLogicalTextLength)
-                        {
-                            ++logicalOffset;
-                            offsets.push_back(
-                                advanceSourceOffsetPastClosingInlineBoundaryTags(
-                                    normalizedText,
-                                    tagEnd + 1));
-                        }
-                        ++agendaTaskCount;
-                    }
-                    sourceOffset = tagEnd + 1;
-                    continue;
-                }
 
                 if (normalizedTagName == QStringLiteral("resource"))
                 {
@@ -616,8 +558,6 @@ int ContentsLogicalTextBridge::logicalOffsetForSourceOffsetInText(const QString&
     const int boundedSourceOffset =
         std::clamp(sourceOffset, 0, boundedQStringSize(normalizedText));
 
-    bool insideAgenda = false;
-    int agendaTaskCount = 0;
     int logicalOffset = 0;
     int cursor = 0;
     while (cursor < normalizedText.size() && cursor < boundedSourceOffset)
@@ -636,31 +576,6 @@ int ContentsLogicalTextBridge::logicalOffsetForSourceOffsetInText(const QString&
                 const QStringView tagToken(normalizedText.constData() + cursor, tagEnd - cursor + 1);
                 const QString normalizedTagName = normalizedHtmlTagName(tagToken);
                 const bool closingTag = isClosingHtmlTagToken(tagToken);
-
-                if (normalizedTagName == QStringLiteral("agenda"))
-                {
-                    insideAgenda = !closingTag;
-                    if (!insideAgenda)
-                    {
-                        agendaTaskCount = 0;
-                    }
-                    cursor = tagEnd + 1;
-                    continue;
-                }
-
-                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
-                {
-                    if (!closingTag)
-                    {
-                        if (agendaTaskCount > 0)
-                        {
-                            ++logicalOffset;
-                        }
-                        ++agendaTaskCount;
-                    }
-                    cursor = tagEnd + 1;
-                    continue;
-                }
 
                 if (normalizedTagName == QStringLiteral("resource"))
                 {

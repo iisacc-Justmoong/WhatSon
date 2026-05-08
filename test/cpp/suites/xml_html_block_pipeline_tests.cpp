@@ -1,6 +1,5 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/editor/parser/ContentsWsnBodyBlockParser.hpp"
 #include "app/models/editor/renderer/ContentsHtmlBlockRenderPipeline.hpp"
 
 void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects()
@@ -29,21 +28,22 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
     QVERIFY(pipelineSource.contains(QStringLiteral("htmlBlockObjectSource")));
     QVERIFY(pipelineSource.contains(QStringLiteral("htmlBlockCount")));
 
-    const ContentsWsnBodyBlockParser parser;
-    const ContentsWsnBodyBlockParser::ParseResult malformedResult = parser.parse(
-        QStringLiteral("<callout>Open callout\n<paragraph>Sibling block</paragraph>"));
-    QVERIFY(malformedResult.renderedCallouts.isEmpty());
-
     const ContentsHtmlBlockRenderPipeline pipeline;
     const ContentsHtmlBlockRenderPipeline::RenderResult result = pipeline.renderEditorDocument(
         QStringLiteral(
             "<paragraph>Alpha</paragraph>\n"
             "<resource type=\"image\" path=\"cover.png\" />\n"
             "<callout>Beta</callout>\n"
+            "<agenda><task>Gamma</task></agenda>\n"
             "</break>"));
 
     QVERIFY(result.normalizedHtmlBlocks.size() >= result.htmlTokens.size());
     QVERIFY(result.normalizedHtmlBlocks.size() >= 4);
+    QVERIFY(result.documentHtml.contains(QStringLiteral("Beta")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("Gamma")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<callout")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<agenda")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("<task")));
     for (const QVariant& blockValue : result.normalizedHtmlBlocks)
     {
         const QVariantMap block = blockValue.toMap();
@@ -52,6 +52,8 @@ void WhatSonCppRegressionTests::editorRendererPipeline_routesIiXmlTreeThroughIiH
         QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
         QVERIFY(block.value(QStringLiteral("htmlBlockIndex")).toInt() >= 0);
         QVERIFY(block.value(QStringLiteral("htmlTokenStartIndex")).toInt() >= 0);
+        QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("callout"));
+        QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("agenda"));
     }
 }
 

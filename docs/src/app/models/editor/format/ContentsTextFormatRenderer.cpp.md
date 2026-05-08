@@ -41,7 +41,7 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Parser-owned semantic text blocks also rematerialize embedded newlines as paragraph-flow HTML on the live editor
   surface. An Enter inside an existing `<paragraph>` therefore creates a real visible slot, and an empty inserted line
   is backed by `&nbsp;` so following body content is pushed down instead of only moving the projected cursor.
-- Single structural line breaks that only separate a proprietary block (`resource`, `agenda`, `callout`, `break`) from
+- Single structural line breaks that only separate a proprietary block (`resource`, `break`) from
   the next body fragment are consumed as block boundaries rather than re-rendered as extra blank paragraphs.
 - The preview path still recognizes markdown-style block prefixes without rewriting the stored source text:
     - unordered list markers (`- ` / `* ` / `+ `) render as bullet-list lines
@@ -76,24 +76,16 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   persistence:
   - `<next/>` renders as a real line break instead of literal tag text
   - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text spans
-  - `<event>` becomes a transparent wrapper in read-side HTML instead of painting literal open/close tags
+  - `<event>`, `<callout>`, `<agenda>`, and `<task>` become transparent wrappers in read-side HTML instead of painting
+    literal open/close tags
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
   Instead it emits a blank editor paragraph for the resource slot and preserves the parser-owned resource metadata on
   the structured document block stream. The editor host renders the actual media frame through structured
   `resourceVisualBlocks`, so the HTML string is not rewritten with resource-frame markup.
-- The live editor surface now also projects proprietary structured blocks into editor-owned RichText flow instead of
-  treating them as zero-height skipped markup:
-  - `<agenda ...><task ...>...</task>...</agenda>` emits one padded editor block that contains only task body text,
-    joined with synthetic `<br/>` separators between tasks
-  - `<callout>...</callout>` emits one padded editor block that contains the authored callout body text
-  - those blocks intentionally do not emit editable header/date/checkbox glyphs; the host QML card chrome remains
-    responsible for non-source visuals, while the renderer owns the text-flow slot that the cursor and typing system
-    use
-  - empty task/callout anchors are preserved as `&nbsp;`-backed editable placeholders so blank cards stay cursor-
-    reachable immediately after insertion
-- Proprietary `<task ...>` wrapper tags still stay out of the editor text flow as raw literal markup.
+- Agenda/task and callout are not structured blocks in this renderer; their wrapper tags are transparent and their body
+  text flows with the surrounding paragraph.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
   Legacy tags that are part of the shared semantic registry no longer fall into that unsupported bucket.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
@@ -108,8 +100,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     editor-surface refresh instead of collapsing back to zero-width HTML spacing
   - repeated interior spaces alternate plain spaces and `&nbsp;`, keeping the authored gap width without forcing every
     word separator into a non-breaking span
-  - the same whitespace policy is reused by markdown preview and structured block literal rendering, so callout/agenda
-    lines do not disagree with plain paragraph lines about how inserted indentation should look
+  - the same whitespace policy is reused by markdown preview and structured block literal rendering, so resource/break
+    boundaries do not disagree with plain paragraph lines about how inserted indentation should look
 - Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
   - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:900;">`, etc.)
   - preserves non-style tags such as `<resource ...>` unchanged
@@ -165,10 +157,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   presentation styling as an already-applied shortcut format.
 - A stored `</break>` token must render as a visible divider line (not literal text) and still consume one logical
   visible slot for selection/cursor mapping helpers.
-- A stored `<agenda>/<task>` block must reserve real editor text-flow height at the authored location, and task body
-  text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
-- A stored `<callout>...</callout>` block must reserve real editor text-flow height at the authored location, and the
-  callout body text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
+- Stored `<agenda><task>...</task></agenda>` and `<callout>...</callout>` wrappers must not reserve special editor
+  blocks; only their inner text participates in the surrounding paragraph stream.
 - A stored `<resource ... />` tag must likewise reserve a stable inline editor slot, and image resources must render
   inside that same RichText body flow instead of depending on a second overlay-only card layer.
 - A stored legacy semantic block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or `<next/>`
@@ -190,6 +180,5 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - The carry-aware legacy document composer must render buffered prose through the same SourceEditing inline-tag
   renderer used by the block pipeline, so a fallback turn cannot expose stored `<bold>` / `<italic>` tags as literal
   text.
-- A source such as `<callout/>After <bold>bold</bold>` must render an empty callout block followed by ordinary text in
-  both `editorSurfaceHtml` and `renderedHtml`; the self-closing callout must not swallow the trailing text just
-  because the final renderer revisited the uncorrected RAW snapshot.
+- A source such as `<callout>After <bold>bold</bold></callout>` must render the inner text through the ordinary
+  inline-tag path; callout does not create a padded editor block.

@@ -5,12 +5,13 @@ Owns editor tag-management helpers.
 
 ## Editor tag insertion
 - Inline formatting tags such as `<bold>`, `<italic>`, `<underline>`, `<highlight>`, and their aliases.
-- `<agenda>` / `<task>` parsing, task toggles, and agenda Enter behavior.
-- `<callout>` parsing, selected-range wrapping, Shift+Enter body line breaks, and plain-Enter callout exit behavior.
+- `<agenda><task>...</task></agenda>` and `<callout>...</callout>` are plain transparent paired tags. Insertion only
+  creates the paired RAW wrappers or wraps the selected RAW range, and Enter/cursor movement remain ordinary
+  text-editor behavior.
 - `<break>` canonicalization and structured verification.
 - `<resource ... />` RAW source insertion and canonical resource-tag text generation.
 - `ContentsEditorTagInsertionController` builds the common next-source RAW tag insertion payloads for inline
-  formatting, generated agenda/callout/break insertion, and selected-range body tag wrapping. Formatting commands use
+  formatting, generated break insertion, and selected-range tag wrapping. Formatting commands use
   this same RAW tag insertion model instead of a separate formatting mutation model.
 - Inline formatting re-application normalizes the selected source span to existing inline-style tag boundaries before
   writing the next RAW snapshot, so WYSIWYG selections cannot split a hidden `<bold>` / `<highlight>` token and expose
@@ -18,8 +19,6 @@ Owns editor tag-management helpers.
 - Structured body-tag linting and advisory correction state for parser/renderer feedback.
 
 ## Current Modules
-- `ContentsAgendaBackend.*`
-- `ContentsCalloutBackend.*`
 - `ContentsEditorTagInsertionController.*`
 - `ContentsStructuredTagValidator.*`
 - `WhatSonStructuredTagLinter.*`
@@ -36,8 +35,9 @@ Owns editor tag-management helpers.
 - General hub/package/storage validators remain under `src/app/models/file/validator`.
 - Resource import orchestration remains under `src/app/models/editor/resource`; only RAW `<resource ... />` tag
   construction and insertion policy live here.
-- Direct `.wsnbody` body-format serialization for standalone `agenda`/`callout`/`resource`/`break` blocks remains under
-  `src/app/models/file/note`; this directory owns editor-side commands and validation around those same RAW tags.
+- Direct `.wsnbody` body-format serialization for standalone `resource`/`break` blocks remains under
+  `src/app/models/file/note`; agenda/task and callout are preserved as ordinary paragraph RAW source rather than
+  body-level format.
 
 ## 한국어
 

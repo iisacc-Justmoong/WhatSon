@@ -1,7 +1,5 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
-#include "app/models/editor/tags/ContentsAgendaBackend.hpp"
-#include "app/models/editor/tags/ContentsCalloutBackend.hpp"
 #include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "app/models/display/paper/ContentsA4PaperBackground.hpp"
@@ -151,10 +149,6 @@ namespace
                 QStringLiteral("ContentsStructuredBlockRenderer")),
             whatsonInternalCreatableType<ContentsStructuredTagValidator>(
                 QStringLiteral("ContentsStructuredTagValidator")),
-            whatsonInternalCreatableType<ContentsAgendaBackend>(
-                QStringLiteral("ContentsAgendaBackend")),
-            whatsonInternalCreatableType<ContentsCalloutBackend>(
-                QStringLiteral("ContentsCalloutBackend")),
             whatsonInternalCreatableType<ContentsPagePrintLayoutRenderer>(
                 QStringLiteral("ContentsPagePrintLayoutRenderer")),
             whatsonInternalCreatableType<ContentsBodyResourceRenderer>(

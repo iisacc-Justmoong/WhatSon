@@ -36,9 +36,7 @@
   `src/app/models/navigationbar/EditorViewSectionController.*`,
   `src/app/models/navigationbar/EditorViewModeController.*`
 - 편집기 persistence 컨트롤러: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
-- 편집기 body-format 태그 helper: `src/app/models/editor/tags/ContentsAgendaBackend.*`,
-  `src/app/models/editor/tags/ContentsCalloutBackend.*`,
-  `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
+- 편집기 태그 helper: `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
   `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
   `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
 - 사이드바 선택 store 인터페이스/구현: `src/app/store/sidebar/ISidebarSelectionStore.*`,
@@ -119,7 +117,7 @@
 - focus restoration, caret movement, block re-materialization은 incidental DOM 구조가 아니라 RAW source offset 또는 parser-derived block coordinate를 기준으로 계산해야 한다.
 - parser blockization이 끝나면 renderer/QML host가 publish하기 전에 block projection을 하나의 interactive document block stream으로 normalize해야 하며, client-side duplicate regrouping path는 금지한다.
 - 일반 note editing은 persisted backing store가 `.wsnbody`인 Apple Notes 같은 document surface로 취급한다.
-- note editor는 plain prose, semantic text block, `<resource ... />`, `agenda`, `callout`, `break`를 포함한 모든 note-body element를 하나의 document host 안의 ordinary block으로 취급해야 한다.
+- note editor는 plain prose, semantic text block, `<resource ... />`, `break`를 하나의 document host 안의 ordinary block으로 취급해야 한다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`는 body-level element가 아니라 일반 투명 쌍태그로 취급한다.
 - note session이 bound된 뒤의 표준 note document host는 `ContentsStructuredDocumentFlow.qml`이다.
 - active note 선택과 편집기 세션 mount는 전역 `NoteActiveStateTracker`가 같은 update turn에서 연결해야 한다.
   view QML은 현재 표시 중인 `ContentsEditorSessionController`를 이 전역 객체에 등록할 수 있지만, active note
@@ -127,14 +125,14 @@
 - specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
 - editor-session persistence orchestration은 `src/app/models/editor/persistence` 아래에 둔다.
   `ContentsEditorPersistenceController`는 note-body snapshot buffering, immediate enqueue attempt, persistence retry/drain scheduling, pending-snapshot adoption, selected-note body read, post-save reconcile handoff를 소유한다.
-- editor body-format tag의 편집 동작 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 agenda/task, callout, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다. `.wsnbody` 저장 포맷에서 agenda/task, callout, resource, break를 body-level format block으로 직렬화/복원하는 책임은 `src/app/models/file/note/WhatSonNoteBodyPersistence.*`와 `WhatSonNoteBodySemanticTagSupport.*`에 둔다.
+- editor tag의 편집 동작 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 transparent paired tag insertion, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다. `.wsnbody` 저장 포맷에서 resource와 break를 body-level format block으로 직렬화/복원하는 책임은 `src/app/models/file/note/WhatSonNoteBodyPersistence.*`와 `WhatSonNoteBodySemanticTagSupport.*`에 둔다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`은 paragraph RAW source 안에서 보존되는 일반 투명 쌍태그다.
 - `src/app/models/file/note`는 editor persistence layer가 IO용 RAW snapshot을 선택한 뒤의 concrete `.wsnote/.wsnbody` file mutation만 소유한다. editor-session dirty buffer나 editor save-timing policy를 소유하면 안 된다.
 
 ### 입력기 권한 (중요)
 
 - editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor.editorItem` path에 맡겨야 한다.
 - 명시적 tag-management command를 제외하고, editor QML은 ordinary note editing을 위한 custom text input handler를 설치하면 안 된다. 일반 `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, IME gesture는 native text-editing behavior로 유지해야 한다.
-- 허용되는 tag-management input은 inline style tag, agenda/callout/break/resource tag insertion, selected atomic resource/break block management 같은 RAW `.wsnbody` tag operation으로 제한한다.
+- 허용되는 tag-management input은 inline style tag, callout/agenda/task paired tag, break/resource tag insertion, selected atomic resource/break block management 같은 RAW `.wsnbody` tag operation으로 제한한다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.

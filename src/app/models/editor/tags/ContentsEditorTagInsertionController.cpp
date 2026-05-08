@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 
-#include <QDate>
 #include <QRegularExpression>
 #include <QStringView>
 #include <Qt>
@@ -81,9 +80,7 @@ namespace
 
     bool isGeneratedBodyInsertionTag(const QString& tagName)
     {
-        return tagName == QLatin1String("agenda")
-            || tagName == QLatin1String("callout")
-            || tagName == QLatin1String("break");
+        return tagName == QLatin1String("break");
     }
 
     bool isInlineStyleInsertionTag(const QString& tagName)
@@ -142,11 +139,6 @@ namespace
         }
 
         return 0;
-    }
-
-    QString todayIsoDate()
-    {
-        return QDate::currentDate().toString(Qt::ISODate);
     }
 
     QString sourceTagName(QStringView tagToken)
@@ -784,7 +776,7 @@ namespace
     QString openingTagForName(const QString& tagName)
     {
         if (tagName == QLatin1String("agenda"))
-            return QStringLiteral("<agenda date=\"%1\"><task done=\"false\">").arg(todayIsoDate());
+            return QStringLiteral("<agenda><task>");
         return QStringLiteral("<%1>").arg(tagName);
     }
 
@@ -797,10 +789,6 @@ namespace
 
     QString canonicalSourceForGeneratedBodyTag(const QString& tagName)
     {
-        if (tagName == QLatin1String("agenda"))
-            return openingTagForName(tagName) + QLatin1Char(' ') + closingTagForName(tagName);
-        if (tagName == QLatin1String("callout"))
-            return QStringLiteral("<callout> </callout>");
         if (tagName == QLatin1String("break"))
             return QStringLiteral("</break>");
         return {};
@@ -808,58 +796,15 @@ namespace
 
     int cursorOffsetForGeneratedBodyTag(const QString& tagName)
     {
-        if (tagName == QLatin1String("agenda") || tagName == QLatin1String("callout"))
-            return openingTagForName(tagName).length();
         if (tagName == QLatin1String("break"))
             return canonicalSourceForGeneratedBodyTag(tagName).length();
         return 0;
     }
 
-    bool sourceRangeOverlapsStructuredBodyBlock(const QString& sourceText, const int selectionStart, const int selectionEnd)
-    {
-        static const QRegularExpression structuredBodyBlockPattern(
-            QStringLiteral(R"(<(?:agenda|callout)\b[^>]*>[\s\S]*?</(?:agenda|callout)>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        QRegularExpressionMatchIterator iterator = structuredBodyBlockPattern.globalMatch(sourceText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            if (!match.hasMatch())
-                continue;
-            const int blockStart = std::max(0, static_cast<int>(match.capturedStart(0)));
-            const int blockEnd = std::max(blockStart, static_cast<int>(match.capturedEnd(0)));
-            if (selectionStart < blockEnd && selectionEnd > blockStart)
-                return true;
-        }
-        return false;
-    }
-
-    bool sourceTextContainsDocumentBlockTagToken(const QString& sourceText)
-    {
-        static const QRegularExpression documentBlockTagPattern(
-            QStringLiteral(R"(<\s*/?\s*(?:agenda|task|callout|resource|break|hr)\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        return sourceText.contains(documentBlockTagPattern);
-    }
-
     int resolveStructuredBodyTagInsertionOffset(const QString& sourceText, const int requestedInsertionOffset)
     {
         const int safeRequestedOffset = boundedOffset(requestedInsertionOffset, sourceText.length());
-        static const QRegularExpression structuredBodyBlockPattern(
-            QStringLiteral(R"(<(?:agenda|callout)\b[^>]*>[\s\S]*?</(?:agenda|callout)>)"),
-            QRegularExpression::CaseInsensitiveOption);
-        QRegularExpressionMatchIterator iterator = structuredBodyBlockPattern.globalMatch(sourceText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            if (!match.hasMatch())
-                continue;
-            const int blockStart = std::max(0, static_cast<int>(match.capturedStart(0)));
-            const int blockEnd = std::max(blockStart, static_cast<int>(match.capturedEnd(0)));
-            if (safeRequestedOffset > blockStart && safeRequestedOffset < blockEnd)
-                return blockEnd;
-        }
-        return safeRequestedOffset;
+        return sourceOffsetForCollapsedInlineInsertion(collectSourceTagTokens(sourceText), safeRequestedOffset);
     }
 
     QVariantMap notAppliedPayload(
@@ -1019,15 +964,7 @@ QVariantMap ContentsEditorTagInsertionController::buildWrappedTagInsertionPayloa
         return payload;
     }
 
-    const bool bodyBlockWrap = normalizedTag == QLatin1String("agenda")
-        || normalizedTag == QLatin1String("callout");
-    if (bodyBlockWrap)
-    {
-        if (sourceRangeOverlapsStructuredBodyBlock(source, start, end))
-            return notAppliedPayload(QStringLiteral("body-tag-range-overlaps-structured-block"), source, selectionStart, selectionEnd, normalizedTag);
-        if (sourceTextContainsDocumentBlockTagToken(source.mid(start, end - start)))
-            return notAppliedPayload(QStringLiteral("body-tag-range-contains-document-block-tag"), source, selectionStart, selectionEnd, normalizedTag);
-    }
+    constexpr bool bodyBlockWrap = false;
 
     const QString openingTag = openingTagForName(normalizedTag);
     const QString closingTag = closingTagForName(normalizedTag);

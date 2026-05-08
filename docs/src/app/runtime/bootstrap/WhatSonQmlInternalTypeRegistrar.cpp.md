@@ -20,8 +20,8 @@ then registers that manifest through LVRS `QmlTypeRegistrar`.
   The registrar no longer exports an active-editor-surface adapter type for focus forwarding; note focus restoration
   now targets the structured document host directly from the display controllers.
 - Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsInlineStyleOverlayRenderer`,
-  `ContentsPlainTextSourceMutator`, `ContentsStructuredBlockRenderer`, `ContentsAgendaBackend`,
-  `ContentsCalloutBackend`, `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
+  `ContentsPlainTextSourceMutator`, `ContentsStructuredBlockRenderer`,
+  `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
 - Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,
   `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and `SidebarHierarchyInteractionController`. Creatable
   controller classes registered here must remain subclassable by Qt's `QQmlElement<T>` wrapper.

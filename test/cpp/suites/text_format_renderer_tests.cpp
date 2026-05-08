@@ -93,9 +93,15 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
         QStringLiteral(
             "<paragraph>Alpha</paragraph>\n"
             "<resource type=\"image\" path=\"cover.png\" />\n"
-            "<callout>Beta</callout>"));
+            "<callout>Beta</callout>\n"
+            "<agenda><task>Gamma</task></agenda>"));
 
     QVERIFY(!projection.editorSurfaceHtml().isEmpty());
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("Beta")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("Gamma")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<callout")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<agenda")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<task")));
     QVERIFY(projection.htmlTokens().size() >= 3);
     QVERIFY(projection.normalizedHtmlBlocks().size() >= 3);
 
@@ -108,6 +114,8 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
             QStringLiteral("iiHtmlBlock"));
         QVERIFY(!block.value(QStringLiteral("htmlBlockTagName")).toString().isEmpty());
         QVERIFY(block.value(QStringLiteral("htmlBlockIsDisplayBlock")).toBool());
+        QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("callout"));
+        QVERIFY(block.value(QStringLiteral("renderDelegateType")).toString() != QStringLiteral("agenda"));
         if (block.value(QStringLiteral("renderDelegateType")).toString() == QStringLiteral("resource"))
         {
             foundResourceBlock = true;

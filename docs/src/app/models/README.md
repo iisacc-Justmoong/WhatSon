@@ -5,9 +5,7 @@
 owning model domains instead of a separate view-model tree.
 
 ## Current Domains
-- `agenda`: agenda parsing and source-rewrite helpers used by the structured editor.
 - `calendar`: calendar board state and system-calendar integration.
-- `callout`: callout parsing and insertion/rewrite helpers for the structured editor.
 - `content`: display, mobile-navigation, and structured-document helpers that coordinate QML-facing content surfaces.
 - `editor`: parser, renderer, text, bridge, and session helpers that project RAW note source into editable views.
 - `file`: persistent hub/note/resource storage, validation, import/export, sync, and hierarchy backends.

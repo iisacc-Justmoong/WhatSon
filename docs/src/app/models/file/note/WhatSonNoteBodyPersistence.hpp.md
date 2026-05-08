@@ -12,10 +12,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `tag`) plus normalized
   self-closed `<resource ... />` tags. The single divider source tag `</break>` is persisted as canonical XML
   `<break/>`.
-  Standalone body-format tags are also persisted directly:
-  - `<agenda ...>...</agenda>` stores the outer tag attributes plus the inner RAW string as the agenda tag payload
-  - `<callout ...>...</callout>` stores the outer tag attributes plus the inner RAW string as the callout tag payload
-  - editor-side parser/controller logic interprets that RAW string after read-back
+  Standalone resource/break body-format tags are also persisted directly. `<agenda><task>...</task></agenda>` and
+  `<callout ...>...</callout>` are preserved as ordinary paragraph RAW source instead of direct body-format children.
 - When a proprietary inline style stays open across a source newline, the serializer now reopens that style at the
   beginning of the next `<paragraph>` and closes it again at the end of that paragraph, so multi-paragraph formatting
   survives a full save round-trip instead of stopping at the first paragraph boundary.
@@ -35,8 +33,9 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   `</break>`. This projection now avoids an extra structured-tag linter rewrite pass so passive file reads do not
   mutate the editor RAW shape. Empty text-block tags around standalone blocks are projected as explicit newline
   boundaries instead of being ignored as zero-character content.
-- Standalone `agenda`, `callout`, `resource`, and `break` editor source lines persist as direct `.wsnbody` body-format
-  children. They must not be rewrapped as escaped paragraph text once they are recognized as body blocks.
+- Standalone `resource` and `break` editor source lines persist as direct `.wsnbody` body-format children. They must
+  not be rewrapped as escaped paragraph text once they are recognized as body blocks. Agenda/task and callout source
+  lines are paragraph RAW text.
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
   (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to RichText HTML (styled `span` tags).
   Divider tags (`<break/>` / `<hr/>`) render as `<hr/>`.
@@ -66,10 +65,6 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   - editor/source token: `</break>`
   - `.wsnbody` XML storage: `<break/>`
   - rich preview projection: `<hr/>`
-- Agenda round-trip must keep the outer body-format tag and inner RAW string:
-  - editor/source token remains `<agenda ...>...</agenda>`
-  - serializer must not rewrap the outer agenda block into literal paragraph text
-  - inner strings such as `<task ...>...</task>` are stored as escaped text payload and decoded back for the editor
-- Callout round-trip must keep the outer body-format tag and inner RAW string:
-  - editor/source tokens remain `<callout ...>...</callout>`
-  - serializer must not escape wrapper tags into literal text
+- Agenda/task and callout round-trips must keep the outer transparent paired tags and inner RAW string:
+  - editor/source tokens remain `<agenda><task>...</task></agenda>` and `<callout ...>...</callout>`
+  - serializer stores them in paragraph source lines and must not escape wrapper tags into literal text

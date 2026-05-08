@@ -21,16 +21,6 @@ namespace
         return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
     }
 
-    bool mayContainAgendaBlock(const QString& sourceText)
-    {
-        return containsIgnoreCase(sourceText, QStringLiteral("<agenda"));
-    }
-
-    bool mayContainCalloutBlock(const QString& sourceText)
-    {
-        return containsIgnoreCase(sourceText, QStringLiteral("<callout"));
-    }
-
     bool mayContainBreakBlock(const QString& sourceText)
     {
         return containsIgnoreCase(sourceText, QStringLiteral("</break"))
@@ -153,11 +143,7 @@ namespace
 
     struct StructuredRenderSnapshot final
     {
-        QVariantMap agendaParseVerification;
         QString correctedSourceText;
-        QVariantMap calloutParseVerification;
-        QVariantList renderedAgendas;
-        QVariantList renderedCallouts;
         QVariantList renderedDocumentBlocks;
         QVariantMap structuredParseVerification;
     };
@@ -167,11 +153,7 @@ namespace
         StructuredRenderSnapshot snapshot;
         const ContentsWsnBodyBlockParser parser;
         const ContentsWsnBodyBlockParser::ParseResult parseResult = parser.parse(sourceText);
-        snapshot.agendaParseVerification = parseResult.agendaParseVerification;
         snapshot.correctedSourceText = parseResult.correctedSourceText;
-        snapshot.calloutParseVerification = parseResult.calloutParseVerification;
-        snapshot.renderedAgendas = parseResult.renderedAgendas;
-        snapshot.renderedCallouts = parseResult.renderedCallouts;
         snapshot.renderedDocumentBlocks =
             ContentsStructuredDocumentCollectionPolicy::normalizeInteractiveDocumentBlockEntries(
                 parseResult.renderedDocumentBlocks,
@@ -187,9 +169,7 @@ namespace
         const qint64 elapsedMs)
     {
         return QVariantMap {
-            {QStringLiteral("agendaCount"), snapshot.renderedAgendas.size()},
             {QStringLiteral("blockCount"), snapshot.renderedDocumentBlocks.size()},
-            {QStringLiteral("calloutCount"), snapshot.renderedCallouts.size()},
             {QStringLiteral("corrected"), !snapshot.correctedSourceText.isEmpty() && snapshot.correctedSourceText != sourceText},
             {QStringLiteral("elapsedMs"), elapsedMs},
             {QStringLiteral("mode"), mode},
@@ -218,11 +198,7 @@ TimedRenderSnapshot buildTimedRenderSnapshot(const QString& sourceText, const QS
 
 struct ContentsStructuredBlockRenderer::RenderResult final
 {
-    QVariantMap agendaParseVerification;
     QString correctedSourceText;
-    QVariantMap calloutParseVerification;
-    QVariantList renderedAgendas;
-    QVariantList renderedCallouts;
     QVariantList renderedDocumentBlocks;
     QVariantMap renderProfile;
     quint64 sequence = 0;
@@ -235,11 +211,7 @@ ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent
 {
     WhatSon::Debug::traceEditorSelf(this, QStringLiteral("structuredBlockRenderer"), QStringLiteral("ctor"));
     const TimedRenderSnapshot initialSnapshot = buildTimedRenderSnapshot(QString(), QStringLiteral("initial"));
-    m_agendaParseVerification = initialSnapshot.snapshot.agendaParseVerification;
     m_correctedSourceText = initialSnapshot.snapshot.correctedSourceText;
-    m_calloutParseVerification = initialSnapshot.snapshot.calloutParseVerification;
-    m_renderedAgendas = initialSnapshot.snapshot.renderedAgendas;
-    m_renderedCallouts = initialSnapshot.snapshot.renderedCallouts;
     m_renderedDocumentBlocks = initialSnapshot.snapshot.renderedDocumentBlocks;
     m_structuredParseVerification = initialSnapshot.snapshot.structuredParseVerification;
     m_lastRenderProfile = initialSnapshot.renderProfile;
@@ -282,29 +254,9 @@ void ContentsStructuredBlockRenderer::setSourceText(const QString& sourceText)
     refreshRenderedBlocks();
 }
 
-QVariantList ContentsStructuredBlockRenderer::renderedAgendas() const
-{
-    return m_renderedAgendas;
-}
-
-QVariantList ContentsStructuredBlockRenderer::renderedCallouts() const
-{
-    return m_renderedCallouts;
-}
-
 QVariantList ContentsStructuredBlockRenderer::renderedDocumentBlocks() const
 {
     return m_renderedDocumentBlocks;
-}
-
-QVariantMap ContentsStructuredBlockRenderer::agendaParseVerification() const
-{
-    return m_agendaParseVerification;
-}
-
-QVariantMap ContentsStructuredBlockRenderer::calloutParseVerification() const
-{
-    return m_calloutParseVerification;
 }
 
 QVariantMap ContentsStructuredBlockRenderer::structuredParseVerification() const
@@ -359,16 +311,6 @@ QVariantMap ContentsStructuredBlockRenderer::lastRenderProfile() const
     return m_lastRenderProfile;
 }
 
-int ContentsStructuredBlockRenderer::agendaCount() const noexcept
-{
-    return m_renderedAgendas.size();
-}
-
-int ContentsStructuredBlockRenderer::calloutCount() const noexcept
-{
-    return m_renderedCallouts.size();
-}
-
 bool ContentsStructuredBlockRenderer::hasRenderedBlocks() const noexcept
 {
     return !m_renderedDocumentBlocks.isEmpty();
@@ -421,36 +363,12 @@ void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
 
     const TimedRenderSnapshot timedSnapshot = buildTimedRenderSnapshot(m_sourceText, QStringLiteral("sync"));
     RenderResult result;
-    result.agendaParseVerification = timedSnapshot.snapshot.agendaParseVerification;
     result.correctedSourceText = timedSnapshot.snapshot.correctedSourceText;
-    result.calloutParseVerification = timedSnapshot.snapshot.calloutParseVerification;
-    result.renderedAgendas = timedSnapshot.snapshot.renderedAgendas;
-    result.renderedCallouts = timedSnapshot.snapshot.renderedCallouts;
     result.renderedDocumentBlocks = timedSnapshot.snapshot.renderedDocumentBlocks;
     result.renderProfile = timedSnapshot.renderProfile;
     result.sourceText = m_sourceText;
     result.structuredParseVerification = timedSnapshot.snapshot.structuredParseVerification;
     applyRenderResult(result);
-}
-
-void ContentsStructuredBlockRenderer::updateAgendaParseVerification(const QVariantMap& verification)
-{
-    if (m_agendaParseVerification != verification)
-    {
-        m_agendaParseVerification = verification;
-        emit agendaParseVerificationChanged();
-    }
-    emit agendaParseVerificationReported(verification);
-}
-
-void ContentsStructuredBlockRenderer::updateCalloutParseVerification(const QVariantMap& verification)
-{
-    if (m_calloutParseVerification != verification)
-    {
-        m_calloutParseVerification = verification;
-        emit calloutParseVerificationChanged();
-    }
-    emit calloutParseVerificationReported(verification);
 }
 
 void ContentsStructuredBlockRenderer::updateStructuredParseVerification(const QVariantMap& verification)
@@ -489,9 +407,7 @@ bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
 {
     return m_backgroundRefreshEnabled
         && m_sourceText.size() >= kBackgroundRenderSourceLengthThreshold
-        && (mayContainAgendaBlock(m_sourceText)
-            || mayContainCalloutBlock(m_sourceText)
-            || mayContainResourceBlock(m_sourceText)
+        && (mayContainResourceBlock(m_sourceText)
             || mayContainBreakBlock(m_sourceText));
 }
 
@@ -501,9 +417,7 @@ void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& resu
         this,
         QStringLiteral("structuredBlockRenderer"),
         QStringLiteral("applyRenderResult"),
-        QStringLiteral("agendas=%1 callouts=%2 blocks=%3 correction=%4 mode=%5 elapsedMs=%6")
-            .arg(result.renderedAgendas.size())
-            .arg(result.renderedCallouts.size())
+        QStringLiteral("blocks=%1 correction=%2 mode=%3 elapsedMs=%4")
             .arg(result.renderedDocumentBlocks.size())
             .arg(!result.correctedSourceText.isEmpty() && result.correctedSourceText != result.sourceText)
             .arg(result.renderProfile.value(QStringLiteral("mode")).toString())
@@ -511,19 +425,13 @@ void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& resu
     const bool previousCorrectionSuggested = correctionSuggested();
 
     updateLastRenderProfile(result.renderProfile);
-    updateAgendaParseVerification(result.agendaParseVerification);
-    updateCalloutParseVerification(result.calloutParseVerification);
     updateCorrectedSourceText(result.correctedSourceText);
     updateStructuredParseVerification(result.structuredParseVerification);
 
     const bool renderPayloadChanged =
-        m_renderedAgendas != result.renderedAgendas
-        || m_renderedCallouts != result.renderedCallouts
-        || m_renderedDocumentBlocks != result.renderedDocumentBlocks;
+        m_renderedDocumentBlocks != result.renderedDocumentBlocks;
     if (renderPayloadChanged)
     {
-        m_renderedAgendas = result.renderedAgendas;
-        m_renderedCallouts = result.renderedCallouts;
         m_renderedDocumentBlocks = result.renderedDocumentBlocks;
         emit renderedBlocksChanged();
     }
@@ -585,11 +493,7 @@ void ContentsStructuredBlockRenderer::dispatchAsyncRender()
     {
         const TimedRenderSnapshot timedSnapshot = buildTimedRenderSnapshot(sourceText, QStringLiteral("async"));
         RenderResult result;
-        result.agendaParseVerification = timedSnapshot.snapshot.agendaParseVerification;
         result.correctedSourceText = timedSnapshot.snapshot.correctedSourceText;
-        result.calloutParseVerification = timedSnapshot.snapshot.calloutParseVerification;
-        result.renderedAgendas = timedSnapshot.snapshot.renderedAgendas;
-        result.renderedCallouts = timedSnapshot.snapshot.renderedCallouts;
         result.renderedDocumentBlocks = timedSnapshot.snapshot.renderedDocumentBlocks;
         result.renderProfile = timedSnapshot.renderProfile;
         result.sequence = sequence;
@@ -662,13 +566,9 @@ void ContentsStructuredBlockRenderer::publishPlaceholderDocumentBlocks()
     updateCorrectedSourceText(QString());
 
     const bool renderPayloadChanged =
-        !m_renderedAgendas.isEmpty()
-        || !m_renderedCallouts.isEmpty()
-        || m_renderedDocumentBlocks != placeholderBlocks;
+        m_renderedDocumentBlocks != placeholderBlocks;
     if (renderPayloadChanged)
     {
-        m_renderedAgendas.clear();
-        m_renderedCallouts.clear();
         m_renderedDocumentBlocks = placeholderBlocks;
         emit renderedBlocksChanged();
     }

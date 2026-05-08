@@ -13,7 +13,7 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 - Converts each parsed block into one normalized HTML token carrying:
   - block index / token index
   - block type
-  - resolved render delegate type (`text`, `agenda`, `callout`, `resource`, `break`)
+  - resolved render delegate type (`text`, `resource`, `break`)
   - source span
   - normalized HTML fragment
   - overlay-visibility flag

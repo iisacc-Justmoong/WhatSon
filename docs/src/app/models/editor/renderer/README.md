@@ -26,8 +26,8 @@
   ranges, display-block state, and parser source.
 - `ContentsStructuredBlockRenderer.cpp` now consumes `parser/ContentsWsnBodyBlockParser` as its single `.wsnbody`
   read-path source and republishes that parser result to QML.
-- Agenda/callout compatibility lists still exist, but they are now side projections over the same unified parser pass
-  rather than separate read-side backend merges.
+- Agenda/task and callout wrappers are transparent paired tags, so the renderer no longer exposes separate side
+  projections or block lists for them.
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
 - Inline text formatting and highlight tag styling now live in `src/app/models/editor/format`; this renderer directory

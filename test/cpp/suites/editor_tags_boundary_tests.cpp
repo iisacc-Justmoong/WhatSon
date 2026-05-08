@@ -12,10 +12,6 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
     };
 
     for (const QString& relativePath : {
-             QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.hpp"),
-             QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.cpp"),
-             QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.hpp"),
-             QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.cpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.hpp"),
              QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp"),
              QStringLiteral("docs/src/app/models/editor/tags/ContentsEditorTagInsertionController.hpp.md"),
@@ -36,9 +32,13 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
              QStringLiteral("src/app/models/agenda/CMakeLists.txt"),
              QStringLiteral("src/app/models/agenda/ContentsAgendaBackend.hpp"),
              QStringLiteral("src/app/models/agenda/ContentsAgendaBackend.cpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.hpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.cpp"),
              QStringLiteral("src/app/models/callout/CMakeLists.txt"),
              QStringLiteral("src/app/models/callout/ContentsCalloutBackend.hpp"),
              QStringLiteral("src/app/models/callout/ContentsCalloutBackend.cpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.hpp"),
+             QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.cpp"),
              QStringLiteral("src/app/models/file/validator/ContentsStructuredTagValidator.hpp"),
              QStringLiteral("src/app/models/file/validator/ContentsStructuredTagValidator.cpp"),
              QStringLiteral("src/app/models/file/validator/WhatSonStructuredTagLinter.hpp"),
@@ -60,9 +60,9 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
     QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(models/callout)")));
 
     const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
-    QVERIFY(testCmakeSource.contains(
+    QVERIFY(!testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsAgendaBackend.cpp")));
-    QVERIFY(testCmakeSource.contains(
+    QVERIFY(!testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsCalloutBackend.cpp")));
     QVERIFY(testCmakeSource.contains(
         QStringLiteral("src/app/models/editor/tags/ContentsEditorTagInsertionController.cpp")));
@@ -79,9 +79,9 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
 
     const QString registrarSource = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
-    QVERIFY(registrarSource.contains(
+    QVERIFY(!registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsAgendaBackend.hpp")));
-    QVERIFY(registrarSource.contains(
+    QVERIFY(!registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsCalloutBackend.hpp")));
     QVERIFY(registrarSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsEditorTagInsertionController.hpp")));
@@ -98,7 +98,7 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
 
     const QString sessionControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/session/ContentsEditorSessionController.cpp"));
-    QVERIFY(sessionControllerSource.contains(
+    QVERIFY(!sessionControllerSource.contains(
         QStringLiteral("app/models/editor/tags/ContentsAgendaBackend.hpp")));
 
     const QString parserSource = readUtf8SourceFile(
@@ -132,7 +132,7 @@ void WhatSonCppRegressionTests::editorTagsBoundary_groupsEditorTagInsertionRespo
     QVERIFY(tagsReadme.contains(QStringLiteral("<callout>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<break>")));
     QVERIFY(tagsReadme.contains(QStringLiteral("<resource")));
-    QVERIFY(tagsReadme.contains(QStringLiteral("generated agenda/callout/break insertion")));
+    QVERIFY(tagsReadme.contains(QStringLiteral("generated break insertion")));
     QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsRawBodyTagMutationSupport.js")));
     QVERIFY(!tagsReadme.contains(QStringLiteral("ContentsEditorBodyTagInsertionPlanner")));
 
@@ -164,9 +164,9 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
     QVERIFY(calloutPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
         calloutPayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("Intro\n<callout> </callout>"));
-    QVERIFY(calloutPayload.value(QStringLiteral("sourceOffset")).toInt() > 5);
-    QCOMPARE(calloutPayload.value(QStringLiteral("tagKind")).toString(), QStringLiteral("callout"));
+        QStringLiteral("Intro<callout></callout>"));
+    QCOMPARE(calloutPayload.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Intro<callout>").size());
+    QCOMPARE(calloutPayload.value(QStringLiteral("tagName")).toString(), QStringLiteral("callout"));
 
     const QVariantMap wrappedCalloutPayload = controller.buildTagInsertionPayload(
         QStringLiteral("Alpha\nBeta\nGamma"),
@@ -187,10 +187,10 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         9,
         15,
         QStringLiteral("callout"));
-    QVERIFY(!nestedCalloutWrapPayload.value(QStringLiteral("applied")).toBool());
+    QVERIFY(nestedCalloutWrapPayload.value(QStringLiteral("applied")).toBool());
     QCOMPARE(
-        nestedCalloutWrapPayload.value(QStringLiteral("reason")).toString(),
-        QStringLiteral("body-tag-range-overlaps-structured-block"));
+        nestedCalloutWrapPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<callout><callout>inside</callout></callout>\nTail"));
 
     const QVariantMap agendaPayload = controller.buildTagInsertionPayload(
         QStringLiteral("Intro"),
@@ -198,21 +198,33 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         5,
         QStringLiteral("agenda"));
     QVERIFY(agendaPayload.value(QStringLiteral("applied")).toBool());
-    QVERIFY(agendaPayload.value(QStringLiteral("rawSourceText")).toString().startsWith(QStringLiteral("<agenda")));
-    QVERIFY(agendaPayload.value(QStringLiteral("rawSourceText")).toString().contains(QStringLiteral("<task done=\"false\">")));
-    QVERIFY(agendaPayload.value(QStringLiteral("nextSourceText")).toString().startsWith(QStringLiteral("Intro\n<agenda")));
+    QCOMPARE(
+        agendaPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("Intro<agenda><task></task></agenda>"));
+    QCOMPARE(agendaPayload.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Intro<agenda><task>").size());
 
-    const QString structuredSource = QStringLiteral("<callout>inside</callout>\nTail");
+    const QVariantMap wrappedAgendaPayload = controller.buildTagInsertionPayload(
+        QStringLiteral("Alpha\nBeta\nGamma"),
+        6,
+        10,
+        QStringLiteral("agenda"));
+    QVERIFY(wrappedAgendaPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        wrappedAgendaPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("Alpha\n<agenda><task>Beta</task></agenda>\nGamma"));
+    QCOMPARE(wrappedAgendaPayload.value(QStringLiteral("wrappedSourceText")).toString(), QStringLiteral("Beta"));
+
+    const QString structuredSource = QStringLiteral("<agenda><task>inside</task></agenda>\nTail");
     const QVariantMap nestedBreakPayload = controller.buildTagInsertionPayload(
         structuredSource,
-        10,
-        10,
+        14,
+        14,
         QStringLiteral("break"));
     QVERIFY(nestedBreakPayload.value(QStringLiteral("applied")).toBool());
-    QVERIFY(nestedBreakPayload.value(QStringLiteral("resolvedInsertionOffset")).toInt() > 10);
+    QCOMPARE(nestedBreakPayload.value(QStringLiteral("resolvedInsertionOffset")).toInt(), 14);
     QCOMPARE(
         nestedBreakPayload.value(QStringLiteral("nextSourceText")).toString(),
-        QStringLiteral("<callout>inside</callout>\n</break>\nTail"));
+        QStringLiteral("<agenda><task>\n</break>\ninside</task></agenda>\nTail"));
 
     const QVariantMap rejectedCallout = controller.buildTagInsertionPayload(
         QStringLiteral("Alpha"),
@@ -221,45 +233,4 @@ void WhatSonCppRegressionTests::editorTagInsertionController_buildsBodyTagInsert
         QStringLiteral("unsupported"));
     QVERIFY(!rejectedCallout.value(QStringLiteral("applied")).toBool());
     QCOMPARE(rejectedCallout.value(QStringLiteral("reason")).toString(), QStringLiteral("unsupported-tag-kind"));
-}
-
-void WhatSonCppRegressionTests::contentsCalloutBackend_exitsOnPlainEnterAndSplitsAtCursor()
-{
-    ContentsCalloutBackend backend;
-
-    const QString sourceText = QStringLiteral("<callout>AlphaBeta</callout>");
-    const int cursorSourceOffset = static_cast<int>(QStringLiteral("<callout>Alpha").size());
-    const QVariantMap splitPayload = backend.detectCalloutEnterReplacement(
-        sourceText,
-        cursorSourceOffset,
-        cursorSourceOffset,
-        QStringLiteral("\n"));
-    QVERIFY(splitPayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(splitPayload.value(QStringLiteral("replacementSourceStart")).toInt(), cursorSourceOffset);
-    QCOMPARE(
-        splitPayload.value(QStringLiteral("replacementSourceEnd")).toInt(),
-        static_cast<int>(sourceText.size()));
-    QCOMPARE(
-        splitPayload.value(QStringLiteral("replacementSourceText")).toString(),
-        QStringLiteral("</callout>\nBeta"));
-    QCOMPARE(
-        splitPayload.value(QStringLiteral("cursorSourceOffsetFromReplacementStart")).toInt(),
-        QStringLiteral("</callout>\n").size());
-
-    const QVariantMap endPayload = backend.detectCalloutEnterReplacement(
-        sourceText,
-        static_cast<int>(QStringLiteral("<callout>AlphaBeta").size()),
-        static_cast<int>(QStringLiteral("<callout>AlphaBeta").size()),
-        QStringLiteral("\n"));
-    QVERIFY(endPayload.value(QStringLiteral("applied")).toBool());
-    QCOMPARE(
-        endPayload.value(QStringLiteral("replacementSourceText")).toString(),
-        QStringLiteral("</callout>\n"));
-
-    const QVariantMap shiftEnterEquivalentPayload = backend.detectCalloutEnterReplacement(
-        sourceText,
-        cursorSourceOffset,
-        cursorSourceOffset,
-        QStringLiteral("\n\n"));
-    QVERIFY(!shiftEnterEquivalentPayload.value(QStringLiteral("applied")).toBool());
 }

@@ -1173,59 +1173,6 @@ namespace
         }
     }
 
-    qsizetype boundedTextPosition(const QString& text, const qsizetype position) noexcept
-    {
-        return std::clamp(position, qsizetype{0}, text.size());
-    }
-
-    qsizetype nextTagTokenStart(const QString& text, const QString& token, const qsizetype from)
-    {
-        const qsizetype safeFrom = boundedTextPosition(text, from);
-        const qsizetype resolvedIndex = text.indexOf(token, safeFrom, Qt::CaseInsensitive);
-        return resolvedIndex >= 0 ? resolvedIndex : text.size();
-    }
-
-    struct StructuredBlockRange final
-    {
-        qsizetype blockEnd = 0;
-        qsizetype contentEnd = 0;
-        qsizetype contentStart = 0;
-        bool hasCloseTag = false;
-    };
-
-    StructuredBlockRange structuredBlockRange(
-        const QString& sourceText,
-        const qsizetype contentStart,
-        const QString& closeTag,
-        const QStringList& boundaryOpenTags)
-    {
-        StructuredBlockRange range;
-        range.contentStart = boundedTextPosition(sourceText, contentStart);
-        range.contentEnd = sourceText.size();
-        range.blockEnd = sourceText.size();
-
-        const qsizetype closeTagStart = nextTagTokenStart(sourceText, closeTag, range.contentStart);
-        if (closeTagStart < range.contentEnd)
-        {
-            range.contentEnd = closeTagStart;
-        }
-
-        for (const QString& boundaryOpenTag : boundaryOpenTags)
-        {
-            const qsizetype boundaryStart = nextTagTokenStart(sourceText, boundaryOpenTag, range.contentStart);
-            if (boundaryStart < range.contentEnd)
-            {
-                range.contentEnd = boundaryStart;
-            }
-        }
-
-        range.hasCloseTag = closeTagStart < sourceText.size() && closeTagStart == range.contentEnd;
-        range.blockEnd = range.hasCloseTag
-            ? boundedTextPosition(sourceText, closeTagStart + closeTag.size())
-            : range.contentEnd;
-        return range;
-    }
-
     QString renderStructuredLiteralLineToHtml(
         const QString& lineText,
         const LiteralRenderMode renderMode)
@@ -1267,97 +1214,6 @@ namespace
             htmlLines.push_back(QStringLiteral("&nbsp;"));
         }
         return htmlLines.join(QStringLiteral("<br/>"));
-    }
-
-    QString renderAgendaEditorBlockToHtml(
-        const QString& sourceText,
-        const qsizetype agendaContentStart,
-        const LiteralRenderMode renderMode)
-    {
-        static const QRegularExpression taskOpenTagPattern(
-            QStringLiteral(R"(<task\b([^>]*)>)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        const StructuredBlockRange agendaRange = structuredBlockRange(
-            sourceText,
-            agendaContentStart,
-            QStringLiteral("</agenda>"),
-            {
-                QStringLiteral("<agenda"),
-                QStringLiteral("<callout")
-            });
-        const QString innerSource = sourceText.mid(
-            agendaRange.contentStart,
-            agendaRange.contentEnd - agendaRange.contentStart);
-
-        QStringList renderedTasks;
-        QRegularExpressionMatchIterator taskIterator = taskOpenTagPattern.globalMatch(innerSource);
-        while (taskIterator.hasNext())
-        {
-            const QRegularExpressionMatch taskMatch = taskIterator.next();
-            if (!taskMatch.hasMatch())
-            {
-                continue;
-            }
-
-            const qsizetype taskOpenEnd = taskMatch.capturedEnd(0);
-            if (taskOpenEnd <= 0)
-            {
-                continue;
-            }
-
-            const qsizetype taskCloseStart = nextTagTokenStart(
-                innerSource,
-                QStringLiteral("</task>"),
-                taskOpenEnd);
-            const qsizetype nextTaskOpenStart = nextTagTokenStart(
-                innerSource,
-                QStringLiteral("<task"),
-                taskOpenEnd);
-
-            qsizetype taskContentEnd = innerSource.size();
-            if (taskCloseStart < taskContentEnd)
-            {
-                taskContentEnd = taskCloseStart;
-            }
-            if (nextTaskOpenStart < taskContentEnd)
-            {
-                taskContentEnd = nextTaskOpenStart;
-            }
-
-            renderedTasks.push_back(renderStructuredLiteralTextToHtml(
-                innerSource.mid(taskOpenEnd, taskContentEnd - taskOpenEnd),
-                renderMode));
-        }
-
-        if (renderedTasks.isEmpty())
-        {
-            renderedTasks.push_back(renderStructuredLiteralTextToHtml(innerSource, renderMode));
-        }
-
-        return QStringLiteral(
-                   "<div style=\"margin:0;padding:27px 16px 8px 39px;\">%1</div>")
-            .arg(renderedTasks.join(QStringLiteral("<br/>")));
-    }
-
-    QString renderCalloutEditorBlockToHtml(
-        const QString& sourceText,
-        const qsizetype calloutContentStart,
-        const LiteralRenderMode renderMode)
-    {
-        const StructuredBlockRange calloutRange = structuredBlockRange(
-            sourceText,
-            calloutContentStart,
-            QStringLiteral("</callout>"),
-            {
-                QStringLiteral("<callout"),
-                QStringLiteral("<agenda")
-            });
-        return QStringLiteral(
-                   "<div style=\"margin:0;padding:4px 4px 4px 17px;\">%1</div>")
-            .arg(renderStructuredLiteralTextToHtml(
-                sourceText.mid(calloutRange.contentStart, calloutRange.contentEnd - calloutRange.contentStart),
-                renderMode));
     }
 
     QString renderResourceEditorBlockToHtml(const int)
@@ -1423,42 +1279,6 @@ namespace
                     html += renderResourceEditorBlockToHtml(resourceIndex);
                     ++resourceIndex;
                 }
-                cursor = tagEnd;
-                continue;
-            }
-
-            if (!closingTag
-                && normalizedTagName == QStringLiteral("agenda"))
-            {
-                html += renderAgendaEditorBlockToHtml(normalizedText, tagEnd, renderMode);
-                cursor = structuredBlockRange(
-                    normalizedText,
-                    tagEnd,
-                    QStringLiteral("</agenda>"),
-                    {
-                        QStringLiteral("<agenda"),
-                        QStringLiteral("<callout")
-                    }).blockEnd;
-                continue;
-            }
-
-            if (!closingTag
-                && normalizedTagName == QStringLiteral("callout"))
-            {
-                html += renderCalloutEditorBlockToHtml(normalizedText, tagEnd, renderMode);
-                cursor = structuredBlockRange(
-                    normalizedText,
-                    tagEnd,
-                    QStringLiteral("</callout>"),
-                    {
-                        QStringLiteral("<callout"),
-                        QStringLiteral("<agenda")
-                    }).blockEnd;
-                continue;
-            }
-
-            if (normalizedTagName == QStringLiteral("task"))
-            {
                 cursor = tagEnd;
                 continue;
             }
@@ -1669,50 +1489,6 @@ namespace
                 ++resourceIndex;
                 previousFragmentOwnsBlockFlow = true;
                 cursor = tagEnd;
-                continue;
-            }
-
-            if (!closingTag
-                && normalizedTagName == QStringLiteral("agenda"))
-            {
-                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
-                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
-                documentFragments.push_back(
-                    renderAgendaEditorBlockToHtml(
-                        normalizedText,
-                        tagEnd,
-                        LiteralRenderMode::SourceEditing));
-                previousFragmentOwnsBlockFlow = true;
-                cursor = structuredBlockRange(
-                    normalizedText,
-                    tagEnd,
-                    QStringLiteral("</agenda>"),
-                    {
-                        QStringLiteral("<agenda"),
-                        QStringLiteral("<callout")
-                    }).blockEnd;
-                continue;
-            }
-
-            if (!closingTag
-                && normalizedTagName == QStringLiteral("callout"))
-            {
-                trimOneTrailingStructuralLineBreak(&bufferedSourceText);
-                flushBufferedSourceText(&bufferedSourceText, &documentFragments);
-                documentFragments.push_back(
-                    renderCalloutEditorBlockToHtml(
-                        normalizedText,
-                        tagEnd,
-                        LiteralRenderMode::SourceEditing));
-                previousFragmentOwnsBlockFlow = true;
-                cursor = structuredBlockRange(
-                    normalizedText,
-                    tagEnd,
-                    QStringLiteral("</callout>"),
-                    {
-                        QStringLiteral("<callout"),
-                        QStringLiteral("<agenda")
-                    }).blockEnd;
                 continue;
             }
 

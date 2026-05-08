@@ -31,8 +31,8 @@
 ## Current Domain Notes
 - This directory owns filesystem and package validators only.
 - Editor-body structured tag linting and correction advisory state moved to `src/app/models/editor/tags`; `.wsnbody`
-  body-format persistence for `<agenda>`, `<task>`, `<callout>`, `<break>`, and `<resource ... />` stays inside
-  `src/app/models/file/note`.
+  body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`. Agenda/task
+  wrappers are ordinary paragraph RAW source.
 
 ## 한국어
 

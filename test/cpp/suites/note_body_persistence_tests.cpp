@@ -51,20 +51,20 @@ void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlin
         crossedInlineSource);
 }
 
-void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsDirectBodyFormatBlocks()
+void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags()
 {
     const QString sourceText =
         QStringLiteral("<callout>Alpha & <bold>Beta</bold></callout>\n"
-                       "<agenda date=\"2026-01-02\"><task done=\"yes\">Draft & review</task></agenda>");
+                       "<agenda><task>Draft & review</task></agenda>");
     const QString bodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
 
     QVERIFY(bodyDocument.contains(
-        QStringLiteral("    <callout>Alpha &amp; <bold>Beta</bold></callout>\n")));
+        QStringLiteral("    <paragraph><callout>Alpha &amp; <bold>Beta</bold></callout></paragraph>\n")));
     QVERIFY(bodyDocument.contains(
-        QStringLiteral("    <agenda date=\"2026-01-02\">&lt;task done=&quot;yes&quot;&gt;Draft &amp; review&lt;/task&gt;</agenda>\n")));
-    QVERIFY(!bodyDocument.contains(QStringLiteral("<paragraph><callout")));
-    QVERIFY(!bodyDocument.contains(QStringLiteral("<paragraph><agenda")));
+        QStringLiteral("    <paragraph><agenda><task>Draft &amp; review</task></agenda></paragraph>\n")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("    <callout>")));
+    QVERIFY(!bodyDocument.contains(QStringLiteral("    <agenda>")));
     QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;callout")));
     QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;agenda")));
 
@@ -88,8 +88,8 @@ void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsDi
     QCOMPARE(recoveredSource, QStringLiteral("<callout>Legacy</callout>"));
     const QString recoveredBodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), recoveredSource);
-    QVERIFY(recoveredBodyDocument.contains(QStringLiteral("    <callout>Legacy</callout>\n")));
-    QVERIFY(!recoveredBodyDocument.contains(QStringLiteral("<paragraph>&lt;callout")));
+    QVERIFY(recoveredBodyDocument.contains(QStringLiteral("    <paragraph><callout>Legacy</callout></paragraph>\n")));
+    QVERIFY(!recoveredBodyDocument.contains(QStringLiteral("    <callout>Legacy</callout>\n")));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection()

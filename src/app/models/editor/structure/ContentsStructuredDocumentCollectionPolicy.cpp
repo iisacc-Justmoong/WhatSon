@@ -79,9 +79,7 @@ namespace
         }
 
         const QString blockType = normalizedBlockType(blockEntry);
-        return blockType != QStringLiteral("agenda")
-            && blockType != QStringLiteral("callout")
-            && blockType != QStringLiteral("resource")
+        return blockType != QStringLiteral("resource")
             && blockType != QStringLiteral("break");
     }
 

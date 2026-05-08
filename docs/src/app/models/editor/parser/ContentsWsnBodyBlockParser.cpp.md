@@ -8,8 +8,6 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   a parseable XML-tag projection:
   - semantic text blocks such as `paragraph`, `p`, `title`, `subTitle`, `eventTitle`, `eventDescription`
   - `resource`
-  - `agenda`
-  - `callout`
   - `break`
 - The iiXml tree is now the only explicit block-span authority. The previous regular-expression tag scanner and its
   malformed-open-block recovery path have been removed, so semantic block classification no longer forks between two
@@ -19,8 +17,8 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
 - Plain prose that is not already wrapped in an explicit semantic block is now split on logical source newlines.
   Blank lines therefore survive as empty paragraph blocks, which lets the structured editor move/focus/edit below
   inline resources without collapsing multiple authored paragraphs into one giant `type=text` payload.
-- Builds agenda/callout payloads directly during that same scan, including task text, done-state attributes,
-  source-span metadata, and verification counters.
+- `<agenda><task>...</task></agenda>` and `<callout>...</callout>` are skipped as transparent paired tags and remain
+  part of the surrounding prose block. The parser does not build agenda/task card payloads or counters.
 - Malformed transient edit states that iiXml cannot parse are left as ordinary RAW prose projection until the linter or
   the next edit produces a parseable structured tag tree.
 - Semantic text blocks now deliberately split wrapper geometry from editable content geometry:
@@ -35,7 +33,7 @@ Implements one-pass top-level `.wsnbody` parsing for the structured editor rende
   - `logicalLineCountHint`
   - `minimapVisualKind`
   - `minimapRepresentativeCharCount`
-  This lets the flow host treat paragraph/resource/agenda/callout/break blocks uniformly as document blocks even
+  This lets the flow host treat paragraph/resource/break blocks uniformly as document blocks even
   before the concrete QML delegate has mounted.
   `logicalLineCountHint` is intentionally normalized to an `int`-sized value before publishing so the parser does not
   leak `qsizetype`-dependent width differences into the QML payload contract.

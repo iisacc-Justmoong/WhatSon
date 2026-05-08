@@ -4,19 +4,18 @@
 Builds canonical structured render data from `.wsnbody` source text.
 
 ## Current Contract
-- Still exposes `renderedAgendas` and `renderedCallouts` for legacy/fallback consumers.
-- Now also exposes `renderedDocumentBlocks`, a mixed document-flow model ordered by source position.
+- Exposes `renderedDocumentBlocks`, a mixed document-flow model ordered by source position.
 - `renderedDocumentBlocks` interleaves:
   - implicit prose paragraphs split from plain-text line gaps: `type=paragraph`
-  - agenda blocks: `type=agenda`
-  - callout blocks: `type=callout`
   - resource blocks: `type=resource`
   - divider tags: `type=break`
 - The renderer now delegates that top-level body parsing to `ContentsWsnBodyBlockParser` and simply republishes the
   parser snapshot to QML.
-  In other words, `paragraph`, `title`, `resource`, `agenda`, `callout`, and `break` now enter the editor-facing
+  In other words, `paragraph`, `title`, `resource`, and `break` now enter the editor-facing
   document flow through one parser-owned block-span contract instead of a renderer-local merge of several tag-specific
   read paths.
+  `<agenda><task>...</task></agenda>` and `<callout>...</callout>` are transparent paired RAW text and remain inside
+  the surrounding prose block.
 - Canonical semantic body elements such as `paragraph`, `p`, `title`, `subTitle`, `eventTitle`, and
   `eventDescription` now materialize as explicit block spans whose `type` is the canonical tag name itself
   (for example `type=paragraph`, `type=title`, `type=subtitle`, `type=eventtitle`).
@@ -55,7 +54,7 @@ Builds canonical structured render data from `.wsnbody` source text.
   order/source spans and resolved resource payload now come from one shared block stream.
 - `hasRenderedBlocks` now reflects any explicit document block, including semantic text-tag blocks, standalone
   `</break>`, and `<resource ... />`.
-- `hasNonResourceRenderedBlocks` now likewise includes semantic text-tag blocks in addition to agenda/callout/break,
+- `hasNonResourceRenderedBlocks` now likewise includes semantic text-tag blocks in addition to break,
   letting hosts distinguish resource-only block sequences from notes that still own explicit editable prose blocks.
 - Source refresh no longer reparses separate read-side backends and then merges them. The renderer now asks the parser
   for one snapshot and forwards that snapshot's verification payloads directly.
@@ -63,15 +62,15 @@ Builds canonical structured render data from `.wsnbody` source text.
   through the parser snapshot that the renderer republishes.
 - That combined verification now includes the file-layer synthetic XML/body validation for supported semantic tags, so
   renderer consumers can see malformed `paragraph`/`title`/`subTitle`/`event*`/`resource` source through the same
-  `structuredParseVerification` payload instead of only agenda/callout/break-specific lint.
+  `structuredParseVerification` payload instead of only break-specific lint.
 - Notes that do not contain any proprietary structured tags now still fall back entirely through the parser, but the
   fallback is no longer "one giant text block"; it is one ordered paragraph stream derived from RAW line breaks.
-- When the host enables `backgroundRefreshEnabled`, notes that may contain agenda/callout/resource/break blocks now
+- When the host enables `backgroundRefreshEnabled`, notes that may contain resource/break blocks now
   publish a cheap single-text-block placeholder immediately and compute the expensive structured render snapshot on a
   worker thread.
 - The renderer still keeps tiny local fast-path helpers for that background gate and placeholder publish path:
-  case-insensitive tag probes (`mayContainAgendaBlock`, `mayContainCalloutBlock`, `mayContainResourceBlock`,
-  `mayContainBreakBlock`) plus a minimal `documentBlockPayload(...)` builder for the temporary plain-text placeholder.
+  case-insensitive tag probes (`mayContainResourceBlock`, `mayContainBreakBlock`) plus a minimal
+  `documentBlockPayload(...)` builder for the temporary plain-text placeholder.
   That placeholder builder now mirrors the same generic block-trait shape as the parser result, so empty/initial
   structured hosts do not fall back to a different payload contract.
   Those helpers are intentionally local renderer utilities; they do not reintroduce the old multi-backend parse path.
@@ -82,7 +81,7 @@ Builds canonical structured render data from `.wsnbody` source text.
   signal name in local state.
 
 ## Why It Changed
-Agenda/callout/resource cards now render as document-owned flow blocks instead of offset-projected overlay layers. The
+Resource cards and divider slots now render as document-owned flow blocks instead of offset-projected overlay layers. The
 QML host needs one ordered block stream rather than multiple independent overlay lists. The latest regression also
 showed that running structured parsing plus canonicalization synchronously during note-open could block the UI thread
 long enough to surface as `Not responding`.

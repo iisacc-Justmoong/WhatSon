@@ -1,10 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <QPointer>
 #include <QString>
-
-class ContentsAgendaBackend;
 
 class ContentsEditorSessionController : public QObject
 {
@@ -29,7 +26,6 @@ class ContentsEditorSessionController : public QObject
         int
             typingIdleThresholdMs READ typingIdleThresholdMs WRITE setTypingIdleThresholdMs
                 NOTIFY typingIdleThresholdMsChanged)
-    Q_PROPERTY(QObject* agendaBackend READ agendaBackend WRITE setAgendaBackend NOTIFY agendaBackendChanged)
     Q_PROPERTY(
         bool
             syncingEditorTextFromModel READ syncingEditorTextFromModel WRITE setSyncingEditorTextFromModel
@@ -60,9 +56,6 @@ public:
     int typingIdleThresholdMs() const noexcept;
     void setTypingIdleThresholdMs(int thresholdMs);
 
-    QObject* agendaBackend() const noexcept;
-    void setAgendaBackend(QObject* agendaBackend);
-
     bool syncingEditorTextFromModel() const noexcept;
     void setSyncingEditorTextFromModel(bool syncing);
 
@@ -83,7 +76,6 @@ signals:
     void lastLocalEditTimestampMsChanged();
     void pendingBodySaveChanged();
     void typingIdleThresholdMsChanged();
-    void agendaBackendChanged();
     void syncingEditorTextFromModelChanged();
 
     void editorTextSynchronized();
@@ -92,8 +84,6 @@ private:
     static QString normalizedNoteId(const QString& noteId);
     static QString normalizedNoteDirectoryPath(const QString& noteDirectoryPath);
 
-    QString normalizeAgendaPlaceholderDates(const QString& text) const;
-    QString normalizeStructuredEmptyBlockAnchors(const QString& text) const;
     QString normalizedEditorText(const QString& text) const;
     bool shouldAcceptModelBodyText(
         const QString& noteId,
@@ -106,7 +96,6 @@ private:
         const QString& text);
     double currentTimestampMs() const noexcept;
 
-    QPointer<ContentsAgendaBackend> m_agendaBackend;
     QString m_editorBoundNoteId;
     QString m_editorBoundNoteDirectoryPath;
     QString m_editorText;
