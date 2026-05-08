@@ -356,3 +356,52 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     QVERIFY(!inlineFormatEditorControllerSource.contains(
         QStringLiteral("qrc:/qt/qml/WhatSon/App/view/") + QStringLiteral("content/editor/")));
 }
+
+void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QString namedSupportPath =
+        QStringLiteral("src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp");
+    const QString projectionHeaderPath =
+        QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.hpp");
+    const QString projectionSourcePath =
+        QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.cpp");
+
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(namedSupportPath)),
+        "Named string hierarchy support must stay shared across simple hierarchy domains.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(projectionHeaderPath)),
+        "Library note-list projection must stay out of the LibraryHierarchyController header.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(projectionSourcePath)),
+        "Library note-list projection must stay out of the LibraryHierarchyController implementation.");
+
+    const QString eventSupportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyControllerSupport.hpp"));
+    const QString presetSupportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/preset/PresetHierarchyControllerSupport.hpp"));
+    QVERIFY(eventSupportSource.contains(QStringLiteral("WhatSonNamedStringHierarchySupport.hpp")));
+    QVERIFY(presetSupportSource.contains(QStringLiteral("WhatSonNamedStringHierarchySupport.hpp")));
+
+    const QString eventControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyController.cpp"));
+    const QString presetControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/preset/PresetHierarchyController.cpp"));
+    QVERIFY(!eventControllerSource.contains(QStringLiteral("expandedEventItemKeys")));
+    QVERIFY(!eventControllerSource.contains(QStringLiteral("selectedEventIndexForKey")));
+    QVERIFY(!presetControllerSource.contains(QStringLiteral("expandedPresetItemKeys")));
+    QVERIFY(!presetControllerSource.contains(QStringLiteral("selectedPresetIndexForKey")));
+
+    const QString libraryControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.cpp"));
+    const QString libraryControllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.hpp"));
+    const QString projectionSource = readUtf8SourceFile(projectionSourcePath);
+    QVERIFY(libraryControllerHeader.contains(QStringLiteral("WhatSonLibraryNoteListProjection")));
+    QVERIFY(!libraryControllerHeader.contains(QStringLiteral("m_noteListItemCache")));
+    QVERIFY(!libraryControllerSource.contains(QStringLiteral("LibraryHierarchyController::buildNoteListItem(")));
+    QVERIFY(projectionSource.contains(QStringLiteral("WhatSonLibraryNoteListProjection::buildNoteListItem")));
+}

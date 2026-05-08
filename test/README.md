@@ -329,6 +329,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Architecture source-tree coverage now also rejects reintroducing `src/app/viewmodel`, MVVM naming, and LVRS
   controller/view-model registry lookup in `src/app`, keeping QML on direct context-object dependencies and behavior
   inside the owning model domains.
+- Hierarchy backend decomposition is now also source-locked: Event/Preset named-string support must use the shared
+  typed helper, and Library note-list projection/cache assembly must stay in `WhatSonLibraryNoteListProjection`
+  instead of returning to `LibraryHierarchyController`.
 - Selected-note body snapshots now also distinguish unresolved sources from legitimate empty notes, so the editor
   session and note-mount placeholder only treat an empty body as authoritative after a direct source snapshot or a
   completed body load confirms that the selected note really resolves.

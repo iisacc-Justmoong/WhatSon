@@ -2,17 +2,14 @@
 
 #include "app/models/calendar/ISystemCalendarStore.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
-#include "app/models/calendar/SystemCalendarStore.hpp"
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 #include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "app/models/file/hierarchy/library/LibraryNotePreviewText.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
-#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/note/WhatSonHubNoteCreationService.hpp"
 #include "app/models/file/note/WhatSonHubNoteDeletionService.hpp"
 #include "app/models/file/note/WhatSonHubNoteFolderClearService.hpp"
@@ -27,14 +24,8 @@
 #include "app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QHash>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonParseError>
-#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QDateTime>
 #include <QSet>
@@ -49,90 +40,6 @@ namespace
     constexpr auto kLibraryDraftLabel = "Draft";
     constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
-
-    QStringList noteListFolders(const LibraryNoteRecord& note);
-
-    QString noteSearchableText(const LibraryNoteRecord& note, const QStringList& folderLabels)
-    {
-        QStringList parts;
-
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
-        {
-            parts.push_back(firstLine);
-        }
-
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
-        if (!bodyPlainText.isEmpty())
-        {
-            parts.push_back(bodyPlainText);
-        }
-
-        for (const QString& folder : folderLabels)
-        {
-            const QString trimmed = folder.trimmed();
-            if (!trimmed.isEmpty())
-            {
-                parts.push_back(trimmed);
-            }
-        }
-
-        for (const QString& tag : note.tags)
-        {
-            const QString trimmed = tag.trimmed();
-            if (!trimmed.isEmpty())
-            {
-                parts.push_back(trimmed);
-            }
-        }
-
-        return parts.join(QLatin1Char('\n'));
-    }
-
-    QStringList noteListFolders(const LibraryNoteRecord& note)
-    {
-        QStringList folders;
-        folders.reserve(note.folders.size());
-        for (const QString& folder : note.folders)
-        {
-            const QString displayFolder = WhatSon::NoteFolders::displayFolderPath(folder);
-            if (!displayFolder.isEmpty())
-            {
-                folders.push_back(displayFolder);
-            }
-        }
-        folders.removeDuplicates();
-        if (folders.isEmpty())
-        {
-            folders.push_back(QString::fromLatin1(kLibraryDraftLabel));
-        }
-        return folders;
-    }
-
-    QStringList noteListTags(const LibraryNoteRecord& note)
-    {
-        QStringList tags;
-        tags.reserve(note.tags.size());
-        for (const QString& tag : note.tags)
-        {
-            const QString trimmed = tag.trimmed();
-            if (!trimmed.isEmpty())
-            {
-                tags.push_back(trimmed);
-            }
-        }
-        tags.removeDuplicates();
-        return tags;
-    }
-
-    QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
-    {
-        if (!note.bookmarkColors.isEmpty())
-        {
-            return WhatSon::Bookmarks::bookmarkColorToHex(note.bookmarkColors.first());
-        }
-        return WhatSon::Bookmarks::defaultBookmarkColorHex();
-    }
 
     QString normalizeFolderPath(QString value)
     {
@@ -166,523 +73,7 @@ namespace
 
     bool isProtectedRootItem(const LibraryHierarchyItem& item);
 
-    struct FolderHierarchyLookup final
-    {
-        QHash<QString, QStringList> folderUuidsByLeafKey;
-        QHash<QString, QSet<QString>> ancestorLeafKeysByFolderUuid;
-        QHash<QString, QString> displayPathByFolderUuid;
-        QHash<QString, QString> folderUuidByPathKey;
-    };
-
     QStringList canonicalLeafFolderPaths(const QStringList& folderPaths);
-
-    struct ResolvedFolderBinding final
-    {
-        QString folderUuid;
-        bool sourceWasLeafOnlyWithoutUuid = false;
-    };
-
-    QStringList folderPathSegments(const QString& folderPath)
-    {
-        return WhatSon::NoteFolders::folderPathSegments(folderPath);
-    }
-
-    FolderHierarchyLookup buildFolderHierarchyLookup(const QVector<LibraryHierarchyItem>& items)
-    {
-        FolderHierarchyLookup lookup;
-
-        for (const LibraryHierarchyItem& item : items)
-        {
-            if (isProtectedRootItem(item))
-            {
-                continue;
-            }
-
-            const QString pathKey = normalizeFolderLookupKey(item.folderPath);
-            const QString folderUuid = normalizeFolderUuid(item.folderUuid);
-            if (pathKey.isEmpty())
-            {
-                continue;
-            }
-
-            if (!folderUuid.isEmpty())
-            {
-                lookup.displayPathByFolderUuid.insert(folderUuid, normalizeFolderPath(item.folderPath));
-                lookup.folderUuidByPathKey.insert(pathKey, folderUuid);
-            }
-
-            QString leafKey = normalizeFolderLookupKey(item.label);
-            if (leafKey.isEmpty())
-            {
-                leafKey = normalizeFolderLookupKey(leafNameFromFolderPath(item.folderPath));
-            }
-            if (leafKey.isEmpty() || folderUuid.isEmpty())
-            {
-                continue;
-            }
-
-            QStringList& folderUuids = lookup.folderUuidsByLeafKey[leafKey];
-            if (!folderUuids.contains(folderUuid))
-            {
-                folderUuids.push_back(folderUuid);
-            }
-
-            const QStringList segments = folderPathSegments(item.folderPath);
-            QSet<QString>& ancestorLeafKeys = lookup.ancestorLeafKeysByFolderUuid[folderUuid];
-            for (int index = 0; index + 1 < segments.size(); ++index)
-            {
-                const QString ancestorKey = normalizeFolderLookupKey(segments.at(index));
-                if (!ancestorKey.isEmpty())
-                {
-                    ancestorLeafKeys.insert(ancestorKey);
-                }
-            }
-        }
-
-        return lookup;
-    }
-
-    QVector<ResolvedFolderBinding> resolvedNoteFolderBindings(
-        const LibraryNoteRecord& note,
-        const FolderHierarchyLookup& lookup)
-    {
-        struct NoteFolderToken final
-        {
-            QString pathKey;
-            QString folderUuid;
-            bool hierarchical = false;
-        };
-
-        QVector<NoteFolderToken> tokens;
-        tokens.reserve(std::max(note.folders.size(), note.folderUuids.size()));
-        QSet<QString> rawKeys;
-
-        const int tokenCount = std::max(note.folders.size(), note.folderUuids.size());
-        for (int index = 0; index < tokenCount; ++index)
-        {
-            const QString rawFolder = index < note.folders.size() ? note.folders.at(index) : QString();
-            const QString normalizedFolder = normalizeFolderPath(rawFolder);
-            const QString pathKey = normalizeFolderLookupKey(normalizedFolder);
-            const QString folderUuid = index < note.folderUuids.size()
-                                           ? normalizeFolderUuid(note.folderUuids.at(index))
-                                           : QString();
-            if (!pathKey.isEmpty())
-            {
-                rawKeys.insert(pathKey);
-            }
-            if (pathKey.isEmpty() && folderUuid.isEmpty())
-            {
-                continue;
-            }
-            tokens.push_back(NoteFolderToken{
-                pathKey,
-                folderUuid,
-                WhatSon::NoteFolders::isHierarchicalFolderPath(normalizedFolder)
-            });
-        }
-
-        QVector<ResolvedFolderBinding> resolved;
-        QHash<QString, int> resolvedIndexByFolderUuid;
-        auto appendResolved = [&resolved, &resolvedIndexByFolderUuid](const QString& folderUuid,
-                                                                      const NoteFolderToken& token)
-        {
-            const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
-            if (normalizedFolderUuid.isEmpty())
-            {
-                return;
-            }
-
-            const bool sourceWasLeafOnlyWithoutUuid = token.folderUuid.isEmpty() && !token.hierarchical;
-            const auto existingIt = resolvedIndexByFolderUuid.constFind(normalizedFolderUuid);
-            if (existingIt != resolvedIndexByFolderUuid.constEnd())
-            {
-                resolved[existingIt.value()].sourceWasLeafOnlyWithoutUuid =
-                    resolved.at(existingIt.value()).sourceWasLeafOnlyWithoutUuid && sourceWasLeafOnlyWithoutUuid;
-                return;
-            }
-
-            resolvedIndexByFolderUuid.insert(normalizedFolderUuid, resolved.size());
-            resolved.push_back(ResolvedFolderBinding{
-                normalizedFolderUuid,
-                sourceWasLeafOnlyWithoutUuid,
-            });
-        };
-
-        for (const NoteFolderToken& token : tokens)
-        {
-            if (!token.folderUuid.isEmpty())
-            {
-                appendResolved(token.folderUuid, token);
-            }
-        }
-
-        for (const NoteFolderToken& token : tokens)
-        {
-            if (token.hierarchical)
-            {
-                appendResolved(lookup.folderUuidByPathKey.value(token.pathKey), token);
-            }
-        }
-
-        for (const NoteFolderToken& token : tokens)
-        {
-            if (token.hierarchical)
-            {
-                continue;
-            }
-
-            const QStringList candidates = lookup.folderUuidsByLeafKey.value(token.pathKey);
-            if (candidates.isEmpty())
-            {
-                continue;
-            }
-
-            QStringList contextualMatches;
-            for (const QString& candidateFolderUuid : candidates)
-            {
-                const QSet<QString> ancestorLeafKeys = lookup.ancestorLeafKeysByFolderUuid.value(candidateFolderUuid);
-                bool matchesAllAncestors = true;
-                for (const QString& ancestorLeafKey : ancestorLeafKeys)
-                {
-                    if (!rawKeys.contains(ancestorLeafKey))
-                    {
-                        matchesAllAncestors = false;
-                        break;
-                    }
-                }
-
-                if (matchesAllAncestors)
-                {
-                    contextualMatches.push_back(candidateFolderUuid);
-                }
-            }
-
-            if (contextualMatches.size() == 1)
-            {
-                appendResolved(contextualMatches.constFirst(), token);
-                continue;
-            }
-
-            if (contextualMatches.isEmpty() && candidates.size() == 1)
-            {
-                appendResolved(candidates.constFirst(), token);
-            }
-        }
-
-        return resolved;
-    }
-
-    QStringList effectiveNoteFolderUuids(
-        const LibraryNoteRecord& note,
-        const FolderHierarchyLookup& lookup)
-    {
-        const QVector<ResolvedFolderBinding> resolvedBindings = resolvedNoteFolderBindings(note, lookup);
-        QStringList effectiveFolderUuids;
-        effectiveFolderUuids.reserve(resolvedBindings.size());
-
-        for (const ResolvedFolderBinding& binding : resolvedBindings)
-        {
-            const QString folderUuid = normalizeFolderUuid(binding.folderUuid);
-            const QString folderPath = normalizeFolderPath(lookup.displayPathByFolderUuid.value(folderUuid));
-            if (folderUuid.isEmpty() || folderPath.isEmpty())
-            {
-                continue;
-            }
-
-            bool suppressAsLegacyContextOnlyAncestor = false;
-            if (binding.sourceWasLeafOnlyWithoutUuid)
-            {
-                for (const ResolvedFolderBinding& otherBinding : resolvedBindings)
-                {
-                    const QString otherFolderUuid = normalizeFolderUuid(otherBinding.folderUuid);
-                    const QString otherFolderPath = normalizeFolderPath(
-                        lookup.displayPathByFolderUuid.value(otherFolderUuid));
-                    if (otherFolderUuid.isEmpty()
-                        || otherFolderPath.isEmpty()
-                        || otherFolderUuid == folderUuid
-                        || !otherBinding.sourceWasLeafOnlyWithoutUuid)
-                    {
-                        continue;
-                    }
-                    if (otherFolderPath.startsWith(folderPath + QLatin1Char('/')))
-                    {
-                        suppressAsLegacyContextOnlyAncestor = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!suppressAsLegacyContextOnlyAncestor && !effectiveFolderUuids.contains(folderUuid))
-            {
-                effectiveFolderUuids.push_back(folderUuid);
-            }
-        }
-
-        return effectiveFolderUuids;
-    }
-
-    QStringList canonicalNoteFolderLabels(
-        const LibraryNoteRecord& note,
-        const FolderHierarchyLookup* lookup)
-    {
-        QStringList folders;
-        QSet<QString> folderKeys;
-        if (lookup != nullptr)
-        {
-            const QStringList resolvedFolderUuids = effectiveNoteFolderUuids(note, *lookup);
-            folders.reserve(resolvedFolderUuids.size());
-            for (const QString& folderUuid : resolvedFolderUuids)
-            {
-                const QString normalizedFolderPath = normalizeFolderPath(
-                    lookup->displayPathByFolderUuid.value(folderUuid));
-                const QString folderKey = normalizedFolderPath.toCaseFolded();
-                if (!normalizedFolderPath.isEmpty() && !folderKeys.contains(folderKey))
-                {
-                    folders.push_back(WhatSon::NoteFolders::displayFolderPath(normalizedFolderPath));
-                    folderKeys.insert(folderKey);
-                }
-            }
-        }
-
-        const QStringList mirroredFolders = noteListFolders(note);
-        for (const QString& folderPath : mirroredFolders)
-        {
-            const QString normalizedFolderPath = normalizeFolderPath(folderPath);
-            const QString folderKey = normalizedFolderPath.toCaseFolded();
-            if (normalizedFolderPath.isEmpty() || folderKeys.contains(folderKey))
-            {
-                continue;
-            }
-
-            folders.push_back(WhatSon::NoteFolders::displayFolderPath(normalizedFolderPath));
-            folderKeys.insert(folderKey);
-        }
-
-        if (folders.isEmpty())
-        {
-            folders = mirroredFolders;
-        }
-        return folders;
-    }
-
-    bool noteMatchesFolderScope(
-        const LibraryNoteRecord& note,
-        const QString& selectedFolderUuid,
-        const FolderHierarchyLookup& lookup)
-    {
-        if (selectedFolderUuid.isEmpty())
-        {
-            return true;
-        }
-
-        const QStringList resolvedFolderUuids = effectiveNoteFolderUuids(note, lookup);
-        for (const QString& folderUuid : resolvedFolderUuids)
-        {
-            if (folderUuid == selectedFolderUuid)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    QStringList noteIdsFromRecords(const QVector<LibraryNoteRecord>& notes)
-    {
-        QStringList noteIds;
-        noteIds.reserve(notes.size());
-
-        for (const LibraryNoteRecord& note : notes)
-        {
-            const QString noteId = note.noteId.trimmed();
-            if (!noteId.isEmpty())
-            {
-                noteIds.push_back(noteId);
-            }
-        }
-
-        return noteIds;
-    }
-
-    QString noteListItemCacheKey(const QString& noteId, const QString& noteDirectoryPath)
-    {
-        return noteId.trimmed()
-            + QLatin1Char('\n')
-            + WhatSon::Hierarchy::LibrarySupport::normalizePath(noteDirectoryPath);
-    }
-
-    QString randomAlphaNumericSegment(int length)
-    {
-        static const QString upperAlphabet = QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        static const QString lowerAlphabet = QStringLiteral("abcdefghijklmnopqrstuvwxyz");
-        static const QString digits = QStringLiteral("0123456789");
-        static const QString alphaNumericAlphabet = upperAlphabet + lowerAlphabet + digits;
-
-        if (length <= 0)
-        {
-            return {};
-        }
-
-        QString segment;
-        segment.reserve(length);
-        segment.push_back(upperAlphabet.at(QRandomGenerator::global()->bounded(upperAlphabet.size())));
-        if (length > 1)
-        {
-            segment.push_back(lowerAlphabet.at(QRandomGenerator::global()->bounded(lowerAlphabet.size())));
-        }
-        if (length > 2)
-        {
-            segment.push_back(digits.at(QRandomGenerator::global()->bounded(digits.size())));
-        }
-        for (int index = segment.size(); index < length; ++index)
-        {
-            segment.push_back(
-                alphaNumericAlphabet.at(QRandomGenerator::global()->bounded(alphaNumericAlphabet.size())));
-        }
-
-        for (int index = segment.size() - 1; index > 0; --index)
-        {
-            const int swapIndex = QRandomGenerator::global()->bounded(index + 1);
-            if (swapIndex != index)
-            {
-                const QChar currentValue = segment.at(index);
-                segment[index] = segment.at(swapIndex);
-                segment[swapIndex] = currentValue;
-            }
-        }
-
-        return segment;
-    }
-
-    QString createUniqueNoteId(
-        const QString& libraryPath,
-        const QVector<LibraryNoteRecord>& existingNotes)
-    {
-        QSet<QString> existingKeys;
-        existingKeys.reserve(existingNotes.size());
-        for (const LibraryNoteRecord& note : existingNotes)
-        {
-            const QString noteIdKey = note.noteId.trimmed().toCaseFolded();
-            if (!noteIdKey.isEmpty())
-            {
-                existingKeys.insert(noteIdKey);
-            }
-        }
-
-        const QDir libraryDir(libraryPath);
-        for (int attempt = 0; attempt < 4096; ++attempt)
-        {
-            const QString candidate = randomAlphaNumericSegment(16) + QLatin1Char('-')
-                + randomAlphaNumericSegment(16);
-            const QString candidateKey = candidate.toCaseFolded();
-            if (existingKeys.contains(candidateKey))
-            {
-                continue;
-            }
-
-            if (libraryDir.exists(candidate + QStringLiteral(".wsnote")))
-            {
-                continue;
-            }
-
-            return candidate;
-        }
-
-        return {};
-    }
-
-    QString resolvePrimaryLibraryPathFromWshub(
-        const QString& wshubPath,
-        QString* errorMessage = nullptr)
-    {
-        QStringList contentsDirectories;
-        if (!WhatSon::Hierarchy::LibrarySupport::resolveContentsDirectories(
-            wshubPath,
-            &contentsDirectories,
-            errorMessage))
-        {
-            return {};
-        }
-
-        for (const QString& contentsDirectory : std::as_const(contentsDirectories))
-        {
-            const QString fixedLibraryPath = QDir(contentsDirectory).filePath(QStringLiteral("Library.wslibrary"));
-            if (QFileInfo(fixedLibraryPath).isDir())
-            {
-                return QDir::cleanPath(fixedLibraryPath);
-            }
-
-            const QDir contentsDir(contentsDirectory);
-            const QStringList dynamicLibraries = contentsDir.entryList(
-                QStringList{QStringLiteral("*.wslibrary")},
-                QDir::Dirs | QDir::NoDotAndDotDot,
-                QDir::Name);
-            if (!dynamicLibraries.isEmpty())
-            {
-                return QDir::cleanPath(contentsDir.filePath(dynamicLibraries.first()));
-            }
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No Library.wslibrary directory found inside: %1").arg(wshubPath);
-        }
-        return {};
-    }
-
-    QString resolveHubStatPathFromWshub(const QString& wshubPath)
-    {
-        const QString normalizedWshubPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(wshubPath);
-        if (normalizedWshubPath.isEmpty())
-        {
-            return {};
-        }
-
-        const QDir hubDir(normalizedWshubPath);
-        const QStringList statFiles = hubDir.entryList(
-            QStringList{QStringLiteral("*.wsstat")},
-            QDir::Files | QDir::NoDotAndDotDot,
-            QDir::Name);
-        if (statFiles.isEmpty())
-        {
-            return {};
-        }
-
-        return QDir::cleanPath(hubDir.filePath(statFiles.first()));
-    }
-
-    bool ensureDirectoryPath(const QString& directoryPath, QString* errorMessage = nullptr)
-    {
-        if (directoryPath.trimmed().isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Directory path must not be empty.");
-            }
-            return false;
-        }
-
-        WhatSonSystemIoGateway ioGateway;
-        return ioGateway.ensureDirectory(directoryPath, errorMessage);
-    }
-
-    bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
-    {
-        WhatSonSystemIoGateway ioGateway;
-        return ioGateway.writeUtf8File(filePath, text, errorMessage);
-    }
-
-    bool removeFilePath(const QString& filePath, QString* errorMessage = nullptr)
-    {
-        WhatSonSystemIoGateway ioGateway;
-        return ioGateway.removeFile(filePath, errorMessage);
-    }
-
-    bool removeDirectoryPath(const QString& directoryPath, QString* errorMessage = nullptr)
-    {
-        WhatSonSystemIoGateway ioGateway;
-        return ioGateway.removeDirectoryRecursively(directoryPath, errorMessage);
-    }
 
     QString resolveNoteHeaderPath(const LibraryNoteRecord& note)
     {
@@ -764,25 +155,6 @@ namespace
         }
 
         return -1;
-    }
-
-    bool folderListContainsPath(const QStringList& folders, const QString& folderPath)
-    {
-        const QString targetFolderKey = normalizeFolderLookupKey(folderPath);
-        if (targetFolderKey.isEmpty())
-        {
-            return false;
-        }
-
-        for (const QString& folder : folders)
-        {
-            if (normalizeFolderLookupKey(folder) == targetFolderKey)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     QString rejectNoteDropReason(
@@ -1653,7 +1025,7 @@ void LibraryHierarchyController::setSystemCalendarStore(ISystemCalendarStore* st
         return;
     }
 
-    if (m_systemCalendarStore == store)
+    if (m_noteListProjection.systemCalendarStore() == store)
     {
         return;
     }
@@ -1663,11 +1035,11 @@ void LibraryHierarchyController::setSystemCalendarStore(ISystemCalendarStore* st
         QObject::disconnect(m_systemCalendarStoreChangedConnection);
     }
 
-    m_systemCalendarStore = store;
-    if (m_systemCalendarStore)
+    m_noteListProjection.setSystemCalendarStore(store);
+    if (m_noteListProjection.systemCalendarStore())
     {
         m_systemCalendarStoreChangedConnection = QObject::connect(
-            m_systemCalendarStore,
+            m_noteListProjection.systemCalendarStore(),
             &ISystemCalendarStore::systemInfoChanged,
             this,
             [this]()
@@ -1681,13 +1053,12 @@ void LibraryHierarchyController::setSystemCalendarStore(ISystemCalendarStore* st
         m_systemCalendarStoreChangedConnection = {};
     }
 
-    invalidateNoteListItemCache();
     refreshNoteListForSelection();
 }
 
 ISystemCalendarStore* LibraryHierarchyController::systemCalendarStore() const noexcept
 {
-    return m_systemCalendarStore;
+    return m_noteListProjection.systemCalendarStore();
 }
 
 int LibraryHierarchyController::selectedIndex() const noexcept
@@ -2047,30 +1418,10 @@ QVariantList LibraryHierarchyController::depthItems() const
     QHash<QString, int> folderNoteCountByFolderUuid;
     if (m_runtimeIndexLoaded && m_foldersHierarchyLoaded)
     {
-        const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
-        folderNoteCountByFolderUuid.reserve(m_items.size());
-
-        for (const LibraryHierarchyItem& item : m_items)
-        {
-            const QString folderUuid = normalizeFolderUuid(item.folderUuid);
-            if (!folderUuid.isEmpty() && !folderNoteCountByFolderUuid.contains(folderUuid))
-            {
-                folderNoteCountByFolderUuid.insert(folderUuid, 0);
-            }
-        }
-
-        for (const LibraryNoteRecord& note : m_indexedState.allNotes())
-        {
-            const QStringList effectiveFolderUuids = effectiveNoteFolderUuids(note, lookup);
-            for (const QString& folderUuid : effectiveFolderUuids)
-            {
-                auto countIt = folderNoteCountByFolderUuid.find(folderUuid);
-                if (countIt != folderNoteCountByFolderUuid.end())
-                {
-                    ++countIt.value();
-                }
-            }
-        }
+        folderNoteCountByFolderUuid = m_noteListProjection.folderNoteCountByFolderUuid(
+            m_items,
+            m_indexedState.allNotes(),
+            m_foldersHierarchyLoaded);
     }
 
     const auto noteCountForItem = [this, &folderNoteCountByFolderUuid](const LibraryHierarchyItem& item) -> int
@@ -3199,16 +2550,13 @@ bool LibraryHierarchyController::applyPersistedBodyStateForNote(
         return false;
     }
 
-    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
-    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
-    if (note.bodySourceText.isEmpty())
+    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
+            &note,
+            normalizedBodyText,
+            normalizedBodySourceText,
+            lastModifiedAt))
     {
-        note.bodySourceText = note.bodyPlainText;
-    }
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
-    if (!lastModifiedAt.trimmed().isEmpty())
-    {
-        note.lastModifiedAt = lastModifiedAt.trimmed();
+        return false;
     }
 
     upsertIndexedNote(note);
@@ -3258,14 +2606,9 @@ QString LibraryHierarchyController::noteDirectoryPathForNoteId(const QString& no
         return {};
     }
 
-    const QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= allNotes.size())
-    {
-        return {};
-    }
-
-    return allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+    return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(
+        m_indexedState.allNotes(),
+        normalizedNoteId);
 }
 
 QString LibraryHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
@@ -3282,12 +2625,9 @@ QString LibraryHierarchyController::noteBodySourceTextForNoteId(const QString& n
         return {};
     }
 
-    if (!note.bodySourceText.isEmpty())
-    {
-        return note.bodySourceText;
-    }
-
-    return note.bodyPlainText;
+    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(
+        QVector<LibraryNoteRecord>{note},
+        normalizedNoteId);
 }
 
 bool LibraryHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)
@@ -3635,149 +2975,19 @@ int LibraryHierarchyController::nextFolderSequence(const QVector<LibraryHierarch
     return maxSequence + 1;
 }
 
-LibraryNoteListItem LibraryHierarchyController::buildNoteListItem(
-    const LibraryNoteRecord& note,
-    const QStringList& folderLabels) const
-{
-    QString noteId = note.noteId.trimmed();
-    const QString noteDirectoryPath =
-        WhatSon::Hierarchy::LibrarySupport::normalizePath(note.noteDirectoryPath);
-    if (noteId.isEmpty() && !noteDirectoryPath.isEmpty())
-    {
-        noteId = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
-        if (noteId.isEmpty())
-        {
-            noteId = QFileInfo(noteDirectoryPath).fileName().trimmed();
-        }
-        if (!noteId.isEmpty())
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.controller"),
-                                      QStringLiteral("buildNoteListItem.derivedNoteIdFromDirectoryPath"),
-                                      QStringLiteral("noteDirectoryPath=%1 derivedNoteId=%2")
-                                          .arg(noteDirectoryPath)
-                                          .arg(noteId));
-        }
-    }
-    const QString cacheKey = noteListItemCacheKey(noteId, noteDirectoryPath);
-    if (!m_noteListItemCache.isEmpty())
-    {
-        const auto cachedIt = m_noteListItemCache.constFind(cacheKey);
-        if (cachedIt != m_noteListItemCache.constEnd())
-        {
-            return cachedIt.value();
-        }
-    }
-
-    LibraryNoteListItem item;
-    item.id = noteId;
-    item.noteDirectoryPath = noteDirectoryPath;
-    item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
-    item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = !note.bodySourceText.isEmpty()
-        ? note.bodySourceText
-        : note.bodyPlainText;
-    item.createdAt = note.createdAt;
-    item.lastModifiedAt = note.lastModifiedAt;
-    item.image = note.bodyHasResource;
-    item.imageSource = note.bodyFirstResourceThumbnailUrl;
-    item.displayDate = m_systemCalendarStore
-                           ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
-                           : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
-    item.folders = folderLabels;
-    item.tags = noteListTags(note);
-    item.bookmarked = note.bookmarked;
-    item.bookmarkColor = bookmarkColorHexFromNote(note);
-
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.controller"),
-                              QStringLiteral("buildNoteListItem"),
-                              QStringLiteral("noteId=%1 noteDirectoryPath=%2 primaryText=%3 bodySourceText=%4 bodyPlainText=%5 bodyChosen=%6")
-                                  .arg(item.id)
-                                  .arg(item.noteDirectoryPath)
-                                  .arg(WhatSon::Debug::summarizeText(item.primaryText, 48))
-                                  .arg(WhatSon::Debug::summarizeText(note.bodySourceText, 48))
-                                  .arg(WhatSon::Debug::summarizeText(note.bodyPlainText, 48))
-                                  .arg(WhatSon::Debug::summarizeText(item.bodyText, 48)));
-    if (!cacheKey.isEmpty())
-    {
-        m_noteListItemCache.insert(cacheKey, item);
-    }
-    return item;
-}
-
 QVector<LibraryNoteListItem> LibraryHierarchyController::buildNoteListItems(
     const QVector<LibraryNoteRecord>& notes) const
 {
-    const bool usesFoldersHierarchy = m_foldersHierarchyLoaded;
-    if (!m_noteListItemCache.isEmpty() && m_noteListItemCacheUsesFoldersHierarchy != usesFoldersHierarchy)
-    {
-        m_noteListItemCache.clear();
-    }
-    m_noteListItemCacheUsesFoldersHierarchy = usesFoldersHierarchy;
-
-    QVector<LibraryNoteListItem> items;
-    items.reserve(notes.size());
-    const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
-    const FolderHierarchyLookup* activeLookup = usesFoldersHierarchy ? &lookup : nullptr;
-
-    for (const LibraryNoteRecord& note : notes)
-    {
-        const LibraryNoteListItem item = buildNoteListItem(note, canonicalNoteFolderLabels(note, activeLookup));
-        if (item.id.trimmed().isEmpty() && item.noteDirectoryPath.trimmed().isEmpty())
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.controller"),
-                                      QStringLiteral("buildNoteListItems.skipInvalidNote"),
-                                      QStringLiteral("primaryText=%1 createdAt=%2 lastModifiedAt=%3")
-                                          .arg(item.primaryText)
-                                          .arg(item.createdAt)
-                                          .arg(item.lastModifiedAt));
-            continue;
-        }
-        items.push_back(item);
-    }
-
-    return items;
+    return m_noteListProjection.buildNoteListItems(m_items, notes, m_foldersHierarchyLoaded);
 }
 
 QVector<LibraryNoteListItem> LibraryHierarchyController::buildFolderScopedNoteListItems(
     const FolderSelectionScope& scope) const
 {
-    const bool usesFoldersHierarchy = true;
-    if (!m_noteListItemCache.isEmpty() && m_noteListItemCacheUsesFoldersHierarchy != usesFoldersHierarchy)
-    {
-        m_noteListItemCache.clear();
-    }
-    m_noteListItemCacheUsesFoldersHierarchy = usesFoldersHierarchy;
-
-    const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
-    QVector<LibraryNoteListItem> items;
-    items.reserve(m_indexedState.allNotes().size());
-
-    for (const LibraryNoteRecord& note : m_indexedState.allNotes())
-    {
-        if (!noteMatchesFolderScope(note, scope.selectedFolderUuid, lookup))
-        {
-            continue;
-        }
-
-        const LibraryNoteListItem item = buildNoteListItem(note, canonicalNoteFolderLabels(note, &lookup));
-        if (item.id.trimmed().isEmpty() && item.noteDirectoryPath.trimmed().isEmpty())
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.controller"),
-                                      QStringLiteral("buildFolderScopedNoteListItems.skipInvalidNote"),
-                                      QStringLiteral("primaryText=%1 createdAt=%2 lastModifiedAt=%3")
-                                          .arg(item.primaryText)
-                                          .arg(item.createdAt)
-                                          .arg(item.lastModifiedAt));
-            continue;
-        }
-        items.push_back(item);
-    }
-
-    return items;
+    return m_noteListProjection.buildFolderScopedNoteListItems(
+        m_items,
+        m_indexedState.allNotes(),
+        scope.selectedFolderUuid);
 }
 
 const QVector<LibraryNoteRecord>& LibraryHierarchyController::notesForBucket(IndexedBucket bucket) const
@@ -3901,26 +3111,12 @@ bool LibraryHierarchyController::removeIndexedNoteById(const QString& noteId)
 
 void LibraryHierarchyController::invalidateNoteListItemCache() const
 {
-    m_noteListItemCache.clear();
+    m_noteListProjection.invalidate();
 }
 
 void LibraryHierarchyController::invalidateNoteListItemCacheForNoteId(const QString& noteId) const
 {
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return;
-    }
-
-    for (auto iterator = m_noteListItemCache.begin(); iterator != m_noteListItemCache.end();)
-    {
-        if (iterator.value().id.trimmed() == normalizedNoteId)
-        {
-            iterator = m_noteListItemCache.erase(iterator);
-            continue;
-        }
-        ++iterator;
-    }
+    m_noteListProjection.invalidateForNoteId(noteId);
 }
 
 void LibraryHierarchyController::setIndexedStateNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes)

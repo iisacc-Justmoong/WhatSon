@@ -16,89 +16,8 @@
 namespace
 {
     constexpr auto kScope = "event.controller";
-
-    QString normalizedEventKeySegment(const EventHierarchyItem& item, int index)
-    {
-        const QString normalizedLabel = item.label.trimmed();
-        if (!normalizedLabel.isEmpty())
-        {
-            return normalizedLabel;
-        }
-        return QStringLiteral("event:%1").arg(index);
-    }
-
-    QString eventHierarchyItemKey(const QVector<EventHierarchyItem>& items, int index)
-    {
-        if (index < 0 || index >= items.size())
-        {
-            return {};
-        }
-
-        QStringList pathSegments;
-        pathSegments.reserve(std::max(1, items.at(index).depth + 1));
-        pathSegments.push_front(normalizedEventKeySegment(items.at(index), index));
-
-        int expectedDepth = std::max(0, items.at(index).depth);
-        for (int cursor = index - 1; cursor >= 0 && expectedDepth > 0; --cursor)
-        {
-            const EventHierarchyItem& candidate = items.at(cursor);
-            if (std::max(0, candidate.depth) != expectedDepth - 1)
-            {
-                continue;
-            }
-            pathSegments.push_front(normalizedEventKeySegment(candidate, cursor));
-            expectedDepth = std::max(0, candidate.depth);
-        }
-
-        return pathSegments.join(QLatin1Char('/'));
-    }
-
-    QSet<QString> expandedEventItemKeys(const QVector<EventHierarchyItem>& items)
-    {
-        QSet<QString> expandedKeys;
-        for (int index = 0; index < items.size(); ++index)
-        {
-            if (!items.at(index).expanded)
-            {
-                continue;
-            }
-            expandedKeys.insert(eventHierarchyItemKey(items, index));
-        }
-        return expandedKeys;
-    }
-
-    void restoreExpandedEventItemKeys(QVector<EventHierarchyItem>* items, const QSet<QString>& expandedKeys)
-    {
-        if (items == nullptr)
-        {
-            return;
-        }
-
-        for (int index = 0; index < items->size(); ++index)
-        {
-            (*items)[index].expanded = expandedKeys.contains(eventHierarchyItemKey(*items, index));
-        }
-    }
-
-    int selectedEventIndexForKey(const QVector<EventHierarchyItem>& items, const QString& key)
-    {
-        const QString normalizedKey = key.trimmed();
-        if (normalizedKey.isEmpty())
-        {
-            return -1;
-        }
-
-        for (int index = 0; index < items.size(); ++index)
-        {
-            if (eventHierarchyItemKey(items, index) == normalizedKey)
-            {
-                return index;
-            }
-        }
-
-        return -1;
-    }
-} 
+    const QString kKeyPrefix = QStringLiteral("event");
+}
 
 EventHierarchyController::EventHierarchyController(QObject* parent)
     : IHierarchyController(parent)
@@ -186,16 +105,7 @@ QVariantList EventHierarchyController::hierarchyModel() const
 
 QVariantList EventHierarchyController::depthItems() const
 {
-    QVariantList serialized = WhatSon::Hierarchy::EventSupport::serializeDepthItems(m_items);
-    for (int index = 0; index < serialized.size(); ++index)
-    {
-        QVariantMap entry = serialized.at(index).toMap();
-        entry.insert(QStringLiteral("itemId"), index);
-        entry.insert(QStringLiteral("key"), QStringLiteral("event:%1").arg(index));
-        entry.insert(QStringLiteral("count"), 0);
-        serialized[index] = entry;
-    }
-    return serialized;
+    return WhatSon::Hierarchy::NamedStringSupport::lvrsDepthItems(m_items, kKeyPrefix);
 }
 
 QString EventHierarchyController::itemLabel(int index) const
@@ -276,23 +186,16 @@ bool EventHierarchyController::renameItem(int index, const QString& displayName)
 
 bool EventHierarchyController::setItemExpanded(int index, bool expanded)
 {
-    if (index < 0 || index >= m_items.size())
+    bool changed = false;
+    if (!WhatSon::Hierarchy::NamedStringSupport::setItemExpanded(&m_items, index, expanded, &changed))
     {
         return false;
     }
 
-    if (!m_items.at(index).showChevron)
+    if (changed)
     {
-        return false;
+        syncModel();
     }
-
-    if (m_items.at(index).expanded == expanded)
-    {
-        return true;
-    }
-
-    m_items[index].expanded = expanded;
-    syncModel();
     return true;
 }
 
@@ -502,9 +405,10 @@ void EventHierarchyController::applyRuntimeSnapshot(
 {
     const QString preservedSelectionKey =
         (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
-            ? eventHierarchyItemKey(m_items, m_selectedIndex)
+            ? WhatSon::Hierarchy::NamedStringSupport::itemKey(m_items, m_selectedIndex, kKeyPrefix)
             : QString();
-    const QSet<QString> preservedExpandedKeys = expandedEventItemKeys(m_items);
+    const QSet<QString> preservedExpandedKeys =
+        WhatSon::Hierarchy::NamedStringSupport::expandedItemKeys(m_items, kKeyPrefix);
     m_eventFilePath = eventFilePath.trimmed();
     if (!loadSucceeded)
     {
@@ -525,10 +429,13 @@ void EventHierarchyController::applyRuntimeSnapshot(
         QStringLiteral("Event"),
         m_eventNames,
         QStringLiteral("Event"));
-    restoreExpandedEventItemKeys(&m_items, preservedExpandedKeys);
+    WhatSon::Hierarchy::NamedStringSupport::restoreExpandedItemKeys(&m_items, kKeyPrefix, preservedExpandedKeys);
     m_createdFolderSequence = WhatSon::Hierarchy::EventSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
-    setSelectedIndex(selectedEventIndexForKey(m_items, preservedSelectionKey));
+    setSelectedIndex(WhatSon::Hierarchy::NamedStringSupport::selectedIndexForKey(
+        m_items,
+        kKeyPrefix,
+        preservedSelectionKey));
     updateLoadState(true);
 }
 

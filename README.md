@@ -186,6 +186,13 @@ WhatSon is an LVRS-based Qt Quick application.
   and row-level drag gating from row order plus explicit `depth` / `draggable`. `SidebarHierarchyView.qml` binds that
   model without an intermediate adapter and now normalizes the incoming C++ `QVariantList` into a real JS array before
   it reaches LVRS editable drag logic.
+- Event and Preset keep their dedicated C++ hierarchy controllers, but their repeated named-string depth parsing,
+  serialization, expansion-key, and selection-key policy now flows through
+  `src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp` instead of maintaining two copied support
+  implementations.
+- Library note-list card projection and per-note projection cache now live in
+  `src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.*`; `LibraryHierarchyController` keeps the
+  hierarchy and note mutation orchestration while delegating visible list item assembly and folder-scoped projection.
 - `IHierarchyViewModel` is now a read-oriented shared contract. Rename/create/delete/expand/reorder/note-drop moved
   behind dedicated capability interfaces, and QML consumes those write paths through `HierarchyInteractionBridge` plus
   `HierarchyDragDropBridge` instead of depending on one fat interface for every hierarchy screen.

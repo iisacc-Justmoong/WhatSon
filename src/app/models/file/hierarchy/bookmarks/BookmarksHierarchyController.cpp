@@ -4,6 +4,7 @@
 #include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
@@ -643,23 +644,14 @@ bool BookmarksHierarchyController::applyPersistedBodyStateForNote(
         return false;
     }
 
-    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
+    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
+            &m_bookmarkedNotes,
+            normalizedNoteId,
+            normalizedBodyText,
+            normalizedBodySourceText,
+            lastModifiedAt))
     {
         return false;
-    }
-
-    LibraryNoteRecord& note = m_bookmarkedNotes[noteIndex];
-    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
-    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
-    if (note.bodySourceText.isEmpty())
-    {
-        note.bodySourceText = note.bodyPlainText;
-    }
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
-    if (!lastModifiedAt.trimmed().isEmpty())
-    {
-        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     refreshNoteListForSelection();
@@ -708,13 +700,7 @@ QString BookmarksHierarchyController::noteDirectoryPathForNoteId(const QString& 
         return {};
     }
 
-    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
-    {
-        return {};
-    }
-
-    return m_bookmarkedNotes.at(noteIndex).noteDirectoryPath.trimmed();
+    return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_bookmarkedNotes, normalizedNoteId);
 }
 
 QString BookmarksHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
@@ -725,19 +711,7 @@ QString BookmarksHierarchyController::noteBodySourceTextForNoteId(const QString&
         return {};
     }
 
-    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
-    {
-        return {};
-    }
-
-    const LibraryNoteRecord& note = m_bookmarkedNotes.at(noteIndex);
-    if (!note.bodySourceText.isEmpty())
-    {
-        return note.bodySourceText;
-    }
-
-    return note.bodyPlainText;
+    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_bookmarkedNotes, normalizedNoteId);
 }
 
 bool BookmarksHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)

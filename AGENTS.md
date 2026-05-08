@@ -72,6 +72,9 @@
 - 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
 - 런타임 계층 Controller wiring에는 flat/shared hierarchy model abstraction을 금지한다.
 - model/support 코드는 `src/app/models/file/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
+- Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,
+  반복되는 depth item parsing/serialization/selection/expansion support는
+  `src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다.
 
 ### 컨트롤러 구현 경계 (중요)
 
@@ -90,6 +93,8 @@
 - 순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다. view 동작이
   domain mutation을 필요로 할 때는 QML이 이미 노출된 좁은 model/controller/bridge API를 직접 호출한다.
 - 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
+- `LibraryHierarchyController`는 계층/선택 조정자 역할에 머물러야 하며 note-list projection/cache 조립은
+  `WhatSonLibraryNoteListProjection` 같은 전용 C++ collaborator에 둔다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
 

@@ -1129,6 +1129,7 @@ private slots:
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
     void sourceTree_keepsMinimapUnderEditorChromeModels();
     void sourceTree_keepsContentsQmlUnderViewContents();
+    void sourceTree_keepsHierarchyBackendDecomposed();
     void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
     void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
     void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();

@@ -2,6 +2,7 @@
 
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 #include "app/models/file/hierarchy/library/LibraryAll.hpp"
 #include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
 #include "app/models/file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
@@ -572,23 +573,14 @@ bool ProgressHierarchyController::applyPersistedBodyStateForNote(
         return false;
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
+            &m_allNotes,
+            normalizedNoteId,
+            normalizedBodyText,
+            normalizedBodySourceText,
+            lastModifiedAt))
     {
         return false;
-    }
-
-    LibraryNoteRecord& note = m_allNotes[noteIndex];
-    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
-    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
-    if (note.bodySourceText.isEmpty())
-    {
-        note.bodySourceText = note.bodyPlainText;
-    }
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
-    if (!lastModifiedAt.trimmed().isEmpty())
-    {
-        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     refreshNoteListForSelection();
@@ -631,13 +623,7 @@ bool ProgressHierarchyController::requestTrackedStatisticsRefreshForNote(
 
 QString ProgressHierarchyController::noteDirectoryPathForNoteId(const QString& noteId) const
 {
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, noteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
-    {
-        return {};
-    }
-
-    return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+    return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_allNotes, noteId);
 }
 
 QString ProgressHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
@@ -648,19 +634,7 @@ QString ProgressHierarchyController::noteBodySourceTextForNoteId(const QString& 
         return {};
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
-    {
-        return {};
-    }
-
-    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
-    if (!note.bodySourceText.isEmpty())
-    {
-        return note.bodySourceText;
-    }
-
-    return note.bodyPlainText;
+    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_allNotes, normalizedNoteId);
 }
 
 bool ProgressHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)

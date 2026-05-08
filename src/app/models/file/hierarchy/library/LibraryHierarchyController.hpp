@@ -4,12 +4,12 @@
 #include "app/models/file/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/file/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.hpp"
 #include "app/models/file/hub/WhatSonHubStore.hpp"
 #include "app/models/file/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/file/hierarchy/IHierarchyController.hpp"
 
 #include <QHash>
-#include <QPointer>
 #include <QSet>
 #include <QVariantList>
 #include <QVector>
@@ -171,7 +171,6 @@ private:
     static int extractDepth(const QVariantMap& entryMap);
     static LibraryHierarchyItem parseItem(const QVariant& entry, int fallbackOrdinal);
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
-    LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note, const QStringList& folderLabels) const;
     QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes) const;
     QVector<LibraryNoteListItem> buildFolderScopedNoteListItems(const FolderSelectionScope& scope) const;
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
@@ -212,9 +211,8 @@ private:
     LibraryHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
     WhatSonLibraryIndexedState m_indexedState;
+    WhatSonLibraryNoteListProjection m_noteListProjection;
     QVector<IndexedBucketRange> m_bucketRanges;
-    mutable QHash<QString, LibraryNoteListItem> m_noteListItemCache;
-    mutable bool m_noteListItemCacheUsesFoldersHierarchy = false;
     bool m_runtimeIndexLoaded = false;
     bool m_foldersHierarchyLoaded = false;
     int m_selectedIndex = -1;
@@ -225,7 +223,6 @@ private:
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_foldersFilePath;
-    QPointer<ISystemCalendarStore> m_systemCalendarStore;
     QMetaObject::Connection m_systemCalendarStoreChangedConnection;
     WhatSonHubStore m_hubStore;
 };
