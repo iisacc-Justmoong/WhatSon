@@ -1,11 +1,11 @@
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
 
+#include "app/models/editor/bridge/ContentsEditorSelectionContractResolver.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
 
 #include <QAbstractItemModel>
 #include <QDir>
-#include <QMetaProperty>
 #include <QQmlEngine>
 #include <QTimer>
 
@@ -25,58 +25,12 @@ namespace
 
     QString readTraceStringProperty(const QObject* object, const char* propertyName)
     {
-        if (object == nullptr || propertyName == nullptr)
-        {
-            return {};
-        }
-
-        const QMetaObject* metaObject = object->metaObject();
-        if (metaObject == nullptr)
-        {
-            return {};
-        }
-
-        const int propertyIndex = metaObject->indexOfProperty(propertyName);
-        if (propertyIndex < 0)
-        {
-            return {};
-        }
-
-        const QMetaProperty property = metaObject->property(propertyIndex);
-        if (!property.isReadable())
-        {
-            return {};
-        }
-
-        return property.read(object).toString();
+        return ContentsEditorSelectionContractResolver::readStringProperty(object, propertyName);
     }
 
     int readTraceIntProperty(const QObject* object, const char* propertyName)
     {
-        if (object == nullptr || propertyName == nullptr)
-        {
-            return 0;
-        }
-
-        const QMetaObject* metaObject = object->metaObject();
-        if (metaObject == nullptr)
-        {
-            return 0;
-        }
-
-        const int propertyIndex = metaObject->indexOfProperty(propertyName);
-        if (propertyIndex < 0)
-        {
-            return 0;
-        }
-
-        const QMetaProperty property = metaObject->property(propertyIndex);
-        if (!property.isReadable())
-        {
-            return 0;
-        }
-
-        return std::max(0, property.read(object).toInt());
+        return std::max(0, ContentsEditorSelectionContractResolver::readIntProperty(object, propertyName));
     }
 
     QString summarizeTraceNoteListModel(const QObject* noteListModel)
@@ -94,83 +48,27 @@ namespace
 
     bool noteBackedSelectionEnabled(const QObject* noteListModel)
     {
-        if (noteListModel == nullptr)
-        {
-            return false;
-        }
-
-        const QMetaObject* metaObject = noteListModel->metaObject();
-        if (metaObject == nullptr)
-        {
-            return false;
-        }
-
-        const int propertyIndex = metaObject->indexOfProperty("noteBacked");
-        if (propertyIndex < 0)
-        {
-            return true;
-        }
-
-        const QMetaProperty property = metaObject->property(propertyIndex);
-        if (!property.isReadable())
-        {
-            return true;
-        }
-
-        return property.read(noteListModel).toBool();
+        return ContentsEditorSelectionContractResolver::noteBackedSelectionEnabled(noteListModel);
     }
 
     bool hasReadableContractProperty(const QObject* object, const char* propertyName)
     {
-        if (object == nullptr || propertyName == nullptr)
-        {
-            return false;
-        }
-
-        const QMetaObject* metaObject = object->metaObject();
-        if (metaObject == nullptr)
-        {
-            return false;
-        }
-
-        const int propertyIndex = metaObject->indexOfProperty(propertyName);
-        if (propertyIndex < 0)
-        {
-            return false;
-        }
-
-        return metaObject->property(propertyIndex).isReadable();
+        return ContentsEditorSelectionContractResolver::hasReadableProperty(object, propertyName);
     }
 
     QVariantMap readCurrentNoteEntry(const QObject* noteListModel)
     {
-        if (!hasReadableContractProperty(noteListModel, "currentNoteEntry"))
-        {
-            return {};
-        }
-
-        QVariantMap noteEntry = noteListModel->property("currentNoteEntry").toMap();
-        if (!noteEntry.contains(QStringLiteral("noteId")) && noteEntry.contains(QStringLiteral("id")))
-        {
-            noteEntry.insert(QStringLiteral("noteId"), noteEntry.value(QStringLiteral("id")));
-        }
-        return noteEntry;
+        return ContentsEditorSelectionContractResolver::currentNoteEntry(noteListModel);
     }
 
     QString noteIdFromEntry(const QVariantMap& noteEntry)
     {
-        const QString noteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
-        if (!noteId.isEmpty())
-        {
-            return noteId;
-        }
-
-        return noteEntry.value(QStringLiteral("id")).toString().trimmed();
+        return ContentsEditorSelectionContractResolver::noteIdFromEntry(noteEntry);
     }
 
     QString noteDirectoryPathFromEntry(const QVariantMap& noteEntry)
     {
-        return noteEntry.value(QStringLiteral("noteDirectoryPath")).toString().trimmed();
+        return ContentsEditorSelectionContractResolver::noteDirectoryPathFromEntry(noteEntry);
     }
 
     void stabilizeQmlBindingOwnership(QObject* object)
@@ -728,55 +626,22 @@ void ContentsEditorSelectionBridge::handleContentControllerDestroyed()
 
 bool ContentsEditorSelectionBridge::hasReadableProperty(const QObject* object, const char* propertyName)
 {
-    if (object == nullptr || propertyName == nullptr)
-    {
-        return false;
-    }
-
-    const int propertyIndex = object->metaObject()->indexOfProperty(propertyName);
-    if (propertyIndex < 0)
-    {
-        return false;
-    }
-
-    return object->metaObject()->property(propertyIndex).isReadable();
+    return ContentsEditorSelectionContractResolver::hasReadableProperty(object, propertyName);
 }
 
 bool ContentsEditorSelectionBridge::hasInvokableMethod(const QObject* object, const char* methodSignature)
 {
-    if (object == nullptr || methodSignature == nullptr)
-    {
-        return false;
-    }
-
-    return object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature(methodSignature)) >= 0;
+    return ContentsEditorSelectionContractResolver::hasInvokableMethod(object, methodSignature);
 }
 
 QString ContentsEditorSelectionBridge::readStringProperty(const QObject* object, const char* propertyName)
 {
-    if (!hasReadableProperty(object, propertyName))
-    {
-        return {};
-    }
-
-    return object->property(propertyName).toString();
+    return ContentsEditorSelectionContractResolver::readStringProperty(object, propertyName);
 }
 
 int ContentsEditorSelectionBridge::readIntProperty(const QObject* object, const char* propertyName)
 {
-    if (!hasReadableProperty(object, propertyName))
-    {
-        return -1;
-    }
-
-    bool converted = false;
-    const int value = object->property(propertyName).toInt(&converted);
-    if (!converted)
-    {
-        return -1;
-    }
-
-    return value;
+    return ContentsEditorSelectionContractResolver::readIntProperty(object, propertyName);
 }
 
 bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& noteId)
@@ -810,43 +675,12 @@ bool ContentsEditorSelectionBridge::adoptPendingEditorBodyText(const QString& no
 
 QString ContentsEditorSelectionBridge::readNoteIdFromModelRow(int row) const
 {
-    const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data());
-    if (itemModel == nullptr || row < 0 || row >= itemModel->rowCount())
-    {
-        return {};
-    }
-
-    const QModelIndex index = itemModel->index(row, 0);
-    if (!index.isValid())
-    {
-        return {};
-    }
-
-    const QVariant noteIdValue = itemModel->data(index, Qt::UserRole + 2);
-    const QString noteId = noteIdValue.toString().trimmed();
-    if (!noteId.isEmpty())
-    {
-        return noteId;
-    }
-
-    return itemModel->data(index, Qt::UserRole + 1).toString().trimmed();
+    return ContentsEditorSelectionContractResolver::noteIdFromModelRow(m_noteListModel.data(), row);
 }
 
 QString ContentsEditorSelectionBridge::readNoteDirectoryPathFromModelRow(int row) const
 {
-    const auto* itemModel = qobject_cast<const QAbstractItemModel*>(m_noteListModel.data());
-    if (itemModel == nullptr || row < 0 || row >= itemModel->rowCount())
-    {
-        return {};
-    }
-
-    const QModelIndex index = itemModel->index(row, 0);
-    if (!index.isValid())
-    {
-        return {};
-    }
-
-    return itemModel->data(index, Qt::UserRole + 3).toString().trimmed();
+    return ContentsEditorSelectionContractResolver::noteDirectoryPathFromModelRow(m_noteListModel.data(), row);
 }
 
 QString ContentsEditorSelectionBridge::resolveCurrentNoteIdFromSelectionContract() const

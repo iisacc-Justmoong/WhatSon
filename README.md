@@ -193,6 +193,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Library note-list card projection and per-note projection cache now live in
   `src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.*`; `LibraryHierarchyController` keeps the
   hierarchy and note mutation orchestration while delegating visible list item assembly and folder-scoped projection.
+- Shared note-record lookup, persisted body-state application, and note directory/body-source projection now live in
+  `src/app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.*`, so note-backed hierarchy controllers keep their
+  domain selection/orchestration responsibilities instead of reimplementing the same record mutation helpers.
 - `IHierarchyViewModel` is now a read-oriented shared contract. Rename/create/delete/expand/reorder/note-drop moved
   behind dedicated capability interfaces, and QML consumes those write paths through `HierarchyInteractionBridge` plus
   `HierarchyDragDropBridge` instead of depending on one fat interface for every hierarchy screen.
@@ -352,6 +355,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
   `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
   rewrite path, so selecting another note stays decoupled from backlink recalculation.
+- `ContentsEditorSelectionBridge` now delegates note-list QObject/QAbstractItemModel contract probing and row-role
+  decoding to `src/app/models/editor/bridge/ContentsEditorSelectionContractResolver.*`, leaving the bridge focused on
+  selection/persistence coordination.
 - Editor body persistence now treats live editing as write-through by default: ordinary typing, formatting, and
   programmatic source rewrites request immediate `.wsnbody` flushes first, and QML editor sessions use the buffered
   fetch clock only to drain or retry note snapshots that were already accepted into the persistence lane.
@@ -361,6 +367,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `<resource type="..." format="..." path="...">` calls into the live note source, and rebuild the in-editor
   resource-card overlay from the current presentation snapshot so the dropped asset appears immediately instead of
   waiting for a later filesystem reread.
+- Clipboard image MIME/data-url extraction now lives in
+  `src/app/models/file/import/WhatSonResourceClipboardImportSupport.*`; `ResourcesImportController` remains the import
+  orchestration owner for conflict detection, package persistence, note-source injection, and reload callbacks.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
@@ -528,6 +537,9 @@ The automated regression suite lives under `test/`, with the maintained build en
   helpers, and structured document mutation/collection policies.
 - `whatson_regression` combines the build gate and the runtime C++ regression suite for the standard repository
   verification pass.
+- Source-tree regression coverage also locks the single-responsibility controller split for hierarchy note-record
+  helpers, resource clipboard-image extraction, and editor selection-contract resolution, so those responsibilities do
+  not drift back into their orchestration controllers.
 
 ```bash
 cmake -S . -B build
@@ -1001,9 +1013,8 @@ for hub/note hierarchy payloads.
   `SidebarHierarchyInteractionController`) must remain rebindable after `ArchitecturePolicyLock::lock()` because the
   root graph is frozen before QML instantiates the sidebar surface. They still verify the allowed View -> Controller
   dependency edge, but they do not use the mutable-wiring lock gate.
-- Create-folder targeting policy: library and tags insert the new row as a child of the active hierarchy item and
-  expand that parent so the inserted child becomes visible immediately. Projects are flat, so project creation always
-  inserts a new root-level sibling row and never creates child items.
+- Create-folder targeting policy: library, projects, and tags insert the new row as a child of the active hierarchy
+  item and expand that parent so the inserted child becomes visible immediately.
 - Folder-identity policy: library note-folder assignments are stored and propagated as canonical full paths whenever
   hierarchy context exists (`Parent/Child/Leaf`). UI rendering may collapse those paths to the leaf label for display,
   but selection/filtering must use the exact canonical path and must never fan a note out across different folders that
@@ -1044,10 +1055,14 @@ for hub/note hierarchy payloads.
   only left-button presses inside the resolved LVRS chevron slot and rejects every other coordinate, so the QML view can
   guarantee fold/unfold clicks without turning the whole hierarchy into a virtual overlay.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
-- `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
+- `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`, tree JSON with preserved
+  project depth)
 - Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:
   every row emits `iconName: "customFolder"`, while the visible label is still sourced directly from the bound
-  project-name/view-model string.
+  project-name/view-model string. Project rows now mirror the Library hierarchy behavior for nested depth, child
+  creation, subtree delete/reorder, and child drop placement. Project note matching accepts both legacy leaf labels and
+  hierarchy paths such as `Parent/Child`; legacy flat `ProjectLists.wsproj` lists are still accepted and normalized as
+  root-level project rows.
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
 - `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON with preserved hierarchy depth)
 - `resources`: `WhatSonResourcesHierarchy{Store,Parser,Creator}` (`Resources.wsresources`)

@@ -332,6 +332,13 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Hierarchy backend decomposition is now also source-locked: Event/Preset named-string support must use the shared
   typed helper, and Library note-list projection/cache assembly must stay in `WhatSonLibraryNoteListProjection`
   instead of returning to `LibraryHierarchyController`.
+- Controller single-responsibility decomposition is now also source-locked for the confirmed oversized objects:
+  note-backed hierarchy record lookup/body-state mutation must stay in `WhatSonHierarchyNoteRecordSupport`, resource
+  clipboard-image extraction must stay in `WhatSonResourceClipboardImportSupport`, and selection-model contract probing
+  must stay in `ContentsEditorSelectionContractResolver`.
+- Projects hierarchy coverage now also locks nested project semantics: `ProjectLists.wsproj` tree JSON must round-trip
+  with preserved parent/child depth, and `ProjectsHierarchyController` must keep child creation/drop behavior instead
+  of reverting to a flat project list.
 - Selected-note body snapshots now also distinguish unresolved sources from legitimate empty notes, so the editor
   session and note-mount placeholder only treat an empty body as authoritative after a direct source snapshot or a
   completed body load confirms that the selected note really resolves.

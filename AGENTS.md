@@ -75,6 +75,9 @@
 - Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,
   반복되는 depth item parsing/serialization/selection/expansion support는
   `src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다.
+- Projects 계층은 Library 계층처럼 child project를 허용하는 nested depth tree다. `ProjectsHierarchyController`와
+  `ProjectLists.wsproj` parser/store/creator는 depth, child drop, subtree delete/reorder를 보존해야 하며 flat-only
+  project list 정책으로 되돌리면 안 된다.
 
 ### 컨트롤러 구현 경계 (중요)
 
@@ -95,6 +98,12 @@
 - 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
 - `LibraryHierarchyController`는 계층/선택 조정자 역할에 머물러야 하며 note-list projection/cache 조립은
   `WhatSonLibraryNoteListProjection` 같은 전용 C++ collaborator에 둔다.
+- note record lookup, persisted body-state 반영, note directory/body-source 조회처럼 여러 note-backed hierarchy
+  Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
+- `ResourcesImportController`는 import orchestration과 conflict/persistence 처리를 소유하고, clipboard 이미지
+  MIME/data-url 추출 정책은 `WhatSonResourceClipboardImportSupport`에 둔다.
+- `ContentsEditorSelectionBridge`는 selection/persistence 흐름 조정에 머무르고, note-list QObject/QAbstractItemModel
+  contract reflection과 row role 해석은 `ContentsEditorSelectionContractResolver`에 둔다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
 

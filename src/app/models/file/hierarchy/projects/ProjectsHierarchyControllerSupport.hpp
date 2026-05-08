@@ -177,7 +177,11 @@ namespace WhatSon::Hierarchy::ProjectsSupport
 
     inline int createHierarchyFolder(QVector<ProjectsHierarchyItem>* items, int selectedIndex, int* ioFolderSequence)
     {
-        return WhatSon::Hierarchy::TreeItemSupport::createFlatHierarchyFolder(items, selectedIndex, ioFolderSequence);
+        return WhatSon::Hierarchy::TreeItemSupport::createNestedHierarchyFolder(
+            items,
+            selectedIndex,
+            ioFolderSequence,
+            true);
     }
 
     inline QStringList extractDomainLabelsFromItems(const QVector<ProjectsHierarchyItem>& items)

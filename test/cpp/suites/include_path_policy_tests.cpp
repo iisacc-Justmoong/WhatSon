@@ -368,6 +368,18 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.hpp");
     const QString projectionSourcePath =
         QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.cpp");
+    const QString noteRecordSupportHeaderPath =
+        QStringLiteral("src/app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp");
+    const QString noteRecordSupportSourcePath =
+        QStringLiteral("src/app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.cpp");
+    const QString clipboardSupportHeaderPath =
+        QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.hpp");
+    const QString clipboardSupportSourcePath =
+        QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.cpp");
+    const QString selectionResolverHeaderPath =
+        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionContractResolver.hpp");
+    const QString selectionResolverSourcePath =
+        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionContractResolver.cpp");
 
     QVERIFY2(
         QFileInfo::exists(repositoryRoot.filePath(namedSupportPath)),
@@ -378,6 +390,24 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY2(
         QFileInfo::exists(repositoryRoot.filePath(projectionSourcePath)),
         "Library note-list projection must stay out of the LibraryHierarchyController implementation.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(noteRecordSupportHeaderPath)),
+        "Repeated note-record lookup/body-state support must stay out of hierarchy controllers.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(noteRecordSupportSourcePath)),
+        "Repeated note-record lookup/body-state support must stay out of hierarchy controllers.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(clipboardSupportHeaderPath)),
+        "Clipboard image extraction support must stay out of the ResourcesImportController.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(clipboardSupportSourcePath)),
+        "Clipboard image extraction support must stay out of the ResourcesImportController.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(selectionResolverHeaderPath)),
+        "Selection model contract resolution must stay out of the ContentsEditorSelectionBridge.");
+    QVERIFY2(
+        QFileInfo::exists(repositoryRoot.filePath(selectionResolverSourcePath)),
+        "Selection model contract resolution must stay out of the ContentsEditorSelectionBridge.");
 
     const QString eventSupportSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyControllerSupport.hpp"));
@@ -404,4 +434,40 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!libraryControllerHeader.contains(QStringLiteral("m_noteListItemCache")));
     QVERIFY(!libraryControllerSource.contains(QStringLiteral("LibraryHierarchyController::buildNoteListItem(")));
     QVERIFY(projectionSource.contains(QStringLiteral("WhatSonLibraryNoteListProjection::buildNoteListItem")));
+    QVERIFY(libraryControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
+    QVERIFY(libraryControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+
+    const QString projectsControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/projects/ProjectsHierarchyController.cpp"));
+    QVERIFY(projectsControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
+    QVERIFY(projectsControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!projectsControllerSource.contains(QStringLiteral("int indexOfNoteRecordById(")));
+
+    const QString bookmarksControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
+    const QString progressControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/hierarchy/progress/ProgressHierarchyController.cpp"));
+    QVERIFY(bookmarksControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
+    QVERIFY(bookmarksControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(progressControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
+    QVERIFY(progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+
+    const QString resourcesImportControllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/import/ResourcesImportController.cpp"));
+    QVERIFY(resourcesImportControllerSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport.hpp")));
+    QVERIFY(resourcesImportControllerSource.contains(
+        QStringLiteral("ClipboardImportSupport::clipboardContainsImportableImage")));
+    QVERIFY(resourcesImportControllerSource.contains(QStringLiteral("ClipboardImportSupport::extractClipboardImage")));
+    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
+    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
+
+    const QString selectionBridgeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionBridge.cpp"));
+    QVERIFY(selectionBridgeSource.contains(QStringLiteral("ContentsEditorSelectionContractResolver.hpp")));
+    QVERIFY(selectionBridgeSource.contains(
+        QStringLiteral("ContentsEditorSelectionContractResolver::noteIdFromModelRow")));
+    QVERIFY(!selectionBridgeSource.contains(QStringLiteral("#include <QMetaProperty>")));
+
+    const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("ContentsEditorSelectionContractResolver.cpp")));
 }

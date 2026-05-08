@@ -17,6 +17,23 @@ namespace
         return value.trimmed();
     }
 
+    QString leafNameFromPath(const QString& path)
+    {
+        const QString normalized = path.trimmed();
+        if (normalized.isEmpty())
+        {
+            return {};
+        }
+
+        const int slashIndex = normalized.lastIndexOf(QLatin1Char('/'));
+        if (slashIndex < 0)
+        {
+            return normalized;
+        }
+
+        return normalized.mid(slashIndex + 1).trimmed();
+    }
+
     QStringList sanitizeValues(QStringList values)
     {
         QStringList sanitized;
@@ -56,6 +73,7 @@ namespace
     {
         QVector<WhatSonFolderDepthEntry> sanitized;
         sanitized.reserve(entries.size());
+        QStringList pathStack;
 
         for (WhatSonFolderDepthEntry& entry : entries)
         {
@@ -63,7 +81,7 @@ namespace
             entry.label = sanitizeText(std::move(entry.label));
             if (entry.label.isEmpty() && !entry.id.isEmpty())
             {
-                entry.label = entry.id;
+                entry.label = leafNameFromPath(entry.id);
             }
             if (entry.id.isEmpty() && !entry.label.isEmpty())
             {
@@ -76,6 +94,35 @@ namespace
             if (entry.depth < 0)
             {
                 entry.depth = 0;
+            }
+            const int maxAllowedDepth = static_cast<int>(pathStack.size());
+            if (entry.depth > maxAllowedDepth)
+            {
+                entry.depth = maxAllowedDepth;
+            }
+            while (pathStack.size() > entry.depth)
+            {
+                pathStack.removeLast();
+            }
+
+            const QString parentPath = (entry.depth > 0 && !pathStack.isEmpty())
+                                           ? pathStack.constLast()
+                                           : QString();
+            if (!parentPath.isEmpty()
+                && !entry.id.startsWith(parentPath + QLatin1Char('/'), Qt::CaseInsensitive))
+            {
+                const QString leafName = leafNameFromPath(entry.id);
+                entry.id = parentPath + QLatin1Char('/') + (leafName.isEmpty() ? entry.label : leafName);
+            }
+
+            if (pathStack.size() <= entry.depth)
+            {
+                pathStack.push_back(entry.id);
+            }
+            else
+            {
+                pathStack[entry.depth] = entry.id;
+                pathStack = pathStack.mid(0, entry.depth + 1);
             }
             sanitized.push_back(std::move(entry));
         }

@@ -2,6 +2,7 @@
 
 #include "app/models/calendar/SystemCalendarStore.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 #include "app/models/file/hierarchy/library/LibraryAll.hpp"
 #include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
@@ -25,57 +26,21 @@ namespace
     constexpr auto kScope = "projects.controller";
     constexpr int kMaxNoteListSummaryLines = 5;
 
-    QVector<WhatSonFolderDepthEntry> projectEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
+    QString leafProjectNameFromPath(const QString& path)
     {
-        QVector<WhatSonFolderDepthEntry> entries;
-        entries.reserve(items.size());
-
-        for (const ProjectsHierarchyItem& item : items)
+        const QString normalized = path.trimmed();
+        if (normalized.isEmpty())
         {
-            const QString label = item.label.trimmed();
-            if (label.isEmpty())
-            {
-                continue;
-            }
-            if (item.accent && item.depth == 0)
-            {
-                continue;
-            }
-
-            WhatSonFolderDepthEntry entry;
-            entry.id = label;
-            entry.label = label;
-            entry.depth = 0;
-            entries.push_back(std::move(entry));
+            return {};
         }
 
-        return entries;
-    }
-
-    QVector<ProjectsHierarchyItem> itemsFromProjectEntries(const QVector<WhatSonFolderDepthEntry>& entries)
-    {
-        QVector<ProjectsHierarchyItem> items;
-        items.reserve(entries.size());
-
-        for (const WhatSonFolderDepthEntry& entry : entries)
+        const int slashIndex = normalized.lastIndexOf(QLatin1Char('/'));
+        if (slashIndex < 0)
         {
-            const QString label = entry.label.trimmed();
-            if (label.isEmpty())
-            {
-                continue;
-            }
-
-            ProjectsHierarchyItem item;
-            item.depth = 0;
-            item.label = label;
-            item.accent = false;
-            item.expanded = false;
-            item.showChevron = false;
-            items.push_back(std::move(item));
+            return normalized;
         }
 
-        WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&items);
-        return items;
+        return normalized.mid(slashIndex + 1).trimmed();
     }
 
     QString normalizedProjectKeySegment(const QString& label, int index)
@@ -112,6 +77,88 @@ namespace
         }
 
         return pathSegments.join(QLatin1Char('/'));
+    }
+
+    void finalizeProjectItems(QVector<ProjectsHierarchyItem>* items)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        int maxNextDepth = 0;
+        for (ProjectsHierarchyItem& item : *items)
+        {
+            item.label = item.label.trimmed();
+            item.depth = std::clamp(std::max(0, item.depth), 0, maxNextDepth);
+            maxNextDepth = item.depth + 1;
+        }
+
+        WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(items);
+    }
+
+    QVector<WhatSonFolderDepthEntry> projectEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
+    {
+        QVector<WhatSonFolderDepthEntry> entries;
+        entries.reserve(items.size());
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const ProjectsHierarchyItem& item = items.at(index);
+            const QString label = item.label.trimmed();
+            if (label.isEmpty())
+            {
+                continue;
+            }
+            if (item.accent && item.depth == 0)
+            {
+                continue;
+            }
+
+            WhatSonFolderDepthEntry entry;
+            entry.id = projectsHierarchyItemKey(items, index);
+            if (entry.id.trimmed().isEmpty())
+            {
+                entry.id = label;
+            }
+            entry.label = label;
+            entry.depth = std::max(0, item.depth);
+            entries.push_back(std::move(entry));
+        }
+
+        return entries;
+    }
+
+    QVector<ProjectsHierarchyItem> itemsFromProjectEntries(const QVector<WhatSonFolderDepthEntry>& entries)
+    {
+        QVector<ProjectsHierarchyItem> items;
+        items.reserve(entries.size());
+
+        int maxNextDepth = 0;
+        for (const WhatSonFolderDepthEntry& entry : entries)
+        {
+            QString label = entry.label.trimmed();
+            if (label.isEmpty())
+            {
+                label = leafProjectNameFromPath(entry.id);
+            }
+            if (label.isEmpty())
+            {
+                continue;
+            }
+
+            ProjectsHierarchyItem item;
+            item.depth = std::clamp(std::max(0, entry.depth), 0, maxNextDepth);
+            item.label = label;
+            item.accent = false;
+            item.expanded = false;
+            item.showChevron = false;
+            items.push_back(std::move(item));
+            maxNextDepth = items.constLast().depth + 1;
+        }
+
+        finalizeProjectItems(&items);
+        return items;
     }
 
     int selectedProjectIndexForKey(const QVector<ProjectsHierarchyItem>& items, const QString& key)
@@ -298,10 +345,39 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
-    int noteCountForProjectLabel(const QVector<LibraryNoteRecord>& notes, const QString& projectLabel)
+    bool projectValueMatchesHierarchyItem(
+        const QString& projectValue,
+        const QVector<ProjectsHierarchyItem>& items,
+        int itemIndex)
     {
-        const QString normalizedProjectLabel = projectLabel.trimmed();
-        if (normalizedProjectLabel.isEmpty())
+        if (itemIndex < 0 || itemIndex >= items.size())
+        {
+            return false;
+        }
+
+        const QString normalizedProjectValue = projectValue.trimmed();
+        if (normalizedProjectValue.isEmpty())
+        {
+            return false;
+        }
+
+        const ProjectsHierarchyItem& item = items.at(itemIndex);
+        if (normalizedProjectValue.compare(item.label.trimmed(), Qt::CaseInsensitive) == 0)
+        {
+            return true;
+        }
+
+        return normalizedProjectValue.compare(
+            projectsHierarchyItemKey(items, itemIndex),
+            Qt::CaseInsensitive) == 0;
+    }
+
+    int noteCountForProjectItem(
+        const QVector<LibraryNoteRecord>& notes,
+        const QVector<ProjectsHierarchyItem>& items,
+        int itemIndex)
+    {
+        if (itemIndex < 0 || itemIndex >= items.size())
         {
             return 0;
         }
@@ -309,31 +385,12 @@ namespace
         int noteCount = 0;
         for (const LibraryNoteRecord& note : notes)
         {
-            if (note.project.trimmed().compare(normalizedProjectLabel, Qt::CaseInsensitive) == 0)
+            if (projectValueMatchesHierarchyItem(note.project, items, itemIndex))
             {
                 ++noteCount;
             }
         }
         return noteCount;
-    }
-
-    int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
-    {
-        const QString normalizedNoteId = noteId.trimmed();
-        if (normalizedNoteId.isEmpty())
-        {
-            return -1;
-        }
-
-        for (int index = 0; index < notes.size(); ++index)
-        {
-            if (notes.at(index).noteId.trimmed() == normalizedNoteId)
-            {
-                return index;
-            }
-        }
-
-        return -1;
     }
 
     void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
@@ -647,7 +704,17 @@ namespace
             newBaseDepth = items.at(targetIndex).depth;
             break;
         case FolderDropPlacement::Child:
-            return false;
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = subtreeEndIndexExclusive(items, targetIndex);
+            newBaseDepth = items.at(targetIndex).depth + 1;
+            break;
         }
 
         int normalizedInsertIndex = rawInsertIndex;
@@ -696,7 +763,7 @@ namespace
             stagedItems.insert(operation.normalizedInsertIndex + offset, std::move(movedItems[offset]));
         }
 
-        WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&stagedItems);
+        finalizeProjectItems(&stagedItems);
         return stagedItems;
     }
 }
@@ -744,7 +811,7 @@ bool ProjectsHierarchyController::reloadNoteMetadataForNoteId(const QString& not
         return false;
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    const int noteIndex = WhatSon::Hierarchy::NoteRecordSupport::indexOfNoteRecordById(m_allNotes, normalizedNoteId);
     if (noteIndex < 0 || noteIndex >= m_allNotes.size())
     {
         return false;
@@ -864,23 +931,14 @@ bool ProjectsHierarchyController::applyPersistedBodyStateForNote(
         return false;
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
+            &m_allNotes,
+            normalizedNoteId,
+            normalizedBodyText,
+            normalizedBodySourceText,
+            lastModifiedAt))
     {
         return false;
-    }
-
-    LibraryNoteRecord& note = m_allNotes[noteIndex];
-    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
-    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
-    if (note.bodySourceText.isEmpty())
-    {
-        note.bodySourceText = note.bodyPlainText;
-    }
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
-    if (!lastModifiedAt.trimmed().isEmpty())
-    {
-        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     refreshNoteListForSelection(false);
@@ -896,7 +954,7 @@ QString ProjectsHierarchyController::noteDirectoryPathForNoteId(const QString& n
         return {};
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    const int noteIndex = WhatSon::Hierarchy::NoteRecordSupport::indexOfNoteRecordById(m_allNotes, normalizedNoteId);
     if (noteIndex < 0 || noteIndex >= m_allNotes.size())
     {
         return {};
@@ -913,19 +971,7 @@ QString ProjectsHierarchyController::noteBodySourceTextForNoteId(const QString& 
         return {};
     }
 
-    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
-    {
-        return {};
-    }
-
-    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
-    if (!note.bodySourceText.isEmpty())
-    {
-        return note.bodySourceText;
-    }
-
-    return note.bodyPlainText;
+    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_allNotes, normalizedNoteId);
 }
 
 int ProjectsHierarchyController::selectedIndex() const noexcept
@@ -996,7 +1042,7 @@ QVariantList ProjectsHierarchyController::depthItems() const
     for (int index = 0; index < serialized.size() && index < m_items.size(); ++index)
     {
         QVariantMap entry = serialized.at(index).toMap();
-        const int noteCount = std::max(0, noteCountForProjectLabel(m_allNotes, m_items.at(index).label));
+        const int noteCount = std::max(0, noteCountForProjectItem(m_allNotes, m_items, index));
         entry.insert(QStringLiteral("draggable"), canMoveFolder(index));
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), projectsHierarchyItemKey(m_items, index));
@@ -1052,6 +1098,7 @@ bool ProjectsHierarchyController::renameItem(int index, const QString& displayNa
                                       displayName));
         return false;
     }
+    finalizeProjectItems(&stagedItems);
 
     WhatSonProjectsHierarchyStore stagedStore = m_store;
     stagedStore.setFolderEntries(projectEntriesFromItems(stagedItems));
@@ -1238,15 +1285,11 @@ bool ProjectsHierarchyController::moveFolderBefore(int sourceIndex, int targetIn
 
 bool ProjectsHierarchyController::canAcceptFolderDrop(int sourceIndex, int targetIndex, bool asChild) const
 {
-    if (asChild)
-    {
-        return false;
-    }
     return resolveFolderMoveOperation(
         m_items,
         sourceIndex,
         targetIndex,
-        FolderDropPlacement::After,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
         nullptr);
 }
 
@@ -1259,23 +1302,12 @@ bool ProjectsHierarchyController::moveFolder(int sourceIndex, int targetIndex, b
                               .arg(sourceIndex)
                               .arg(targetIndex)
                               .arg(asChild ? QStringLiteral("1") : QStringLiteral("0")));
-    if (asChild)
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("moveFolder.rejected"),
-                                  QStringLiteral("sourceIndex=%1 targetIndex=%2 asChild=1 reason=projects are flat")
-                                  .arg(sourceIndex)
-                                  .arg(targetIndex));
-        return false;
-    }
-
     FolderMoveOperation operation;
     if (!resolveFolderMoveOperation(
         m_items,
         sourceIndex,
         targetIndex,
-        FolderDropPlacement::After,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
         &operation))
     {
         WhatSon::Debug::traceSelf(this,
@@ -1349,15 +1381,15 @@ bool ProjectsHierarchyController::applyHierarchyNodes(const QVariantList& hierar
         }
 
         ProjectsHierarchyItem item;
-        item.depth = 0;
+        item.depth = std::max(0, node.depth);
         item.label = node.label.trimmed();
         item.accent = node.accent;
-        item.expanded = false;
-        item.showChevron = false;
+        item.expanded = node.expanded;
+        item.showChevron = node.showChevron;
         stagedItems.push_back(std::move(item));
     }
 
-    WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&stagedItems);
+    finalizeProjectItems(&stagedItems);
     return commitHierarchyUpdate(std::move(stagedItems), selectedIndex);
 }
 
@@ -1651,6 +1683,8 @@ void ProjectsHierarchyController::syncModel()
 
 bool ProjectsHierarchyController::commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex)
 {
+    finalizeProjectItems(&stagedItems);
+
     WhatSonProjectsHierarchyStore stagedStore = m_store;
     stagedStore.setFolderEntries(projectEntriesFromItems(stagedItems));
 
@@ -1678,6 +1712,7 @@ bool ProjectsHierarchyController::commitHierarchyUpdate(QVector<ProjectsHierarch
 
 void ProjectsHierarchyController::syncDomainStoreFromItems()
 {
+    finalizeProjectItems(&m_items);
     m_store.setFolderEntries(projectEntriesFromItems(m_items));
     m_projectNames = m_store.projectNames();
 }
@@ -1715,13 +1750,11 @@ void ProjectsHierarchyController::refreshNoteListForSelection(const bool synchro
         synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
     }
 
-    const QString selectedProject =
-        (m_selectedIndex >= 0 && m_selectedIndex < m_items.size()) ? m_items.at(m_selectedIndex).label.trimmed() : QString();
-
-    QSet<QString> availableProjects;
-    availableProjects.reserve(m_items.size());
-    for (const ProjectsHierarchyItem& item : std::as_const(m_items))
+    QSet<QString> availableProjectKeys;
+    availableProjectKeys.reserve(m_items.size() * 2);
+    for (int index = 0; index < m_items.size(); ++index)
     {
+        const ProjectsHierarchyItem& item = m_items.at(index);
         if (item.accent && item.depth == 0)
         {
             continue;
@@ -1733,7 +1766,8 @@ void ProjectsHierarchyController::refreshNoteListForSelection(const bool synchro
             continue;
         }
 
-        availableProjects.insert(label.toCaseFolded());
+        availableProjectKeys.insert(label.toCaseFolded());
+        availableProjectKeys.insert(projectsHierarchyItemKey(m_items, index).toCaseFolded());
     }
 
     QVector<LibraryNoteListItem> items;
@@ -1747,12 +1781,14 @@ void ProjectsHierarchyController::refreshNoteListForSelection(const bool synchro
         }
 
         const QString normalizedProjectLabel = projectLabel.toCaseFolded();
-        if (!availableProjects.contains(normalizedProjectLabel))
+        if (!availableProjectKeys.contains(normalizedProjectLabel))
         {
             continue;
         }
 
-        if (!selectedProject.isEmpty() && projectLabel.compare(selectedProject, Qt::CaseInsensitive) != 0)
+        if (m_selectedIndex >= 0
+            && m_selectedIndex < m_items.size()
+            && !projectValueMatchesHierarchyItem(projectLabel, m_items, m_selectedIndex))
         {
             continue;
         }

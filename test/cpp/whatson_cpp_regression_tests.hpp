@@ -1178,6 +1178,8 @@ private slots:
     void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
+    void projectsHierarchyParser_roundTripsNestedProjectTree();
+    void projectsHierarchyController_keepsNestedProjectPolicy();
     void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
     void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
     void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
