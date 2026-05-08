@@ -33,3 +33,4 @@ Implements page/print editor rendering state for paper-preview surfaces.
 - Paper width must remain bounded by viewport minus horizontal margins and `paperMaxWidth`.
 - Page count must stay at least `1` and must grow when editor content height exceeds one page text height.
 - Desktop and mobile surfaces must consume the same backend-derived paper metrics and color tokens.
+- `ContentViewLayout.qml` must consume this object as the single Page/Print view-mode bridge for the live editor surface.

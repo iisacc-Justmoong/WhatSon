@@ -916,12 +916,14 @@ for hub/note hierarchy payloads.
 - When the routed mobile note-list page is active, `NavigationApplicationControlBar.qml` now switches to a dedicated
   compact variant that renders `sortByType`, `cwmPermissionView`, and a `toolwindowtodo` `LV.IconMenuButton` in the
   same order as the Figma note-list bar instead of reusing the hierarchy/control compact menu button.
-- Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
-  `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
-  `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
-- Editor view mode state is centralized in `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`:
-  `main.cpp` injects `editorViewModeViewModel`, and the navigation bar editor-view combo binds to the dedicated
-  enum-backed `Plain/Page/Print/Web/Presentation` state plus its per-view QObject viewmodels.
+- Navigation mode state is centralized in `src/app/models/navigationbar/NavigationModeController.*`:
+  `main.cpp` injects `navigationModeController`, and the navigation bar mode combo binds to the dedicated enum-backed
+  `View/Edit/Control/Presentation` state plus its per-mode QObject controllers.
+- Editor view mode state is centralized in `src/app/models/navigationbar/EditorViewModeController.*`:
+  `main.cpp` injects `editorViewModeController`, and the navigation bar editor-view combo binds to the dedicated
+  enum-backed `Plain/Page/Print/Web/Presentation` state plus its per-view QObject controllers. The Page and Print
+  selections now also flow into `ContentsPagePrintLayoutRenderer`, so the editor switches to the paper preview surface
+  and enables print margin guides only for Print mode.
 - The sidebar initial width now follows the effective rendered width of the hierarchy toolbar: Figma's `200px`
   toolbar track plus `2px` side insets resolves to a `204px` default sidebar width.
 - Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:

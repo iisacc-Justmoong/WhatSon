@@ -10,6 +10,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Receives parser-owned `documentBlocks`, unresolved `editorSurfaceHtml`, `resourceVisualBlocks`, `logicalText`,
   `projectionSourceText`, and `normalizedHtmlBlocks` from the backend-bound note editor chrome in
   `ContentViewLayout.qml`.
+- Receives `paperPaletteEnabled` and a paper text color from `ContentViewLayout.qml` when the parent Page/Print renderer
+  has selected the paper surface.
 - Mounts `ContentsInlineFormatEditor.qml` as the live `LV.TextEditor` path. The inline editor receives RAW
   `sourceText`, but in rendered mode its native text surface edits the visible logical projection and reports mapped
   RAW cursor/selection offsets back to this host.
@@ -31,6 +33,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
   `ContentViewLayout.qml` is already flow-corrected from renderer tokens and `resourceVisualBlocks` by the C++
   display backend. Renderer-owned `normalizedHtmlBlocks` remain compatibility metadata for HTML projection spans.
 - Keeps the inline editor as the only place where the RichText editor-surface overlay is painted.
+- In Page/Print mode the HTML is already paper-palette corrected by `ContentsEditorDisplayBackend`; this flow only
+  forwards the paper text color and bounded paper width into the live inline editor surface.
 - Emits `sourceTextEdited(text)` upward when the user changes the RAW text buffer.
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is
   updated; they do not serialize RichText back into `.wsnbody`.

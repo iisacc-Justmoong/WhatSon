@@ -258,9 +258,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"contentsDisplayEditorDocumentViewport\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentHeight: editorDocumentContent.height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorDocumentContent")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: pagePrintLayoutRenderer.showPrintEditorLayout")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(": Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorDocumentBottomInset")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("|| pagePrintLayoutRenderer.showPrintEditorLayout")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("&& contentHeight > height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorViewportScrollRange()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scrollEditorViewportByDelta(deltaY)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0)")));
@@ -282,7 +284,7 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: contentsDisplayGutter.preferredWidth")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: visible ? contentsDisplayGutter.preferredWidth : LV.Theme.gapNone")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSourceCursorPosition: 0")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionEnd: activeSourceCursorPosition")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionStart: activeSourceCursorPosition")));
@@ -630,12 +632,23 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_bindPaperPaletteIntoPagePri
         QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.hpp"));
     const QString displayBackendSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/editor/display/ContentsEditorDisplayBackend.cpp"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
     const QString documentFlowSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml"));
 
     QVERIFY(displayBackendHeader.contains(QStringLiteral("Q_PROPERTY(bool paperPaletteEnabled")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("m_presentationProjection.setPaperPaletteEnabled(value)")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property bool paperPaletteEnabled")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsPagePrintLayoutRenderer {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeEditorViewMode: contentViewLayout.editorViewModeController")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.editorViewModeController.activeViewMode")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("paperPaletteEnabled: pagePrintLayoutRenderer.showPrintEditorLayout")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: pagePrintLayoutRenderer.showPrintEditorLayout")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: pagePrintLayoutRenderer.showPrintMarginGuides")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("model: pagePrintLayoutRenderer.documentPageCount")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("? pagePrintLayoutRenderer.paperTextWidth")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("? pagePrintLayoutRenderer.paperTextColor")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds()

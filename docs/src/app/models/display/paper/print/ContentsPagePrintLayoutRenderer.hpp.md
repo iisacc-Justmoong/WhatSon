@@ -70,7 +70,12 @@ These two signals are the authoritative update contract for QML bindings that co
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- `test/cpp/suites/a4_paper_background_tests.cpp`
+- `test/cpp/suites/qml_editor_surface_policy_tests.cpp`
 - Regression checklist:
   - `WhatSonQmlInternalTypeRegistrar` must register `ContentsPagePrintLayoutRenderer` without Qt template-instantiation
     errors related to `QQmlElement<T>` inheritance.
+  - `Page` mode must activate paper layout without margin guides.
+  - `Print` mode must activate paper layout with margin guides.
+  - `ContentViewLayout.qml` must bind `editorViewModeController.activeViewMode` into this renderer and route
+    `showPrintEditorLayout` into the editor paper palette.

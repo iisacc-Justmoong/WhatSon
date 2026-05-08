@@ -32,3 +32,38 @@ void WhatSonCppRegressionTests::a4PaperBackground_exposesCanonicalMetricsAndAnch
     QCOMPARE(layoutRenderer.paperShadowColor(), background.paperShadowColor());
     QCOMPARE(layoutRenderer.paperTextColor(), background.paperTextColor());
 }
+
+void WhatSonCppRegressionTests::pagePrintLayoutRenderer_mapsViewModesToPaperSurfaceState()
+{
+    ContentsPagePrintLayoutRenderer layoutRenderer;
+
+    layoutRenderer.setEditorViewportWidth(640.0);
+    layoutRenderer.setEditorViewportHeight(420.0);
+    layoutRenderer.setEditorContentHeight(1200.0);
+
+    layoutRenderer.setActiveEditorViewMode(layoutRenderer.pageViewModeValue());
+    QVERIFY(!layoutRenderer.showPageEditorLayout());
+    QVERIFY(!layoutRenderer.showPrintEditorLayout());
+    QCOMPARE(layoutRenderer.documentPageCount(), 1);
+
+    layoutRenderer.setHasSelectedNote(true);
+    QVERIFY(layoutRenderer.showPageEditorLayout());
+    QVERIFY(layoutRenderer.showPrintEditorLayout());
+    QVERIFY(!layoutRenderer.showPrintModeActive());
+    QVERIFY(!layoutRenderer.showPrintMarginGuides());
+    QVERIFY(layoutRenderer.documentPageCount() > 1);
+    QVERIFY(layoutRenderer.paperResolvedWidth() <= 640.0);
+    QVERIFY(layoutRenderer.paperTextWidth() < layoutRenderer.paperResolvedWidth());
+
+    layoutRenderer.setActiveEditorViewMode(layoutRenderer.printViewModeValue());
+    QVERIFY(!layoutRenderer.showPageEditorLayout());
+    QVERIFY(layoutRenderer.showPrintModeActive());
+    QVERIFY(layoutRenderer.showPrintEditorLayout());
+    QVERIFY(layoutRenderer.showPrintMarginGuides());
+
+    layoutRenderer.setDedicatedResourceViewerVisible(true);
+    QVERIFY(!layoutRenderer.showPrintModeActive());
+    QVERIFY(!layoutRenderer.showPrintEditorLayout());
+    QVERIFY(!layoutRenderer.showPrintMarginGuides());
+    QCOMPARE(layoutRenderer.documentPageCount(), 1);
+}

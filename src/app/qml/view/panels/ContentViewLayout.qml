@@ -259,6 +259,7 @@ Item {
                 minimapVisible: contentViewLayout.minimapVisible
                 noteActiveState: contentViewLayout.noteActiveState
                 noteListModel: contentViewLayout.resolvedNoteListModel
+                paperPaletteEnabled: pagePrintLayoutRenderer.showPrintEditorLayout
                 structuredDocumentFlow: structuredDocumentFlow
 
                 onEditorTextEdited: function (text) {
@@ -267,6 +268,27 @@ Item {
                 onEditorViewportResetRequested: {
                     editorDocumentViewport.contentY = 0;
                 }
+            }
+
+            ContentsPagePrintLayoutRenderer {
+                id: pagePrintLayoutRenderer
+
+                activeEditorViewMode: contentViewLayout.editorViewModeController
+                                      && contentViewLayout.editorViewModeController.activeViewMode !== undefined
+                                      ? Number(contentViewLayout.editorViewModeController.activeViewMode)
+                                      : 0
+                dedicatedResourceViewerVisible: contentViewLayout.resourceEditorVisible
+                editorContentHeight: structuredDocumentFlow.editorContentHeight
+                editorViewportHeight: editorDocumentViewport.height
+                editorViewportWidth: editorDocumentViewport.width
+                guideHorizontalInset: LV.Theme.gap24
+                guideVerticalInset: LV.Theme.gap24
+                hasSelectedNote: editorDisplayBackend.noteDocumentParseMounted
+                paperHorizontalMargin: LV.Theme.gap12
+                paperSeparatorThickness: LV.Theme.strokeThin
+                paperShadowOffsetX: LV.Theme.strokeThin
+                paperShadowOffsetY: LV.Theme.gap2
+                paperVerticalMargin: LV.Theme.gap4
             }
 
             Binding {
@@ -312,7 +334,9 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: contentViewLayout.displayColor
+                color: pagePrintLayoutRenderer.showPrintEditorLayout
+                       ? pagePrintLayoutRenderer.canvasColor
+                       : contentViewLayout.displayColor
             }
 
             LV.HStack {
@@ -340,14 +364,111 @@ Item {
                         contentHeight: editorDocumentContent.height
                         contentWidth: Math.max(width, editorDocumentContent.width)
                         flickableDirection: Flickable.VerticalFlick
-                        interactive: !structuredDocumentFlow.editorRenderedOverlayVisible && contentHeight > height
+                        interactive: (!structuredDocumentFlow.editorRenderedOverlayVisible
+                                      || pagePrintLayoutRenderer.showPrintEditorLayout)
+                                     && contentHeight > height
                         objectName: "contentsDisplayEditorDocumentViewport"
 
                         Item {
                             id: editorDocumentContent
 
-                            height: Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)
+                            height: pagePrintLayoutRenderer.showPrintEditorLayout
+                                    ? pagePrintLayoutRenderer.documentSurfaceHeight
+                                    : Math.max(editorDocumentViewport.height, structuredDocumentFlow.editorContentHeight)
                             width: editorDocumentViewport.width
+
+                            Item {
+                                id: printPaperPreviewLayer
+
+                                anchors.fill: parent
+                                visible: pagePrintLayoutRenderer.showPrintEditorLayout
+
+                                Rectangle {
+                                    id: printPaperShadow
+
+                                    color: pagePrintLayoutRenderer.paperShadowColor
+                                    height: printPaperColumn.height
+                                    radius: LV.Theme.radiusSm
+                                    visible: printPaperColumn.width > 0 && printPaperColumn.height > 0
+                                    width: printPaperColumn.width
+                                    x: printPaperColumn.x + pagePrintLayoutRenderer.paperShadowOffsetX
+                                    y: printPaperColumn.y + pagePrintLayoutRenderer.paperShadowOffsetY
+                                }
+                                Rectangle {
+                                    id: printPaperColumn
+
+                                    border.color: pagePrintLayoutRenderer.paperBorderColor
+                                    border.width: LV.Theme.strokeThin
+                                    color: pagePrintLayoutRenderer.paperColor
+                                    height: pagePrintLayoutRenderer.paperDocumentHeight
+                                    radius: LV.Theme.radiusSm
+                                    width: pagePrintLayoutRenderer.paperResolvedWidth
+                                    x: Math.max(0, (Number(parent ? parent.width : 0) - width) / 2)
+                                    y: pagePrintLayoutRenderer.paperVerticalMargin
+                                }
+                                Repeater {
+                                    model: pagePrintLayoutRenderer.documentPageCount
+
+                                    delegate: Item {
+                                        required property int index
+
+                                        height: pagePrintLayoutRenderer.paperResolvedHeight
+                                        width: printPaperColumn.width
+                                        x: printPaperColumn.x
+                                        y: printPaperColumn.y + index * pagePrintLayoutRenderer.paperTextHeight
+
+                                        Rectangle {
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            color: pagePrintLayoutRenderer.paperSeparatorColor
+                                            height: pagePrintLayoutRenderer.paperSeparatorThickness
+                                            visible: index > 0
+                                        }
+                                        Canvas {
+                                            anchors.fill: parent
+                                            visible: pagePrintLayoutRenderer.showPrintMarginGuides
+
+                                            onHeightChanged: requestPaint()
+                                            onVisibleChanged: requestPaint()
+                                            onWidthChanged: requestPaint()
+
+                                            onPaint: {
+                                                const ctx = getContext("2d");
+                                                ctx.clearRect(0, 0, width, height);
+                                                if (!visible)
+                                                    return;
+
+                                                const left = Math.max(1, Number(pagePrintLayoutRenderer.guideHorizontalInset) || 1);
+                                                const top = Math.max(1, Number(pagePrintLayoutRenderer.guideVerticalInset) || 1);
+                                                const right = Math.max(left + 1, width - left);
+                                                const bottom = Math.max(top + 1, height - top);
+                                                const segment = Math.max(2, Number(LV.Theme.gap8) || 6);
+                                                const gap = Math.max(1, Number(LV.Theme.gap4) || 4);
+
+                                                ctx.lineWidth = Math.max(1, Number(LV.Theme.strokeThin) || 1);
+                                                ctx.strokeStyle = "#66727D";
+                                                ctx.beginPath();
+                                                for (let xPosition = left; xPosition < right; xPosition += segment + gap) {
+                                                    const xEnd = Math.min(right, xPosition + segment);
+                                                    ctx.moveTo(xPosition, top);
+                                                    ctx.lineTo(xEnd, top);
+                                                    ctx.moveTo(xPosition, bottom);
+                                                    ctx.lineTo(xEnd, bottom);
+                                                }
+                                                for (let yPosition = top; yPosition < bottom; yPosition += segment + gap) {
+                                                    const yEnd = Math.min(bottom, yPosition + segment);
+                                                    ctx.moveTo(left, yPosition);
+                                                    ctx.lineTo(left, yEnd);
+                                                    ctx.moveTo(right, yPosition);
+                                                    ctx.lineTo(right, yEnd);
+                                                }
+                                                ctx.stroke();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
 
                             ContentsLineNumberRail {
                                 id: contentsDisplayGutter
@@ -359,7 +480,8 @@ Item {
                                 activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition
                                 rows: structuredDocumentFlow.editorLogicalGutterRows
                                 visible: editorDisplayBackend.noteDocumentParseMounted
-                                width: contentsDisplayGutter.preferredWidth
+                                         && !pagePrintLayoutRenderer.showPrintEditorLayout
+                                width: visible ? contentsDisplayGutter.preferredWidth : LV.Theme.gapNone
                                 x: LV.Theme.gapNone
                                 y: LV.Theme.gapNone
                             }
@@ -377,17 +499,27 @@ Item {
                                 logicalText: editorDisplayBackend.presentationProjection.logicalText
                                 normalizedHtmlBlocks: editorDisplayBackend.presentationProjection.normalizedHtmlBlocks
                                 objectName: "contentsDisplayStructuredDocumentFlow"
-                                paperPaletteEnabled: false
+                                paperPaletteEnabled: pagePrintLayoutRenderer.showPrintEditorLayout
                                 projectionSourceText: editorDisplayBackend.presentationProjection.sourceText
                                 resourceVisualBlocks: editorDisplayBackend.inlineResourceVisualBlocks(
                                                           editorDisplayBackend.bodyResourceRenderer.renderedResources,
-                                                          structuredDocumentFlow.width - LV.Theme.gap16 * 2)
+                                                          pagePrintLayoutRenderer.showPrintEditorLayout
+                                                          ? Math.floor(pagePrintLayoutRenderer.paperTextWidth)
+                                                          : structuredDocumentFlow.width - LV.Theme.gap16 * 2)
                                 sourceText: editorDisplayBackend.editorSession.editorText
-                                textColor: LV.Theme.bodyColor
+                                textColor: pagePrintLayoutRenderer.showPrintEditorLayout
+                                           ? pagePrintLayoutRenderer.paperTextColor
+                                           : LV.Theme.bodyColor
                                 visible: editorDisplayBackend.noteDocumentParseMounted
-                                width: Math.max(0, editorDocumentContent.width - contentsDisplayGutter.width)
-                                x: contentsDisplayGutter.width
-                                y: LV.Theme.gapNone
+                                width: pagePrintLayoutRenderer.showPrintEditorLayout
+                                       ? pagePrintLayoutRenderer.paperTextWidth
+                                       : Math.max(0, editorDocumentContent.width - contentsDisplayGutter.width)
+                                x: pagePrintLayoutRenderer.showPrintEditorLayout
+                                   ? printPaperColumn.x + pagePrintLayoutRenderer.guideHorizontalInset
+                                   : contentsDisplayGutter.width
+                                y: pagePrintLayoutRenderer.showPrintEditorLayout
+                                   ? printPaperColumn.y + pagePrintLayoutRenderer.guideVerticalInset
+                                   : LV.Theme.gapNone
 
                                 onSourceTextEdited: function (text) {
                                     editorDisplayBackend.commitEditedSourceText(text);

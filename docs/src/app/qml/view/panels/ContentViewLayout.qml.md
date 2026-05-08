@@ -9,7 +9,8 @@ surface.
 
 ## Current Contract
 
-- Note editor surface: direct `ContentViewLayout.qml` chrome plus `ContentsEditorDisplayBackend`
+- Note editor surface: direct `ContentViewLayout.qml` chrome plus `ContentsEditorDisplayBackend` and
+  `ContentsPagePrintLayoutRenderer`
 - Resource editor surface: `ContentsResourceEditorView.qml`
 - Mobile/desktop route context: `isMobilePlatform` is retained at this boundary, but the note editor no longer mounts a
   separate QML host-mode wrapper.
@@ -51,6 +52,12 @@ surface.
   resource editor request and a calendar overlay at once.
 - The resolved note-list/content controllers and active-note tracker are forwarded into `ContentsEditorDisplayBackend`
   when the note editor surface is active.
+- The injected `editorViewModeController.activeViewMode` is bound into `ContentsPagePrintLayoutRenderer`, so the existing
+  `Page` and `Print` entries in `NavigationEditorViewBar.qml` select a real paper preview surface instead of only
+  changing the combo-box label.
+- Page mode uses the shared paper canvas and paper palette without print guides. Print mode uses the same paper surface
+  and additionally shows margin guides. Both modes are suppressed when no note is mounted or when the center slot is
+  showing the dedicated resource editor.
 - The global `noteActiveState` object is also forwarded into the note editor host. The host registers its
   `ContentsEditorSessionController` there, so active-note changes can rebind the editor session before QML's local
   note-list bindings finish a later refresh turn.
@@ -68,6 +75,9 @@ surface.
 - The note editor flow receives both the session RAW `sourceText` and the projection-owned `projectionSourceText`, so
   `ContentsStructuredDocumentFlow.qml` can hold the last ready logical projection while parser/render publication
   catches up instead of falling back to RAW tag text.
+- The note editor flow also receives `paperPaletteEnabled`, `paperTextColor`, and paper-bounded width from the page/print
+  renderer while those modes are active. Resource visual block sizing uses the same paper text width so inline resource
+  frames stay inside the paper column.
 - The note editor flow receives parser-owned `documentBlocks` and explicit `resourceVisualBlocks` from
   `ContentsEditorDisplayBackend` next to the editor HTML projection. Gutter geometry and resource hit testing must use
   those structured visual blocks instead of parsing or rewriting image-frame HTML. The editor HTML projection is
@@ -99,3 +109,6 @@ surface.
   - calendar note opening must switch the active hierarchy back to Library before the overlay is dismissed
   - the note editor host must receive the same global `noteActiveState` object that desktop/mobile shells use for
     active-note selection
+  - selecting `Page` must activate the paper surface without margin guides
+  - selecting `Print` must activate the paper surface with margin guides
+  - paper mode must route the display backend paper palette and hide the line-number gutter

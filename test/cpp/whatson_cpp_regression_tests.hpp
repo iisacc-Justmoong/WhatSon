@@ -1281,6 +1281,7 @@ private slots:
     void sourceTree_usesRepositoryAbsoluteProjectIncludes();
     void paperSelection_tracksChosenPaperEnumState();
     void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
+    void pagePrintLayoutRenderer_mapsViewModesToPaperSurfaceState();
     void plainTextSourceMutator_wrapsCommittedUrlsIntoCanonicalWebLinks();
     void inlineStyleOverlayRenderer_republishesHtmlOverlayVisibility();
     void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();

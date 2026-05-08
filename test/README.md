@@ -312,7 +312,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - `ResourceBitmapViewer` now also pins bitmap-preview projection for the dedicated resource editor, so image resources
   and unsupported image-like formats expose stable viewer/open-target state to QML.
 - Page/print paper-palette routing now also pins both the HTML renderer and the structured editor QML wiring, so
-  bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode.
+  bright screen-only text colors cannot leak onto the white paper surface in `Page` / `Print` mode. The same regression
+  now locks `ContentViewLayout.qml` to the C++ `ContentsPagePrintLayoutRenderer`, including Page mode without margin
+  guides and Print mode with margin guides.
 - Note-body mount coordination now also pins the retry/failure boundary between the selection bridge, the editor
   session, and the mounted document surface, so a selected note that still has no resolved body after one refresh pass
   shows the centered `No document opened` placeholder instead of leaving the chrome alive around an empty body layer.
