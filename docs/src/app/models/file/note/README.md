@@ -54,9 +54,11 @@
 - `WhatSonNoteHeaderStore.hpp`
 
 ## Current Focus Areas
-- `src/app/models/editor/persistence/ContentsEditorPersistenceController` now owns the editor-side buffered persistence drain clock and best-effort
-  lifecycle flush requests. This `file/note` directory only owns the downstream note-package management queue once a
-  snapshot is already selected for async persistence.
+- `ContentsEditorSaveCoordinator` now forwards accepted editor RAW snapshots directly to
+  `ContentsNoteManagementCoordinator`. The removed editor-side buffered persistence controller no longer owns a drain
+  clock or pending snapshot cache.
+- This `file/note` directory owns the note-package management queue, concrete `.wsnote/.wsnbody` mutation, and
+  follow-up metadata/stat refresh work for editor saves.
 - `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:
   - direct `.wsnote` persistence serialization
   - lazy selected-note body reads from the resolved `.wsnote` package

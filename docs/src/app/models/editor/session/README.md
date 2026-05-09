@@ -1,23 +1,27 @@
 # `src/app/models/editor/session`
 
 ## Responsibility
-Owns the C++ editor session controller.
+Owns the C++ editor session and direct-save coordination objects.
 
 ## Current Modules
 - `ContentsEditorSessionController.*`
   C++ session authority for pending saves, same-note echo acceptance, synchronized editor text state, and accepted local
   RAW source commits.
+- `ContentsEditorSaveCoordinator.*`
+  C++ save hook that commits RAW editor text into the live session and directly enqueues the resulting snapshot on
+  `ContentsNoteManagementCoordinator` for `.wsnbody` mutation.
 
 ## Boundary
 - Editor hosts must instantiate `ContentsEditorSessionController` directly through the internal C++ QML type.
 - This directory must not contain QML wrappers. QML is reserved for view construction and must not carry editor
-  session, persistence, or synchronization policy.
+  session, save-routing, or synchronization policy.
 - Local editor mutations must enter through `commitRawEditorTextMutation(...)`; QML controllers may build candidate RAW
   text, but they must not write `editorText`, mark local authority, or schedule persistence themselves.
 - Explicit tag-management mutations may follow that session commit with
-  `persistEditorTextImmediatelyWithText(...)` so discrete RAW tag insertions are flushed through the same persistence
-  boundary without waiting for the idle typing path.
-- Persistence decisions must still route through RAW `.wsnote/.wsnbody` mutation and sync paths.
+  `persistEditorTextImmediatelyWithText(...)` so discrete RAW tag insertions go through the same direct note-management
+  write path.
+- Save decisions must still route through RAW `.wsnote/.wsnbody` mutation and sync paths. The removed
+  `src/app/models/editor/persistence/ContentsEditorPersistenceController.*` buffered layer must not be reintroduced.
 
 ## 한국어
 

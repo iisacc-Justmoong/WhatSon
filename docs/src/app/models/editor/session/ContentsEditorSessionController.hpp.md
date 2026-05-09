@@ -40,8 +40,8 @@
   If the incoming selection/session payload points at a different `.wsnote` directory for the same id, the controller
   must drop local-authority protection and rebind to the new package.
 - That rejection must not itself enqueue another editor-to-RAW write.
-- Persistence staging and immediate flush keep transparent paired tags such as
+- Save scheduling and immediate flush keep transparent paired tags such as
   `<agenda><task>...</task></agenda>` and `<callout>...</callout>` unchanged before the payload enters
-  `ContentsEditorSelectionBridge`.
+  `ContentsEditorSaveCoordinator` and then `ContentsNoteManagementCoordinator`.
 - The controller owns the `syncingEditorTextFromModel` guard so QML typing handlers no longer need to schedule that
   guard window in JavaScript.

@@ -6,17 +6,17 @@
 
 ## Runtime Notes
 
-- The coordinator now centralizes the editor-adjacent note-management queue that sits downstream of
-  `src/app/models/editor/persistence/ContentsEditorPersistenceController`.
+- The coordinator now centralizes the editor-adjacent note-management queue used directly by
+  `ContentsEditorSaveCoordinator` and `ContentsEditorSelectionBridge`.
 - Direct body persistence still uses `WhatSonLocalNoteFileStore`, but that worker request is now just one request kind
   inside the coordinator.
-- The coordinator now also exposes one direct-context capture path for the upstream editor persistence controller:
+- The coordinator also exposes one direct-context capture path for callers that only know a note id:
   - resolve `noteDirectoryPathForNoteId(noteId)` while the correct content view-model is still bound
   - allow a later buffered drain turn to enqueue `DirectPersistBody` with that frozen note-directory path
   - avoid re-routing stale buffered editor text through whichever hierarchy view-model happens to be active later
-- The coordinator now also exposes a read-side `noteDirectoryPathForNote(noteId)` helper.
-  `ContentsEditorPersistenceController` and the selection bridge use that helper to surface the currently selected note's
-  resolved package directory back to body resource rendering without depending on the editor's current hierarchy shell.
+- The coordinator exposes a read-side `noteDirectoryPathForNote(noteId)` helper. The selection bridge uses that helper
+  to surface the currently selected note's resolved package directory back to body resource rendering without depending
+  on the editor's current hierarchy shell.
 - Read/reconcile/bind requests are no longer forced through `noteId`-only lookup.
   `loadNoteBodyTextForNote(...)`, `reconcileViewSessionAndRefreshSnapshotForNote(...)`, and `bindSelectedNote(...)`
   can all carry an explicit `noteDirectoryPath`, allowing the caller to keep targeting the exact `.wsnote` package

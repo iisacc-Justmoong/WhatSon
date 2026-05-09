@@ -14,7 +14,6 @@
 - `lineNumber`
 - `minimap`
 - `parser`
-- `persistence`
 - `projection`
 - `renderer`
 - `resource`
@@ -61,8 +60,9 @@
 - `display/ContentsDisplay*` owns editor-host display coordination for selection, context menus, mount plans, refresh
   plans, and viewport math.
 - Local RAW editor-source writes converge through
-  `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)`, so QML controllers can propose next
-  `.wsnbody` text without owning `editorText` writes, local-authority marking, or persistence scheduling.
+  `session/ContentsEditorSessionController::commitRawEditorTextMutation(...)` and
+  `session/ContentsEditorSaveCoordinator.*`, so QML controllers can propose next `.wsnbody` text without owning
+  `editorText` writes, local-authority marking, or direct note-package save routing.
 - Semantic text blocks such as `paragraph`, `title`, `subTitle`, and `eventDescription` keep two coordinate systems:
   wrapper spans (`blockSourceStart` / `blockSourceEnd`, open/close tag offsets) preserve the authored outer tag, while
   editable spans (`sourceStart` / `sourceEnd` / `sourceText`) point only at the inner text content.

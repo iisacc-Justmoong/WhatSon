@@ -21,8 +21,9 @@
 - `WhatSonHubSyncController` was moved from `src/app/sync` into this directory so sync responsibilities are now
   fully consolidated under `file/sync`.
 - Runtime hub synchronization remains the responsibility of this directory.
-- Note editor persistence is no longer part of `file/sync`; it is owned by
-  `src/app/models/editor/persistence/ContentsEditorPersistenceController`.
+- Note editor save routing is no longer part of `file/sync`; editor RAW snapshots are accepted by
+  `src/app/models/editor/session/ContentsEditorSaveCoordinator` and written through
+  `src/app/models/file/note/ContentsNoteManagementCoordinator`.
 
 ## Tests
 

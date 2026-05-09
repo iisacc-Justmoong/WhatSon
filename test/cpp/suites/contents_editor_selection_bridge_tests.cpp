@@ -304,7 +304,7 @@ void WhatSonCppRegressionTests::contentsEditorSelectionBridge_emitsTraceForNoteS
         QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadImmediate\")")));
     QVERIFY(selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadAsyncRequested\")")));
-    QVERIFY(selectionBridgeSource.contains(
+    QVERIFY(!selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFromPendingEditor\")")));
     QVERIFY(selectionBridgeSource.contains(
         QStringLiteral("QStringLiteral(\"selectionFlow.bodyLoadFallbackResolved\")")));

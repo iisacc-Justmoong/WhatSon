@@ -6,10 +6,9 @@
 
 ## Responsibility
 
-`ContentsNoteManagementCoordinator` is the downstream non-editing management boundary for the editor stack.
+`ContentsNoteManagementCoordinator` is the direct note-package management boundary for the editor stack.
 It owns note-package persistence enqueue, open-count maintenance, tracked-stat refresh scheduling, and metadata reload
-follow-ups after the upstream `src/app/models/editor/persistence/ContentsEditorPersistenceController` has already decided that an editor snapshot
-should synchronize to disk.
+follow-ups after `ContentsEditorSaveCoordinator` has accepted an editor RAW snapshot for disk synchronization.
 
 ## Public Contract
 
@@ -18,12 +17,12 @@ should synchronize to disk.
 - `contentPersistenceContractAvailable()`: reports whether either the direct `.wsnote` lane or the deferred fallback
   view-model persistence lane is available.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
-- `persistEditorTextForNote(noteId, text)`: accepts an already-approved editor persistence snapshot and enqueues it onto the
+- `persistEditorTextForNote(noteId, text)`: accepts an already-approved editor RAW snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
 - `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text)`: direct worker-lane save path used when the caller
   already captured the destination note directory.
-- `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows the upstream editor persistence boundary to snapshot
-  the current direct persistence target before a later hierarchy transition can change the active view-model.
+- `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows note-id callers to snapshot the current
+  direct persistence target before a later hierarchy transition can change the active view-model.
 - `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the
   direct-persistence lane to be active, so read-side consumers can keep resource/package resolution tied to the same
   note package as the editor session.
@@ -47,7 +46,7 @@ should synchronize to disk.
 - The coordinator owns the serialized request queue for:
   - lazy selected-note body reads
   - direct `.wsnote` body persistence
-  - fallback view-model persistence requests
+  - legacy fallback view-model persistence requests for non-session callers
   - open-count header updates
   - tracked-stat refresh work
 - Editor/QML code only asks for enqueue acceptance; the coordinator performs file IO and follow-up management later.
@@ -65,9 +64,9 @@ should synchronize to disk.
   view-model and then schedule tracked-stat refresh as a follow-up management task.
 - Selecting a note must still bump header open-count metadata, but that work must happen through the coordinator-owned
   background lane instead of synchronously inside editor selection refresh.
-- When the content view-model contract is unavailable, the coordinator must reject persistence requests cleanly instead
-  of letting QML assume the write succeeded.
-- If the upstream editor persistence layer already captured a valid note-directory path, the coordinator must still be able to
+- When the content view-model contract cannot resolve a concrete note package path, the editor save coordinator must
+  reject the save cleanly instead of treating a fallback view-model body save as equivalent to direct RAW mutation.
+- If the editor session already captured a valid note-directory path, the coordinator must still be able to
   enqueue a direct body write for that note even after the active content view-model changed.
 - Session/filesystem reconciliation must not force a metadata reload when the session text already matches filesystem
   RAW.

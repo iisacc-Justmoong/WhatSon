@@ -100,6 +100,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Note-management coverage now pins activity counters: changed direct editor body persistence increments persisted
   `.wsnhead <modifiedCount>`, and successful open-count writes trigger a metadata reload so the active detail surface
   can show the new `.wsnhead <openCount>` without reselection.
+- Editor direct-save coverage now verifies that `ContentsEditorSaveCoordinator` writes committed RAW session text
+  through `ContentsNoteManagementCoordinator` and that the removed editor persistence controller stays absent.
 - Active-note tracking coverage now pins atomic snapshot publication before per-property change signals, preventing
   editor observers from binding a newly selected note id to the previous note's body text during rapid note switches.
 - Large clipboard-paste coverage now pins the editor hot path: C++ visible-text mutation accepts oversized replacements

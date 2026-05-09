@@ -43,9 +43,8 @@
 #include "app/store/sidebar/ISidebarSelectionStore.hpp"
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
-#include "app/models/editor/persistence/ContentsEditorPersistenceController.hpp"
-#include "app/models/editor/persistence/ContentsEditorSaveCoordinator.hpp"
 #include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
+#include "app/models/editor/session/ContentsEditorSaveCoordinator.hpp"
 #include "app/models/editor/session/ContentsEditorSessionController.hpp"
 #include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
 #include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
@@ -1146,7 +1145,7 @@ private slots:
     void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
     void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
     void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
-    void editorPersistenceController_definesEditorPersistenceBoundary();
+    void editorSaveCoordinator_writesDirectlyThroughNoteManagement();
     void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();

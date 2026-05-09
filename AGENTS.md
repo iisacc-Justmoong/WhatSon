@@ -35,7 +35,7 @@
 - 편집기 보기 모드 상태/컨트롤러: `src/app/models/navigationbar/EditorViewState.*`,
   `src/app/models/navigationbar/EditorViewSectionController.*`,
   `src/app/models/navigationbar/EditorViewModeController.*`
-- 편집기 persistence 컨트롤러: `src/app/models/editor/persistence/ContentsEditorPersistenceController.*`
+- 편집기 저장 코디네이터: `src/app/models/editor/session/ContentsEditorSaveCoordinator.*`
 - 편집기 태그 helper: `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
   `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
   `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
@@ -140,10 +140,13 @@
   view QML은 현재 표시 중인 `ContentsEditorSessionController`를 이 전역 객체에 등록할 수 있지만, active note
   본문 스냅샷에서 세션을 갱신하는 책임을 각 view가 독립적으로 재구현하면 안 된다.
 - specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
-- editor-session persistence orchestration은 `src/app/models/editor/persistence` 아래에 둔다.
-  `ContentsEditorPersistenceController`는 note-body snapshot buffering, immediate enqueue attempt, persistence retry/drain scheduling, pending-snapshot adoption, selected-note body read, post-save reconcile handoff를 소유한다.
+- editor-session 저장 라우팅은 `src/app/models/editor/session/ContentsEditorSaveCoordinator.*`에 둔다.
+  `ContentsEditorSaveCoordinator`는 live editor session RAW snapshot을 직접 `ContentsNoteManagementCoordinator`에 전달한다.
+  별도의 editor-side buffered persistence controller, dirty snapshot map, idle drain timer, pending editor body adoption path는 두지 않는다.
+  editor session 저장은 concrete note directory path가 있을 때만 `.wsnote/.wsnbody`에 직접 쓰며, 경로가 없으면 현재 direct context를 먼저 캡처하고 실패 시 fallback view-model body save로 우회하지 않는다.
 - editor tag의 편집 동작 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 transparent paired tag insertion, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다. 단축키 독립 태그 생성은 `ContentsEditorTagMutationBuilder`가 소유하고, 단축키 컨트롤러는 canonical tag 이름 해석만 맡아야 한다. `.wsnbody` 저장 포맷에서 resource와 break를 body-level format block으로 직렬화/복원하는 책임은 `src/app/models/file/note/WhatSonNoteBodyPersistence.*`와 `WhatSonNoteBodySemanticTagSupport.*`에 둔다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`은 paragraph RAW source 안에서 보존되는 일반 투명 쌍태그다.
-- `src/app/models/file/note`는 editor persistence layer가 IO용 RAW snapshot을 선택한 뒤의 concrete `.wsnote/.wsnbody` file mutation만 소유한다. editor-session dirty buffer나 editor save-timing policy를 소유하면 안 된다.
+- `src/app/models/file/note`는 editor session/save coordinator가 넘긴 RAW snapshot의 concrete `.wsnote/.wsnbody` file mutation,
+  selected-note body read, reconcile, stat/open-count follow-up을 소유한다. editor-session dirty buffer는 만들지 않는다.
 
 ### 입력기 권한 (중요)
 
