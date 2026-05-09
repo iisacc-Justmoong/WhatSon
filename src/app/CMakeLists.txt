@@ -192,7 +192,29 @@ function(whatson_app_register_directory_qml base_dir)
             RESOURCE_FILES ${_whatson_qml_resource_files})
 endfunction()
 
-qt_add_executable(WhatSon main.cpp)
+qt_add_executable(WhatSon main.cpp
+        models/editor/read/GetWsnbody.cpp
+        models/editor/read/GetWsnbody.h
+        models/editor/render/RenderResource.cpp
+        models/editor/render/RenderResource.h
+        models/editor/render/RenderCallout.cpp
+        models/editor/render/RenderCallout.h
+        models/editor/render/RenderAgenda.cpp
+        models/editor/render/RenderAgenda.h
+        models/editor/render/RenderBody.cpp
+        models/editor/render/RenderBody.h
+        models/editor/render/RenderBreak.cpp
+        models/editor/render/RenderBreak.h
+        models/editor/write/SetText.cpp
+        models/editor/write/SetText.h
+        models/editor/read/GetText.cpp
+        models/editor/read/GetText.h
+        models/editor/write/SetOpenTag.cpp
+        models/editor/write/SetOpenTag.h
+        models/editor/write/SetCloseTag.cpp
+        models/editor/write/SetCloseTag.h
+        models/editor/read/GetTag.cpp
+        models/editor/read/GetTag.h)
 target_include_directories(WhatSon PRIVATE
         "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}"

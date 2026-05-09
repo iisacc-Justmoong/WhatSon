@@ -23,8 +23,6 @@ Item {
     readonly property real displayContentHeight: control.displayTextContentHeight
             + control.editorBottomInset
     readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)
-    readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows
-    readonly property var lineNumberGeometryResourceBlockHeights: control.resourceVisualBlockHeights()
     readonly property var editorItem: textInput.editorItem
     property bool focused: textInput.focused
     readonly property var inputItem: textInput.editorItem
@@ -59,9 +57,6 @@ Item {
             && String(control.renderedText || "").length <= 0
             && String(control.text || "").length >= control.largeDocumentNativeSurfaceLengthThreshold
             && String(control.text || "").indexOf("<") < 0
-    readonly property var logicalGutterRows: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.rows
-    readonly property int visualLineCount: visualLineMetrics.visualLineCount
-    readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios
     readonly property bool renderedOverlayAvailable: control.showRenderedOutput
             && control.renderedText.length > 0
     readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable
@@ -462,7 +457,7 @@ Item {
 
     function resourceVisualLayoutRows() {
         const rows = editorGeometryProvider.lineNumberGeometryRows || [];
-        const ranges = lineNumberRailMetrics.logicalLineRanges || [];
+        const ranges = resourceVisualLineMetrics.logicalLineRanges || [];
         const count = Math.min(rows.length || 0, ranges.length || 0);
         const visualRows = [];
         let resourceIndex = 0;
@@ -1023,17 +1018,14 @@ Item {
         id: wysiwygEditorPolicy
     }
 
-    ContentsEditorVisualLineMetrics {
-        id: visualLineMetrics
-    }
-
     ContentsEditorGeometryProvider {
         id: editorGeometryProvider
 
         fallbackLineHeight: LV.Theme.textBodyLineHeight
         fallbackWidth: control.width
-        lineNumberRanges: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.logicalLineRanges
+        lineNumberRanges: control.largeDocumentNativeSurface ? [] : resourceVisualLineMetrics.logicalLineRanges
         logicalLength: control.displayGeometryText.length
+        objectName: "contentsInlineFormatResourceGeometryProvider"
         resourceVisualBlocks: control.resourceVisualBlocks
         targetItem: control
         textItem: control.displayGeometryItem()
@@ -1058,7 +1050,7 @@ Item {
     }
 
     ContentsLineNumberRailMetrics {
-        id: lineNumberRailMetrics
+        id: resourceVisualLineMetrics
 
         displayContentHeight: control.displayContentHeight
         geometryWidth: control.width
@@ -1067,25 +1059,14 @@ Item {
                               : ((control.documentBlocks || []).length > 0
                                  ? control.documentBlocks
                                  : control.normalizedHtmlBlocks)
+        objectName: "contentsInlineFormatResourceLineMetrics"
         sourceText: control.largeDocumentNativeSurface ? "" : control.text
         textLineHeight: LV.Theme.textBodyLineHeight
     }
 
     Binding {
-        property: "measuredLineWidthRatios"
-        target: visualLineMetrics
-        value: editorGeometryProvider.visualLineWidthRatios
-    }
-
-    Binding {
-        property: "measuredVisualLineCount"
-        target: visualLineMetrics
-        value: editorGeometryProvider.visualLineCount
-    }
-
-    Binding {
         property: "geometryRows"
-        target: lineNumberRailMetrics
+        target: resourceVisualLineMetrics
         value: editorGeometryProvider.lineNumberGeometryRows
     }
 

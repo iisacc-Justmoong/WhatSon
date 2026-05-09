@@ -28,7 +28,8 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
   `projectionSourceText` lags behind `sourceText`, so a transient parser/render turn cannot fall back to displaying
   RAW `.wsnbody` tags or plain logical text.
 - Reads `editor.sourceCursorPosition`, `editor.sourceSelectionStart`, and `editor.sourceSelectionEnd` back from the
-  inline editor so gutter, minimap, formatting, and persistence surfaces keep using RAW `.wsnbody` coordinates.
+  inline editor so host chrome, formatting, and persistence surfaces keep using RAW `.wsnbody` coordinates. Metric row
+  calculation itself stays in `ContentViewLayout.qml`.
 - Passes the projection-owned `coordinateMapper` object into the inline editor for visible-logical to RAW selection
   mapping; the view layer does not receive the raw logical/source offset table.
 - Passes parser-owned `documentBlocks` and resolved `resourceVisualBlocks` through to the inline editor so resource
@@ -42,16 +43,11 @@ Hosts the note document surface after `ContentsEditorDisplayBackend` has mounted
 - Tag-management shortcuts emit through the same `sourceTextEdited(text)` path after the live editor buffer is
   updated; they do not serialize RichText back into `.wsnbody`.
 - Exposes `normalizedBlocks()` as a compatibility hook for callers that need the renderer-owned block stream.
-- Exposes `editorContentHeight`, `editorCursorPosition`, `editorSelectionStart`, `editorSelectionEnd`,
-  `editorVisualLineCount`, and `editorVisualLineWidthRatios` to the parent editor host.
-- Exposes `editorLogicalGutterRows` to the parent editor host. These rows come from the inline editor's
-  `ContentsLineNumberRailMetrics` C++ object and represent logical lines with measured y/height values for the left
-  gutter. The cursor and selection offsets let the parent route active-line state to that gutter without adding input
-  handling to the rail.
-- `editorVisualLineCount` comes from the inline editor's visible wrapped text surface and is the minimap row-count
-  input. It includes height-derived row equivalents for tall rendered blocks such as resource frames.
-- `editorVisualLineWidthRatios` carries the matching row-width ratios so minimap rows can reflect the visible text
-  length of each editor line.
+- Exposes `editorContentHeight`, `editorCursorPosition`, `editorSelectionStart`, `editorSelectionEnd`, and
+  `editorRenderedOverlayVisible` to the parent editor host.
+- Does not relay gutter or minimap metrics from the inline editor. `ContentViewLayout.qml` owns independent metric
+  probes and binds their outputs directly to `ContentsLineNumberRail.qml`, `Minimap.qml`, and
+  `ContentsMinimapLayoutMetrics`.
 - Exposes `pointRequestsTerminalBodyClick(localX, localY)` and `focusTerminalBodyFromPoint(localX, localY)` for the
   bottom-empty-area accessibility hit target.
 - Mounts a transparent left-click `MouseArea` only over the region below the rendered body. The start y follows the

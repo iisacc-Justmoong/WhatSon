@@ -287,7 +287,11 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_mountsEditorAndMinimapInDis
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSelectionStart: structuredDocumentFlow.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("rows: contentsDisplayLineNumberRailMetrics.rows")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsDisplayMetricGeometryProvider")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsDisplayVisualLineMetrics")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsDisplayLineNumberRailMetrics")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("rows: structuredDocumentFlow.editorLogicalGutterRows")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: visible ? contentsDisplayGutter.preferredWidth : LV.Theme.gapNone")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSourceCursorPosition: 0")));
     QVERIFY(lineNumberRailSource.contains(QStringLiteral("property int activeSelectionEnd: activeSourceCursorPosition")));

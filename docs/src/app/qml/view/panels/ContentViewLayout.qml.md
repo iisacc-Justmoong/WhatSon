@@ -63,6 +63,10 @@ surface.
   note-list bindings finish a later refresh turn.
 - `minimapVisible` is forwarded into `ContentsEditorDisplayBackend`; this QML file renders the visible editor/minimap
   `LV.HStack` and applies minimap drag deltas to the editor `Flickable`.
+- Gutter and minimap metrics are not relayed from `ContentsInlineFormatEditor.qml` or
+  `ContentsStructuredDocumentFlow.qml`. This file owns the independent metric probe layer, binds source/projection
+  inputs into `ContentsLineNumberRailMetrics`, normalizes visible rows through `ContentsEditorVisualLineMetrics`, and
+  passes those outputs directly to `ContentsLineNumberRail.qml`, `Minimap.qml`, and `ContentsMinimapLayoutMetrics`.
 - The editor document viewport consumes `ContentsStructuredDocumentFlow.editorContentHeight`; the inline editor reports
   this as measured body text height plus its explicit legacy bottom inset, so the scrollable body extent owns the
   breathing room instead of relying on an outer wrapper height hack.

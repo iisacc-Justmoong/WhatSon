@@ -58,35 +58,34 @@ Editor-facing QML view components for the center content surface.
   `ContentsEditorDisplayBackend`; typing and same-note projection refreshes preserve the current `contentY`. The inline
   editor also restores the legacy `LV.Theme.gap16` bottom inset by adding it to the reported scrollable content height
   after the measured rendered body height, so the final body line is not pinned to the viewport edge.
-- The gutter row list is driven by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`, which is resolved by the
-  C++ `ContentsLineNumberRailMetrics` object mounted inside `ContentsInlineFormatEditor.qml`. The metrics object
-  receives measured row-geometry snapshots from `ContentsEditorGeometryProvider` instead of direct TextEdit, cursor,
-  selection, or resource overlay references. Each gutter row represents one full-document logical text line, including
-  blank lines introduced between hidden RAW tags. Wrapped text does not increment the number count, but the row height
-  is measured from the live editor geometry so a long paragraph that wraps onto three visible lines gives one numbered
-  gutter row with three visible lines of height. The rail width comes from `ContentsLineNumberRail.preferredWidth`,
-  which halves the leading blank area before the number column. The host also forwards RAW cursor/selection offsets so
-  the rail can paint a blue active-line bar on the cursor row or selected rows. Atomic resource frames count as one
-  logical row with one gutter-line height. Line-number y snapshots come from the plain logical display probe so ordinary
-  text rows keep independent positions; in rendered mode the structured resource visual block height supplies the
-  visual-height delta of an atomic resource frame, which places later rows below the frame without converting the frame
-  into extra gutter rows or adopting RichText row coordinates for unrelated text.
+- The gutter row list is driven by a `ContentsLineNumberRailMetrics` instance owned by `ContentViewLayout.qml`, not by
+  `ContentsInlineFormatEditor.qml` or `ContentsStructuredDocumentFlow.qml`. The host binds source/projection inputs and
+  measured row-geometry snapshots from an independent metric probe layer. Each gutter row represents one
+  full-document logical text line, including blank lines introduced between hidden RAW tags. Wrapped text does not
+  increment the number count, but the row height follows the independently measured document geometry so a long
+  paragraph that wraps onto three visible lines gives one numbered gutter row with three visible lines of height. The
+  rail width comes from `ContentsLineNumberRail.preferredWidth`, which halves the leading blank area before the number
+  column. The host also forwards RAW cursor/selection offsets so the rail can paint a blue active-line bar on the cursor
+  row or selected rows. Atomic resource frames count as one logical row with one gutter-line height. Line-number y
+  snapshots come from the host-owned plain logical metric probe so ordinary text rows keep independent positions; in
+  rendered mode the structured resource visual block height supplies the visual-height delta of an atomic resource
+  frame, which places later rows below the frame without converting the frame into extra gutter rows or adopting
+  RichText row coordinates for unrelated text.
   Resource frames are rendered by direct visual delegates, and the geometry adapter uses `resourceVisualBlocks` rather
   than parsing rendered HTML for frame sizes. It compares that frame height to the next plain logical row's base y, not
   to the hidden placeholder line-box height. If QML asks before the
   next plain row has a measurable y, the adapter uses the full frame height so the first post-resource row still lands
   on the frame bottom. If multiple logical rows are clamped out of the same resource frame, the adapter advances each
   following row by its published height so line 2 and a blank line 3 cannot share the same gutter y coordinate.
-  `ContentsInlineFormatEditor.qml` also exposes read-only geometry-provider snapshots so tests can distinguish raw
-  measured rows from the final one-line resource gutter rows.
-- The minimap row count is driven by `ContentsStructuredDocumentFlow.editorVisualLineCount`, which comes from measured
-  visual-line snapshots normalized by the C++ `ContentsEditorVisualLineMetrics` object. A single source tag or
-  paragraph that wraps onto two visible editor lines therefore produces two minimap rows. Tall rendered blocks such as
-  resource frames use their visible content height divided by the editor line height, so their minimap footprint
-  follows the amount of vertical space they occupy.
-- The minimap row widths are driven by `ContentsStructuredDocumentFlow.editorVisualLineWidthRatios`. Text rows use the
-  visible line length measured by `ContentsEditorGeometryProvider` and normalized by `ContentsEditorVisualLineMetrics`;
-  height-derived rows that cannot be probed from text geometry remain full width inside the minimap's padded rail.
+  The inline editor keeps a private geometry path for resource hit-testing, but it no longer exposes gutter rows to the
+  runtime chrome.
+- The minimap row count is driven by `ContentViewLayout.qml`'s independent `ContentsEditorVisualLineMetrics` instance.
+  A single source tag or paragraph that wraps onto two visible document-probe lines therefore produces two minimap rows.
+  Tall rendered blocks such as resource frames use their visible content height divided by the editor line height, so
+  their minimap footprint follows the amount of vertical space they occupy.
+- The minimap row widths are driven by the same host-owned visual-line metrics. Text rows use the visible line length
+  measured by `ContentViewLayout.qml`'s metric geometry provider; height-derived rows that cannot be probed from text
+  geometry remain full width inside the minimap's padded rail.
 - The minimap can be dragged vertically without rendering scrollbar chrome. `Minimap.qml` emits direct drag pixel
   deltas from its invisible drag surface and `ContentViewLayout.qml` applies those deltas to the center editor
   `Flickable.contentY` without smoothing or ratio scaling.
@@ -160,16 +159,20 @@ objects.
   padding은 거터, 본문 editor viewport, 미니맵 전체에 공통으로 적용되며, inline editor 내부 inset과는 분리된다.
 - gutter: 거터는 본문과 같은 `Flickable` 콘텐츠 안에 배치하며, 전체 문서의 논리 줄마다 번호 하나를 표시한다.
   RAW 태그가 숨겨져도 태그 사이에 남는 빈 논리 줄은 거터 번호 슬롯을 유지한다. 논리 줄 분할과 row y/height
-  생성은 C++ `ContentsLineNumberRailMetrics`가 담당한다. 지오메트리는
-  `ContentsEditorGeometryProvider`가 만든 row snapshot으로만 들어오며, 거터 metrics는
-  TextEdit/cursor/selection/resource overlay 객체에 직접 결합하지 않는다. wrap은 번호를 늘리지 않고 해당
+  생성은 `ContentViewLayout.qml`이 소유한 C++ `ContentsLineNumberRailMetrics`가 담당한다. 지오메트리는
+  같은 host의 독립 metric probe와 `ContentsEditorGeometryProvider`가 만든 row snapshot으로만 들어오며, 거터
+  metrics는 TextEdit/cursor/selection/resource overlay 객체에 직접 결합하지 않는다. wrap은 번호를 늘리지 않고 해당
   번호 행의 높이만 실제 본문 표시 높이만큼 커진다. 각 row의 y/height는 독립 snapshot으로 처리하며, 리소스
   프레임 row의 높이가 다음 줄 번호 위치를 연쇄적으로 밀지 않는다. 번호 왼쪽 빈 영역은 rail의 `preferredWidth` 계산으로
   기존 implicit blank의 절반만 사용한다. RAW cursor/selection offset은 host가 전달하며, 거터는 이를 row
   source range와 비교해 커서 줄 또는 선택된 줄에 파란색 active bar를 표시한다.
 - resource frame: 리소스 프레임은 HTML placeholder 치환이 아니라 structured visual delegate로 본문 텍스트 컬럼 폭의 100%에 렌더한다.
-- minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 geometry adapter가 측정해 `editorVisualLineCount`로 전달되는 실제 에디터 wrap 결과 줄 수를 따른다. 리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
-- minimap width: 미니맵 각 행의 폭은 `editorVisualLineWidthRatios`로 전달되는 실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은 프레임이 본문 폭을 채우므로 padded rail 내부에서 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
+- minimap: 미니맵 행 수는 parser 논리 줄 수가 아니라 `ContentViewLayout.qml`의 독립 metric probe가 측정해
+  `ContentsEditorVisualLineMetrics.visualLineCount`로 전달되는 실제 document wrap 결과 줄 수를 따른다.
+  리소스 프레임처럼 별도 높이를 차지하는 블록은 표시 높이를 본문 줄 높이로 나눈 줄 수만큼 미니맵에 반영한다.
+- minimap width: 미니맵 각 행의 폭은 host-owned `ContentsEditorVisualLineMetrics.visualLineWidthRatios`로 전달되는
+  실제 표시 줄 길이를 따른다. 텍스트 행은 본문에서 보이는 길이에 비례하고, 리소스 프레임 높이에서 파생된 행은
+  프레임이 본문 폭을 채우므로 padded rail 내부에서 full width로 둔다. 미니맵 metrics는 측정된 ratio snapshot만 소비한다.
 - minimap drag: 미니맵은 별도 스크롤바 chrome 없이 세로 드래그 pixel delta를 그대로 내보내고, `ContentViewLayout.qml`이 같은 delta를 본문 `Flickable.contentY`에 더한다.
 - scrolling: 본문 중앙 슬롯은 `Flickable` viewport를 소유하며 긴 노트 본문은 이 viewport 안에서 세로 스크롤된다.
   실제 노트 id/path가 바뀌는 경우에만 backend reset 신호로 최상단 이동이 허용되며, 타이핑과 같은 노트의 projection

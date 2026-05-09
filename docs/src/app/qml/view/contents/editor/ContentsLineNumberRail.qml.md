@@ -6,7 +6,8 @@ Renders the logical-line-number gutter for the live note editor surface.
 
 ## Current Contract
 
-- `rows` is a view-only array supplied by `ContentsStructuredDocumentFlow.editorLogicalGutterRows`.
+- `rows` is a view-only array supplied by the parent editor host's independent `ContentsLineNumberRailMetrics`
+  instance.
 - `activeSourceCursorPosition`, `activeSelectionStart`, and `activeSelectionEnd` are RAW source offsets supplied by the
   editor host.
 - Each row represents one full-document logical text line, not one wrapped visual text row.
@@ -24,9 +25,9 @@ Renders the logical-line-number gutter for the live note editor surface.
 
 ## Pipeline Position
 
-`ContentsInlineFormatEditor.qml` binds editor geometry and projection metadata into the C++
+`ContentViewLayout.qml` binds source/projection metadata and independent metric probe geometry into the C++
 `ContentsLineNumberRailMetrics` object, which publishes row objects with `number`, `y`, and `height`.
-`ContentViewLayout.qml` mounts this line-number rail inside the same `Flickable` content item as
+It mounts this line-number rail inside the same `Flickable` content item as
 `ContentsStructuredDocumentFlow.qml`, so the gutter and body share one y-coordinate system.
 
 ## 한국어

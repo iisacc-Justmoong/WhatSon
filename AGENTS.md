@@ -136,6 +136,10 @@
 - note editor는 plain prose, semantic text block, `<resource ... />`, `break`를 하나의 document host 안의 ordinary block으로 취급해야 한다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`는 body-level element가 아니라 일반 투명 쌍태그로 취급한다.
 - `<callout>...</callout>`의 시각 표현은 저장 계층이 아니라 editor renderer/projection 계층이 소유한다. Figma `Callout` 노드(`280:7897`)의 `#262728` 배경, frame-width fill, content-height hug, `3px` `#d9d9d9` 리딩 바, Pretendard Medium `12/12` 흰색 텍스트 표현을 따르되 RAW `.wsnbody`는 그대로 유지해야 한다.
 - note session이 bound된 뒤의 표준 note document host는 `ContentsStructuredDocumentFlow.qml`이다.
+- 런타임 거터/미니맵 chrome metric은 `ContentsInlineFormatEditor.qml` 또는
+  `ContentsStructuredDocumentFlow.qml`에서 relay하지 않는다. `ContentViewLayout.qml`이 독립 metric probe와
+  `ContentsLineNumberRailMetrics`/`ContentsEditorVisualLineMetrics` 입력을 소유하고, 거터와 미니맵은 그 결과를
+  직접 받는다.
 - active note 선택과 편집기 세션 mount는 전역 `NoteActiveStateTracker`가 같은 update turn에서 연결해야 한다.
   view QML은 현재 표시 중인 `ContentsEditorSessionController`를 이 전역 객체에 등록할 수 있지만, active note
   본문 스냅샷에서 세션을 갱신하는 책임을 각 view가 독립적으로 재구현하면 안 된다.

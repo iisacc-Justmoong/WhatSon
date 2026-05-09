@@ -22,12 +22,9 @@ Item {
     property color textColor: LV.Theme.bodyColor
     readonly property real editorContentHeight: editor.displayContentHeight
     readonly property int editorCursorPosition: editor.sourceCursorPosition
-    readonly property var editorLogicalGutterRows: editor.logicalGutterRows
     readonly property int editorSelectionEnd: editor.sourceSelectionEnd
     readonly property int editorSelectionStart: editor.sourceSelectionStart
     readonly property bool editorRenderedOverlayVisible: editor.renderedOverlayVisible
-    readonly property int editorVisualLineCount: editor.visualLineCount
-    readonly property var editorVisualLineWidthRatios: editor.visualLineWidthRatios
     readonly property bool logicalProjectionReady: documentFlow.projectionSourceText === documentFlow.sourceText
     readonly property string resolvedEditorSurfaceHtml: documentFlow.logicalProjectionReady
             ? documentFlow.editorSurfaceHtml

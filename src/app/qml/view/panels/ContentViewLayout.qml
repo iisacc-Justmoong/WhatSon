@@ -236,6 +236,16 @@ Item {
             clip: true
             enabled: contentViewLayout.visible
             readonly property int contentVerticalPadding: LV.Theme.gap8
+            readonly property int metricsLargeDocumentNativeSurfaceLengthThreshold: 32 * 1024
+            readonly property string metricsSourceText: editorDisplayBackend.editorSession.editorText
+            readonly property string metricsRenderedSurfaceHtml: structuredDocumentFlow.resolvedEditorSurfaceHtml
+            readonly property string metricsDisplayGeometryText: contentsEditorSurface.metricsLargeDocumentNativeSurface
+                    ? ""
+                    : structuredDocumentFlow.resolvedDisplayGeometryText
+            readonly property bool metricsLargeDocumentNativeSurface: String(contentsEditorSurface.metricsRenderedSurfaceHtml || "").length <= 0
+                    && String(contentsEditorSurface.metricsSourceText || "").length >= contentsEditorSurface.metricsLargeDocumentNativeSurfaceLengthThreshold
+                    && String(contentsEditorSurface.metricsSourceText || "").indexOf("<") < 0
+            readonly property bool metricsRenderedOverlayVisible: String(contentsEditorSurface.metricsRenderedSurfaceHtml || "").length > 0
 
             function editorViewportScrollRange() {
                 if (!editorDocumentViewport)
@@ -248,6 +258,17 @@ Item {
                 const nextContentY = editorDocumentViewport.contentY + (Number(deltaY) || 0);
                 editorDocumentViewport.contentY = Math.max(0, Math.min(scrollRange, nextContentY));
                 return true;
+            }
+
+            function metricsListLength(values) {
+                return values && values.length !== undefined ? values.length : 0;
+            }
+
+            function resolvedMetricBlocks() {
+                const documentBlocks = editorDisplayBackend.structuredBlockRenderer.renderedDocumentBlocks || [];
+                if (contentsEditorSurface.metricsListLength(documentBlocks) > 0)
+                    return documentBlocks;
+                return editorDisplayBackend.presentationProjection.normalizedHtmlBlocks || [];
             }
 
             ContentsEditorDisplayBackend {
@@ -291,6 +312,83 @@ Item {
                 paperVerticalMargin: LV.Theme.gap4
             }
 
+            ContentsEditorVisualLineMetrics {
+                id: contentsDisplayVisualLineMetrics
+
+                objectName: "contentsDisplayVisualLineMetrics"
+            }
+
+            ContentsLineNumberRailMetrics {
+                id: contentsDisplayLineNumberRailMetrics
+
+                displayContentHeight: (contentsEditorSurface.metricsRenderedOverlayVisible
+                                       ? contentsDisplayRenderedMetricProbe.contentHeight
+                                       : contentsDisplayLogicalMetricProbe.contentHeight)
+                                      + LV.Theme.gap16
+                geometryWidth: structuredDocumentFlow.width
+                normalizedHtmlBlocks: contentsEditorSurface.metricsLargeDocumentNativeSurface
+                                      ? []
+                                      : contentsEditorSurface.resolvedMetricBlocks()
+                objectName: "contentsDisplayLineNumberRailMetrics"
+                sourceText: contentsEditorSurface.metricsLargeDocumentNativeSurface
+                            ? ""
+                            : contentsEditorSurface.metricsSourceText
+                textLineHeight: LV.Theme.textBodyLineHeight
+            }
+
+            ContentsEditorGeometryProvider {
+                id: contentsDisplayMetricGeometryProvider
+
+                fallbackLineHeight: LV.Theme.textBodyLineHeight
+                fallbackWidth: structuredDocumentFlow.width
+                lineNumberRanges: contentsEditorSurface.metricsLargeDocumentNativeSurface
+                                  ? []
+                                  : contentsDisplayLineNumberRailMetrics.logicalLineRanges
+                logicalLength: contentsEditorSurface.metricsDisplayGeometryText.length
+                objectName: "contentsDisplayMetricGeometryProvider"
+                resourceVisualBlocks: structuredDocumentFlow.resourceVisualBlocks
+                targetItem: contentsDisplayMetricProbeLayer
+                textItem: contentsDisplayLogicalMetricProbe
+                visualItem: contentsEditorSurface.metricsRenderedOverlayVisible
+                            ? contentsDisplayRenderedMetricProbe
+                            : contentsDisplayLogicalMetricProbe
+                visualLineHeight: LV.Theme.textBodyLineHeight
+                visualStrokeThin: LV.Theme.strokeThin
+                visualTextContentHeight: contentsDisplayMetricGeometryProvider.visualItem !== null
+                                         && contentsDisplayMetricGeometryProvider.visualItem !== undefined
+                                         && contentsDisplayMetricGeometryProvider.visualItem.contentHeight !== undefined
+                        ? contentsDisplayMetricGeometryProvider.visualItem.contentHeight
+                        : LV.Theme.gapNone
+                visualTextLineCount: contentsDisplayMetricGeometryProvider.visualItem !== null
+                                     && contentsDisplayMetricGeometryProvider.visualItem !== undefined
+                                     && contentsDisplayMetricGeometryProvider.visualItem.lineCount !== undefined
+                        ? contentsDisplayMetricGeometryProvider.visualItem.lineCount
+                        : LV.Theme.gapNone
+                visualTextWidth: contentsDisplayMetricGeometryProvider.visualItem !== null
+                                 && contentsDisplayMetricGeometryProvider.visualItem !== undefined
+                                 && contentsDisplayMetricGeometryProvider.visualItem.width !== undefined
+                        ? contentsDisplayMetricGeometryProvider.visualItem.width
+                        : LV.Theme.gapNone
+            }
+
+            Binding {
+                property: "measuredLineWidthRatios"
+                target: contentsDisplayVisualLineMetrics
+                value: contentsDisplayMetricGeometryProvider.visualLineWidthRatios
+            }
+
+            Binding {
+                property: "measuredVisualLineCount"
+                target: contentsDisplayVisualLineMetrics
+                value: contentsDisplayMetricGeometryProvider.visualLineCount
+            }
+
+            Binding {
+                property: "geometryRows"
+                target: contentsDisplayLineNumberRailMetrics
+                value: contentsDisplayMetricGeometryProvider.lineNumberGeometryRows
+            }
+
             Binding {
                 target: editorDisplayBackend.minimapLayoutMetrics
                 property: "buttonMinWidth"
@@ -329,7 +427,7 @@ Item {
             Binding {
                 target: editorDisplayBackend.minimapLayoutMetrics
                 property: "visualLineCount"
-                value: structuredDocumentFlow.editorVisualLineCount
+                value: contentsDisplayVisualLineMetrics.visualLineCount
             }
 
             Rectangle {
@@ -478,7 +576,7 @@ Item {
                                 activeSelectionEnd: structuredDocumentFlow.editorSelectionEnd
                                 activeSelectionStart: structuredDocumentFlow.editorSelectionStart
                                 activeSourceCursorPosition: structuredDocumentFlow.editorCursorPosition
-                                rows: structuredDocumentFlow.editorLogicalGutterRows
+                                rows: contentsDisplayLineNumberRailMetrics.rows
                                 visible: editorDisplayBackend.noteDocumentParseMounted
                                          && !pagePrintLayoutRenderer.showPrintEditorLayout
                                 width: visible ? contentsDisplayGutter.preferredWidth : LV.Theme.gapNone
@@ -530,6 +628,63 @@ Item {
                                 }
                             }
 
+                            Item {
+                                id: contentsDisplayMetricProbeLayer
+
+                                clip: true
+                                enabled: false
+                                height: structuredDocumentFlow.height
+                                objectName: "contentsDisplayMetricProbeLayer"
+                                opacity: 0
+                                visible: editorDisplayBackend.noteDocumentParseMounted
+                                width: structuredDocumentFlow.width
+                                x: structuredDocumentFlow.x
+                                y: structuredDocumentFlow.y
+                                z: -10
+
+                                TextEdit {
+                                    id: contentsDisplayLogicalMetricProbe
+
+                                    activeFocusOnPress: false
+                                    anchors.fill: parent
+                                    anchors.leftMargin: LV.Theme.gap16
+                                    anchors.rightMargin: LV.Theme.gap16
+                                    color: "transparent"
+                                    enabled: false
+                                    font.family: LV.Theme.fontBody
+                                    font.pixelSize: LV.Theme.textBody
+                                    objectName: "contentsDisplayLogicalMetricProbe"
+                                    readOnly: true
+                                    selectByKeyboard: false
+                                    selectByMouse: false
+                                    text: contentsEditorSurface.metricsDisplayGeometryText
+                                    textFormat: TextEdit.PlainText
+                                    textMargin: LV.Theme.gapNone
+                                    wrapMode: TextEdit.Wrap
+                                }
+
+                                TextEdit {
+                                    id: contentsDisplayRenderedMetricProbe
+
+                                    activeFocusOnPress: false
+                                    anchors.fill: contentsDisplayLogicalMetricProbe
+                                    color: "transparent"
+                                    enabled: false
+                                    font.family: LV.Theme.fontBody
+                                    font.pixelSize: LV.Theme.textBody
+                                    objectName: "contentsDisplayRenderedMetricProbe"
+                                    readOnly: true
+                                    selectByKeyboard: false
+                                    selectByMouse: false
+                                    text: contentsEditorSurface.metricsRenderedOverlayVisible
+                                          ? contentsEditorSurface.metricsRenderedSurfaceHtml
+                                          : ""
+                                    textFormat: TextEdit.RichText
+                                    textMargin: LV.Theme.gapNone
+                                    wrapMode: TextEdit.Wrap
+                                }
+                            }
+
                             Connections {
                                 target: editorDisplayBackend.editorSession
                                 ignoreUnknownSignals: true
@@ -564,7 +719,7 @@ Item {
                     lineColor: LV.Theme.captionColor
                     objectName: "contentsDisplayMinimap"
                     rowCount: editorDisplayBackend.minimapLayoutMetrics.effectiveRowCount
-                    rowWidthRatios: structuredDocumentFlow.editorVisualLineWidthRatios
+                    rowWidthRatios: contentsDisplayVisualLineMetrics.visualLineWidthRatios
                     scrollDragEnabled: editorDocumentViewport.contentHeight > editorDocumentViewport.height
                     visible: contentViewLayout.minimapVisible
 

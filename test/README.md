@@ -130,6 +130,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   regression also covers hidden TextEdit line boxes whose rectangle height differs from the next row's base-y advance
   and probe rows whose measured top is still inside the rendered resource frame. A separate QML regression keeps the
   blank gutter row after post-resource text from overlapping line 2.
+- Runtime chrome coverage now also verifies that gutter and minimap metric inputs are owned by `ContentViewLayout.qml`
+  through independent metric probes, rather than being relayed from `ContentsInlineFormatEditor.qml` or
+  `ContentsStructuredDocumentFlow.qml`.
 - Clipboard-image resource imports now also pin their synthesized asset-name policy in the C++ suite, so temporary
   placeholder names cannot regress back to a collision-prone fixed file name.
 - Structured QML editor checks now also pin the native input contract for every host: focused stale text echo is rejected,

@@ -88,22 +88,12 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   already contains backend-generated resource flow spacers, so `renderedOverlay.contentHeight` is the visual body flow
   height. `displayContentHeight` adds the restored bottom inset, while `displayBodyHeight` stays equal to the measured
   body so terminal hit testing does not treat the bottom breathing room as rendered text.
-- Mounts `ContentsEditorGeometryProvider` as the only view-owned geometry adapter for chrome measurements. The adapter
-  receives the logical TextEdit geometry item, explicit structured resource visual blocks, measures visible line rows
-  and logical-line row rectangles, then publishes value snapshots. Line-number text rows are measured against the plain
-  logical display probe. Resource rows contribute an explicit visual-block height delta to later rows, but ordinary
-  gutter rows keep their own logical text y snapshots instead of asking the RichText overlay or rendered HTML string to
-  map logical offsets after resource blocks.
-- Mounts `ContentsEditorVisualLineMetrics` as the C++ owner of minimap row normalization. It receives measured visual
-  line count and row-width ratios only; it never receives TextEdit, cursor, selection, or resource overlay objects.
-- Mounts `ContentsLineNumberRailMetrics` as the C++ owner of logical line-number row construction. The inline editor
-  binds source/projection inputs and measured geometry rows into the metrics object, then exposes `logicalGutterRows`
-  from its resolved `rows`. The rows count logical lines, not visual wrap rows; a wrapped paragraph contributes one row
-  whose height covers all wrapped visual rows, while resource frames contribute one row with one gutter-line height.
-  Row y values are produced by C++ and validated there so later line numbers cannot collapse onto the first line's y
-  position. The metrics object never receives TextEdit, cursor, selection, or resource overlay objects directly.
-- Exposes the raw `lineNumberGeometryRows` and `lineNumberGeometryResourceBlockHeights` snapshots as read-only
-  diagnostics for the gutter pipeline. The painted rail still consumes `logicalGutterRows`.
+- Mounts `ContentsEditorGeometryProvider` and a private `ContentsLineNumberRailMetrics` only for inline resource visual
+  row placement and rendered pointer hit-testing. These objects are not the runtime gutter/minimap metric source and
+  their outputs are not relayed through the editor API.
+- Does not expose chrome metric properties such as `logicalGutterRows`, `visualLineCount`, or
+  `visualLineWidthRatios`. Runtime gutter and minimap measurements are owned by `ContentViewLayout.qml`, which mounts
+  independent metric probes and feeds the chrome directly.
 - Pointer selection checks measured structured resource visual rows before falling back to plain-text `positionAt(...)`.
   A hit inside an image/resource frame selects the atomic resource boundary for that block, so the frame cannot behave
   like it contains selectable virtual text lines.

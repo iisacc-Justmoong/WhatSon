@@ -17,8 +17,8 @@
   this file renders the values it receives.
 - The default row count is a token-only placeholder. Real design/runtime values are supplied by the host from
   `ContentsMinimapLayoutMetrics`.
-- Runtime editor hosts supply one row per visible wrapped editor line, so a single source tag that wraps across two
-  displayed text lines renders two minimap rows.
+- Runtime editor hosts supply one row per visible wrapped line measured by their independent metric probes, so a single
+  source tag that wraps across two displayed text lines renders two minimap rows.
 - Runtime editor hosts also expand tall rendered blocks, including resource frames, into the equivalent number of
   line-height rows before binding `rowCount`.
 - Each row width follows `rowWidthRatios[index]` when supplied and is resolved against the padded inner rail width.
