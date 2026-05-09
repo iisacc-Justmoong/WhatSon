@@ -32,15 +32,16 @@
   `backlinkByCount` refreshed immediately in the same transaction.
 - The intended split is:
   - explicit metadata / structural note writes: keep `incrementModifiedCount == true`
-  - debounced editor body autosave: set `incrementModifiedCount == false`
+  - changed editor body saves: keep `incrementModifiedCount == true`
+  - unchanged editor body snapshots: rely on the store's no-op body comparison so the counter is not inflated
   - editor hot-path body writes that must stay latency-sensitive: set both backlink-refresh flags to `false` and let a
     higher-level owner trigger that hub scan later
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
 - Regression checklist:
   - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
+  - direct editor body persistence must advance `modifiedCount` when the RAW body changes
   - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
   - when `incrementModifiedCount` advances by exactly one, the same transaction must also emit a
     `.wsnversion` snapshot labeled as `commit:<modifiedCount>` via `file/diff/WhatSonLocalNoteVersionStore`

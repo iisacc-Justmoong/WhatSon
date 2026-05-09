@@ -961,7 +961,7 @@ namespace WhatSon::NoteBodyPersistence
         updateRequest.persistHeader = true;
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
-        updateRequest.incrementModifiedCount = false;
+        updateRequest.incrementModifiedCount = true;
 
         QString updateError;
         if (!localNoteFileStore.updateNote(std::move(updateRequest), &document, &updateError))

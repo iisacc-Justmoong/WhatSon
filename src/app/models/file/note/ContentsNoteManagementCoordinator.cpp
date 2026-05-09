@@ -676,7 +676,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         updateRequest.persistHeader = false;
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
-        updateRequest.incrementModifiedCount = false;
+        updateRequest.incrementModifiedCount = true;
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
@@ -725,7 +725,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         updateRequest.persistHeader = false;
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
-        updateRequest.incrementModifiedCount = false;
+        updateRequest.incrementModifiedCount = true;
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
@@ -953,6 +953,10 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 QStringLiteral("content.note.management"),
                 QStringLiteral("incrementOpenCount.failed"),
                 QStringLiteral("noteId=%1 error=%2").arg(result.noteId, errorMessage));
+        }
+        else
+        {
+            reloadNoteMetadataForNote(result.noteId);
         }
     }
     else if (result.kind == RequestKind::RefreshTrackedStatistics)

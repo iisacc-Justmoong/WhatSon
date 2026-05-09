@@ -26,7 +26,11 @@
   - `WhatSonNoteFileStatSupport::refreshTrackedStatisticsForNote(...)`
   - post-persist runtime mirror/update hooks back into the bound content view-model
 - Successful direct persistence first updates the editable runtime note snapshot through
-  `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request.
+  `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request. Direct
+  changed-body writes opt in to `modifiedCount` advancement in the file-store transaction, while unchanged body saves
+  still short-circuit before touching `.wsnhead`.
+- Successful open-count header writes now also ask the bound content controller to reload the note metadata so the
+  visible file-stat panel mirrors the updated `.wsnhead` without waiting for a note reselection.
 - When the bound hierarchy view-model does not expose `applyPersistedBodyStateForNote(...)` but does expose
   `requestControllerHook()`, the coordinator now queues that hook after a successful direct body write. This lets
   fallback-driven hierarchy screens such as Tags re-read freshly mutated hierarchy files (`Tags.wstags`) after inline
@@ -74,9 +78,12 @@
 - A body persistence completion must still emit `editorTextPersistenceFinished(...)` so `ContentsEditorSessionController` can
   clear or retry its save state correctly.
 - Persist completion must not immediately run backlink/open-count scans on the editor path; those must be queued as
-  coordinator follow-up tasks.
+  coordinator follow-up tasks. The direct file-store body transaction itself must still advance `modifiedCount` when
+  the editor changed the RAW body.
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
+- A successful open-count update must reload note metadata on the bound content controller so `openCount` becomes
+  visible immediately.
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
 - A buffered editor save that already captured its direct note-directory path must not be lost merely because the active
   content view-model changed before the next drain turn.

@@ -132,6 +132,9 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   `LV.TextEditor.editorItem`; no QML helper owns that controller state.
 - User-initiated tag-management commands apply through the controller's immediate programmatic text path before
   restoring the source selection returned by the tag insertion controller.
+- Collapsed body-tag commands may create empty transparent wrappers such as `<callout></callout>`. The rendered-mode
+  visible edit policy keeps the next typed character inside that RAW wrapper even though the wrapper tags themselves
+  are hidden from the logical text surface.
 - `restoreSelectionRange(...)` focuses the live `LV.TextEditor`, clears stale collapsed selections before cursor
   placement, and restores non-empty ranges through native `moveCursorSelection(...)`.
 - `focusTerminalBodyPosition()` focuses the native `LV.TextEditor`, clears any stale selection, and moves the cursor to

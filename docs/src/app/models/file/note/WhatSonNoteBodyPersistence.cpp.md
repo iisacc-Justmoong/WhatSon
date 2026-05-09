@@ -131,9 +131,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   - newline-normalized editor RAW source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
 - The no-op comparison and returned `bodySourceText` now treat the editor-provided RAW text as authoritative instead of
   round-tripping it back through `sourceTextFromBodyDocument(...)` first.
-- When `persistBodyPlainText(...)` does perform a filesystem write, it now opts out of `modifiedCount` increments.
-  The editor autosave path still updates the persisted body/header material and `lastModifiedAt`, but it no longer
-  treats each autosaved typing burst as a separate modification-count event.
+- When `persistBodyPlainText(...)` performs a changed-body filesystem write, it now opts in to `modifiedCount`
+  increments. The no-op comparison still returns before the file-store update path, so unchanged editor snapshots do
+  not inflate the counter.
 - Unordered-list display glyph recovery intentionally normalizes back to the canonical source marker `-` instead of
   preserving `*` / `+` source variants.
 
@@ -149,7 +149,7 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 ## Regression Notes
 - Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
   maintains a dedicated scripted test for it.
-- Editor autosave must not inflate `fileStat.modifiedCount` while the user types.
+- Changed editor saves must advance `fileStat.modifiedCount`; unchanged snapshots must not inflate it.
 - Body hashtags must survive a full save/load round-trip as visible `#label` text while still persisting as canonical
   `<tag>` nodes inside `.wsnbody`.
 - A paragraph that starts with Tab-inserted indentation spaces must still display that indentation after a

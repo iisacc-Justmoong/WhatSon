@@ -55,15 +55,17 @@ It creates notes, reads materialized note directories, updates persisted body/he
   the current header/body state.
 - Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
 - `UpdateRequest` now decides whether a successful write should increment `modifiedCount`.
-- Header / structural mutations still opt in to that counter by default.
+- Header / structural mutations still opt in to that counter by default. Direct editor body persistence also opts in
+  when the serialized RAW `.wsnbody` payload changes; unchanged body saves still short-circuit before the counter can
+  advance.
 - Each successful `modifiedCount` increment is now treated as a commit boundary:
   - after header/body files persist, the store captures a new `.wsnversion` snapshot
   - capture/diff persistence is delegated to `file/diff/WhatSonLocalNoteVersionStore`
   - snapshot label format: `commit:<modifiedCount>`
   - snapshot metadata stores `commitModifiedCount` and git-style unified patches for `.wsnhead` / `.wsnbody`
-- Debounced editor body autosaves deliberately opt out: they still write the normalized `.wsnbody`, refresh
-  body-derived stats, and update `lastModifiedAt`, but they no longer create commit snapshots because
-  `incrementModifiedCount` is disabled on that path.
+- Debounced editor body autosaves still avoid no-op churn because unchanged body snapshots short-circuit. When the
+  editor writes a changed RAW body, the same transaction increments `modifiedCount`, refreshes body-derived stats,
+  updates `lastModifiedAt`, and captures the matching `.wsnversion` commit snapshot.
 - Open tracking is intentionally handled by the editor-selection bridge instead of the generic read path.
 - The same update contract now also splits local stat work from hub-wide backlink scans:
   - `refreshIncomingBacklinkStatistics == false` skips the expensive `.wsnbody` sweep for the edited note's
@@ -80,7 +82,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - inline-tag source serialization
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
 - Additional regression expectation:
-  - editor body autosave must not increment `modifiedCount`; only update requests that explicitly opt in may advance that counter.
+  - changed editor body saves must increment `modifiedCount`; unchanged body saves must not.
   - every update transaction that advances `modifiedCount` by exactly one must append a corresponding snapshot to
     `.wsnversion` with `commitModifiedCount == modifiedCount`
   - each captured snapshot must include unified patch metadata for both header and body payloads

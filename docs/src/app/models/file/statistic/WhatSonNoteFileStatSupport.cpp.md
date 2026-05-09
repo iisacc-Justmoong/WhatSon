@@ -32,6 +32,8 @@ This helper owns the derived `.wsnhead <fileStat>` rules.
   `lastOpenedAt` with the current UTC ISO timestamp whenever they advance `openCount`.
 - `openCount` is still incremented through `refreshTrackedStatisticsForNote(..., true)` when a caller explicitly wants
   the full tracked-stat refresh.
+- The editor note-management coordinator reloads note metadata after the cheap open-count path succeeds so persisted
+  `.wsnhead` activity changes are visible in the current detail panel immediately.
 - The helper intentionally does not mutate `modifiedCount`; write paths own that counter.
 - Incoming backlink counts are resolved by scanning other `.wsnbody` files under the enclosing
   `.wshub` package and skipping hidden staged-delete directories.

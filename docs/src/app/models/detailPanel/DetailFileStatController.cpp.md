@@ -30,9 +30,9 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - `Backlink to`
   - `Backlink by`
   - `Include resources`
-- `Modified count` is intentionally backed by persisted note-header update transactions, not by every debounced editor
-  autosave write. Body autosave still refreshes `modified-at`, but the counter is reserved for writes that opt in to the
-  modification statistic.
+- `Modified count` is backed by successful persisted note-header update transactions. Direct editor body writes now opt
+  in to the modification statistic when the RAW `.wsnbody` payload actually changes, so the detail surface reflects
+  user-visible note edits without counting unchanged reconcile/save turns.
 
 ## Numeric Grouping Rules
 - `overviewItems`
@@ -69,5 +69,6 @@ plain-text Figma layout.
 - The maintained C++ regression suite locks the shared folder-path escaping semantics that this view depends on.
 - Regression checklist:
   - a note with an empty `.wsnhead <project>` field must render `Projects: No project` in the file-stat summary
-  - typing in the editor and waiting for autosave must not continuously increase `modifiedCount`
-  - explicit persisted metadata writes that still opt in must remain visible through `modifiedCount`
+  - typing in the editor and waiting for a successful changed-body save must increase `modifiedCount`
+  - unchanged reconcile/save turns must not increase `modifiedCount`
+  - open-count writes must force-refresh the displayed `.wsnhead` metadata after the persisted header update succeeds

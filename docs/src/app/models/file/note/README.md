@@ -106,6 +106,8 @@
   - `.wsnbody` body serialization and RichText projection reuse the same helper, so saved/body HTML and live editor
     preview do not disagree about which href should open externally
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
+  - changed editor body saves increment the counter in the same `.wsnhead` transaction that persists the RAW body
+  - unchanged editor snapshots must short-circuit before inflating the counter
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
   - snapshot/diff persistence is delegated to `src/app/models/file/diff/WhatSonLocalNoteVersionStore.*`
 

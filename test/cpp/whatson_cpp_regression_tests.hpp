@@ -1298,6 +1298,7 @@ private slots:
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
+    void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
@@ -1323,6 +1324,8 @@ private slots:
     void editorSessionBoundary_usesCppControllerWithoutQmlWrapper();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
+    void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void noteManagementCoordinator_openCountReloadsPersistedMetadata();
     void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
     void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();

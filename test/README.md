@@ -95,6 +95,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Focused editor tag-management coverage now also pins direct RAW body-tag shortcuts for agenda, callout, and break
   insertion, plus press-phase right-click context-menu requests, so formatting commands do not depend on a later
   platform-specific click signal.
+- Empty callout shortcut coverage now verifies the complete editable path: `Ctrl/Meta+Alt+C` can create
+  `<callout></callout>` at a collapsed caret, and the next rendered-mode character is committed inside that RAW pair.
+- Note-management coverage now pins activity counters: changed direct editor body persistence increments persisted
+  `.wsnhead <modifiedCount>`, and successful open-count writes trigger a metadata reload so the active detail surface
+  can show the new `.wsnhead <openCount>` without reselection.
 - macOS body-tag shortcut coverage now also pins Option-modified key codes and `KeyEvent.text`, so `Cmd+Option+C`
   still resolves to the callout insertion command even when Qt reports the key as `ç`/`Ç`; QML coverage also locks the
   focused native-editor event-filter path that prevents those characters from being committed as ordinary prose.

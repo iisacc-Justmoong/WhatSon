@@ -44,6 +44,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - `persistBodyPlainText(...)` is the high-level save entry used by hierarchy controllers. It now returns both:
   - normalized plain text (search/preview/index role)
   - normalized editor RAW source text (editor/source role)
+  Changed writes advance `.wsnhead <modifiedCount>` through `WhatSonLocalNoteFileStore`; unchanged snapshots return
+  without inflating the counter.
 
 ## Important Invariants
 - Empty `<paragraph></paragraph>` nodes must survive a read/save round-trip when the editor text is unchanged, regardless of whether they appear at the beginning, middle, or end of the note body.

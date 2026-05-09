@@ -128,7 +128,13 @@ namespace
             || normalizedTagName == QStringLiteral("del")
             || normalizedTagName == QStringLiteral("highlight")
             || normalizedTagName == QStringLiteral("mark")
-            || SemanticTags::isWebLinkTagName(normalizedTagName);
+            || SemanticTags::isWebLinkTagName(normalizedTagName)
+            || SemanticTags::isTransparentContainerTagName(normalizedTagName);
+    }
+
+    bool sourceTagIsTransparentContainerBoundary(const QString& tagName)
+    {
+        return SemanticTags::isTransparentContainerTagName(tagName.toLower());
     }
 
     int sourceOffsetPastOpeningInlineBoundaries(
@@ -148,6 +154,31 @@ namespace
             const QString tagToken = sourceText.mid(cursor, tagEnd - cursor + 1);
             if (sourceTagTokenIsClosing(tagToken)
                 || !sourceTagIsHiddenInlineBoundary(policy.normalizedSourceTagName(tagToken)))
+            {
+                break;
+            }
+            cursor = tagEnd + 1;
+        }
+        return cursor;
+    }
+
+    int sourceOffsetPastOpeningTransparentContainerBoundaries(
+        const ContentsWysiwygEditorPolicy& policy,
+        const QString& sourceText,
+        const int sourceOffset)
+    {
+        int cursor = policy.boundedOffset(sourceOffset, sourceText.size());
+        while (cursor < sourceText.size() && sourceText.at(cursor) == QLatin1Char('<'))
+        {
+            const int tagEnd = sourceText.indexOf(QLatin1Char('>'), cursor + 1);
+            if (tagEnd <= cursor)
+            {
+                break;
+            }
+
+            const QString tagToken = sourceText.mid(cursor, tagEnd - cursor + 1);
+            if (sourceTagTokenIsClosing(tagToken)
+                || !sourceTagIsTransparentContainerBoundary(policy.normalizedSourceTagName(tagToken)))
             {
                 break;
             }
@@ -717,6 +748,14 @@ QVariantMap ContentsWysiwygEditorPolicy::visibleTextMutationPayload(
     {
         sourceStart = sourceOffsetPastOpeningInlineBoundaries(*this, sourceText, sourceStart);
         sourceEnd = sourceOffsetBeforeClosingInlineBoundaries(*this, sourceText, sourceEnd);
+    }
+    else if (nextSuffixStart > prefixLength)
+    {
+        sourceStart = sourceOffsetPastOpeningTransparentContainerBoundaries(
+            *this,
+            sourceText,
+            sourceStart);
+        sourceEnd = sourceStart;
     }
     if (sourceEnd < sourceStart)
     {

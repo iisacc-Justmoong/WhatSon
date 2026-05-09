@@ -2226,6 +2226,34 @@ Item {
         Q_ARG(QVariant, 5)));
     QVERIFY(restoreResult.toBool());
 
+    QTest::keyClick(&window, Qt::Key_C, Qt::ControlModifier | Qt::AltModifier);
+
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("Intro<callout></callout>"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro<callout></callout>"));
+
+    rootObject->setProperty("committedText", QString());
+    QTest::keyClick(&window, Qt::Key_N);
+
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("Intro<callout>n</callout>"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro<callout>n</callout>"));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
+    documentFlow->setProperty("shortcutPlatformName", QStringLiteral("windows"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("Intro"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5),
+        Q_ARG(QVariant, 5)));
+    QVERIFY(restoreResult.toBool());
+
     QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_COMPARE(

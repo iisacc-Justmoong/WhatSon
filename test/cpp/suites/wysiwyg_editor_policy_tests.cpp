@@ -114,6 +114,34 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
         visibleDeletePayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<bold>Al<italic>ph</italic></bold><italic> Beta</italic>"));
 
+    const QString emptyCalloutSource = QStringLiteral("Intro<callout></callout>");
+    projection.setSourceText(emptyCalloutSource);
+    QCOMPARE(projection.logicalText(), QStringLiteral("Intro"));
+    const QVariantMap emptyCalloutInsertionPayload = policy.visibleTextMutationPayload(
+        emptyCalloutSource,
+        &projection,
+        projection.logicalText(),
+        QStringLiteral("IntroNote"),
+        QStringLiteral("IntroNote").size());
+    QVERIFY(emptyCalloutInsertionPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        emptyCalloutInsertionPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("Intro<callout>Note</callout>"));
+
+    const QString calloutSource = QStringLiteral("<callout>Beta</callout>");
+    projection.setSourceText(calloutSource);
+    QCOMPARE(projection.logicalText(), QStringLiteral("Beta"));
+    const QVariantMap calloutReplacementPayload = policy.visibleTextMutationPayload(
+        calloutSource,
+        &projection,
+        projection.logicalText(),
+        QStringLiteral("Zeta"),
+        QStringLiteral("Zeta").size());
+    QVERIFY(calloutReplacementPayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        calloutReplacementPayload.value(QStringLiteral("nextSourceText")).toString(),
+        QStringLiteral("<callout>Zeta</callout>"));
+
     const QVariantMap resourceBlock{
         {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
         {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},
