@@ -85,6 +85,11 @@ Item {
         documentFlow.viewHookRequested(reason !== undefined ? String(reason) : "manual");
     }
 
+    function forceProjectionTextSync() {
+        editor.flushDeferredProgrammaticText(true);
+        editor.syncNativeSurfaceTextFromProjection(true);
+    }
+
     function refreshLastReadyProjection() {
         if (!documentFlow.logicalProjectionReady)
             return;

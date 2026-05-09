@@ -8,8 +8,9 @@ Implements editor input-policy decisions that must not live in QML helper files.
 
 - Normalizes text before programmatic source-sync comparisons.
 - Resolves native platform shortcut modifiers and normalizes them into the editor's standard shortcut event shape.
-  The standard primary modifier is `ControlModifier`; macOS/iOS `MetaModifier` maps to it, while Windows/Linux keep
-  `ControlModifier` and ignore `MetaModifier` as primary input.
+  The standard primary modifier is `ControlModifier`; Qt remaps macOS/iOS Command to that same modifier by default, so
+  all maintained platforms keep `ControlModifier` as the primary shortcut bit and ignore `MetaModifier` as primary
+  input.
 - Normalizes macOS Option-modified body-tag shortcut key codes and `KeyEvent.text` symbols back to their command
   letters before dispatch. For example, `Cmd+Option+C` may arrive from Qt as `ç`/`Ç`, but the editor standard event
   still resolves it as `C` so the callout command inserts `<callout></callout>`.

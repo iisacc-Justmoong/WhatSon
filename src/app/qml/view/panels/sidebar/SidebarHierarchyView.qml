@@ -1499,9 +1499,9 @@ Rectangle {
         function collectHierarchyItems() {
             const items = [];
             function visitHierarchyDescendants(item) {
-                if (!item || item.children === undefined || item.children === null)
+                if (!item)
                     return;
-                const children = item.children;
+                const children = noteDropController.hierarchyVisualChildren(item);
                 for (let i = 0; i < children.length; ++i) {
                     const child = children[i];
                     if (!child || child.visible === false)
@@ -1534,9 +1534,9 @@ Rectangle {
             const targetX = Number(x) || 0;
             const targetY = Number(y) || 0;
             function visitHierarchyDescendants(item) {
-                if (!item || item.children === undefined || item.children === null)
+                if (!item)
                     return null;
-                const children = item.children;
+                const children = noteDropController.hierarchyVisualChildren(item);
                 for (let i = children.length - 1; i >= 0; --i) {
                     const child = children[i];
                     if (!child || child.visible === false)
@@ -1573,9 +1573,9 @@ Rectangle {
             if (resolvedIndex < 0)
                 return null;
             function visitHierarchyDescendants(item) {
-                if (!item || item.children === undefined || item.children === null)
+                if (!item)
                     return null;
-                const children = item.children;
+                const children = noteDropController.hierarchyVisualChildren(item);
                 for (let i = children.length - 1; i >= 0; --i) {
                     const child = children[i];
                     if (!child || child.visible === false)
@@ -1592,6 +1592,22 @@ Rectangle {
                 return null;
             }
             return visitHierarchyDescendants(hierarchyTree);
+        }
+        function hierarchyVisualChildren(item) {
+            const resolvedChildren = [];
+            function appendChildren(children) {
+                if (!children)
+                    return;
+                for (let index = 0; index < children.length; ++index) {
+                    const child = children[index];
+                    if (!child || resolvedChildren.indexOf(child) >= 0)
+                        continue;
+                    resolvedChildren.push(child);
+                }
+            }
+            appendChildren(item && item.children !== undefined ? item.children : null);
+            appendChildren(item && item.contentItem && item.contentItem.children !== undefined ? item.contentItem.children : null);
+            return resolvedChildren;
         }
         function normalizeNoteIds(noteIds) {
             if (noteIds === undefined || noteIds === null)

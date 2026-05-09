@@ -40,8 +40,8 @@ Editor-facing QML view components for the center content surface.
   flow-corrected `editorSurfaceHtml`, so prose after an image frame is pushed to the same y-coordinate reported by the
   structured visual geometry before the inline editor paints it. Renderer
   `normalizedHtmlBlocks` stay as HTML projection compatibility metadata. It also binds explicit formatting and body-tag shortcuts to the C++ tag insertion
-  controller through the C++ input controller's standardized shortcut event path. Native Meta on macOS/iOS and native
-  Control on Windows/Linux/other platforms are both normalized to the same standard primary modifier before `B/I/U`,
+  controller through the C++ input controller's standardized shortcut event path. Native Control is the maintained
+  standard primary modifier because Qt remaps macOS/iOS Command to `ControlModifier` by default before `B/I/U`,
   highlight, and body commands such as callout/agenda insert or
   wrap proprietary RAW tags before the normal session persistence path runs. These commands read the live inline editor
   buffer when constructing payloads so consecutive tag commands do not combine fresh selection offsets with stale parent
@@ -195,8 +195,9 @@ objects.
   정상 logical text와 RichText HTML을 유지하며 RAW `.wsnbody` source나 plain logical text로 fallback하지 않는다.
 - tag insertion: 명시적 포맷팅 및 본문 태그 단축키는 C++ tag insertion controller가 만든 RAW payload를
   적용한 뒤 일반 `sourceTextEdited` 경로로 저장한다. payload 생성은 live editor buffer를 기준으로 하며,
-  C++ input controller가 native modifier를 표준 shortcut event로 정규화한다. macOS/iOS의 Meta와
-  Windows/Linux/기타의 Control은 내부적으로 같은 primary로 처리하고 하이라이트는 primary+`Shift+E`를 사용한다.
+  C++ input controller가 native modifier를 표준 shortcut event로 정규화한다. Qt 기본 remapping에서 macOS/iOS
+  Command는 `ControlModifier`로 들어오므로 모든 유지 대상 플랫폼의 primary는 내부적으로 `ControlModifier`이며
+  하이라이트는 primary+`Shift+E`를 사용한다.
   macOS Option 조합이 만든 `KeyEvent.text`도 C++로 전달해 `ç` 같은 문자를 callout 명령 키로 보정한다.
   빈 `<callout></callout>` 생성 직후의 첫 visible text delta는 숨겨진 opening tag 앞이 아니라 callout 쌍태그
   내부 RAW 위치로 매핑한다.

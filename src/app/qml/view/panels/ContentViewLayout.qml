@@ -529,6 +529,15 @@ Item {
                                     contentViewLayout.requestViewHook(reason);
                                 }
                             }
+
+                            Connections {
+                                target: editorDisplayBackend.editorSession
+                                ignoreUnknownSignals: true
+
+                                function onEditorTextSynchronized() {
+                                    structuredDocumentFlow.forceProjectionTextSync();
+                                }
+                            }
                         }
                     }
 

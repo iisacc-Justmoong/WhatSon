@@ -347,6 +347,31 @@ namespace
         return combined;
     }
 
+    bool hasRequiredSystemBuckets(const QVector<LibraryHierarchyItem>& items)
+    {
+        bool hasAll = false;
+        bool hasDraft = false;
+        bool hasToday = false;
+        for (const LibraryHierarchyItem& item : items)
+        {
+            switch (item.systemBucket)
+            {
+            case LibraryHierarchyItem::SystemBucket::All:
+                hasAll = true;
+                break;
+            case LibraryHierarchyItem::SystemBucket::Draft:
+                hasDraft = true;
+                break;
+            case LibraryHierarchyItem::SystemBucket::Today:
+                hasToday = true;
+                break;
+            case LibraryHierarchyItem::SystemBucket::None:
+                break;
+            }
+        }
+        return hasAll && hasDraft && hasToday;
+    }
+
     QString hierarchyItemKey(const LibraryHierarchyItem& item, int fallbackIndex)
     {
         if (item.systemBucket == LibraryHierarchyItem::SystemBucket::All)
@@ -1375,7 +1400,8 @@ void LibraryHierarchyController::applyRuntimeSnapshot(
     m_runtimeIndexLoaded = true;
 
     const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
-    const bool hierarchySourceChanged = !folderDepthEntriesEqual(currentFolderEntries, folderEntries);
+    const bool hierarchySourceChanged =
+        !hasRequiredSystemBuckets(m_items) || !folderDepthEntriesEqual(currentFolderEntries, folderEntries);
 
     if (!hierarchySourceChanged)
     {

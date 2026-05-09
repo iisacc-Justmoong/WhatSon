@@ -2004,26 +2004,26 @@ Item {
     rootObject->setProperty("handledModifiers", 0);
     rootObject->setProperty("handledNativeModifiers", 0);
 
-    QTest::keyClick(&window, Qt::Key_B, Qt::MetaModifier);
+    QTest::keyClick(&window, Qt::Key_B, Qt::ControlModifier);
 
     QTRY_VERIFY(rootObject->property("handled").toBool());
     QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_B));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
     QVERIFY(!(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::MetaModifier)));
-    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::MetaModifier));
+    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
 
     rootObject->setProperty("handled", false);
     rootObject->setProperty("handledKey", -1);
     rootObject->setProperty("handledModifiers", 0);
     rootObject->setProperty("handledNativeModifiers", 0);
 
-    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::MetaModifier | Qt::AltModifier);
+    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_VERIFY(rootObject->property("handled").toBool());
     QCOMPARE(rootObject->property("handledKey").toInt(), static_cast<int>(Qt::Key_C));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
     QVERIFY(rootObject->property("handledModifiers").toInt() & static_cast<int>(Qt::AltModifier));
-    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::MetaModifier));
+    QVERIFY(rootObject->property("handledNativeModifiers").toInt() & static_cast<int>(Qt::ControlModifier));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange()
@@ -2190,7 +2190,7 @@ Item {
     QVERIFY(restoreResult.toBool());
     QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
 
-    QTest::keyClick(&window, Qt::Key_C, Qt::MetaModifier | Qt::AltModifier);
+    QTest::keyClick(&window, Qt::Key_C, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Meta</callout>\nCallout"));
@@ -2208,10 +2208,29 @@ Item {
     QVERIFY(restoreResult.toBool());
     QTRY_VERIFY(inlineEditor->property("nativeSelectionActive").toBool());
 
-    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::MetaModifier | Qt::AltModifier);
+    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_COMPARE(rootObject->property("committedText").toString(), QStringLiteral("<callout>Cedilla</callout>\nCallout"));
     QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("<callout>Cedilla</callout>\nCallout"));
+
+    rootObject->setProperty("committedText", QString());
+    documentFlow->setProperty("sourceText", QStringLiteral("MacIntro"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("MacIntro"));
+    QVERIFY(QMetaObject::invokeMethod(
+        inlineEditor,
+        "restoreSelectionRange",
+        Q_RETURN_ARG(QVariant, restoreResult),
+        Q_ARG(QVariant, 8),
+        Q_ARG(QVariant, 8),
+        Q_ARG(QVariant, 8)));
+    QVERIFY(restoreResult.toBool());
+
+    QTest::keyClick(&window, Qt::Key_Ccedilla, Qt::ControlModifier | Qt::AltModifier);
+
+    QTRY_COMPARE(
+        rootObject->property("committedText").toString(),
+        QStringLiteral("MacIntro<callout></callout>"));
+    QTRY_COMPARE(inlineEditor->property("text").toString(), QStringLiteral("MacIntro<callout></callout>"));
 
     rootObject->setProperty("committedText", QString());
     documentFlow->setProperty("sourceText", QStringLiteral("Intro"));
@@ -2274,7 +2293,7 @@ Item {
         Q_ARG(QVariant, metaAgendaEnd)));
     QVERIFY(restoreResult.toBool());
 
-    QTest::keyClick(&window, Qt::Key_A, Qt::MetaModifier | Qt::AltModifier);
+    QTest::keyClick(&window, Qt::Key_A, Qt::ControlModifier | Qt::AltModifier);
 
     QTRY_VERIFY_WITH_TIMEOUT(
         rootObject->property("committedText").toString() == QStringLiteral("Meta agenda<agenda><task></task></agenda>"),

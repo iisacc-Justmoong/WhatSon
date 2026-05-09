@@ -1157,6 +1157,7 @@ private slots:
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
+    void libraryHierarchyController_synthesizesSystemBucketsForEmptyRuntimeSnapshots();
     void navigationModeController_cyclesActiveSections();
     void editorViewModeController_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();

@@ -17,24 +17,6 @@ QString normalizeTextValue(const QVariant& value)
     return text;
 }
 
-bool platformUsesMetaPrimaryShortcut(const QString& platformName) noexcept
-{
-    const QString normalizedPlatformName = platformName.trimmed().toLower();
-    if (normalizedPlatformName.isEmpty())
-    {
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-        return true;
-#else
-        return false;
-#endif
-    }
-
-    return normalizedPlatformName == QStringLiteral("osx")
-        || normalizedPlatformName == QStringLiteral("macos")
-        || normalizedPlatformName == QStringLiteral("darwin")
-        || normalizedPlatformName == QStringLiteral("ios");
-}
-
 bool shortcutKeyIsPureModifier(const int key) noexcept
 {
     return key == Qt::Key_Alt
@@ -148,8 +130,8 @@ int ContentsEditorInputPolicyAdapter::standardPrimaryShortcutModifier() const no
 
 int ContentsEditorInputPolicyAdapter::platformPrimaryShortcutModifier(const QString& platformName) const noexcept
 {
-    return static_cast<int>(
-        platformUsesMetaPrimaryShortcut(platformName) ? Qt::MetaModifier : Qt::ControlModifier);
+    Q_UNUSED(platformName);
+    return standardPrimaryShortcutModifierValue;
 }
 
 int ContentsEditorInputPolicyAdapter::standardShortcutModifiers(
@@ -187,10 +169,9 @@ QString ContentsEditorInputPolicyAdapter::platformShortcutSequence(
     const QString& suffix,
     const QString& platformName) const
 {
+    Q_UNUSED(platformName);
     const QString keySuffix = suffix.trimmed();
-    const QString primaryName = platformUsesMetaPrimaryShortcut(platformName)
-        ? QStringLiteral("Meta")
-        : QStringLiteral("Ctrl");
+    const QString primaryName = QStringLiteral("Ctrl");
     return keySuffix.isEmpty() ? primaryName : primaryName + QLatin1Char('+') + keySuffix;
 }
 

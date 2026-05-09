@@ -95,7 +95,7 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Focused editor tag-management coverage now also pins direct RAW body-tag shortcuts for agenda, callout, and break
   insertion, plus press-phase right-click context-menu requests, so formatting commands do not depend on a later
   platform-specific click signal.
-- Empty callout shortcut coverage now verifies the complete editable path: `Ctrl/Meta+Alt+C` can create
+- Empty callout shortcut coverage now verifies the complete editable path: `Ctrl+Alt+C` can create
   `<callout></callout>` at a collapsed caret, and the next rendered-mode character is committed inside that RAW pair.
 - Note-management coverage now pins activity counters: changed direct editor body persistence increments persisted
   `.wsnhead <modifiedCount>`, and successful open-count writes trigger a metadata reload so the active detail surface
@@ -107,7 +107,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   note-body backup XML, and `.DS_Store` files.
 - macOS body-tag shortcut coverage now also pins Option-modified key codes and `KeyEvent.text`, so `Cmd+Option+C`
   still resolves to the callout insertion command even when Qt reports the key as `ç`/`Ç`; QML coverage also locks the
-  focused native-editor event-filter path that prevents those characters from being committed as ordinary prose.
+  focused native-editor event-filter path with Qt's default Command-to-`ControlModifier` remapping, preventing those
+  characters from being committed as ordinary prose.
 - Tag-generation coverage now pins `ContentsEditorTagMutationBuilder` as the shortcut-independent RAW payload builder,
   while `ContentsEditorTagInsertionController` is limited to shortcut-to-tag resolution and compatibility delegation.
 - Structured tag-management coverage now also requires the RAW mutation handler to accept inline-format/body-tag
@@ -174,6 +175,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   expansion can commit instead of rolling back.
 - QML surface policy coverage now also pins the chevron-only pointer surface in `SidebarHierarchyView.qml`: it must
   accept only resolved chevron-slot left clicks and route them to the same C++ expansion commit path.
+- The same coverage locks the hierarchy row locator across LVRS `Flickable.contentItem` boundaries, so generated
+  rows remain discoverable by chevron hit-testing instead of leaving the visible right chevron as a no-op.
 - Sidebar footer actions now pin both the legacy `LV.ListFooter` config-callback route and the `onButtonClicked` signal
   route, with QML direct dispatch and same-turn coalescing so create, delete, and context-menu clicks stay live without
   depending on a controller signal round-trip.
@@ -200,6 +203,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   state.
 - Resources and progress now each pin their domain fallback semantics in the C++ suite, so the initial active UI row
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding controller.
+- Library hierarchy runtime snapshot coverage now pins the app-owned system bucket baseline: a newly created hub with
+  empty `Folders.wsfolders` must still render `All Library`, `Draft`, and `Today`.
 - Startup hub selection now also pins the “no blueprint fallback” rule, so clearing the persisted selection cannot
   silently reopen a sample workspace during regression runs.
 - Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source

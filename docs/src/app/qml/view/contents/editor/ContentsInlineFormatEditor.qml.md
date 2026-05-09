@@ -124,8 +124,8 @@ Wraps the live `LV.TextEditor` used by the note document surface.
   request. Downstream handlers receive standard modifiers where primary is always `ControlModifier`; the event also
   carries `nativeModifiers` for platform diagnostics.
 - Window-level shortcut bindings cover `B`, `I`, `U`, `Shift+E`, `Alt+C`, and `Alt+A` using C++ generated platform
-  sequences, so macOS receives Meta-based sequences and Windows/Linux receive Control-based sequences while the
-  document flow sees the same standard event shape.
+  sequences. Those sequences stay `Ctrl+...`; Qt maps them to Command shortcuts on Apple platforms while the document
+  flow sees the same standard event shape.
 - The explicit highlight formatting shortcut is primary+`Shift+E`; legacy `H` shortcuts are not part of this surface.
 - `ContentsInlineFormatEditorController` is mounted as the C++ input controller for focus, selection snapshots, native
   composition checks, local selection interaction tracking, and programmatic text-sync policy against

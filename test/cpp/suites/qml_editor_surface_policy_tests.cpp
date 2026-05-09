@@ -139,6 +139,9 @@ void WhatSonCppRegressionTests::qmlHierarchyExpansion_preservesUserControlledSta
     QVERIFY(sidebarSource.contains(QStringLiteral("function finishHierarchyChevronPointerPress(x, y)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronContainsPoint(item, targetX, targetY)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemChevronSlot(item)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyVisualChildren(item)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("appendChildren(item && item.contentItem && item.contentItem.children !== undefined ? item.contentItem.children : null);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const children = noteDropController.hierarchyVisualChildren(item);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("child.objectName === \"hierarchyItemChevron\"")));
     QVERIFY(sidebarSource.contains(QStringLiteral("id: hierarchyChevronPointerSurface")));
     QVERIFY(sidebarSource.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress(mouse.x, mouse.y, mouse.modifiers);")));
@@ -415,29 +418,29 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
         static_cast<int>(Qt::ControlModifier));
     QCOMPARE(
         adapter.platformPrimaryShortcutModifier(QStringLiteral("osx")),
-        static_cast<int>(Qt::MetaModifier));
+        static_cast<int>(Qt::ControlModifier));
     QCOMPARE(adapter.standardPrimaryShortcutModifier(), static_cast<int>(Qt::ControlModifier));
     QCOMPARE(
         adapter.standardShortcutModifiers(
-            static_cast<int>(Qt::MetaModifier | Qt::ShiftModifier),
+            static_cast<int>(Qt::ControlModifier | Qt::ShiftModifier),
             QStringLiteral("osx")),
         static_cast<int>(Qt::ControlModifier | Qt::ShiftModifier));
     QCOMPARE(
         adapter.standardShortcutModifiers(
             static_cast<int>(Qt::MetaModifier | Qt::ShiftModifier),
-            QStringLiteral("windows")),
+            QStringLiteral("osx")),
         static_cast<int>(Qt::ShiftModifier));
     QCOMPARE(
         adapter.platformShortcutModifiers(
             static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
             QStringLiteral("osx")),
-        static_cast<int>(Qt::MetaModifier | Qt::AltModifier));
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier));
     QCOMPARE(
         adapter.platformShortcutModifiers(
             static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
             QStringLiteral("windows")),
         static_cast<int>(Qt::ControlModifier | Qt::AltModifier));
-    QCOMPARE(adapter.platformShortcutSequence(QStringLiteral("B"), QStringLiteral("osx")), QStringLiteral("Meta+B"));
+    QCOMPARE(adapter.platformShortcutSequence(QStringLiteral("B"), QStringLiteral("osx")), QStringLiteral("Ctrl+B"));
     QCOMPARE(adapter.platformShortcutSequence(QStringLiteral("B"), QStringLiteral("windows")), QStringLiteral("Ctrl+B"));
     QVERIFY(adapter.modifiersContainPlatformPrimaryShortcut(
         static_cast<int>(Qt::ControlModifier),
@@ -446,14 +449,14 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
         static_cast<int>(Qt::MetaModifier),
         QStringLiteral("windows")));
     QVERIFY(adapter.modifiersContainPlatformPrimaryShortcut(
-        static_cast<int>(Qt::MetaModifier),
+        static_cast<int>(Qt::ControlModifier),
         QStringLiteral("osx")));
     QVERIFY(!adapter.modifiersContainPlatformPrimaryShortcut(
-        static_cast<int>(Qt::ControlModifier),
+        static_cast<int>(Qt::MetaModifier),
         QStringLiteral("osx")));
     const QVariantMap macBoldRequest = adapter.tagManagementShortcutRequest(
         static_cast<int>(Qt::Key_B),
-        static_cast<int>(Qt::MetaModifier),
+        static_cast<int>(Qt::ControlModifier),
         QStringLiteral("osx"));
     QVERIFY(macBoldRequest.value(QStringLiteral("inlineFormatShortcut")).toBool());
     QCOMPARE(
@@ -461,20 +464,20 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_acceptsPlatformCommandModif
         static_cast<int>(Qt::ControlModifier));
     const QVariantMap macOptionCcedillaRequest = adapter.tagManagementShortcutRequest(
         static_cast<int>(Qt::Key_Ccedilla),
-        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
         QStringLiteral("osx"));
     QVERIFY(macOptionCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
     QCOMPARE(macOptionCcedillaRequest.value(QStringLiteral("key")).toInt(), static_cast<int>(Qt::Key_C));
     QCOMPARE(macOptionCcedillaRequest.value(QStringLiteral("nativeKey")).toInt(), static_cast<int>(Qt::Key_Ccedilla));
     const QVariantMap macOptionLowerCcedillaRequest = adapter.tagManagementShortcutRequest(
         0x00e7,
-        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
         QStringLiteral("osx"));
     QVERIFY(macOptionLowerCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
     QCOMPARE(macOptionLowerCcedillaRequest.value(QStringLiteral("key")).toInt(), static_cast<int>(Qt::Key_C));
     const QVariantMap macOptionTextCcedillaRequest = adapter.tagManagementShortcutRequestWithText(
         static_cast<int>(Qt::Key_unknown),
-        static_cast<int>(Qt::MetaModifier | Qt::AltModifier),
+        static_cast<int>(Qt::ControlModifier | Qt::AltModifier),
         QStringLiteral("osx"),
         QString(QChar(0x00e7)));
     QVERIFY(macOptionTextCcedillaRequest.value(QStringLiteral("bodyTagShortcut")).toBool());
@@ -681,6 +684,8 @@ void WhatSonCppRegressionTests::qmlEditorViewDirectory_containsOnlyViewSurfaceFi
     QVERIFY(!QFileInfo(QStringLiteral("src/app/qml/view/contents/editor/ContentsDisplayView.qml")).exists());
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsResourceEditorView {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsEditorSurfaceModeSupport {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function onEditorTextSynchronized()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("structuredDocumentFlow.forceProjectionTextSync();")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsEditorSurfaceModeSupport.js")));
     Q_UNUSED(bodyLayoutSource);
 

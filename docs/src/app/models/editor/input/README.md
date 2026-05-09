@@ -7,7 +7,8 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - `ContentsEditorInputPolicyAdapter.{hpp,cpp}`
   Centralizes native input, native-to-standard shortcut event normalization, platform shortcut sequence generation,
   shortcut-surface, context-menu, and focus-restore gating. It also canonicalizes macOS Option-modified body-tag keys
-  such as `ç` from `Cmd+Option+C` back to `C` before tag-management dispatch.
+  such as `ç` from `Cmd+Option+C` back to `C` before tag-management dispatch. Qt's default Apple shortcut remapping
+  means Command is received as `ControlModifier`, not `MetaModifier`, in this app's maintained configuration.
 - `ContentsInlineFormatEditorController.{hpp,cpp}`
   Owns the plain-text wrapper's native input policy, focused native-editor tag-management shortcut filter, selection
   cache, and text-edited dispatch state.
@@ -35,7 +36,8 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - 위치: `docs/src/app/models/editor/input`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명하며 native shortcut event를
   표준 modifier 형태로 보정하고 macOS Option 조합의 변형 key code를 tag-management용 표준 키로 되돌리는
-  정책도 C++ 입력 정책에 둔다.
+  정책도 C++ 입력 정책에 둔다. Qt 기본 Apple shortcut remapping에서 Command는 `MetaModifier`가 아니라
+  `ControlModifier`로 들어온다는 점을 이 정책이 기준으로 삼는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
 - 최근 기준: 빈 callout 단축키 생성 뒤 첫 입력은 `<callout></callout>` 바깥이 아니라 RAW callout 쌍태그 내부에

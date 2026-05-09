@@ -197,6 +197,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
   slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
   arm aligned with the actual `HierarchyItem` chevron slot instead of an approximate row-width calculation.
+- The hierarchy row locator walks both normal `children` and `contentItem.children`, because LVRS places generated
+  hierarchy rows under the internal `Flickable.contentItem`. Chevron hit-testing, note-drop hit-testing, and resolved
+  row lookup must therefore see rows that are not direct visual descendants of the outer `LV.Hierarchy` item.
 - `hierarchyChevronPointerSurface` is a view-layer pointer guard over the hierarchy body. It accepts only left-button
   presses that hit the resolved chevron slot; all other presses are rejected so row activation, selection, drag, and
   flick behavior stay owned by `LV.Hierarchy`. Accepted chevron taps still commit through
