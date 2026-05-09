@@ -7,18 +7,12 @@
 ## Scope
 - Mirrored source directory: `src/app/models/navigationbar`
 - Child directories: 0
-- Child files: 12
+- Child files: 6
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- `EditorViewModeController.cpp`
-- `EditorViewModeController.hpp`
-- `EditorViewSectionController.cpp`
-- `EditorViewSectionController.hpp`
-- `EditorViewState.cpp`
-- `EditorViewState.hpp`
 - `NavigationModeSectionController.cpp`
 - `NavigationModeSectionController.hpp`
 - `NavigationModeState.cpp`
@@ -36,8 +30,8 @@
 
 ## Current Notes
 - Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking state cycling,
-  invalid-value rejection, and active-section synchronization for `NavigationModeController` and
-  `EditorViewModeController`.
+  invalid-value rejection, and active-section synchronization for `NavigationModeController`.
+- The editor view-mode controller family was removed with the LVRS `TextEditor`-only editor contract.
 
 ## 한국어
 

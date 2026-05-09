@@ -6,17 +6,15 @@
 
 ## Runtime Notes
 
-- The coordinator now centralizes the editor-adjacent note-management queue used directly by
-  `ContentsEditorSaveCoordinator` and `ContentsEditorSelectionBridge`.
+- The coordinator centralizes the note-management queue used by note package body reads/writes and metadata updates.
 - Direct body persistence still uses `WhatSonLocalNoteFileStore`, but that worker request is now just one request kind
   inside the coordinator.
 - The coordinator also exposes one direct-context capture path for callers that only know a note id:
   - resolve `noteDirectoryPathForNoteId(noteId)` while the correct content view-model is still bound
   - allow a later buffered drain turn to enqueue `DirectPersistBody` with that frozen note-directory path
-  - avoid re-routing stale buffered editor text through whichever hierarchy view-model happens to be active later
-- The coordinator exposes a read-side `noteDirectoryPathForNote(noteId)` helper. The selection bridge uses that helper
-  to surface the currently selected note's resolved package directory back to body resource rendering without depending
-  on the editor's current hierarchy shell.
+  - avoid re-routing stale buffered body text through whichever hierarchy view-model happens to be active later
+- The coordinator exposes a read-side `noteDirectoryPathForNote(noteId)` helper for consumers that need a concrete
+  package directory without mutating state.
 - Read/reconcile/bind requests are no longer forced through `noteId`-only lookup.
   `loadNoteBodyTextForNote(...)`, `reconcileViewSessionAndRefreshSnapshotForNote(...)`, and `bindSelectedNote(...)`
   can all carry an explicit `noteDirectoryPath`, allowing the caller to keep targeting the exact `.wsnote` package
@@ -36,16 +34,16 @@
   fallback-driven hierarchy screens such as Tags re-read freshly mutated hierarchy files (`Tags.wstags`) after inline
   hashtag promotion.
 - Successful tracked-stat refresh then asks the content view-model to reload that note's metadata snapshot.
-- The fallback persistence lane, when used, is also deferred behind the coordinator queue so the editor hot path still
-  only observes enqueue acceptance rather than immediate management work.
-- The coordinator now also provides one-shot session/filesystem reconciliation for editor entry:
+- The fallback persistence lane, when used, is also deferred behind the coordinator queue so callers only observe
+  enqueue acceptance rather than immediate management work.
+- The coordinator also provides one-shot session/filesystem reconciliation:
   - resolves note/session metadata on the UI thread only
   - queues RAW-read comparison work onto the same coordinator-owned worker lane
-  - accepts an explicit `preferViewSessionOnMismatch` policy bit from the upstream editor/session layer
+  - accepts an explicit `preferViewSessionOnMismatch` policy bit from the upstream caller
   - emits `viewSessionSnapshotReconciled(noteId, refreshed, success, errorMessage)` back to QML-facing adapters
   - when mismatch is reported for a non-authoritative session, triggers `refreshNoteSnapshotForNote(...)` on the main
     thread
-  - when mismatch is reported for an editor-authoritative session, first persists that view-session text back into RAW,
+  - when mismatch is reported for a caller-authoritative session, first persists that view-session text back into RAW,
     then refreshes the visible note snapshot from the repaired filesystem state.
 - The same queue now also owns selected-note lazy body reads:
   - `loadNoteBodyTextForNote(noteId, noteDirectoryPath = {})` resolves the note path on the main thread, preferring
@@ -75,23 +73,22 @@
 
 ## Regression Checks
 
-- A body persistence completion must still emit `editorTextPersistenceFinished(...)` so `ContentsEditorSessionController` can
-  clear or retry its save state correctly.
-- Persist completion must not immediately run backlink/open-count scans on the editor path; those must be queued as
+- A body persistence completion must still emit `editorTextPersistenceFinished(...)` for existing queue consumers.
+- Persist completion must not immediately run backlink/open-count scans on the caller path; those must be queued as
   coordinator follow-up tasks. The direct file-store body transaction itself must still advance `modifiedCount` when
-  the editor changed the RAW body.
+  the RAW body changed.
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
 - A successful open-count update must reload note metadata on the bound content controller so `openCount` becomes
   visible immediately.
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
-- A buffered editor save that already captured its direct note-directory path must not be lost merely because the active
+- A buffered save that already captured its direct note-directory path must not be lost merely because the active
   content view-model changed before the next drain turn.
 - Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view
   session snapshot, and that check must not perform note reads on the UI thread anymore.
-- Editor-authoritative reconciliation must repair RAW from the current editor snapshot instead of refreshing stale RAW
+- Caller-authoritative reconciliation must repair RAW from the current view snapshot instead of refreshing stale RAW
   back into the visible session.
 - Lazy selected-note body reads must execute on the worker lane and must not require the note-list model to carry the
   same full body text as selection state.
@@ -100,7 +97,6 @@
   from the persisted `.wsnbody`.
 - A newer same-note body-read request must not be discarded merely because an older body-read for that note is already
   in flight.
-- An in-flight lazy body-read completion must be safe when its owning coordinator was already destroyed by an editor
-  selection bridge teardown.
+- An in-flight lazy body-read completion must be safe when its owning coordinator was already destroyed.
 - When the caller supplied an explicit note-directory path, the worker request must read or reconcile that package
   rather than re-resolving from `noteId` alone.

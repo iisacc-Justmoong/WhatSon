@@ -54,23 +54,20 @@
 - `WhatSonNoteHeaderStore.hpp`
 
 ## Current Focus Areas
-- `ContentsEditorSaveCoordinator` now forwards accepted editor RAW snapshots directly to
-  `ContentsNoteManagementCoordinator`. The removed editor-side buffered persistence controller no longer owns a drain
-  clock or pending snapshot cache.
 - This `file/note` directory owns the note-package management queue, concrete `.wsnote/.wsnbody` mutation, and
-  follow-up metadata/stat refresh work for editor saves.
-- `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:
+  follow-up metadata/stat refresh work for note body saves.
+- `ContentsNoteManagementCoordinator` owns note-management orchestration:
   - direct `.wsnote` persistence serialization
   - lazy selected-note body reads from the resolved `.wsnote` package
   - header-only `openCount` / `lastOpenedAt` updates
   - tracked-stat refresh follow-up
   - post-persist metadata resync back into the bound content view-model
-- Its worker-lane completions are delivered through the application object and guarded back to the coordinator, so
-  editor teardown can safely drop late selected-note body-read results after the bridge/coordinator is gone.
+- Its worker-lane completions are delivered through the application object and guarded back to the coordinator, so late
+  selected-note body-read results are dropped safely after coordinator teardown.
 - Shared derived-statistic helpers now live under `src/app/models/file/statistic/WhatSonNoteFileStatSupport.*` rather than in
   this note-package directory.
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
-- Note creation, note update, and editor note selection all participate in keeping that block
+- Note creation, note update, and note selection all participate in keeping that block
   synchronized with the current body/header state.
 - `WhatSonIiXmlDocumentSupport` owns the local iiXml document-tree boundary for note package reads, including preamble
   stripping, tag lookup, descendant collection, text extraction, and attribute extraction.
@@ -78,15 +75,15 @@
   parsing aligned with the planned RAW note -> HTML block pipeline instead of relying on ad-hoc text scans.
 - `WhatSonLocalNoteFileStore` now uses the same support layer for `.wsnbody` package reads when locating `<body>` and
   first-resource thumbnail metadata.
-- Editor note selection now uses a header-only `openCount` rewrite path that also stamps `.wsnhead lastOpenedAt`, so
+- Note selection now uses a header-only `openCount` rewrite path that also stamps `.wsnhead lastOpenedAt`, so
   switching notes no longer forces a hub-wide `.wsnbody` backlink rescan and inactivity sensors can read the true
   last-open time directly from RAW header state.
 - The `fileStat` schema is tracked as a documented package contract; this repository no longer maintains a dedicated
   scripted test for it.
 - Empty-note body parsing now strips formatting-only `<body>` indentation so a newly created note opens on the first
   editable line instead of showing a phantom leading blank line.
-- Body-save normalization now also owns inline hashtag promotion:
-  - editor-visible `#label` source persists into `.wsnbody` as `<tag>label</tag>`
+- Body-save normalization also owns inline hashtag promotion:
+  - visible `#label` source persists into `.wsnbody` as `<tag>label</tag>`
   - the same save transaction unions that tag into `.wsnhead`
   - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
 - Body-save normalization now also preserves proprietary inline formatting across paragraph boundaries by reopening any
@@ -94,22 +91,19 @@
 - RAW resource import now also shares one static note-body tag generator:
   drag/drop and clipboard-image insertion both normalize imported metadata through
   `WhatSonNoteBodyResourceTagGenerator.*` before mutating `.wsnbody`.
-- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking canonical
-  resource-tag generation through `WhatSonNoteBodyResourceTagGenerator` / `ContentsResourceTagTextGenerator` and
-  raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
-- `.wsnbody` semantic tag classification is now owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save
-  path and the editor HTML read paths resolve legacy body tags through the same registry.
+- Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking canonical resource-tag generation
+  through `WhatSonNoteBodyResourceTagGenerator` and raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
+- `.wsnbody` semantic tag classification is owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save path
+  resolves legacy body tags through one registry.
 - `.wsnbody` body-format blocks are owned by the note package layer: `resource` and `break` persist as direct `<body>`
-  children when they appear as standalone editor source lines. Editor-domain tag controllers still own tag insertion
-  and correction advisory state. `<agenda><task>...</task></agenda>` and `<callout>...</callout>` persist as ordinary
-  paragraph RAW source.
+  children when they appear as standalone source lines. `<agenda><task>...</task></agenda>` and
+  `<callout>...</callout>` persist as ordinary paragraph RAW source.
 - RAW note hyperlinks are now centralized in `WhatSonNoteBodyWebLinkSupport.*`:
   - typed/pasted committed URLs can be promoted into canonical `<weblink href="...">...</weblink>` RAW spans
-  - `.wsnbody` body serialization and RichText projection reuse the same helper, so saved/body HTML and live editor
-    preview do not disagree about which href should open externally
+  - `.wsnbody` body serialization reuses the same helper so saved source stays canonical
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
-  - changed editor body saves increment the counter in the same `.wsnhead` transaction that persists the RAW body
-  - unchanged editor snapshots must short-circuit before inflating the counter
+  - changed body saves increment the counter in the same `.wsnhead` transaction that persists the RAW body
+  - unchanged body snapshots must short-circuit before inflating the counter
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
   - snapshot/diff persistence is delegated to `src/app/models/file/diff/WhatSonLocalNoteVersionStore.*`
 

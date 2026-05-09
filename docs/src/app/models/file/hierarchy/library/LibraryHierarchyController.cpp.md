@@ -33,10 +33,9 @@
   is no longer `noteId` alone.
   Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity so duplicate ids
   from different `.wsnote` packages do not alias the same note-list projection.
-- The library runtime snapshot now also exposes `noteBodySourceTextForNoteId(...)`.
-  `ContentsEditorSelectionBridge` can therefore recover the selected note source from the already-loaded indexed note
-  snapshot when direct package-path resolution fails for one desktop selection turn.
-- Editor persistence is now split into two controller-facing phases:
+- The library runtime snapshot exposes `noteBodySourceTextForNoteId(...)` for read-side consumers that need the already
+  loaded indexed note source.
+- Note body persistence is split into two controller-facing phases:
   - `applyPersistedBodyStateForNote(...)` mutates only the in-memory indexed note/body preview immediately after a
     successful direct file-store write.
   - `requestTrackedStatisticsRefreshForNote(...)` later pays the `.wsnbody` scan, rewrites tracked header stats, and
@@ -76,8 +75,8 @@
     before the user manually pokes the calendar surface.
   - local single-note mutations such as `saveBodyTextForNote(...)` and `reloadNoteMetadataForNoteId(...)` must not
     require copying/replacing the full `allNotes` vector
-  - editor autosave must be able to mirror normalized body text into the in-memory library note immediately without
-    forcing the same save path to rescan every `.wsnbody` in the hub
+  - body saves must be able to mirror normalized body text into the in-memory library note immediately without forcing
+    the same save path to rescan every `.wsnbody` in the hub
   - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
     snapshot replacement when the service result cannot resolve the target note
   - library folder/system-bucket sidebar counters must refresh immediately after folder assignment, note create,

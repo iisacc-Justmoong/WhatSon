@@ -30,9 +30,8 @@
 
 ## Current Domain Notes
 - This directory owns filesystem and package validators only.
-- Editor-body structured tag linting and correction advisory state moved to `src/app/models/editor/tags`; `.wsnbody`
-  body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`. Agenda/task
-  wrappers are ordinary paragraph RAW source.
+- `.wsnbody` body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`.
+  Agenda/task wrappers are ordinary paragraph RAW source. The removed editor tag backend must not be reintroduced here.
 
 ## 한국어
 

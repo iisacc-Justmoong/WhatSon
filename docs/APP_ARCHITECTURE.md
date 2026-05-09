@@ -3,30 +3,24 @@
 ## Desktop Workspace
 The root `ApplicationWindow` `panelBackground01` canvas remains the only broad desktop background surface.
 
-Desktop and shared LVRS control surfaces stay on the lower-luminance alias ladder (`windowAlt -> panelBackground01`,
-`subSurface -> panelBackground02`, `surfaceSolid -> panelBackground03`, `surfaceAlt -> panelBackground04`) so the app
-does not render a brighter shell than the Figma `ApplicationWindow` reference.
-
-The editor theme contract now keeps the broad desktop editor surfaces transparent and lets the document body plus
-optional minimap read directly against the root workspace canvas.
-
-inactive hierarchy rows and desktop search shells stay transparent as well, so sidebar and status chrome do not
-repaint brighter panel slabs over the root `ApplicationWindow` canvas.
+The active workspace route keeps the desktop shell layout: status bar, navigation bar, body layout, hierarchy sidebar,
+note list, content slot, and detail panel. The content slot mounts `ContentViewLayout.qml`, and that surface mounts only
+`Gutter.qml`, `TextEditor.qml`, and `Minimap.qml`.
 
 ## Mobile Shell
-`MobilePageScaffold.qml` is the persistent mobile shell wrapper. It keeps the compact navigation bar and compact status bar mounted while the routed body swaps between hierarchy, note-list, and editor content.
-
-The compact navigation surface stays `24px` high on `panelBackground10`, and the hierarchy route keeps `gap2` VStack spacing so the mobile shell preserves the Figma rhythm instead of introducing a second shell layout.
+The mobile shell remains mounted for adaptive/mobile layouts. Its editor route uses the same backend-free
+`ContentViewLayout.qml` surface while keeping the existing route scaffold, hierarchy page, note-list page, and detail
+page chrome.
 
 ## Root Ownership
-`Main.qml` binds the desktop-only New shortcut and routes that shortcut through its inline `windowInteractions`
-helper instead of handing every mutable root controller directly to every consumer.
+`Main.qml` owns startup routing, onboarding presentation, the restored workspace chrome, and render-quality resize
+policy. It does not route TextEditor mutations through parser/projection/rendering/persistence backends.
 
 Runtime objects now arrive from `WhatSonQmlContextBinder` as direct LVRS context-object bindings. QML does not use a
 view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime lookup.
 
-This keeps shortcut-triggered mutation explicit: the root helper forwards to the concrete controller object it was
-given, while the owning C++ model domain remains responsible for mutation and persistence behavior.
+The binder no longer publishes an editor view-mode controller. The active editor surface is the LVRS `TextEditor`
+composition path with an empty `filePath`.
 
 ## View Behavior Ownership
 QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient
@@ -41,18 +35,12 @@ live in QML, while state preservation, rollback, multi-call consistency, parser/
 metrics remain C++ responsibilities.
 
 ## Routed Workspace
-`MobileHierarchyPage.qml` owns the mobile `LV.PageRouter` stack and mounts the hierarchy page, note-list body, and editor body as routed children.
-
-The same file suppresses the compact leading action on the note-list body and editor body, keeps the shared compact `settings` button exclusive to the hierarchy route, drives interactive back through `LV.PageTransitionController`, and begins that transition from a left-edge touch `DragHandler`.
-
-Mobile note creation is no longer open-coded inside `MobileHierarchyPage.qml`. The page now delegates create-note
-dispatch and post-create editor promotion into `MobileNoteCreationCoordinator.qml`, so routing/gesture policy and
-note-creation mutation no longer share one QML object.
-
-Editor-pop repair prefers the actually rendered note-list body before rebuilding a canonical stack, so returning from a note does not fall through to the generic All Library state.
+The current workspace route keeps the previous hierarchy/list/detail/mobile route structure. Onboarding still uses the
+LVRS page stack, and `/` resolves to the restored workspace shell.
 
 ## Hierarchy Contract
-The mobile shell does not fork `Hierarchy.editable`; it forwards the shared reorder capability into the mounted hierarchy surface instead of creating a mobile-only hierarchy interaction model.
+The active workspace mounts the hierarchy surface as part of the existing layout. This is shell/navigation chrome, not a
+TextEditor backend.
 
 The detail panel no longer binds itself to the sidebar through ad-hoc lambda wiring in `main.cpp`.
 Composition-root code now links those modules through `IActiveHierarchyContextSource` plus
@@ -60,18 +48,16 @@ Composition-root code now links those modules through `IActiveHierarchyContextSo
 
 Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`, and the hierarchy row baseline still resolves to a `20px` LVRS item height.
 
-`MobileHierarchyPage.qml` disables `usePlatformSafeMargin`, keeps the compact navigation bar and compact status bar mounted, and keeps the hierarchy column on the same mobile canvas instead of painting an isolated nested panel surface.
+`MobileHierarchyPage.qml` remains part of the adaptive/mobile workspace mount path and no longer forwards editor
+view-mode controller state.
 
 ## Control Surfaces
 The compact control menu anchors from the trigger's bottom-right point. On the mobile hierarchy/control route, that trigger uses the `toolwindowtodo` glyph plus the built-in LVRS chevron instead of the old project-structure icon, and the trigger keeps the Figma `2 / 4 / 2 / 2` padding contract.
 
 Action-only control entries disable the default LVRS shortcut placeholder column so icon-only mobile actions keep their full available label width.
 
-Desktop navigation edge actions can toggle the hierarchy sidebar and detail panel while preserving the stored preferred widths.
-
-The daily/weekly/monthly/yearly calendar actions from navigation now route into the content surface and mount the
-existing day/week/month/year calendar views as inline content surfaces in the editor slot instead of leaving those
-actions as passive hook traces.
+Desktop navigation edge actions and calendar actions remain part of the restored shell. They must not reintroduce
+TextEditor parser/projection/rendering/persistence ownership.
 
 Calendar content surfaces now consume a shared `CalendarBoardStore`, and board mutations are modeled as explicit
 `date + time` payload APIs (`addEvent`, `addTask`) so future reminder/event assignment can stay consistent across

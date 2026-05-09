@@ -6,9 +6,9 @@
 
 ## Responsibility
 
-`ContentsNoteManagementCoordinator` is the direct note-package management boundary for the editor stack.
+`ContentsNoteManagementCoordinator` is the direct note-package management boundary for note body operations.
 It owns note-package persistence enqueue, open-count maintenance, tracked-stat refresh scheduling, and metadata reload
-follow-ups after `ContentsEditorSaveCoordinator` has accepted an editor RAW snapshot for disk synchronization.
+follow-ups after a caller has accepted a body snapshot for disk synchronization.
 
 ## Public Contract
 
@@ -17,15 +17,14 @@ follow-ups after `ContentsEditorSaveCoordinator` has accepted an editor RAW snap
 - `contentPersistenceContractAvailable()`: reports whether either the direct `.wsnote` lane or the deferred fallback
   view-model persistence lane is available.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
-- `persistEditorTextForNote(noteId, text)`: accepts an already-approved editor RAW snapshot and enqueues it onto the
+- `persistEditorTextForNote(noteId, text)`: accepts an already-approved body snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
 - `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text)`: direct worker-lane save path used when the caller
   already captured the destination note directory.
 - `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows note-id callers to snapshot the current
   direct persistence target before a later hierarchy transition can change the active view-model.
 - `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the
-  direct-persistence lane to be active, so read-side consumers can keep resource/package resolution tied to the same
-  note package as the editor session.
+  direct-persistence lane to be active.
 - `loadNoteBodyTextForNote(noteId, noteDirectoryPath = "")`: enqueues one worker-thread note read for the selected
   note body and returns the resulting request sequence for `noteBodyTextLoaded(...)`.
   When `noteDirectoryPath` is present, that explicit `.wsnote` package is read directly instead of being rediscovered
@@ -58,14 +57,14 @@ follow-ups after `ContentsEditorSaveCoordinator` has accepted an editor RAW snap
 
 ## Regression Checks
 
-- Ordinary typing must only enqueue persistence through the coordinator; it must not directly run stat refresh or
-  open-count work through the editor-facing bridge.
+- Body persistence callers must only enqueue persistence through the coordinator; they must not directly run stat
+  refresh or open-count work.
 - A successful body persistence request must still mirror the normalized body state back into the editable hierarchy
   view-model and then schedule tracked-stat refresh as a follow-up management task.
 - Selecting a note must still bump header open-count metadata, but that work must happen through the coordinator-owned
   background lane instead of synchronously inside editor selection refresh.
-- When the content view-model contract cannot resolve a concrete note package path, the editor save coordinator must
-  reject the save cleanly instead of treating a fallback view-model body save as equivalent to direct RAW mutation.
+- When the content view-model contract cannot resolve a concrete note package path, direct body persistence must reject
+  the save cleanly instead of treating a fallback view-model body save as equivalent to direct RAW mutation.
 - If the editor session already captured a valid note-directory path, the coordinator must still be able to
   enqueue a direct body write for that note even after the active content view-model changed.
 - Session/filesystem reconciliation must not force a metadata reload when the session text already matches filesystem

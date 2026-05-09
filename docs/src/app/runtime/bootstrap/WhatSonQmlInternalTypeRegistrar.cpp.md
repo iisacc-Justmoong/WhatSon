@@ -1,39 +1,20 @@
 # `src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`
 
 ## Responsibility
-Builds the manifest for QObject-backed internal QML bridge types used by the application shell and editor surfaces,
-then registers that manifest through LVRS `QmlTypeRegistrar`.
 
-## Registered Bridges
-- Editor/document bridges such as `ContentsEditorSelectionBridge`, `ContentsEditorSessionController`,
-  `ContentsLogicalTextBridge`, and the structured-document support types.
-- Editor chrome calculators and adapters such as `ContentsEditorVisualLineMetrics`, `ContentsMinimapLayoutMetrics`,
-  `ContentsEditorGeometryProvider`, and `ContentsLineNumberRailMetrics`, so minimap measurement, minimap arithmetic,
-  view-geometry adaptation, and line-number row construction stay in C++ model objects while QML owns the surrounding
-  view-local behavior and binds measured inputs plus resolved values.
-- Content-surface helpers from `src/app/models/content/mobile` plus editor-domain helpers from
-  `src/app/models/editor/display` and `src/app/models/editor/structure`, so runtime bootstrap resolves the real
-  model-domain paths instead of relying on flattened legacy include aliases.
-- Editor display Controllers from `src/app/models/editor/display`, including
-  `ContentsEditorSurfaceModeSupport` and `ContentsEditorDisplayBackend`, so view QML can instantiate C++ command and
-  surface-policy contracts instead of carrying those responsibilities locally.
-  The registrar no longer exports an active-editor-surface adapter type for focus forwarding; note focus restoration
-  now targets the structured document host directly from the display controllers.
-- Rendering/annotation helpers such as `ContentsTextFormatRenderer`, `ContentsInlineStyleOverlayRenderer`,
-  `ContentsPlainTextSourceMutator`, `ContentsStructuredBlockRenderer`,
-  `ContentsBodyResourceRenderer`, and `ResourceBitmapViewer`.
-- Workspace interaction bridges such as `FocusedNoteDeletionBridge`, `NoteListModelContractBridge`,
-  `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and `SidebarHierarchyInteractionController`. Creatable
-  controller classes registered here must remain subclassable by Qt's `QQmlElement<T>` wrapper.
-- Onboarding-specific native platform bridge `WhatSonIosHubPickerBridge`, which exposes the iOS Files/Box picker to
-  QML without pushing document-picker logic into `main.cpp`.
+Builds the manifest for QObject-backed internal QML bridge types needed by the restored application shell, then
+registers that manifest through LVRS `QmlTypeRegistrar`.
 
-## Architectural Note
-This file remains the narrow bootstrap seam for QML-visible helper types. The manifest keeps type order, module URI,
-version, and diagnostics in one place while LVRS owns validation and registration reporting. Adding the iOS onboarding
-picker here keeps the platform-native dialog integration isolated from the composition root while still allowing
-`OnboardingContent.qml` to switch platforms declaratively.
+## Current Contract
+
+- The registrar no longer exports editor parser, renderer, projection, session, input-policy, minimap, line-number, tag,
+  display-backend, resource-viewer, or paper helper types.
+- The note editor QML path mounts `LV.TextEditor` through `src/app/qml/view/contents/TextEditor.qml`; it does not require a C++
+  editor backend registration.
+- Remaining registrations are shell/navigation helpers such as mobile route coordinators, note-list and hierarchy
+  interaction bridges, and the iOS onboarding picker.
 
 ## Test Coverage
-`test/cpp/suites/qml_internal_type_registrar_tests.cpp` keeps this registrar on LVRS manifest registration and prevents
-direct `qmlRegisterType<...>()` blocks from returning.
+
+`test/cpp/suites/app_launch_support_tests.cpp` keeps this registrar on LVRS manifest registration and prevents direct
+`qmlRegisterType<...>()` blocks from returning.

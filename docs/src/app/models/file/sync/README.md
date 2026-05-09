@@ -21,9 +21,8 @@
 - `WhatSonHubSyncController` was moved from `src/app/sync` into this directory so sync responsibilities are now
   fully consolidated under `file/sync`.
 - Runtime hub synchronization remains the responsibility of this directory.
-- Note editor save routing is no longer part of `file/sync`; editor RAW snapshots are accepted by
-  `src/app/models/editor/session/ContentsEditorSaveCoordinator` and written through
-  `src/app/models/file/note/ContentsNoteManagementCoordinator`.
+- Note body management is not part of `file/sync`; concrete note-package reads and writes remain under
+  `src/app/models/file/note`.
 
 ## Tests
 
@@ -31,8 +30,7 @@
 - Regression checklist:
   - Startup/runtime wiring must still resolve `WhatSonHubSyncController` through the new `file/sync` include path.
   - Hub watcher debounce and local-mutation acknowledge flow must remain unchanged after the directory move.
-  - Editor persistence tests must continue to reject any new dependency on the removed editor-persistence path under
-    `src/app/models/file/sync`.
+  - Sync tests must continue to reject note-editor persistence ownership under `src/app/models/file/sync`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

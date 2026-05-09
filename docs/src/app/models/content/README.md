@@ -12,10 +12,10 @@
 - `mobile`
 
 ## Architectural Notes
-- Editor-host display coordination now lives under `src/app/models/editor/display`.
 - `mobile` owns mobile-only route planning, back-swipe, pop-repair, and hierarchy-selection preservation helpers that
   keep compact workspace navigation deterministic across note/detail/editor transitions.
-- Structured editor host and policy types now live under `src/app/models/editor/structure`.
+- The former editor backend model shard has been removed; content helpers must not depend on parser, projection,
+  renderer, session, minimap, or structured-document editor objects.
 
 ## Verification Notes
 - Mobile content helpers are covered by the shared `whatson_cpp_regression` suite, including route-state restore and

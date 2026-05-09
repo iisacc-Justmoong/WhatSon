@@ -4,8 +4,8 @@
 
 Implements global active-note tracking by subscribing to the active hierarchy context and the currently active
 note-list model.
-It also synchronizes the attached `ContentsEditorSessionController` from the active note snapshot, so note selection and
-editor-session mounting happen in the same C++ update path.
+It deliberately stops at selection publication; editor-session mounting, persistence, projection, and rendering are no
+longer responsibilities of this object.
 
 ## Behavior Summary
 
@@ -23,27 +23,21 @@ editor-session mounting happen in the same C++ update path.
   - relevant `QAbstractItemModel` row/reset/layout changes
 - Active note resolution prefers `currentNoteEntry`, then `currentNoteId/currentNoteDirectoryPath`, and only falls back
   to current-row role snapshots when the model has no committed note-id contract.
-- `bodyText` row data is intentionally omitted from `activeNoteEntry`; the same RAW body snapshot is stored separately
-  as `activeNoteBodyText` and is used only to mount the attached editor session.
+- `bodyText` row data is intentionally omitted from `activeNoteEntry`; the same note-list body value is stored
+  separately as `activeNoteBodyText` for read-side selection context.
 - `setActiveNoteState(...)` commits the next entry, note id, note directory path, and body text before emitting any
-  change signal. Synchronous observers such as `ContentsEditorDisplayBackend` must never see a new `activeNoteId`
-  paired with the previous note's `activeNoteBodyText`, because that transient mismatch can bind the editor session to
-  the wrong persistence target.
-- `setEditorSession(...)` accepts the visible `ContentsEditorSessionController`. When active note identity or body text
-  changes, `syncEditorSessionFromActiveNote()` calls
-  `requestSyncEditorTextFromSelection(activeNoteId, activeNoteBodyText, activeNoteId, activeNoteDirectoryPath)`.
+  change signal. Synchronous observers must never see a new `activeNoteId` paired with the previous note's
+  `activeNoteBodyText`.
 
 ## Tests
 
-Covered by `test/cpp/suites/note_active_state_tracker_tests.cpp`, QML wiring checks in
-`test/cpp/suites/qml_editor_surface_policy_tests.cpp`, and architecture-lock checks in
+Covered by `test/cpp/suites/note_active_state_tracker_tests.cpp` and architecture-lock checks in
 `test/cpp/suites/architecture_policy_lock_tests.cpp`.
 
 ## 한국어
 
 - 대상: `src/app/models/panel/NoteActiveStateTracker.cpp`
-- 역할: active hierarchy와 active note-list model의 변화를 구독해 전역 active note 상태를 갱신하고, 현재 표시 중인
-  편집기 세션을 즉시 갱신한다.
+- 역할: active hierarchy와 active note-list model의 변화를 구독해 전역 active note 상태를 갱신한다.
 - 검증: active hierarchy 전환, 빈 selection clear, `noteBacked=false` clear, architecture lock 이후 재배선 거부를
-  회귀 테스트로 고정한다. active note 변경과 같은 턴에 세션이 갱신되는지와, change signal 중에도 note id/path/body
-  snapshot이 원자적으로 일치하는지도 회귀 테스트로 고정한다.
+  회귀 테스트로 고정한다. change signal 중에도 note id/path/body snapshot이 원자적으로 일치하는지도 회귀 테스트로
+  고정한다.

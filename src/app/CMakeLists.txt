@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Pdf PdfQuick)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)
 find_package(LVRS CONFIG REQUIRED)
 qt_policy(SET QTP0004 NEW)
 
@@ -29,11 +29,6 @@ function(whatson_prune_missing_imported_includes target_name)
                 INTERFACE_INCLUDE_DIRECTORIES "${_whatson_imported_includes_filtered}")
     endif ()
 endfunction()
-
-whatson_prune_missing_imported_includes(Qt6::Pdf)
-whatson_prune_missing_imported_includes(Qt6::PdfQuick)
-whatson_prune_missing_imported_includes(Qt6::PdfPrivate)
-whatson_prune_missing_imported_includes(Qt6::PdfQuickPrivate)
 
 if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
     get_target_property(_whatson_wrap_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
@@ -193,28 +188,8 @@ function(whatson_app_register_directory_qml base_dir)
 endfunction()
 
 qt_add_executable(WhatSon main.cpp
-        models/editor/read/GetWsnbody.cpp
-        models/editor/read/GetWsnbody.h
-        models/editor/render/RenderResource.cpp
-        models/editor/render/RenderResource.h
-        models/editor/render/RenderCallout.cpp
-        models/editor/render/RenderCallout.h
-        models/editor/render/RenderAgenda.cpp
-        models/editor/render/RenderAgenda.h
-        models/editor/render/RenderBody.cpp
-        models/editor/render/RenderBody.h
-        models/editor/render/RenderBreak.cpp
-        models/editor/render/RenderBreak.h
-        models/editor/write/SetText.cpp
-        models/editor/write/SetText.h
-        models/editor/read/GetText.cpp
-        models/editor/read/GetText.h
-        models/editor/write/SetOpenTag.cpp
-        models/editor/write/SetOpenTag.h
-        models/editor/write/SetCloseTag.cpp
-        models/editor/write/SetCloseTag.h
-        models/editor/read/GetTag.cpp
-        models/editor/read/GetTag.h)
+        models/editor/write/SetTag.cpp
+        models/editor/write/SetTag.h)
 target_include_directories(WhatSon PRIVATE
         "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -238,8 +213,6 @@ endif ()
 add_subdirectory(models/calendar)
 add_subdirectory(models/content)
 add_subdirectory(models/detailPanel)
-add_subdirectory(models/display)
-add_subdirectory(models/editor)
 add_subdirectory(models/file)
 add_subdirectory(models/navigationbar)
 add_subdirectory(models/onboarding)

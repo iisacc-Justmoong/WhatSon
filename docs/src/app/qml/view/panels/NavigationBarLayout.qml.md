@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/NavigationBarLayout.qml`
 - Source kind: QML view/component
 - File name: `NavigationBarLayout.qml`
-- Approximate line count: 223
+- Approximate line count: 214
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -46,9 +46,8 @@
   the active View/Edit/Control application bar component. This lets the editor route show a dedicated
   right-edge detail-page icon button without leaking that affordance into hierarchy or note-list routes, and without
   duplicating that action inside the compact context menus.
-- Compact mobile navigation now also exposes `compactEditorViewVisible`. When true, the left compact group
-  shows `NavigationEditorViewBar` (`showLabel: false`) next to `NavigationModeBar` and suppresses the hierarchy-only
-  `settings` icon, matching the dual-combo Figma mobile editor chrome (`174:5689`).
+- The editor view-mode selector has been removed. Compact navigation keeps the settings affordance and
+  `NavigationModeBar`, but it no longer mounts `NavigationEditorViewBar`.
 - The compact mobile surface fill is supplied by `compactSurfaceColor`; the Figma mobile editor chrome uses
   `panelBackground10` (`#343536`) for that pill background instead of leaving it transparent or inheriting the page
   canvas tone.

@@ -6,10 +6,10 @@ This directory contains the root LVRS application shell and QML-side interaction
 The core rule in this directory is that visual composition belongs here, while persistence and mutation logic stay in C++ model-domain controllers or narrow bridge/helper objects under `src/app/models`.
 
 ## Important Files
-- `Main.qml`: the root `LV.ApplicationWindow`, route shell, and root context-object consumer.
+- `Main.qml`: the root `LV.ApplicationWindow`, route shell, and restored desktop/mobile workspace host.
 - `DesignTokens.qml`: QML-side design token aggregation.
-- `view/contents/ContentsView.qml`: standalone Figma `ContentsView` frame that embeds the editor and minimap QML parts
-  using `LV.Theme` tokens for colors, spacing, typography, and fixed rails.
+- `view/contents/Gutter.qml`, `view/contents/TextEditor.qml`, `view/contents/Minimap.qml`: the only contents-internal
+  QML views allowed for the editor route. `ContentViewLayout.qml` mounts these three views inside the restored shell.
 
 ## LVRS Token Rule
 - QML view files must express reusable colors, transparency, spacing, typography, and fixed UI extents through
@@ -18,9 +18,9 @@ The core rule in this directory is that visual composition belongs here, while p
   `font.pixelSize` values are reserved for non-visual data/algorithmic cases only.
 
 ## Ownership Model
-The C++ composition root applies `WhatSonQmlContextBinder` before root QML load, exposing required runtime objects as
-LVRS context-object bindings. `Main.qml` consumes those objects directly and forwards explicit dependencies to child
-views.
+The C++ composition root applies `WhatSonQmlContextBinder` before root QML load. `Main.qml` keeps startup/onboarding
+routing and workspace chrome, but it no longer forwards editor session, editor view-mode, projection, rendering, or
+persistence objects into the TextEditor surface.
 
 ## Why This Directory Is Important
 If a runtime object exists in C++ but behaves incorrectly in the UI, this directory is usually where the mismatch becomes visible first.
@@ -32,5 +32,6 @@ If a runtime object exists in C++ but behaves incorrectly in the UI, this direct
 - 대상: ``src/app/qml`` (`docs/src/app/qml/README.md`)
 - 위치: `docs/src/app/qml`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재 workspace 인터페이스는 기존 shell을 유지하고, content slot만 `ContentViewLayout.qml`의 backend-free TextEditor surface를 사용한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

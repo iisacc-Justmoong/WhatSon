@@ -1,45 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml()
+void WhatSonCppRegressionTests::noteFolderSemantics_normalizeDescriptorsAndXml()
 {
-    ContentsResourceTagTextGenerator generator;
-    QSignalSpy generatedTagTextChangedSpy(
-        &generator,
-        &ContentsResourceTagTextGenerator::lastGeneratedTagTextChanged);
-    QSignalSpy generatedDescriptorChangedSpy(
-        &generator,
-        &ContentsResourceTagTextGenerator::lastGeneratedDescriptorChanged);
-
-    const QVariantMap importedResourceEntry{
-        {QStringLiteral("resourcePath"), QStringLiteral("images/&lt;Cover&gt;.PNG")},
-        {QStringLiteral("bucket"), QStringLiteral("Image")},
-        {QStringLiteral("id"), QStringLiteral("res-1")},
-    };
-
-    const QVariantMap normalizedDescriptor = generator.normalizeImportedResourceEntry(importedResourceEntry);
-    QVERIFY(normalizedDescriptor.value(QStringLiteral("valid")).toBool());
-    QCOMPARE(
-        normalizedDescriptor.value(QStringLiteral("resourcePath")).toString(),
-        QStringLiteral("images/<Cover>.PNG"));
-    QCOMPARE(normalizedDescriptor.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
-    QCOMPARE(normalizedDescriptor.value(QStringLiteral("bucket")).toString(), QStringLiteral("Image"));
-    QCOMPARE(normalizedDescriptor.value(QStringLiteral("format")).toString(), QStringLiteral(".PNG"));
-
-    const QString generatedTagText = generator.buildCanonicalResourceTag(importedResourceEntry);
-    QCOMPARE(
-        generatedTagText,
-        QStringLiteral("<resource type=\"image\" format=\".PNG\" path=\"images/&lt;Cover&gt;.PNG\" id=\"res-1\" />"));
-    QCOMPARE(generator.lastGeneratedTagText(), generatedTagText);
-    QCOMPARE(
-        generator.lastGeneratedDescriptor().value(QStringLiteral("resourcePath")).toString(),
-        QStringLiteral("images/<Cover>.PNG"));
-    QCOMPARE(generatedTagTextChangedSpy.count(), 1);
-    QCOMPARE(generatedDescriptorChangedSpy.count(), 1);
-
-    QCOMPARE(generator.buildCanonicalResourceTag(importedResourceEntry), generatedTagText);
-    QCOMPARE(generatedTagTextChangedSpy.count(), 1);
-    QCOMPARE(generatedDescriptorChangedSpy.count(), 1);
-
     QCOMPARE(
         WhatSon::NoteFolders::normalizeFolderPath(QStringLiteral(" /Research//Today/ ")),
         QStringLiteral("Research/Today"));

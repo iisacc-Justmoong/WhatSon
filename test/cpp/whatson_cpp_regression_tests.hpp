@@ -1,26 +1,11 @@
 #pragma once
 
-#include "app/models/display/paper/ContentsA4PaperBackground.hpp"
-#include "app/models/display/paper/ContentsPaperSelection.hpp"
-#include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
-#include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
-#include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
-#include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
-#include "app/models/editor/input/ContentsWysiwygEditorPolicy.hpp"
-#include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
-#include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
-#include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
-#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
-#include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
-#include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
-#include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "app/models/file/viewer/ResourceBitmapViewer.hpp"
 #define private public
 #include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -42,25 +27,12 @@
 #include "app/store/hub/SelectedHubStore.hpp"
 #include "app/store/sidebar/ISidebarSelectionStore.hpp"
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
-#include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
-#include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
-#include "app/models/editor/session/ContentsEditorSaveCoordinator.hpp"
-#include "app/models/editor/session/ContentsEditorSessionController.hpp"
-#include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
-#include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
 #include "app/models/file/hierarchy/IHierarchyController.hpp"
 #include "app/models/file/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/file/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/models/file/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/file/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
 #include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
-#include "app/models/navigationbar/EditorViewModeController.hpp"
-#include "app/models/navigationbar/EditorViewSectionController.hpp"
-#include "app/models/navigationbar/EditorViewState.hpp"
 #include "app/models/navigationbar/NavigationModeSectionController.hpp"
 #include "app/models/navigationbar/NavigationModeState.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
@@ -1092,251 +1064,115 @@ class WhatSonCppRegressionTests final : public QObject
     Q_OBJECT
 
 private slots:
-    void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
+    void appLaunchSupport_requiresMountedHubForStartupWorkspace();
+    void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
+    void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
+    void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
+    void architecturePolicyLock_blocksMutableWiringAfterLock();
+    void hierarchyControllerProvider_rejectsMappingMutationAfterLock();
+    void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
+    void noteListModelContractBridge_rejectsWiringMutationAfterLock();
+    void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
+    void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
+    void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
+    void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
+    void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
+    void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
+    void debugTrace_summarizesLargeTextFromPreviewOnly();
+    void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
+    void cmakeBuildTargets_cleanTransientBuildDiagnostics();
+    void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
+    void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
+    void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
+    void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
+    void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
+    void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
     void hubMountValidator_acceptsCompleteHubPackage();
     void hubMountValidator_rejectsIncompleteHubPackage();
-    void startupHubResolver_returnsEmptyWithoutPersistedSelection();
-    void startupHubResolver_mountsPersistedCompleteHubPackage();
-    void startupHubResolver_keepsPersistedFailureVisibleWithoutSwitchingToBlueprint();
+    void sourceTree_usesRepositoryAbsoluteProjectIncludes();
+    void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
+    void sourceTree_keepsEditorModelBackendRemoved();
+    void sourceTree_keepsContentsQmlUnderViewContents();
+    void sourceTree_keepsHierarchyBackendDecomposed();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
     void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
     void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
     void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
-    void appLaunchSupport_requiresMountedHubForStartupWorkspace();
-    void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
-    void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
-    void qmlInternalTypeRegistrar_usesLvrsManifestRegistration();
-    void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
-    void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
-    void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
-    void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
-    void cmakeBuildTargets_cleanTransientBuildDiagnostics();
-    void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
-    void debugTrace_summarizesLargeTextFromPreviewOnly();
-    void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
-    void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
-    void architecturePolicyLock_blocksMutableWiringAfterLock();
-    void hierarchyControllerProvider_rejectsMappingMutationAfterLock();
-    void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
-    void sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy();
-    void sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy();
-    void sidebarHierarchyController_rejectsSelectionStoreMutationAfterLock();
-    void sidebarHierarchyController_reactsToProviderMappingChanges();
-    void noteListModelContractBridge_rejectsWiringMutationAfterLock();
-    void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
-    void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
-    void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
-    void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
-    void sourceTree_keepsMinimapUnderEditorChromeModels();
-    void sourceTree_keepsContentsQmlUnderViewContents();
-    void sourceTree_keepsHierarchyBackendDecomposed();
-    void sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings();
-    void contentsEditorSelectionBridge_tracksSelectionFromCurrentIndexSignal();
-    void contentsEditorSelectionBridge_preservesNoSelectionSentinelBeforeIndexCommit();
-    void contentsEditorSelectionBridge_requiresCommittedSelectionContractForNoteIdentity();
-    void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromNoteListSnapshot();
-    void contentsEditorSelectionBridge_prefillsSelectedNoteBodyFromDirectSourceSnapshot();
-    void contentsEditorSelectionBridge_treatsDirectEmptySourceAsResolvedEmptyNote();
-    void contentsEditorSelectionBridge_ignoresNoteListBodySnapshotWithoutDirectSource();
-    void contentsEditorSelectionBridge_dropsInFlightBodyLoadAfterBridgeDestruction();
-    void contentsEditorSelectionBridge_rebindsSameNoteIdWhenPackagePathChanges();
-    void contentsEditorSelectionBridge_clearsSelectedNoteAcrossTransientEmptyCurrentNoteId();
-    void contentsEditorSelectionBridge_reloadsBodyWhenCommittedNoteEntryChangesWithoutNoteIdChange();
-    void contentsEditorSelectionBridge_emitsTraceForNoteSelectionFlow();
-    void editorSaveCoordinator_writesDirectlyThroughNoteManagement();
-    void noteBackedHierarchyNoteLists_preserveRawBodySnapshotForEditorBootstrap();
-    void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
-    void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
-    void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
-    void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
-    void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
-    void noteActiveStateTracker_syncsAttachedEditorSessionFromActiveNote();
-    void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
+    void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
-    void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
-    void navigationModeController_cyclesActiveSections();
-    void editorViewModeController_cyclesActiveSections();
-    void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
-    void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
-    void unixTimeAnalyzer_reportsStableEpochFields();
-    void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
-    void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
-    void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
-    void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
-    void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
-    void resourceRenderer_resolvesIiXmlResourceTagsAndStructuredVisualBlocks();
-    void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
-    void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
-    void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
-    void resourceTagTextGenerator_and_noteFolderSemantics_normalizeDescriptorsAndXml();
-    void editorTagsBoundary_groupsEditorTagInsertionResponsibilities();
-    void editorTagInsertionController_buildsBodyTagInsertionPayloads();
-    void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
-    void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
-    void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
-    void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
-    void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
-    void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
-    void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
-    void projectsHierarchyParser_roundTripsNestedProjectTree();
-    void projectsHierarchyController_keepsNestedProjectPolicy();
-    void structuredCollectionPolicy_normalizesEntriesAndPrefersResolvedMatches();
-    void structuredCollectionPolicy_normalizesQmlJsArrayEntries();
-    void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
-    void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
-    void structuredBlockRenderer_reportsAsyncRenderProfileForLargeStructuredDocuments();
-    void structuredBlockRenderer_keepsLargePlainDocumentsOnNativeSurfacePath();
-    void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
-    void structuredBlockRenderer_keepsTrailingResourceInsertionsEditable();
-    void structuredBlockRenderer_keepsResourceOnlyTrailingLineEditable();
-    void structuredBlockRenderer_keepsEmptyParagraphBetweenResourcesEditable();
-    void structuredMutationPolicy_buildsDeletionAndInsertionPayloads();
-    void structuredMutationPolicy_buildsParagraphBoundaryMergeAndSplitPayloads();
-    void structuredDocumentBlocksModel_updatesRowsWithoutResettingStableSuffixBlocks();
-    void structuredDocumentBlocksModel_removesOnlyChangedMiddleRows();
-    void structuredDocumentHost_tracksSelectionClearRevisionAcrossInteractions();
-    void editorSurfaceModeSupport_switchesToResourceEditorForResourceListModels();
-    void wysiwygEditorPolicy_mapsVisibleSelectionBackToRawSource();
-    void qmlInlineFormatEditor_delegatesWysiwygPolicyToCpp();
-    void editorDisplayBackend_mountsNoteSessionAndCommitsRawBody();
-    void qmlResourceEditorView_staysTransparentAndViewerOnly();
-    void resourceDetailPanelController_tracksCurrentResourceSelection();
-    void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
-    void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
-    void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
-    void qmlContextMenus_treatRightClickAndLongPressAsSymmetricPointerTriggers();
-    void qmlViewBehaviorContract_documentsDirectQmlOwnership();
-    void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
-    void hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock();
-    void hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock();
-    void qmlHierarchyNoteDrop_keepsDropSurfaceOpenUntilCapabilityRejectsTarget();
-    void qmlHierarchyExpansion_preservesUserControlledStateAcrossModelRefreshes();
-    void listBarLayout_rendersResolvedNoteListModelByIndex();
-    void qmlInlineSelectionHelpers_bindOwnersAfterControllerFileDeletion();
-    void qmlStructuredEditors_consumeRendererNormalizedBlocksWithoutLocalFlattening();
-    void qmlStructuredEditors_refreshesDocumentProjectionOnEditorOpen();
-    void qmlStructuredEditors_mountsEditorAndMinimapInDisplayLayout();
-    void contentsLineNumberRailMetrics_buildsRowsFromLogicalBlocks();
-    void contentsLineNumberRailMetrics_mapsRowsFromWholeLogicalText();
-    void contentsLineNumberRailMetrics_ignoresExternalLogicalTextForResourceRows();
-    void contentsLineNumberRailMetrics_keepsResourceRowsIndependent();
-    void contentsLineNumberRailMetrics_keepsResourceFramesSingleGutterLine();
-    void contentsEditorGeometryProvider_keepsTextRowsOnLogicalGeometry();
-    void contentsEditorGeometryProvider_ignoresWholeOverlayHeightWithoutResourceVisualBlocks();
-    void contentsEditorGeometryProvider_usesExplicitResourceVisualBlocks();
-    void contentsEditorGeometryProvider_mapsVisualYThroughResourceDelta();
-    void contentsEditorGeometryProvider_anchorsRowsAfterResourceToFrameBottom();
-    void contentsEditorGeometryProvider_clampsProbeRowsInsideResourceFrame();
-    void contentsEditorGeometryProvider_offsetsRowsAfterStructuredResourceFrames();
-    void contentsEditorVisualLineMetrics_expandsTallVisualBlocks();
-    void contentsMinimapLayoutMetrics_resolvesRuntimeVisibilityAndDesignRows();
-    void qmlStructuredEditors_rejectStaleSourceRangeMutations();
-    void qmlStructuredEditors_preserveNativeMobileInputDuringFocusedEdits();
-    void qmlStructuredEditors_commitsPlainTextBlocksDirectlyToRawSource();
-    void qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor();
-    void qmlStructuredEditors_wrapsSelectedTextIntoRawInlineStyleTags();
-    void qmlStructuredEditors_insertStructuredShortcutsThroughRawSourceMutations();
-    void qmlStructuredEditors_acceptsPlatformCommandModifierForInlineFormatting();
-    void qmlStructuredEditors_routesInlineFormatShortcutThroughDocumentFlow();
-    void qmlStructuredEditors_requireCommittedRawMutationForTagCommands();
-    void qmlStructuredEditors_bindSessionAndFlushTagMutationsToRawPersistence();
-    void qmlStructuredEditors_pressRightClickRequestsContextMenuAndFocusedBodyTagShortcuts();
-    void qmlStructuredEditors_mapsBottomMarginToTerminalBodyClick();
-    void qmlStructuredEditors_backspaceDeletesPreviousResourceFromEmptyTextBlock();
-    void qmlStructuredEditors_leaveCalloutAsPlainPairedTag();
-    void qmlStructuredEditors_renderInlineStyleOverlayAtRuntime();
-    void qmlEditorInputPolicyAdapter_centralizesNativeInputDecisions();
-    void qmlEditorViewDirectory_containsOnlyViewSurfaceFiles();
-    void qmlStructuredEditors_lockCustomInputToTagManagementOnly();
-    void qmlInlineFormatEditor_keepsNativeTextEditInputUncovered();
-    void qmlInlineFormatEditor_keepsKeyboardSelectionAndOsImeNative();
-    void qmlInlineFormatEditor_keepsRenderedOverlayDuringNativeSelection();
-    void qmlInlineFormatEditor_snapsPointerSelectionInsideResourceFrameToAtomicBlock();
-    void qmlInlineFormatEditor_keepsCursorOutOfAtomicResourceFrame();
-    void qmlInlineFormatEditor_ignoresEmptyFormattingTagsDuringRenderedSelection();
-    void qmlInlineFormatEditor_keepsRenderedOverlayPassiveForNativeEditing();
-    void qmlInlineFormatEditor_keepsResourceOverlayPinnedDuringNativeEditing();
-    void qmlInlineFormatEditor_projectsVisibleGeometryFromRenderedDisplay();
-    void qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText();
-    void qmlInlineFormatEditor_mapsRenderedPointerSelectionToCharacterRawRange();
-    void qmlInlineFormatEditor_movesRenderedCursorOnMouseClick();
-    void qmlInlineFormatEditor_backspaceDeletesVisibleCharacterBeforeRenderedCursor();
-    void qmlInlineFormatEditor_keepsNativeSurfaceLogicalAndMapsTypingToRaw();
-    void qmlStructuredDocumentFlow_holdsLogicalSurfaceWhileProjectionCatchesUp();
-    void qmlInlineFormatEditor_preservesRenderedPointerDragSelection();
-    void qmlInlineFormatEditor_restoresRenderedPointerMultiClickSelection();
-    void qmlInlineFormatEditor_skipsHiddenInlineTagsDuringNativeCursorMovement();
-    void qmlInlineFormatEditor_reportsWrappedVisualLineCountForMinimap();
-    void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
-    void qmlInlineFormatEditor_placesResourceGutterRowsAfterFrame();
-    void qmlInlineFormatEditor_separatesBlankGutterRowAfterResourceFrame();
-    void qmlInlineFormatEditor_usesNativeSurfaceForLargePlainDocuments();
-    void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
-    void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
-    void qmlStructuredDocumentFlow_preservesRenderedPointerDragSelectionInsideFlickable();
-    void qmlInlineFormatEditor_forwardsInlineFormatShortcutsToTagManagementHook();
-    void qmlStructuredDocumentFlow_appliesInlineFormatShortcutToSelectedRawRange();
-    void mobileChrome_usesSharedFigmaControlSurfaceColor();
+    void mobileChrome_keepsRestoredShellWithoutEditorViewMode();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
     void mobileHierarchyNavigationCoordinator_routesBackAsDismissTargets();
-    void sourceTree_usesRepositoryAbsoluteProjectIncludes();
-    void paperSelection_tracksChosenPaperEnumState();
-    void a4PaperBackground_exposesCanonicalMetricsAndAnchorsPrintRendererDefaults();
-    void pagePrintLayoutRenderer_mapsViewModesToPaperSurfaceState();
-    void plainTextSourceMutator_wrapsCommittedUrlsIntoCanonicalWebLinks();
-    void inlineStyleOverlayRenderer_republishesHtmlOverlayVisibility();
-    void textFormatRenderer_appliesPaperPaletteToEditorAndPreviewHtml();
-    void editorPresentationProjection_publishesHtmlBlockPipelineToQmlHost();
-    void textFormatRenderer_preservesMarkdownUnorderedListMarkersWithoutRegexWarnings();
-    void textFormatRenderer_keepsEnterNewlinesAsEditorParagraphSlots();
-    void editorTagInsertionController_replacesLegacyInlineStyleMutationSupport();
-    void editorTagInsertionController_buildsShortcutSourceWrapMutations();
-    void displayPaperModels_hostPageAndPrintViewModeObjectsUnderModelsDirectory();
+    void navigationModeController_cyclesActiveSections();
+    void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
+    void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
+    void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
-    void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
-    void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
-    void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
+    void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
+    void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
+    void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
+    void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
-    void editorRendererPipeline_routesIiXmlTreeThroughIiHtmlBlockObjects();
-    void editorRendererPipeline_materializesEnterNewlinesAsParagraphSlots();
-    void editorRendererPipeline_rendersCalloutTagsAsFigmaCalloutBlocks();
-    void editorRendererPipeline_rendersInlineStyleTagsAsRichTextHtml();
-    void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
-    void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
-    void logicalTextBridge_notifiesLogicalToSourceOffsetChanges();
-    void logicalTextBridge_usesIdentityOffsetsForLargePlainText();
-    void logicalTextBridge_mapsResourceTagsToAtomicLogicalPlaceholders();
-    void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
-    void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
-    void qmlStructuredEditors_clipInlineResourceCardsToMeasuredBlockBounds();
-    void qmlStructuredEditors_wireInlineResourceRendererToStructuredVisualBlocks();
-    void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
-    void qmlContentsView_composesFigmaFrameFromLvrsParts();
-    void qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe();
-    void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
-    void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
-    void resourceBitmapViewer_projectsRenderableImagePreviewState();
-    void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();
-    void editorSessionController_rebindsWhenSameNoteIdUsesDifferentPackagePath();
-    void editorSessionController_commitsRawMutationsThroughSessionAuthority();
-    void editorSessionBoundary_usesCppControllerWithoutQmlWrapper();
+    void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
+    void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
     void noteManagementCoordinator_openCountReloadsPersistedMetadata();
     void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
     void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();
-    void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
+    void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
+    void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
+    void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
+    void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
+    void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
+    void projectsHierarchyParser_roundTripsNestedProjectTree();
+    void projectsHierarchyController_keepsNestedProjectPolicy();
+    void qmlContentsView_keepsOnlyGutterTextEditorMinimapViews();
+    void qmlContentsView_threePartsStayViewOnlyAndNativeInputSafe();
+    void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
+    void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
+    void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
+    void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
+    void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
+    void qmlContentsTextEditor_keepsNativeSurfaceOnly();
+    void qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative();
+    void resourceDetailPanelController_tracksCurrentResourceSelection();
+    void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
+    void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
+    void noteFolderSemantics_normalizeDescriptorsAndXml();
+    void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
+    void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
+    void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
+    void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
+    void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
+    void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();
+    void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
+    void sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy();
+    void sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy();
+    void hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock();
+    void hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock();
+    void sidebarHierarchyController_reactsToProviderMappingChanges();
+    void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
+    void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
+    void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
+    void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
+    void startupHubResolver_returnsEmptyWithoutPersistedSelection();
+    void startupHubResolver_mountsPersistedCompleteHubPackage();
+    void startupHubResolver_keepsPersistedFailureVisibleWithoutSwitchingToBlueprint();
+    void unixTimeAnalyzer_reportsStableEpochFields();
     void unusedNoteSensors_filterNoteIdsByLastOpenedWindow();
+    void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
+    void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
 
 private:
     static QString createMinimalHubFixture(

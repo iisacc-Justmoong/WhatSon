@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/navigation`
 - Child directories: 3
-- Child files: 10
+- Child files: 9
 
 ## Child Directories
 - `control`
@@ -20,7 +20,6 @@
 - `NavigationApplicationCalendarBar.qml`
 - `NavigationApplicationPreferenceBar.qml`
 - `NavigationCalendarBar.qml`
-- `NavigationEditorViewBar.qml`
 - `NavigationInformationBar.qml`
 - `NavigationModeBar.qml`
 - `NavigationPreferenceBar.qml`
@@ -29,7 +28,8 @@
 ## Recent Notes
 - The small shared navigation bars now use `LV.Theme.gap...` tokens for their inter-button spacing instead of local
   integer literals such as `2`, `4`, `8`, or `12`.
-- `NavigationEditorViewBar.qml` also moved its popup offset and menu width to LVRS token/scale-aware metrics.
+- `NavigationEditorViewBar.qml` was removed with the editor view-mode contract; navigation no longer exposes
+  Plain/Page/Print/Web/Presentation selection.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

@@ -268,26 +268,16 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
 
-void WhatSonCppRegressionTests::sourceTree_keepsMinimapUnderEditorChromeModels()
+void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRemoved()
 {
     const QDir repositoryRoot(repositoryRootPath());
     QVERIFY(repositoryRoot.exists());
 
-    const QStringList requiredPaths{
-        QStringLiteral("src/app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"),
-        QStringLiteral("src/app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"),
-        QStringLiteral("docs/src/app/models/editor/minimap/README.md")
-    };
-    for (const QString& relativePath : requiredPaths)
-    {
-        QVERIFY2(
-            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
-            qPrintable(QStringLiteral("Missing expected editor chrome model path: %1").arg(relativePath)));
-    }
-
     const QStringList forbiddenDirectories{
+        QStringLiteral("src/app/models/editor"),
         QStringLiteral("src/app/models/minimap"),
         QStringLiteral("src/app/models/editor/display/minimap"),
+        QStringLiteral("docs/src/app/models/editor"),
         QStringLiteral("docs/src/app/models/minimap"),
         QStringLiteral("docs/src/app/models/editor/display/minimap")
     };
@@ -295,12 +285,43 @@ void WhatSonCppRegressionTests::sourceTree_keepsMinimapUnderEditorChromeModels()
     {
         QVERIFY2(
             !QDir(repositoryRoot.filePath(relativePath)).exists(),
-            qPrintable(QStringLiteral("Minimap model directory must stay under models/editor: %1").arg(relativePath)));
+            qPrintable(QStringLiteral("Removed editor backend directory must stay absent: %1").arg(relativePath)));
     }
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("models/editor")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
+
+    const QStringList forbiddenFiles{
+        QStringLiteral("src/app/models/navigationbar/EditorViewModeController.cpp"),
+        QStringLiteral("src/app/models/navigationbar/EditorViewModeController.hpp"),
+        QStringLiteral("src/app/models/navigationbar/EditorViewSectionController.cpp"),
+        QStringLiteral("src/app/models/navigationbar/EditorViewSectionController.hpp"),
+        QStringLiteral("src/app/models/navigationbar/EditorViewState.cpp"),
+        QStringLiteral("src/app/models/navigationbar/EditorViewState.hpp"),
+        QStringLiteral("src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewModeController.cpp.md"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewModeController.hpp.md"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewSectionController.cpp.md"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewSectionController.hpp.md"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewState.cpp.md"),
+        QStringLiteral("docs/src/app/models/navigationbar/EditorViewState.hpp.md"),
+        QStringLiteral("docs/src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml.md"),
+        QStringLiteral("test/cpp/suites/editor_view_mode_controller_tests.cpp")
+    };
+    for (const QString& relativePath : forbiddenFiles)
+    {
+        QVERIFY2(
+            !QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Removed editor view-mode contract must stay absent: %1").arg(relativePath)));
+    }
+
+    const QString qmlContextBinderHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.hpp"));
+    const QString qmlContextBinderSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp"));
+    QVERIFY(!qmlContextBinderHeader.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(!qmlContextBinderSource.contains(QStringLiteral("editorViewModeController")));
 }
 
 void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
@@ -311,14 +332,13 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
-        contentsRoot + QStringLiteral("/ContentsView.qml"),
-        contentsRoot + QStringLiteral("/EditorView.qml"),
+        contentsRoot + QStringLiteral("/Gutter.qml"),
+        contentsRoot + QStringLiteral("/TextEditor.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
-        contentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml"),
-        contentsRoot + QStringLiteral("/editor/ContentsStructuredDocumentFlow.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
-        docsContentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml.md"),
-        docsContentsRoot + QStringLiteral("/editor/README.md")
+        docsContentsRoot + QStringLiteral("/Gutter.qml.md"),
+        docsContentsRoot + QStringLiteral("/TextEditor.qml.md"),
+        docsContentsRoot + QStringLiteral("/Minimap.qml.md")
     };
     for (const QString& relativePath : requiredPaths)
     {
@@ -332,8 +352,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QStringList forbiddenDirectories{
         qmlRoot + QStringLiteral("contents"),
         qmlRoot + QStringLiteral("view/content"),
+        contentsRoot + QStringLiteral("/editor"),
         docsQmlRoot + QStringLiteral("contents"),
-        docsQmlRoot + QStringLiteral("view/content")
+        docsQmlRoot + QStringLiteral("view/content"),
+        docsContentsRoot + QStringLiteral("/editor")
     };
     for (const QString& relativePath : forbiddenDirectories)
     {
@@ -342,19 +364,27 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
             qPrintable(QStringLiteral("Contents QML must stay under view/contents: %1").arg(relativePath)));
     }
 
+    const QStringList contentsQmlFiles =
+        QDir(repositoryRoot.filePath(contentsRoot)).entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
+    QCOMPARE(contentsQmlFiles, QStringList({QStringLiteral("Gutter.qml"), QStringLiteral("Minimap.qml"), QStringLiteral("TextEditor.qml")}));
+    const QStringList contentsDocsFiles =
+        QDir(repositoryRoot.filePath(docsContentsRoot)).entryList(QStringList{QStringLiteral("*.md")}, QDir::Files, QDir::Name);
+    QCOMPARE(contentsDocsFiles, QStringList({
+        QStringLiteral("Gutter.qml.md"),
+        QStringLiteral("Minimap.qml.md"),
+        QStringLiteral("README.md"),
+        QStringLiteral("TextEditor.qml.md")
+    }));
+
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/ContentsView.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/EditorView.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsInlineFormatEditor.qml"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"))));
-    const QString contentViewLayoutSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsChrome")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("../../../") + QStringLiteral("contents")));
-
-    const QString inlineFormatEditorControllerSource =
-        readUtf8SourceFile(QStringLiteral("src/app/models/editor/input/ContentsInlineFormatEditorController.cpp"));
-    QVERIFY(!inlineFormatEditorControllerSource.contains(QStringLiteral("qrc:/qt/qml/WhatSon/App/view/contents/editor/")));
-    QVERIFY(!inlineFormatEditorControllerSource.contains(QStringLiteral("ContentsInlineFormatEditorController.qml")));
-    QVERIFY(!inlineFormatEditorControllerSource.contains(
-        QStringLiteral("qrc:/qt/qml/WhatSon/App/view/") + QStringLiteral("content/editor/")));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsLineNumberRail.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsStructuredDocumentFlow.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsResourceEditorView.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsResourceViewer.qml"))));
 }
 
 void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
@@ -376,10 +406,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.hpp");
     const QString clipboardSupportSourcePath =
         QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.cpp");
-    const QString selectionResolverHeaderPath =
-        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionContractResolver.hpp");
-    const QString selectionResolverSourcePath =
-        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionContractResolver.cpp");
 
     QVERIFY2(
         QFileInfo::exists(repositoryRoot.filePath(namedSupportPath)),
@@ -402,13 +428,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY2(
         QFileInfo::exists(repositoryRoot.filePath(clipboardSupportSourcePath)),
         "Clipboard image extraction support must stay out of the ResourcesImportController.");
-    QVERIFY2(
-        QFileInfo::exists(repositoryRoot.filePath(selectionResolverHeaderPath)),
-        "Selection model contract resolution must stay out of the ContentsEditorSelectionBridge.");
-    QVERIFY2(
-        QFileInfo::exists(repositoryRoot.filePath(selectionResolverSourcePath)),
-        "Selection model contract resolution must stay out of the ContentsEditorSelectionBridge.");
-
     const QString eventSupportSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyControllerSupport.hpp"));
     const QString presetSupportSource = readUtf8SourceFile(
@@ -461,13 +480,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
 
-    const QString selectionBridgeSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/editor/bridge/ContentsEditorSelectionBridge.cpp"));
-    QVERIFY(selectionBridgeSource.contains(QStringLiteral("ContentsEditorSelectionContractResolver.hpp")));
-    QVERIFY(selectionBridgeSource.contains(
-        QStringLiteral("ContentsEditorSelectionContractResolver::noteIdFromModelRow")));
-    QVERIFY(!selectionBridgeSource.contains(QStringLiteral("#include <QMetaProperty>")));
-
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("ContentsEditorSelectionContractResolver.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/")));
 }

@@ -32,13 +32,6 @@
 - 내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,
   `src/app/models/navigationbar/NavigationModeSectionController.*`,
   `src/app/models/navigationbar/NavigationModeController.*`
-- 편집기 보기 모드 상태/컨트롤러: `src/app/models/navigationbar/EditorViewState.*`,
-  `src/app/models/navigationbar/EditorViewSectionController.*`,
-  `src/app/models/navigationbar/EditorViewModeController.*`
-- 편집기 저장 코디네이터: `src/app/models/editor/session/ContentsEditorSaveCoordinator.*`
-- 편집기 태그 helper: `src/app/models/editor/tags/ContentsStructuredTagValidator.*`,
-  `src/app/models/editor/tags/WhatSonStructuredTagLinter.*`,
-  `src/app/models/editor/tags/ContentsResourceTagTextGenerator.*`
 - 사이드바 선택 store 인터페이스/구현: `src/app/store/sidebar/ISidebarSelectionStore.*`,
   `src/app/store/sidebar/SidebarSelectionStore.*`
 - 사이드바 계층 wiring 인터페이스/컨트롤러: `src/app/models/sidebar/IHierarchyControllerProvider.*`,
@@ -104,8 +97,6 @@
   Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
 - `ResourcesImportController`는 import orchestration과 conflict/persistence 처리를 소유하고, clipboard 이미지
   MIME/data-url 추출 정책은 `WhatSonResourceClipboardImportSupport`에 둔다.
-- `ContentsEditorSelectionBridge`는 selection/persistence 흐름 조정에 머무르고, note-list QObject/QAbstractItemModel
-  contract reflection과 row role 해석은 `ContentsEditorSelectionContractResolver`에 둔다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
 
@@ -121,48 +112,33 @@
 
 ### 편집기 Source of Truth (중요)
 
-- `.wsnote`와 embedded `.wsnbody` content만 editor state의 write-authoritative source다.
-- 모든 edit path는 다음 순서를 정확히 보존해야 한다.
-  1. RAW `.wsnote/.wsnbody` source를 mutate한다.
-  2. always-on parser가 최신 RAW snapshot을 reparse하게 한다.
-  3. editor surface는 parsed projection에서만 render한다.
-- live typing, shortcut, Enter handling, paste, drop-driven document mutation은 먼저 RAW source edit으로 변환되어야 한다.
-- parser와 renderer layer는 RAW source snapshot에서 presentation state만 derive할 수 있으며, write-authoritative document model이 되면 안 된다.
-- RichText/DOM/QML editor surface는 persisted note source로 자기 자신을 primary save path로 serialize하면 안 된다.
-- temporary RichText fragment, DOM split, editor-surface HTML은 read-side projection detail일 뿐이며 alternate persistence 또는 formatting authority로 사용하면 안 된다.
-- focus restoration, caret movement, block re-materialization은 incidental DOM 구조가 아니라 RAW source offset 또는 parser-derived block coordinate를 기준으로 계산해야 한다.
-- parser blockization이 끝나면 renderer/QML host가 publish하기 전에 block projection을 하나의 interactive document block stream으로 normalize해야 하며, client-side duplicate regrouping path는 금지한다.
-- 일반 note editing은 persisted backing store가 `.wsnbody`인 Apple Notes 같은 document surface로 취급한다.
-- note editor는 plain prose, semantic text block, `<resource ... />`, `break`를 하나의 document host 안의 ordinary block으로 취급해야 한다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`는 body-level element가 아니라 일반 투명 쌍태그로 취급한다.
-- `<callout>...</callout>`의 시각 표현은 저장 계층이 아니라 editor renderer/projection 계층이 소유한다. Figma `Callout` 노드(`280:7897`)의 `#262728` 배경, frame-width fill, content-height hug, `3px` `#d9d9d9` 리딩 바, Pretendard Medium `12/12` 흰색 텍스트 표현을 따르되 RAW `.wsnbody`는 그대로 유지해야 한다.
-- note session이 bound된 뒤의 표준 note document host는 `ContentsStructuredDocumentFlow.qml`이다.
-- 런타임 거터/미니맵 chrome metric은 `ContentsInlineFormatEditor.qml` 또는
-  `ContentsStructuredDocumentFlow.qml`에서 relay하지 않는다. `ContentViewLayout.qml`이 독립 metric probe와
-  `ContentsLineNumberRailMetrics`/`ContentsEditorVisualLineMetrics` 입력을 소유하고, 거터와 미니맵은 그 결과를
-  직접 받는다.
-- active note 선택과 편집기 세션 mount는 전역 `NoteActiveStateTracker`가 같은 update turn에서 연결해야 한다.
-  view QML은 현재 표시 중인 `ContentsEditorSessionController`를 이 전역 객체에 등록할 수 있지만, active note
-  본문 스냅샷에서 세션을 갱신하는 책임을 각 view가 독립적으로 재구현하면 안 된다.
-- specialized block delegate는 presentation을 바꿀 수 있지만, note를 별도 editor mode 또는 다른 persistence authority로 분리하면 안 된다.
-- editor-session 저장 라우팅은 `src/app/models/editor/session/ContentsEditorSaveCoordinator.*`에 둔다.
-  `ContentsEditorSaveCoordinator`는 live editor session RAW snapshot을 직접 `ContentsNoteManagementCoordinator`에 전달한다.
-  별도의 editor-side buffered persistence controller, dirty snapshot map, idle drain timer, pending editor body adoption path는 두지 않는다.
-  editor session 저장은 concrete note directory path가 있을 때만 `.wsnote/.wsnbody`에 직접 쓰며, 경로가 없으면 현재 direct context를 먼저 캡처하고 실패 시 fallback view-model body save로 우회하지 않는다.
-- editor tag의 편집 동작 책임은 `src/app/models/editor/tags` 아래에 둔다. 여기에는 transparent paired tag insertion, break, structured-tag lint/correction advisory state, RAW resource-tag construction이 포함된다. 단축키 독립 태그 생성은 `ContentsEditorTagMutationBuilder`가 소유하고, 단축키 컨트롤러는 canonical tag 이름 해석만 맡아야 한다. `.wsnbody` 저장 포맷에서 resource와 break를 body-level format block으로 직렬화/복원하는 책임은 `src/app/models/file/note/WhatSonNoteBodyPersistence.*`와 `WhatSonNoteBodySemanticTagSupport.*`에 둔다. `<callout>...</callout>`과 `<agenda><task>...</task></agenda>`은 paragraph RAW source 안에서 보존되는 일반 투명 쌍태그다.
-- `src/app/models/file/note`는 editor session/save coordinator가 넘긴 RAW snapshot의 concrete `.wsnote/.wsnbody` file mutation,
-  selected-note body read, reconcile, stat/open-count follow-up을 소유한다. editor-session dirty buffer는 만들지 않는다.
+- 현재 LVRS 갱신 계약에서 본문 편집기 QML의 단일 표면은 `LV.TextEditor`다.
+- workspace route의 shell/layout은 기존 status bar, navigation bar, sidebar, note list, detail panel,
+  mobile hierarchy scaffold 구조를 유지한다.
+- editor content surface만 LVRS `TextEditor` 중심으로 축소한다. `ContentViewLayout.qml`은 shell에서 넘어오는
+  legacy layout 입력을 받을 수 있지만, TextEditor 백엔드로 parser/projection/rendering/persistence를 mount하면 안 된다.
+- contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 허용한다.
+- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 빈 문자열로 둔다.
+- `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 mount한다.
+- `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
+  resource editor, structured-document wrapper, projection, renderer, persistence wiring을 직접 mount하지 않는다.
+- `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
+  Plain/Page/Print/Web/Presentation 선택 계약은 제거된 계약이며 재도입하지 않는다.
+- 새 편집 정책은 LVRS `TextEditor` 갱신 계약이 먼저 정의된 뒤 그 계약을 중심으로 추가한다. 기존 QML 호환 wrapper,
+  RichText overlay, 직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge를 되살리지 않는다.
+- `.wsnote/.wsnbody` persistence, parser/projection/rendering, tag mutation 같은 domain 책임은 현재 editor QML 계약의
+  일부가 아니며, 재도입이 필요하면 C++/LVRS 계약 문서를 먼저 갱신한다.
 
 ### 입력기 권한 (중요)
 
-- editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor.editorItem` path에 맡겨야 한다.
-- 명시적 tag-management command를 제외하고, editor QML은 ordinary note editing을 위한 custom text input handler를 설치하면 안 된다. 일반 `Enter`, `Backspace`, `Delete`, arrow navigation, selection extension, repeat, IME gesture는 native text-editing behavior로 유지해야 한다.
-- 허용되는 tag-management input은 inline style tag, callout/agenda/task paired tag, break/resource tag insertion, selected atomic resource/break block management 같은 RAW `.wsnbody` tag operation으로 제한한다.
-- macOS Option 조합처럼 native key code나 `KeyEvent.text`가 `ç` 등으로 변형되는 tag-management shortcut은 C++ input/tag policy에서 표준 command key로 정규화한 뒤 RAW `.wsnbody` mutation으로 처리해야 한다.
+- editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor` path에 맡겨야 한다. 현재 LVRS 갱신 계약에서는
+  note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 빈 값으로 둔다.
+- 현재 editor QML은 ordinary note editing을 위한 custom text input handler, tag-management key handler,
+  shortcut-surface, rendered selection handler를 설치하지 않는다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
-- text editor wrapper는 native composition이 안정될 때까지 persistence나 programmatic sync를 defer하기 위해서만 `LV.TextEditor.editorItem.inputMethodComposing`과 `LV.TextEditor.editorItem.preeditText`를 native text state로 관찰할 수 있다.
-- 이 primitive들이 LVRS로 승격되기 전까지 editor QML은 native-input session, shortcut-surface, context-menu long-press, focused programmatic-sync, ordinary text-edit focus-restore 결정을 `src/app/models/editor/input/ContentsEditorInputPolicyAdapter.qml`을 통해 라우팅해야 한다.
+- text editor wrapper는 persistence나 programmatic sync defer를 위한 native text state 관찰도 현재 계약에 포함하지 않는다.
 
 ## LVRS 통합의 단일 Source of Truth
 
@@ -214,12 +190,14 @@ import LVRS 1.0 as LV
 ## 현재 UI 레이아웃
 
 - Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
+- Workspace route: `Main.qml`은 기존 desktop/mobile layout shell을 유지한다. `BodyLayout.qml`의 content slot이
+  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount하고, 그 내부만 gutter/TextEditor/minimap으로 제한한다.
 - View directory(legacy `shell`과 `pages`에서 병합됨):
-    - `src/app/qml/view/top/StatusBarLayout.qml`
-    - `src/app/qml/view/top/NavigationBarLayout.qml`
-    - `src/app/qml/view/body/BodyLayout.qml`
-    - `src/app/qml/view/mobile/MobilePageScaffold.qml`(Figma VStack node `174:4987`용 shared mobile workspace scaffold. compact navigation bar와 compact status/add-note bar를 page 전환 중에도 mount 상태로 유지)
-    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(hierarchy node `174:5026`용 Figma-driven routed mobile workspace page. `MobilePageScaffold.qml`와 shared hierarchy panel로 구성)
+    - `src/app/qml/view/panels/StatusBarLayout.qml`
+    - `src/app/qml/view/panels/NavigationBarLayout.qml`
+    - `src/app/qml/view/panels/BodyLayout.qml`
+    - `src/app/qml/view/mobile/MobilePageScaffold.qml`(shared mobile workspace scaffold)
+    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(routed mobile workspace page. editor route는 backend-free `ContentViewLayout.qml` surface를 사용한다)
     - `src/app/qml/view/panels/ListBarLayout.qml`(Figma-driven list bar panel, node `73:2635`)
     - `src/app/qml/view/panels/ListBarHeader.qml`(Figma-driven list bar header, node `134:3180`)
         - `src/app/qml/view/panels/NoteListItem.qml`(Figma-driven note item card, node `119:3028`)
@@ -227,7 +205,6 @@ import LVRS 1.0 as LV
         - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma frame `PropertiesBar`, node `147:3876`)
         - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma frame `InformationBar`, node `134:3138`)
         - `src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma frame `NavigationMode`, node `147:3875`)
-        - `src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml`(Figma frame `EditorViewMoide`, node `148:3888`)
         - `src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
@@ -237,16 +214,9 @@ import LVRS 1.0 as LV
             - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma frame `DetailContents`, node `134:3649`)
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
-                    - `src/app/qml/view/contents/ContentsView.qml`
-                    - `src/app/qml/view/contents/EditorView.qml`
+                    - `src/app/qml/view/contents/Gutter.qml`
+                    - `src/app/qml/view/contents/TextEditor.qml`
                     - `src/app/qml/view/contents/Minimap.qml`
-                    - `src/app/qml/view/contents/editor/ContentsDisplayView.qml`
-                    - `src/app/qml/view/contents/editor/ContentsDisplaySurfaceHost.qml`
-                    - `src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml`
-                    - `src/app/qml/view/contents/editor/ContentsInlineFormatEditorController.qml`
-                    - `src/app/qml/view/contents/editor/ContentsResourceEditorView.qml`
-                    - `src/app/qml/view/contents/editor/ContentsResourceViewer.qml`
-                    - `src/app/qml/view/contents/editor/ContentsStructuredDocumentFlow.qml`
                 - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`

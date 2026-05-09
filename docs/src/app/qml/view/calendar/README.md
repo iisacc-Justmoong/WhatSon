@@ -32,6 +32,7 @@
 - Known hotspots and refactor priorities
 
 ## Notes
+- Calendar QML remains in the module, but the backend-free TextEditor `ContentViewLayout.qml` no longer mounts these pages.
 - Day/week/month/year pages now consume the shared calendar backend through dedicated calendar controllers.
 - `AgendaPage.qml` consumes `AgendaController` and renders date header, location summary, all-day events,
   timed events, and agenda-item completion rows inside the content-surface calendar route.
@@ -54,8 +55,7 @@
   non-selected current-day cells.
 - Shared calendar chrome now routes visible chip/header/control metrics through LVRS `gap`, `radius`, `stroke`, and
   `scaleMetric(...)` helpers instead of page-local pixel literals.
-- Projected note chips are now interactive across Agenda/day/week/month surfaces. When a chip resolves to a concrete
-  library note id, the host can reopen that note in the editor and dismiss the active calendar overlay.
+- Projected note chips remain page-local interactions; the backend-free TextEditor content surface does not own them.
 - Week view keeps one intentional limitation: the compressed `title +N` slot-summary chip cannot open a note directly
   because the current weekly slot UI still represents multiple entries with one shared hit target.
 - Month view now resolves pager pages and day cells by numeric index against the latest projection arrays, so the
@@ -66,8 +66,7 @@
 - Automated test files are not currently present in this repository.
 - Regression checklist:
     - Agenda/day/month note chips must emit a note-open request on both mouse click and touch tap.
-    - The host content surface must be able to close the active calendar overlay and reveal the editor after note
-      activation.
+    - `ContentViewLayout.qml` must not mount calendar pages.
     - Week view must only allow direct note open when one visible chip maps to exactly one note entry.
     - Initial month-view bootstrap must not render a note for `2026-04-01` or another current-month date inside a
       future/past disabled adjacent-month cell.

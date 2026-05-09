@@ -152,8 +152,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExp
     QVERIFY(controller.expansionStateForKey(key, false));
     QVERIFY(!controller.activationAttemptCurrent(pendingActivation));
     QVERIFY(controller.shouldSuppressActivation());
-    QTest::qWait(180);
-    QVERIFY(!controller.shouldSuppressActivation());
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.shouldSuppressActivation(), 1000);
 
     QVariantMap staleNode = node;
     staleNode.insert(QStringLiteral("expanded"), false);

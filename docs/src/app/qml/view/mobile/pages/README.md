@@ -16,7 +16,9 @@
 - `MobileHierarchyPage.qml`
 
 ## Recent Notes
-- `MobileHierarchyPage.qml` now treats `/mobile/detail -> /mobile/editor` as a first-class pop-repair path, so a committed mobile detail back-swipe cannot strand the user on the hierarchy route.
+- `MobileHierarchyPage.qml` is mounted by the adaptive/mobile `Main.qml` workspace route.
+- The file keeps the routed hierarchy, note-list, editor, and detail shell. The editor route uses the backend-free
+  `ContentViewLayout.qml` surface and does not forward editor view-mode controller state.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -33,5 +35,7 @@
 - 대상: ``src/app/qml/view/mobile/pages`` (`docs/src/app/qml/view/mobile/pages/README.md`)
 - 위치: `docs/src/app/qml/view/mobile/pages`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재 workspace에서는 adaptive/mobile layout에서 `MobileHierarchyPage.qml`을 mount한다.
+- editor route는 backend-free `ContentViewLayout.qml` 표면을 사용한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

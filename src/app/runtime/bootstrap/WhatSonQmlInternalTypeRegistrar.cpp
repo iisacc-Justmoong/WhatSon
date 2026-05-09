@@ -1,24 +1,6 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
-#include "app/models/editor/tags/ContentsEditorTagInsertionController.hpp"
-#include "app/models/editor/tags/ContentsEditorTagMutationBuilder.hpp"
-#include "app/models/editor/renderer/ContentsStructuredBlockRenderer.hpp"
-#include "app/models/display/paper/ContentsA4PaperBackground.hpp"
-#include "app/models/display/paper/ContentsPaperSelection.hpp"
-#include "app/models/editor/format/ContentsInlineStyleOverlayRenderer.hpp"
-#include "app/models/editor/format/ContentsPlainTextSourceMutator.hpp"
-#include "app/models/editor/format/ContentsTextFormatRenderer.hpp"
-#include "app/models/editor/display/ContentsEditorSurfaceModeSupport.hpp"
-#include "app/models/editor/display/ContentsEditorDisplayBackend.hpp"
-#include "app/models/editor/geometry/ContentsEditorGeometryProvider.hpp"
-#include "app/models/editor/lineNumber/ContentsLineNumberRailMetrics.hpp"
-#include "app/models/editor/minimap/ContentsEditorVisualLineMetrics.hpp"
-#include "app/models/editor/minimap/ContentsMinimapLayoutMetrics.hpp"
-#include "app/models/display/paper/print/ContentsPagePrintLayoutRenderer.hpp"
-#include "app/models/editor/tags/ContentsStructuredTagValidator.hpp"
 #include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
-#include "app/models/file/viewer/ContentsBodyResourceRenderer.hpp"
-#include "app/models/file/viewer/ResourceBitmapViewer.hpp"
 #include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
@@ -26,25 +8,6 @@
 #include "app/models/content/mobile/MobileHierarchyRouteSelectionSyncPolicy.hpp"
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
-#include "app/models/editor/projection/ContentsEditorPresentationProjection.hpp"
-#include "app/models/editor/session/ContentsEditorSessionController.hpp"
-#include "app/models/editor/bridge/ContentsEditorSelectionBridge.hpp"
-#include "app/models/editor/text/ContentsLogicalTextBridge.hpp"
-#include "app/models/editor/tags/ContentsResourceTagTextGenerator.hpp"
-#include "app/models/editor/tags/ContentsResourceTagController.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentBlocksModel.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentCollectionPolicy.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentFocusPolicy.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentHost.hpp"
-#include "app/models/editor/structure/ContentsStructuredDocumentMutationPolicy.hpp"
-#include "app/models/editor/resource/ContentsEditorSurfaceGuardController.hpp"
-#include "app/models/editor/resource/ContentsInlineResourcePresentationController.hpp"
-#include "app/models/editor/resource/ContentsResourceDropPayloadParser.hpp"
-#include "app/models/editor/resource/ContentsResourceImportConflictController.hpp"
-#include "app/models/editor/resource/ContentsResourceImportController.hpp"
-#include "app/models/editor/input/ContentsEditorInputPolicyAdapter.hpp"
-#include "app/models/editor/input/ContentsInlineFormatEditorController.hpp"
-#include "app/models/editor/input/ContentsWysiwygEditorPolicy.hpp"
 #include "app/models/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -70,8 +33,6 @@ namespace
     QList<lvrs::QmlTypeRegistration> internalQmlTypeRegistrationManifest()
     {
         return {
-            whatsonInternalCreatableType<ContentsEditorSelectionBridge>(
-                QStringLiteral("ContentsEditorSelectionBridge")),
             whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
                 QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
             whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(
@@ -86,78 +47,6 @@ namespace
                 QStringLiteral("MobileHierarchyRouteStateStore")),
             whatsonInternalCreatableType<MobileHierarchySelectionCoordinator>(
                 QStringLiteral("MobileHierarchySelectionCoordinator")),
-            whatsonInternalCreatableType<ContentsEditorPresentationProjection>(
-                QStringLiteral("ContentsEditorPresentationProjection")),
-            whatsonInternalCreatableType<ContentsEditorSessionController>(
-                QStringLiteral("ContentsEditorSessionController")),
-            whatsonInternalCreatableType<ContentsLogicalTextBridge>(
-                QStringLiteral("ContentsLogicalTextBridge")),
-            whatsonInternalCreatableType<ContentsMinimapLayoutMetrics>(
-                QStringLiteral("ContentsMinimapLayoutMetrics")),
-            whatsonInternalCreatableType<ContentsEditorVisualLineMetrics>(
-                QStringLiteral("ContentsEditorVisualLineMetrics")),
-            whatsonInternalCreatableType<ContentsEditorGeometryProvider>(
-                QStringLiteral("ContentsEditorGeometryProvider")),
-            whatsonInternalCreatableType<ContentsLineNumberRailMetrics>(
-                QStringLiteral("ContentsLineNumberRailMetrics")),
-            whatsonInternalCreatableType<ContentsResourceTagTextGenerator>(
-                QStringLiteral("ContentsResourceTagTextGenerator")),
-            whatsonInternalCreatableType<ContentsResourceTagController>(
-                QStringLiteral("ContentsResourceTagController")),
-            whatsonInternalCreatableType<ContentsResourceDropPayloadParser>(
-                QStringLiteral("ContentsResourceDropPayloadParser")),
-            whatsonInternalCreatableType<ContentsEditorSurfaceGuardController>(
-                QStringLiteral("ContentsEditorSurfaceGuardController")),
-            whatsonInternalCreatableType<ContentsInlineResourcePresentationController>(
-                QStringLiteral("ContentsInlineResourcePresentationController")),
-            whatsonInternalCreatableType<ContentsResourceImportConflictController>(
-                QStringLiteral("ContentsResourceImportConflictController")),
-            whatsonInternalCreatableType<ContentsResourceImportController>(
-                QStringLiteral("ContentsResourceImportController")),
-            whatsonInternalCreatableType<ContentsStructuredDocumentBlocksModel>(
-                QStringLiteral("ContentsStructuredDocumentBlocksModel")),
-            whatsonInternalCreatableType<ContentsStructuredDocumentCollectionPolicy>(
-                QStringLiteral("ContentsStructuredDocumentCollectionPolicy")),
-            whatsonInternalCreatableType<ContentsStructuredDocumentFocusPolicy>(
-                QStringLiteral("ContentsStructuredDocumentFocusPolicy")),
-            whatsonInternalCreatableType<ContentsStructuredDocumentHost>(
-                QStringLiteral("ContentsStructuredDocumentHost")),
-            whatsonInternalCreatableType<ContentsStructuredDocumentMutationPolicy>(
-                QStringLiteral("ContentsStructuredDocumentMutationPolicy")),
-            whatsonInternalCreatableType<ContentsEditorInputPolicyAdapter>(
-                QStringLiteral("ContentsEditorInputPolicyAdapter")),
-            whatsonInternalCreatableType<ContentsInlineFormatEditorController>(
-                QStringLiteral("ContentsInlineFormatEditorController")),
-            whatsonInternalCreatableType<ContentsWysiwygEditorPolicy>(
-                QStringLiteral("ContentsWysiwygEditorPolicy")),
-            whatsonInternalCreatableType<ContentsEditorSurfaceModeSupport>(
-                QStringLiteral("ContentsEditorSurfaceModeSupport")),
-            whatsonInternalCreatableType<ContentsEditorDisplayBackend>(
-                QStringLiteral("ContentsEditorDisplayBackend")),
-            whatsonInternalCreatableType<ContentsPaperSelection>(
-                QStringLiteral("ContentsPaperSelection")),
-            whatsonInternalCreatableType<ContentsA4PaperBackground>(
-                QStringLiteral("ContentsA4PaperBackground")),
-            whatsonInternalCreatableType<ContentsTextFormatRenderer>(
-                QStringLiteral("ContentsTextFormatRenderer")),
-            whatsonInternalCreatableType<ContentsInlineStyleOverlayRenderer>(
-                QStringLiteral("ContentsInlineStyleOverlayRenderer")),
-            whatsonInternalCreatableType<ContentsPlainTextSourceMutator>(
-                QStringLiteral("ContentsPlainTextSourceMutator")),
-            whatsonInternalCreatableType<ContentsEditorTagMutationBuilder>(
-                QStringLiteral("ContentsEditorTagMutationBuilder")),
-            whatsonInternalCreatableType<ContentsEditorTagInsertionController>(
-                QStringLiteral("ContentsEditorTagInsertionController")),
-            whatsonInternalCreatableType<ContentsStructuredBlockRenderer>(
-                QStringLiteral("ContentsStructuredBlockRenderer")),
-            whatsonInternalCreatableType<ContentsStructuredTagValidator>(
-                QStringLiteral("ContentsStructuredTagValidator")),
-            whatsonInternalCreatableType<ContentsPagePrintLayoutRenderer>(
-                QStringLiteral("ContentsPagePrintLayoutRenderer")),
-            whatsonInternalCreatableType<ContentsBodyResourceRenderer>(
-                QStringLiteral("ContentsBodyResourceRenderer")),
-            whatsonInternalCreatableType<ResourceBitmapViewer>(
-                QStringLiteral("ResourceBitmapViewer")),
             whatsonInternalCreatableType<FocusedNoteDeletionBridge>(
                 QStringLiteral("FocusedNoteDeletionBridge")),
             whatsonInternalCreatableType<NoteListModelContractBridge>(

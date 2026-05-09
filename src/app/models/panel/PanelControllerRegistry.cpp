@@ -27,7 +27,6 @@ namespace
             QStringLiteral("navigation.NavigationApplicationEditBar"),
             QStringLiteral("navigation.NavigationApplicationViewBar"),
             QStringLiteral("navigation.NavigationCalendarBar"),
-            QStringLiteral("navigation.NavigationEditorViewBar"),
             QStringLiteral("navigation.NavigationExportBar"),
             QStringLiteral("navigation.NavigationInformationBar"),
             QStringLiteral("navigation.NavigationModeBar"),

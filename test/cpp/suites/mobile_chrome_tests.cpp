@@ -4,7 +4,7 @@
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 
-void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor()
+void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithoutEditorViewMode()
 {
     const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
     const QString mobileHierarchyPageSource = readUtf8SourceFile(
@@ -15,68 +15,66 @@ void WhatSonCppRegressionTests::mobileChrome_usesSharedFigmaControlSurfaceColor(
         QStringLiteral("src/app/qml/view/panels/NavigationBarLayout.qml"));
     const QString statusBarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/StatusBarLayout.qml"));
+    const QString internalRegistrarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
 
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(!mobileHierarchyPageSource.isEmpty());
     QVERIFY(!mobileScaffoldSource.isEmpty());
     QVERIFY(!navigationBarSource.isEmpty());
     QVERIFY(!statusBarSource.isEmpty());
+    QVERIFY(!internalRegistrarSource.isEmpty());
 
-    QVERIFY(mainQmlSource.contains(
-        QStringLiteral("readonly property color mobileControlSurfaceColor: LV.Theme.panelBackground10")));
-    QVERIFY(mainQmlSource.contains(
-        QStringLiteral("controlSurfaceColor: applicationWindow.mobileControlSurfaceColor")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("property color controlSurfaceColor: LV.Theme.panelBackground10")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyRouteStateStore")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyCanonicalRoutePlanner")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyPopRepairPolicy")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyRouteSelectionSyncPolicy")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchySelectionCoordinator")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyNavigationCoordinator")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("canonicalRoutePlanner.canonicalRoutePlan(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("mobileHierarchyPage.noteActiveState.activeNoteListModel")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("noteActiveState: mobileHierarchyPage.noteActiveState")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("noteActiveState: applicationWindow.rootNoteActiveState")));
-    QVERIFY(!mobileHierarchyPageSource.contains(
-        QStringLiteral("activeNoteListModelResolver")));
-    QVERIFY(!mobileHierarchyPageSource.contains(
-        QStringLiteral("NoteListModelContractBridge {")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("popRepairPolicy.repairVerificationPlan(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("routeSelectionSyncPolicy.routeSelectionSyncPlan(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("navigationCoordinator.openEditorPlan(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("navigationCoordinator.dismissPagePlan(")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("function dismissCurrentPage()")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("return mobileHierarchyPage.dismissCurrentPage();")));
-    QVERIFY(!mobileHierarchyPageSource.contains(
-        QStringLiteral("mobileScaffold.activePageRouter.back();")));
-    QVERIFY(mobileHierarchyPageSource.contains(
-        QStringLiteral("backSwipeCoordinator.beginGesturePlan(")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("desktopMainLayoutComponent")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("mobileMainLayoutComponent")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("MobilePageView.MobileHierarchyPage {")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("mobileControlSurfaceColor")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("BodyPanelView.StatusBarLayout {")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("BodyPanelView.NavigationBarLayout {")));
+    QVERIFY(mainQmlSource.contains(QStringLiteral("BodyPanelView.BodyLayout {")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("editorOnlyWorkspaceComponent")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("PanelView.ContentViewLayout {")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("displayColor: mobileHierarchyPage.canvasColor")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileView.MobilePageScaffold {")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyRouteStateStore")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyCanonicalRoutePlanner")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyPopRepairPolicy")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyRouteSelectionSyncPolicy")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchySelectionCoordinator")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyNavigationCoordinator")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("canonicalRoutePlanner.canonicalRoutePlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("mobileHierarchyPage.noteActiveState.activeNoteListModel")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("noteActiveState: mobileHierarchyPage.noteActiveState")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("resourcesImportController: mobileHierarchyPage.resourcesImportController")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("activeNoteListModelResolver")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("NoteListModelContractBridge {")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("popRepairPolicy.repairVerificationPlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("routeSelectionSyncPolicy.routeSelectionSyncPlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("navigationCoordinator.openEditorPlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("navigationCoordinator.dismissPagePlan(")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("function dismissCurrentPage()")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("mobileScaffold.activePageRouter.back();")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("backSwipeCoordinator.beginGesturePlan(")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("property color controlSurfaceColor: LV.Theme.panelBackground10")));
+    QVERIFY(!mobileScaffoldSource.contains(QStringLiteral("compactEditorViewVisible")));
+    QVERIFY(!mobileScaffoldSource.contains(QStringLiteral("editorViewModeController")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("compactSurfaceColor: mobilePageScaffold.controlSurfaceColor")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("compactFieldColor: mobilePageScaffold.controlSurfaceColor")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyRouteStateStore")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyNavigationCoordinator")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("HierarchyDragDropBridge")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("NoteListModelContractBridge")));
+    QVERIFY(internalRegistrarSource.contains(QStringLiteral("WhatSonIosHubPickerBridge")));
+    QVERIFY(!navigationBarSource.contains(QStringLiteral("NavigationEditorViewBar")));
     QVERIFY(navigationBarSource.contains(
         QStringLiteral("property color compactSurfaceColor: LV.Theme.panelBackground10")));
     QVERIFY(statusBarSource.contains(

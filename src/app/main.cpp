@@ -10,7 +10,6 @@
 #include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
 #include "app/models/file/import/ResourcesImportController.hpp"
 #include "app/models/file/hierarchy/tags/TagsHierarchyController.hpp"
-#include "app/models/navigationbar/EditorViewModeController.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
 #include "app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
 #include "app/models/detailPanel/NoteDetailPanelController.hpp"
@@ -238,7 +237,6 @@ int main(int argc, char* argv[])
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
     NoteDetailPanelController noteDetailPanelController;
     ResourceDetailPanelController resourceDetailPanelController;
-    EditorViewModeController editorViewModeController;
     NavigationModeController navigationModeController;
     WhatSonAsyncScheduler asyncScheduler;
     PanelControllerRegistry panelControllerRegistry;
@@ -548,7 +546,6 @@ int main(int argc, char* argv[])
     workspaceContextObjects.detailPanelController = &noteDetailPanelController;
     workspaceContextObjects.noteDetailPanelController = &noteDetailPanelController;
     workspaceContextObjects.resourceDetailPanelController = &resourceDetailPanelController;
-    workspaceContextObjects.editorViewModeController = &editorViewModeController;
     workspaceContextObjects.navigationModeController = &navigationModeController;
     workspaceContextObjects.sidebarHierarchyController = &sidebarHierarchyController;
     workspaceContextObjects.noteActiveState = &noteActiveState;

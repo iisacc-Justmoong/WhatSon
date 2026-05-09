@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcrossHierarchySwitchBindings()
+void WhatSonCppRegressionTests::sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings()
 {
     ensureCoreApplication();
 
@@ -10,7 +10,6 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     FakeSelectionNoteListModel libraryNoteListModel;
     FakeSelectionNoteListModel resourcesNoteListModel;
     SidebarHierarchyController sidebarController;
-    ContentsEditorSelectionBridge selectionBridge;
 
     libraryNoteListModel.setCurrentNoteId(QStringLiteral("library-note"));
     libraryNoteListModel.setItemCount(5);
@@ -44,16 +43,6 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     QCOMPARE(QQmlEngine::objectOwnership(&resourcesController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&resourcesNoteListModel), QQmlEngine::CppOwnership);
 
-    selectionBridge.setContentController(activeResourcesController);
-    selectionBridge.setNoteListModel(activeResourcesNoteListModel);
-    QCoreApplication::processEvents();
-
-    QCOMPARE(selectionBridge.contentController(), activeResourcesController);
-    QCOMPARE(selectionBridge.noteListModel(), activeResourcesNoteListModel);
-    QVERIFY(selectionBridge.noteCountContractAvailable());
-    QCOMPARE(selectionBridge.visibleNoteCount(), 13);
-    QVERIFY(!selectionBridge.noteSelectionContractAvailable());
-
     sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
 
     QObject* activeLibraryController = sidebarController.activeHierarchyController();
@@ -64,16 +53,6 @@ void WhatSonCppRegressionTests::sidebarAndSelectionBridge_forceCppOwnershipAcros
     QCOMPARE(QQmlEngine::objectOwnership(&libraryController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(&libraryNoteListModel), QQmlEngine::CppOwnership);
 
-    selectionBridge.setContentController(activeLibraryController);
-    selectionBridge.setNoteListModel(activeLibraryNoteListModel);
-    QCoreApplication::processEvents();
-
-    QCOMPARE(selectionBridge.contentController(), activeLibraryController);
-    QCOMPARE(selectionBridge.noteListModel(), activeLibraryNoteListModel);
-    QVERIFY(selectionBridge.noteCountContractAvailable());
-    QCOMPARE(selectionBridge.visibleNoteCount(), 5);
-    QVERIFY(selectionBridge.noteSelectionContractAvailable());
-    QCOMPARE(selectionBridge.selectedNoteId(), QStringLiteral("library-note"));
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryController), QQmlEngine::CppOwnership);
     QCOMPARE(QQmlEngine::objectOwnership(activeLibraryNoteListModel), QQmlEngine::CppOwnership);
 }

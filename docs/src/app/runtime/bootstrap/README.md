@@ -10,7 +10,8 @@ dedicated single-purpose helpers.
 - `WhatSonAppLaunchSupport`: parses launcher flags and classifies whether startup can enter the workspace immediately.
 - `WhatSonQmlLaunchSupport`: routes QML root creation and window activation through LVRS app-entry helpers, preserving
   `QmlRootLoadResult` for lifecycle and foreground-service bootstrap.
-- `WhatSonQmlInternalTypeRegistrar`: registers QML-instantiated internal bridge types through an LVRS manifest.
+- `WhatSonQmlInternalTypeRegistrar`: registers the remaining shell-level internal QML bridge types through an LVRS
+  manifest.
 - `WhatSonHubSyncWiring`: wires local mutation signals into `WhatSonHubSyncController`.
 - `WhatSonQmlContextBinder`: applies the workspace LVRS context/Controller bind plan before root QML load.
 

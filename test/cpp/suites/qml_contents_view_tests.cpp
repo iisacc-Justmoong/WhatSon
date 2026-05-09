@@ -1,106 +1,86 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::qmlContentsView_composesFigmaFrameFromLvrsParts()
+void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimapViews()
 {
-    const QString contentsViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/ContentsView.qml"));
-    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/EditorView.qml"));
+    const QDir contentsDir(QStringLiteral("src/app/qml/view/contents"));
+    const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    QVERIFY(!contentsViewSource.isEmpty());
-    QVERIFY(!editorViewSource.isEmpty());
+    QVERIFY(contentsDir.exists());
+    const QStringList contentQmlFiles = contentsDir.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
+    QCOMPARE(contentQmlFiles, QStringList({QStringLiteral("Gutter.qml"), QStringLiteral("Minimap.qml"), QStringLiteral("TextEditor.qml")}));
+    QVERIFY(!QDir(contentsDir.filePath(QStringLiteral("editor"))).exists());
+
+    QVERIFY(!gutterSource.isEmpty());
+    QVERIFY(!textEditorSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
-    QVERIFY(contentsViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(!contentViewLayoutSource.isEmpty());
+    QVERIFY(gutterSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-4561-ContentsView\"")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("LV.HStack {")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("objectName: \"figma-155-5344-HStack\"")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("readonly property int contentVerticalPadding: LV.Theme.gap8")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("anchors.bottomMargin: contentsView.contentVerticalPadding")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("anchors.topMargin: contentsView.contentVerticalPadding")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("EditorView {")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("Minimap {")));
-    const qsizetype hStackIndex = contentsViewSource.indexOf(QStringLiteral("LV.HStack {"));
-    const qsizetype editorIndex = contentsViewSource.indexOf(QStringLiteral("EditorView {"));
-    const qsizetype minimapIndex = contentsViewSource.indexOf(QStringLiteral("Minimap {"));
-    QVERIFY(hStackIndex >= 0);
-    QVERIFY(editorIndex > hStackIndex);
-    QVERIFY(minimapIndex > editorIndex);
-    QVERIFY(!contentsViewSource.contains(QStringLiteral("component EditorView:")));
-    QVERIFY(!contentsViewSource.contains(QStringLiteral("component Minimap:")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("objectName: \"figma-155-5352-EditorView\"")));
-    QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-Minimap\"")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property var rowWidthRatios: []")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property bool scrollDragEnabled: true")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property real scrollDragLastY: 0")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property real horizontalPadding: LV.Theme.gap8")));
-    QVERIFY(minimapSource.contains(QStringLiteral("signal scrollDeltaRequested(real deltaY)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("function beginScrollDrag(localY)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("function requestScrollDeltaFromY(localY)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("function finishScrollDrag(localY)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("function resolvedRowWidth(index)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("objectName: \"figma-352-8626-MinimapScrollDragSurface\"")));
-    QVERIFY(minimapSource.contains(QStringLiteral("anchors.leftMargin: minimap.horizontalPadding")));
-    QVERIFY(minimapSource.contains(QStringLiteral("anchors.rightMargin: minimap.horizontalPadding")));
-    QVERIFY(minimapSource.contains(QStringLiteral("width: minimap.resolvedRowWidth(index)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("const availableWidth = Math.max(0, minimap.width - (minimap.horizontalPadding * 2))")));
-    QVERIFY(minimapSource.contains(QStringLiteral("return Math.max(LV.Theme.strokeThin, availableWidth * safeRatio)")));
-    QVERIFY(minimapSource.contains(QStringLiteral("const deltaY = currentY - minimap.scrollDragLastY")));
-    QVERIFY(minimapSource.contains(QStringLiteral("if (minimapScrollDragSurface.pressed)")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("scrollRatioRequested")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("requestScrollRatioFromY")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("clampedRatio")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("scrollPositionRatio")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("viewportRatio")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("resolvedViewportIndicator")));
-    QVERIFY(!minimapSource.contains(QStringLiteral("MinimapViewportIndicator")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics {")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("Layout.preferredWidth: minimapLayoutMetrics.defaultMinimapWidth")));
-    QVERIFY(contentsViewSource.contains(
-        QStringLiteral("property int minimapRowCount: defaultMinimapRowCount")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("property color surfaceColor: LV.Theme.panelBackground02")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("selectionColor: LV.Theme.primaryOverlay")));
-    QVERIFY(minimapSource.contains(QStringLiteral("property int rowCount: LV.Theme.strokeThin")));
-    const QList<QString> qmlSources = {
-        contentsViewSource,
-        editorViewSource,
-        minimapSource,
-    };
+    QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("CalendarView.")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("StackLayout")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewModeController")));
+
+    const QList<QString> qmlSources = {gutterSource, textEditorSource, minimapSource};
     for (const QString &qmlSource : qmlSources) {
         QVERIFY(!qmlSource.contains(QStringLiteral("scaleMetric(")));
-        QVERIFY(!qmlSource.contains(QStringLiteral("Qt.rgba(")));
         QVERIFY(!qmlSource.contains(QStringLiteral("#")));
         const QRegularExpression hardcodedMetricAssignment(QStringLiteral(
-            R"((?:^|\n)\s*(?:width|height|x|y|radius|anchors\.\w+Margin|Layout\.preferredWidth|implicitHeight|implicitWidth|font\.pixelSize|minimapRowCount|rowCount)\s*:\s*-?\d)"));
+            R"((?:^|\n)\s*(?:width|height|x|y|radius|anchors\.\w+Margin|Layout\.preferredWidth|implicitHeight|implicitWidth|font\.pixelSize)\s*:\s*-?\d)"));
         const QRegularExpressionMatch match = hardcodedMetricAssignment.match(qmlSource);
         QVERIFY2(!match.hasMatch(),
                  qPrintable(QStringLiteral("Hardcoded contents-view metric token: %1").arg(match.captured())));
     }
 }
 
-void WhatSonCppRegressionTests::qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe()
+void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeInputSafe()
 {
-    const QString contentsViewSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/contents/ContentsView.qml"));
-    const QString editorViewSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/EditorView.qml"));
+    const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
+    const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
+    const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+    const QString combinedSource = gutterSource + textEditorSource + minimapSource;
 
-    QVERIFY(!contentsViewSource.isEmpty());
-    QVERIFY(!editorViewSource.isEmpty());
-    QVERIFY(editorViewSource.contains(QStringLiteral("LV.TextEditor {")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("readOnly: true")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("selectByMouse: true")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("showRenderedOutput: false")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("signal viewHookRequested(string reason)")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("signal viewHookRequested(string reason)")));
-    QVERIFY(contentsViewSource.contains(QStringLiteral("function requestViewHook(reason)")));
-    QVERIFY(editorViewSource.contains(QStringLiteral("function requestViewHook(reason)")));
-    QVERIFY(!editorViewSource.contains(QStringLiteral("Keys.onPressed")));
-    QVERIFY(!editorViewSource.contains(QStringLiteral("Keys.onReleased")));
-    QVERIFY(!editorViewSource.contains(QStringLiteral("Qt.inputMethod")));
-    QVERIFY(!editorViewSource.contains(QStringLiteral("InputMethod.")));
+    QVERIFY(!gutterSource.isEmpty());
+    QVERIFY(!textEditorSource.isEmpty());
+    QVERIFY(!minimapSource.isEmpty());
+    QVERIFY(!mainSource.isEmpty());
+    QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("LV.CodeEditor {")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: \"\"")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("ContentsEditorDisplayBackend")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("ContentsStructuredDocumentFlow")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("ContentsResourceEditorView")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("ContentsMinimapLayoutMetrics")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("ContentsLineNumberRailMetrics")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("sourceText")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("renderedText")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("projection")));
+    QVERIFY(!combinedSource.contains(QStringLiteral("persistence")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("TextEdit {")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onPressed")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onReleased")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Qt.inputMethod")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("InputMethod.")));
+    QVERIFY(mainSource.contains(QStringLiteral("desktopMainLayoutComponent")));
+    QVERIFY(mainSource.contains(QStringLiteral("mobileMainLayoutComponent")));
+    QVERIFY(mainSource.contains(QStringLiteral("BodyPanelView.BodyLayout {")));
+    QVERIFY(mainSource.contains(QStringLiteral("BodyPanelView.StatusBarLayout {")));
+    QVERIFY(mainSource.contains(QStringLiteral("BodyPanelView.NavigationBarLayout {")));
+    QVERIFY(mainSource.contains(QStringLiteral("MobilePageView.MobileHierarchyPage {")));
+    QVERIFY(!mainSource.contains(QStringLiteral("editorOnlyWorkspaceComponent")));
+    QVERIFY(!mainSource.contains(QStringLiteral("BodyPanelView.ContentViewLayout {")));
+    QVERIFY(!mainSource.contains(QStringLiteral("NavigationEditorViewBar")));
+    QVERIFY(!mainSource.contains(QStringLiteral("editorViewModeController")));
 }
 
 void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog()
@@ -147,7 +127,6 @@ void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokens
         QStringLiteral("src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml"),
         QStringLiteral("src/app/qml/view/panels/detail/NoteDetailPanel.qml"),
         QStringLiteral("src/app/qml/view/panels/detail/RightPanel.qml"),
-        QStringLiteral("src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml"),
         QStringLiteral("src/app/qml/view/panels/navigation/NavigationModeBar.qml"),
         QStringLiteral("src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml"),
         QStringLiteral("src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml"),

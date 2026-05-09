@@ -123,69 +123,6 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_clearsReadableEmptyAndNon
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
 }
 
-void WhatSonCppRegressionTests::noteActiveStateTracker_syncsAttachedEditorSessionFromActiveNote()
-{
-    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
-
-    FakeSelectionNoteListModel libraryModel;
-    libraryModel.setCurrentNoteId(QStringLiteral("library-note"));
-    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.wsnote"));
-    libraryModel.setCurrentBodyText(QStringLiteral("Library body"));
-
-    FakeSelectionNoteListModel tagsModel;
-    tagsModel.setCurrentNoteId(QStringLiteral("tags-note"));
-    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.wsnote"));
-    tagsModel.setCurrentBodyText(QStringLiteral("Tags body"));
-
-    FakeHierarchyController libraryController(QStringLiteral("library"));
-    FakeHierarchyController tagsController(QStringLiteral("tags"));
-    libraryController.setNoteListModelObject(&libraryModel);
-    tagsController.setNoteListModelObject(&tagsModel);
-
-    HierarchyControllerProvider provider;
-    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryController},
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags), &tagsController},
-    });
-
-    SidebarHierarchyController sidebarController;
-    sidebarController.setControllerProvider(&provider);
-
-    NoteActiveStateTracker tracker;
-    ContentsEditorSessionController editorSession;
-    QSignalSpy sessionSynchronizedSpy(
-        &editorSession,
-        &ContentsEditorSessionController::editorTextSynchronized);
-
-    tracker.setHierarchyContextSource(&sidebarController);
-    tracker.setEditorSession(&editorSession);
-
-    QCOMPARE(tracker.editorSession(), static_cast<QObject*>(&editorSession));
-    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Library body"));
-    QCOMPARE(editorSession.editorBoundNoteId(), QStringLiteral("library-note"));
-    QCOMPARE(editorSession.editorBoundNoteDirectoryPath(), QStringLiteral("/tmp/library-note.wsnote"));
-    QCOMPARE(editorSession.editorText(), QStringLiteral("Library body"));
-
-    sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
-
-    QCOMPARE(tracker.activeNoteId(), QStringLiteral("tags-note"));
-    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Tags body"));
-    QCOMPARE(editorSession.editorBoundNoteId(), QStringLiteral("tags-note"));
-    QCOMPARE(editorSession.editorBoundNoteDirectoryPath(), QStringLiteral("/tmp/tags-note.wsnote"));
-    QCOMPARE(editorSession.editorText(), QStringLiteral("Tags body"));
-
-    tagsModel.setCurrentBodyText(QStringLiteral("Tags body updated"));
-    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Tags body updated"));
-    QCOMPARE(editorSession.editorBoundNoteId(), QStringLiteral("tags-note"));
-    QCOMPARE(editorSession.editorText(), QStringLiteral("Tags body updated"));
-    QVERIFY(sessionSynchronizedSpy.count() >= 3);
-
-    tracker.setEditorSession(nullptr);
-    QCOMPARE(tracker.editorSession(), nullptr);
-
-    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
-}
-
 void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals()
 {
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();

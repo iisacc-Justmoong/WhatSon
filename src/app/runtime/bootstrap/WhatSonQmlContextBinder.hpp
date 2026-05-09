@@ -22,7 +22,6 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* detailPanelController = nullptr;
         QObject* noteDetailPanelController = nullptr;
         QObject* resourceDetailPanelController = nullptr;
-        QObject* editorViewModeController = nullptr;
         QObject* navigationModeController = nullptr;
         QObject* sidebarHierarchyController = nullptr;
         QObject* noteActiveState = nullptr;

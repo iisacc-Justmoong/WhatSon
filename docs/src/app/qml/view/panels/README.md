@@ -29,6 +29,8 @@
 - `StatusBarLayout.qml`
 
 ## Recent Notes
+- The current workspace route mounts the restored panel shell. `ContentViewLayout.qml` is the center content slot and
+  remains limited to the backend-free gutter/TextEditor/minimap surface.
 - Mobile scroll momentum is now treated as a panel-level interaction contract: `ListBarLayout.qml` preserves native
   kinetic carry for touch scrolling, and `SidebarHierarchyView.qml` explicitly pushes LVRS hierarchy scroll surfaces
   onto the mobile flick profile.
@@ -48,5 +50,6 @@
 - 대상: ``src/app/qml/view/panels`` (`docs/src/app/qml/view/panels/README.md`)
 - 위치: `docs/src/app/qml/view/panels`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재 workspace route는 기존 panel shell을 mount하고, center content slot만 backend-free `ContentViewLayout.qml`을 사용한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

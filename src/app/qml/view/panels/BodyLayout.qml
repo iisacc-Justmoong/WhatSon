@@ -27,7 +27,6 @@ Item {
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
-    property var editorViewModeController: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property bool isMobilePlatform: false
     property var libraryHierarchyController: null
@@ -257,7 +256,6 @@ Item {
                 Layout.minimumWidth: hStack.minContentWidth
                 contentController: hStack.activeHierarchyController
                 displayColor: hStack.contentsDisplayColor
-                editorViewModeController: hStack.editorViewModeController
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
                 noteActiveState: hStack.noteActiveState

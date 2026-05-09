@@ -5,7 +5,8 @@ Declares the bootstrap helper that registers QML-internal bridge types under
 `WhatSon.App.Internal`.
 
 ## Contract
-- `internalQmlTypeRegistrationManifest()`: declares all `WhatSon.App.Internal` type registrations as an LVRS manifest.
+- `internalQmlTypeRegistrationManifest()`: declares the remaining shell-level `WhatSon.App.Internal` type registrations
+  as an LVRS manifest.
 - `registerInternalQmlTypes()`: one-shot registration entrypoint called by `main.cpp` after LVRS baseline type
   registration; returns an LVRS registration report.
 

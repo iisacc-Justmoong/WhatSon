@@ -8,15 +8,12 @@
 #include <QVector>
 
 class IActiveHierarchyContextSource;
-class ContentsEditorSessionController;
 
 class NoteActiveStateTracker final : public QObject
 {
     Q_OBJECT
 
     Q_PROPERTY(QObject* hierarchyContextSource READ hierarchyContextSource WRITE setHierarchyContextSource NOTIFY hierarchyContextSourceChanged)
-    Q_PROPERTY(QObject* editorSession READ editorSession WRITE setEditorSession NOTIFY editorSessionChanged)
-    Q_PROPERTY(QObject* editorSaveCoordinator READ editorSaveCoordinator WRITE setEditorSaveCoordinator NOTIFY editorSaveCoordinatorChanged)
     Q_PROPERTY(int activeHierarchyIndex READ activeHierarchyIndex NOTIFY activeHierarchyIndexChanged)
     Q_PROPERTY(QObject* activeHierarchyController READ activeHierarchyController NOTIFY activeHierarchyControllerChanged)
     Q_PROPERTY(QObject* activeNoteListModel READ activeNoteListModel NOTIFY activeNoteListModelChanged)
@@ -33,11 +30,6 @@ public:
     QObject* hierarchyContextSource() const noexcept;
     void setHierarchyContextSource(QObject* source);
 
-    QObject* editorSession() const noexcept;
-    void setEditorSession(QObject* session);
-    QObject* editorSaveCoordinator() const noexcept;
-    void setEditorSaveCoordinator(QObject* coordinator);
-
     int activeHierarchyIndex() const noexcept;
     QObject* activeHierarchyController() const noexcept;
     QObject* activeNoteListModel() const noexcept;
@@ -49,12 +41,9 @@ public:
 
     Q_INVOKABLE QVariantMap readActiveNoteEntry() const;
     Q_INVOKABLE void refresh();
-    Q_INVOKABLE bool syncEditorSessionFromActiveNote();
 
 signals:
     void hierarchyContextSourceChanged();
-    void editorSessionChanged();
-    void editorSaveCoordinatorChanged();
     void activeHierarchyIndexChanged();
     void activeHierarchyControllerChanged();
     void activeNoteListModelChanged();
@@ -68,16 +57,12 @@ signals:
 private slots:
     void handleHierarchyContextDestroyed();
     void handleActiveNoteListModelDestroyed();
-    void handleEditorSessionDestroyed();
-    void handleEditorSaveCoordinatorDestroyed();
     void synchronizeActiveBindings();
     void refreshActiveNoteState();
 
 private:
     void disconnectHierarchyContextSource();
     void disconnectActiveNoteListModel();
-    void disconnectEditorSession();
-    void disconnectEditorSaveCoordinator();
     void setActiveNoteListModel(QObject* model);
     void setActiveNoteState(
         QVariantMap noteEntry,
@@ -86,14 +71,10 @@ private:
         QString noteBodyText);
 
     QPointer<IActiveHierarchyContextSource> m_hierarchyContextSource;
-    QPointer<ContentsEditorSessionController> m_editorSession;
-    QPointer<QObject> m_editorSaveCoordinator;
     QPointer<QObject> m_activeHierarchyController;
     QPointer<QObject> m_activeNoteListModel;
     QVector<QMetaObject::Connection> m_hierarchyConnections;
     QVector<QMetaObject::Connection> m_noteListConnections;
-    QMetaObject::Connection m_editorSessionDestroyedConnection;
-    QMetaObject::Connection m_editorSaveCoordinatorDestroyedConnection;
     QVariantMap m_activeNoteEntry;
     QString m_activeNoteId;
     QString m_activeNoteDirectoryPath;

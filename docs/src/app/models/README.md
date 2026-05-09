@@ -6,10 +6,8 @@ owning model domains instead of a separate view-model tree.
 
 ## Current Domains
 - `calendar`: calendar board state and system-calendar integration.
-- `content`: display, mobile-navigation, and structured-document helpers that coordinate QML-facing content surfaces.
-- `editor`: parser, renderer, text, bridge, and session helpers that project RAW note source into editable views.
+- `content`: mobile-navigation helpers that coordinate legacy QML route state.
 - `file`: persistent hub/note/resource storage, validation, import/export, sync, and hierarchy backends.
-- `display`: paper/page/print presentation helpers that support editor view modes without living in the QML layer.
 - `sensor`: hub inspection objects that derive lightweight read-side facts such as unused resource packages.
 - `detailPanel`, `navigationbar`, `onboarding`, `panel`, and `sidebar`: QML-facing controller objects that remain
   model-domain runtime objects and must not reintroduce MVVM.
@@ -19,7 +17,7 @@ owning model domains instead of a separate view-model tree.
 - They must not take ownership of LVRS view composition or sidebar/detail-panel routing concerns.
 - Sensor-style models should prefer RAW hub files (`.wsnbody`, `.wsresource`, `resource.xml`) as their read source.
 - `content/mobile` helpers should remain route/state coordinators only; they must not absorb sidebar or editor
-  ownership that belongs to the model-domain controller or RAW-source layers.
+  ownership. The current workspace editor interface is QML-only `LV.TextEditor` composition with no editor model domain.
 
 ## 한국어
 

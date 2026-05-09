@@ -19,8 +19,6 @@
 - `src/app/models/calendar/CMakeLists.txt`
 - `src/app/models/content/CMakeLists.txt`
 - `src/app/models/detailPanel/CMakeLists.txt`
-- `src/app/models/display/CMakeLists.txt`
-- `src/app/models/editor/CMakeLists.txt`
 - `src/app/models/file/CMakeLists.txt`
 - `src/app/models/navigationbar/CMakeLists.txt`
 - `src/app/models/onboarding/CMakeLists.txt`
@@ -56,19 +54,16 @@
   the shard build directory rather than the owned source directory.
 - `src/app/models` is now registered once as a shared include-root compatibility shard before child `add_subdirectory(...)`
   evaluation, so existing cross-domain includes like `calendar/SystemCalendarStore.hpp`,
-  `editor/tags/ContentsEditorTagInsertionController.hpp`,
-  `editor/tags/ContentsEditorTagMutationBuilder.hpp`,
-  `editor/format/ContentsTextFormatRenderer.hpp`, `display/paper/print/ContentsPagePrintLayoutRenderer.hpp`, and
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
   registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
   `models/sidebar`, and `models/file/hierarchy/*`.
-- Editor tag command and validation sources are grouped under `src/app/models/editor/tags`; agenda/callout no longer
-  have dedicated backend shards.
+- The former `src/app/models/editor` shard has been removed. Runtime editor QML now mounts the LVRS `TextEditor`
+  surface directly instead of compiling parser, projection, renderer, session, input-policy, minimap, or tag-command
+  backends.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.
-- The app target now declares `Qt6::Pdf` and `Qt6::PdfQuick` as first-class dependencies because `ContentsResourceViewer.qml` imports `QtQuick.Pdf` for direct `.wsresource` PDF rendering.
 - The app target also links the local `iiXml::iiXml` and `iiHtmlBlock::iiHtmlBlock` imported targets. Root CMake
   owns package discovery from `~/.local/iiXml` and `~/.local/iiHtmlBlock`, while this runtime shard keeps the
   executable's concrete link surface explicit.
@@ -77,8 +72,9 @@
   configure when available, preventing a host macOS dylib package from being mistaken for an iphoneos dependency.
 - iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so the app now carries an explicit static QML plugin closure instead of relying on top-level imports alone.
 - That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
-- `QtQuick.Pdf` is not self-contained on iOS in this static-plugin setup: `PdfMultiPageView.qml` also imports `QtQuick.Shapes`, so `Qt6::qmlshapesplugin` must stay in the same manual plugin link set or the QML engine aborts during startup.
-- This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported plugin targets, which makes future `module \"...\" is not installed` regressions less likely when `PdfQuick`, dialogs, or control styles pull nested QML imports.
+- This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported
+  plugin targets, which makes future `module \"...\" is not installed` regressions less likely when dialogs or control
+  styles pull nested QML imports.
 - The iOS resource shard now exports `WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES`, and `src/app/CMakeLists.txt` copies
   those PNGs into the bundle root with a `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
   `CFBundleIcons` fallback metadata. A direct Xcode/device build therefore still has a valid home-screen icon even

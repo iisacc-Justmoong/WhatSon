@@ -22,9 +22,7 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
             Qt6::qtquickcontrols2basicstyleplugin
             Qt6::qtquickcontrols2iosstyleplugin
             Qt6::qtquickdialogs2quickimplplugin
-            Qt6::qtquickdialogsplugin
-            Qt6::qmlshapesplugin
-            Qt6::PdfQuickplugin)
+            Qt6::qtquickdialogsplugin)
     foreach (_whatson_ios_qml_plugin IN LISTS _whatson_ios_qml_plugins)
         if (TARGET "${_whatson_ios_qml_plugin}")
             target_link_libraries(WhatSon PRIVATE "${_whatson_ios_qml_plugin}")
@@ -54,8 +52,6 @@ endif ()
 
 target_link_libraries(WhatSon
         PRIVATE
-        Qt6::Pdf
-        Qt6::PdfQuick
         Qt6::Quick
         Qt6::QuickDialogs2
         Qt6::QuickControls2
