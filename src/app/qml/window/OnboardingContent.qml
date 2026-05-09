@@ -35,7 +35,7 @@ Item {
     readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === "ios"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy) || iosHubPickerBridge.busy
-    readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
+    readonly property bool useDirectoryCreateHubFlow: root.isMobilePlatform || Qt.platform.os === "osx"
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
     readonly property int createHubFieldHeight: LV.Theme.gap20 + LV.Theme.gap20
@@ -169,7 +169,7 @@ Item {
         root.viewHookRequested();
         if (root.hubSessionController) {
             root.clearOnboardingOperationState();
-            if (root.useMobileCreateDirectoryFlow)
+            if (root.useDirectoryCreateHubFlow)
                 root.openCreateHubDirectoryDialog();
             else
                 root.openCreateHubDialog();
@@ -191,7 +191,7 @@ Item {
     }
 
     function ensureCreateHubDialog() {
-        if (root.useMobileCreateDirectoryFlow)
+        if (root.useDirectoryCreateHubFlow)
             return null;
         if (!root.createHubDialogInstance)
             root.createHubDialogInstance = createHubDialogComponent.createObject(root);

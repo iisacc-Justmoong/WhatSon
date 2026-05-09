@@ -20,6 +20,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - the same pipeline resolves one normalized HTML block per token and publishes `normalizedHtmlBlocks`
   - `ContentsTextFormatRenderer` finally republishes the joined `editorSurfaceHtml` plus the intermediate payloads to
     QML
+- For very large literal source snapshots without RAW tag openers, that pipeline intentionally publishes an empty live
+  RichText overlay and no HTML tokens, letting the already-bound native plain-text editor display the paste immediately
+  while selection mapping continues through the logical text bridge.
 - When that pipeline reports a deterministic canonical structured RAW projection, the renderer now also feeds that
   corrected snapshot into:
   - the legacy whole-document inline-style composer
@@ -76,16 +79,19 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   persistence:
   - `<next/>` renders as a real line break instead of literal tag text
   - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text spans
-  - `<event>`, `<callout>`, `<agenda>`, and `<task>` become transparent wrappers in read-side HTML instead of painting
-    literal open/close tags
+  - `<event>`, `<agenda>`, and `<task>` become transparent wrappers in read-side HTML instead of painting literal
+    open/close tags
+  - `<callout>` remains a transparent RAW wrapper but the editor surface projects it through
+    `ContentsCalloutHtmlRenderer` as a Qt RichText-compatible table frame with a `3px` `bgcolor="#d9d9d9"` leading bar
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - The live editor surface no longer drops `<resource ...>` tags as zero-height markup.
   Instead it emits a blank editor paragraph for the resource slot and preserves the parser-owned resource metadata on
   the structured document block stream. The editor host renders the actual media frame through structured
   `resourceVisualBlocks`, so the HTML string is not rewritten with resource-frame markup.
-- Agenda/task and callout are not structured blocks in this renderer; their wrapper tags are transparent and their body
-  text flows with the surrounding paragraph.
+- Agenda/task and callout are not structured blocks in this renderer. Agenda/task wrapper tags stay transparent and their
+  body text flows with the surrounding paragraph; callout uses the shared callout-frame projection without becoming a
+  persistence block.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
   Legacy tags that are part of the shared semantic registry no longer fall into that unsupported bucket.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
@@ -182,4 +188,6 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   renderer used by the block pipeline, so a fallback turn cannot expose stored `<bold>` / `<italic>` tags as literal
   text.
 - A source such as `<callout>After <bold>bold</bold></callout>` must render the inner text through the ordinary
-  inline-tag path; callout does not create a padded editor block.
+  inline-tag path inside the shared callout table frame.
+- A large literal source turn without RAW tag openers must leave `editorSurfaceHtml`, `htmlTokens`, and
+  `normalizedHtmlBlocks` empty so the editor does not rebuild an unnecessary RichText overlay during a huge paste.

@@ -31,7 +31,8 @@
 - `logicalLengthForSourceText(QString)` is now also part of the public QML bridge surface so block-style mutations can
   measure rewritten source fragments in the same logical-text coordinate system used by the live editor selection.
 - The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
-  the normalized plain-text projection.
+  the normalized plain-text projection, plus an identity-offset mode for large native plain-text snapshots that should
+  not allocate a per-character table.
 - `logicalOffsetForSourceOffsetWithAffinity(...)` and `sourceOffsetForVisibleLogicalOffset(...)` expose model-owned
   coordinate queries so QML does not receive or iterate the whole-note offset table.
 - `logicalToSourceOffsetsChanged()` is an internal model invalidation signal consumed by higher-level C++ projection
@@ -71,8 +72,9 @@
   QML selection offsets still match the source editor surface.
 - When QML rewrites one source line in isolation, `logicalLengthForSourceText(...)` must report the rendered logical
   character count for that fragment rather than the raw source-token count.
-- When the host editor commits a new presentation snapshot, the internal logical-to-source offset cache must contain
-  `logicalText.length + 1` entries so model coordinate queries map visible editor offsets back into RAW source.
+- When the host editor commits a structured or styled presentation snapshot, the internal logical-to-source offset cache
+  must contain `logicalText.length + 1` entries so model coordinate queries map visible editor offsets back into RAW
+  source. Large plain native snapshots are the exception: they keep identity mapping without materializing that table.
 - When source text includes `</break>`, the exported logical/source offset table must still include one logical
   position for that divider token.
 - When source text includes `<resource ... />`, the exported logical/source offset table must include one atomic

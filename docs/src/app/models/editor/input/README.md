@@ -17,7 +17,8 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
   hidden-wrapper selection trimming, visible line/paragraph range policy, and atomic resource-block selection decisions
   for the `.wsnbody` editor surface. Transparent semantic body wrappers such as callout/agenda/task are preserved as
   hidden edit boundaries, including the collapsed empty-callout shortcut path where the next visible character must
-  land inside `<callout></callout>`.
+  land inside `<callout></callout>`. Large clipboard replacements skip synchronous web-link auto-wrapping in this
+  policy so the native paste can commit first and persistence can canonicalize links later.
 
 ## Boundary
 - Ordinary text input must continue to stay on native Qt/OS `TextEdit` handling.
@@ -41,4 +42,4 @@ Owns editor input-policy and mutation-controller primitives that are not themsel
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
 - 최근 기준: 빈 callout 단축키 생성 뒤 첫 입력은 `<callout></callout>` 바깥이 아니라 RAW callout 쌍태그 내부에
-  삽입되어야 한다.
+  삽입되어야 하며, 대형 클립보드 붙여넣기는 C++ 입력 정책의 동기 웹링크 스캔으로 막히면 안 된다.

@@ -9,6 +9,8 @@ namespace
 {
     namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
+    constexpr int kSynchronousWebLinkScanCharacterLimit = 16 * 1024;
+
     int boundedQStringSize(const QString& text) noexcept
     {
         constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
@@ -58,8 +60,11 @@ QString ContentsPlainTextSourceMutator::applyPlainTextReplacementToSource(
         + escapeHtmlText(normalizedReplacementText)
         + normalizedSourceText.mid(boundedEnd);
 
+    const bool replacementFitsSynchronousWebLinkScan =
+        normalizedReplacementText.size() <= kSynchronousWebLinkScanCharacterLimit;
     const bool replacementContainsStandaloneWebLink =
-        WebLinks::containsDetectableWebLink(normalizedReplacementText);
+        replacementFitsSynchronousWebLinkScan
+        && WebLinks::containsDetectableWebLink(normalizedReplacementText);
     const bool replacementCommitsPotentialWebLink = normalizedReplacementText.size() == 1
         && QStringLiteral(" \t\n.,;:!?)]}\"'").contains(normalizedReplacementText);
     if (!replacementContainsStandaloneWebLink && !replacementCommitsPotentialWebLink)

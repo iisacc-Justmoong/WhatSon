@@ -200,7 +200,7 @@ private:
     void rebuildBucketRanges();
     void refreshNoteListForSelection();
     void refreshNoteListForSelectionAndNotifyHierarchyModel();
-    void applyIndexedBuckets();
+    void applyInAppLibraryScaffold();
     void updateItemCount();
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());

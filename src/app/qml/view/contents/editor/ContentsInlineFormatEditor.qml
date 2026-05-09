@@ -54,7 +54,12 @@ Item {
     property string renderedText: ""
     property var resourceVisualBlocks: []
     readonly property int cursorPixelWidth: Math.max(1, Math.ceil(LV.Theme.strokeThin))
-    readonly property var logicalGutterRows: lineNumberRailMetrics.rows
+    readonly property int largeDocumentNativeSurfaceLengthThreshold: 32 * 1024
+    readonly property bool largeDocumentNativeSurface: control.showRenderedOutput
+            && String(control.renderedText || "").length <= 0
+            && String(control.text || "").length >= control.largeDocumentNativeSurfaceLengthThreshold
+            && String(control.text || "").indexOf("<") < 0
+    readonly property var logicalGutterRows: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.rows
     readonly property int visualLineCount: visualLineMetrics.visualLineCount
     readonly property var visualLineWidthRatios: visualLineMetrics.visualLineWidthRatios
     readonly property bool renderedOverlayAvailable: control.showRenderedOutput
@@ -62,7 +67,7 @@ Item {
     readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable
             && control.hasAtomicRenderedResourceBlocks()
     readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable
-    readonly property bool logicalSurfaceActive: control.showRenderedOutput
+    readonly property bool logicalSurfaceActive: control.renderedOverlayAvailable
     readonly property bool nativeSelectionContainsVisibleLogicalContent: control.nativeSelectionActive
             && (control.sourceRangeContainsVisibleLogicalContent(control.selectedSourceRange())
                 || control.sourceRangeIntersectsAtomicResourceBlock(control.selectedSourceRange()))
@@ -345,6 +350,10 @@ Item {
         if (control.logicalSurfaceActive) {
             return control.normalizeCursorPositionAwayFromAtomicResourceBlock();
         }
+        if (control.largeDocumentNativeSurface) {
+            control.previousRawCursorPosition = textInput.cursorPosition;
+            return false;
+        }
 
         const plan = wysiwygEditorPolicy.hiddenTagCursorNormalizationPlan(
                     control.text,
@@ -374,6 +383,11 @@ Item {
     }
 
     function sourceRangeContainsVisibleLogicalContent(range) {
+        if (control.largeDocumentNativeSurface) {
+            const rangeStart = Math.max(0, Number(range && range.start !== undefined ? range.start : 0) || 0);
+            const rangeEnd = Math.max(rangeStart, Number(range && range.end !== undefined ? range.end : rangeStart) || rangeStart);
+            return rangeEnd > rangeStart;
+        }
         return wysiwygEditorPolicy.sourceRangeContainsVisibleLogicalContent(
                     control.text,
                     Number(range && range.start !== undefined ? range.start : 0) || 0,
@@ -396,6 +410,8 @@ Item {
     }
 
     function sourceRangeIntersectsAtomicResourceBlock(range) {
+        if (control.largeDocumentNativeSurface)
+            return false;
         return wysiwygEditorPolicy.sourceRangeIntersectsAtomicResourceBlock(
                     control.atomicResourceBlockModel(),
                     Number(range && range.start !== undefined ? range.start : 0) || 0,
@@ -1016,7 +1032,7 @@ Item {
 
         fallbackLineHeight: LV.Theme.textBodyLineHeight
         fallbackWidth: control.width
-        lineNumberRanges: lineNumberRailMetrics.logicalLineRanges
+        lineNumberRanges: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.logicalLineRanges
         logicalLength: control.displayGeometryText.length
         resourceVisualBlocks: control.resourceVisualBlocks
         targetItem: control
@@ -1046,10 +1062,12 @@ Item {
 
         displayContentHeight: control.displayContentHeight
         geometryWidth: control.width
-        normalizedHtmlBlocks: (control.documentBlocks || []).length > 0
-                              ? control.documentBlocks
-                              : control.normalizedHtmlBlocks
-        sourceText: control.text
+        normalizedHtmlBlocks: control.largeDocumentNativeSurface
+                              ? []
+                              : ((control.documentBlocks || []).length > 0
+                                 ? control.documentBlocks
+                                 : control.normalizedHtmlBlocks)
+        sourceText: control.largeDocumentNativeSurface ? "" : control.text
         textLineHeight: LV.Theme.textBodyLineHeight
     }
 
@@ -1146,10 +1164,10 @@ Item {
         readOnly: true
         selectByKeyboard: false
         selectByMouse: false
-        text: control.displayGeometryText
+        text: control.logicalSurfaceActive ? control.displayGeometryText : ""
         textFormat: TextEdit.PlainText
         textMargin: LV.Theme.gapNone
-        visible: control.displayGeometryText.length > 0
+        visible: control.logicalSurfaceActive && control.displayGeometryText.length > 0
         wrapMode: TextEdit.Wrap
         z: -2
     }
@@ -1171,7 +1189,7 @@ Item {
         selectByMouse: false
         selectedTextColor: "transparent"
         selectionColor: "transparent"
-        text: control.displayGeometryText
+        text: control.logicalSurfaceActive ? control.displayGeometryText : ""
         textFormat: TextEdit.PlainText
         textMargin: LV.Theme.gapNone
         visible: control.renderedOverlayVisible && !control.nativeCompositionActive()

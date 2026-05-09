@@ -39,6 +39,10 @@ public:
     Q_INVOKABLE bool insertImportedResourceTags(const QVariant& importedEntries);
 
 private:
+    QString resolvedDocumentPresentationSourceText() const;
+    QString resolvedEditorText() const;
+    QString resolvedSelectedNoteBodyText() const;
+
     QObject* m_editorSession = nullptr;
     QObject* m_editorTypingController = nullptr;
     QObject* m_structuredDocumentFlow = nullptr;

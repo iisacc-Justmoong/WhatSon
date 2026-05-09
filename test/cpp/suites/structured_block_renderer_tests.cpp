@@ -53,6 +53,46 @@ void WhatSonCppRegressionTests::structuredBlockRenderer_reportsAsyncRenderProfil
     QVERIFY(renderProfile.value(QStringLiteral("elapsedMs")).toLongLong() >= 0);
     QVERIFY(renderProfile.value(QStringLiteral("blockCount")).toInt() >= 2);
     QVERIFY(renderer.hasRenderedBlocks());
+
+    ContentsStructuredBlockRenderer plainRenderer;
+    plainRenderer.setBackgroundRefreshEnabled(true);
+    const QString largePlainSource = QString(4096, QLatin1Char('p'));
+    plainRenderer.setSourceText(largePlainSource);
+
+    QTRY_VERIFY_WITH_TIMEOUT(!plainRenderer.renderPending(), 5000);
+
+    const QVariantMap plainRenderProfile = plainRenderer.lastRenderProfile();
+    QCOMPARE(plainRenderProfile.value(QStringLiteral("mode")).toString(), QStringLiteral("async"));
+    QCOMPARE(plainRenderProfile.value(QStringLiteral("sourceLength")).toInt(), largePlainSource.size());
+    QCOMPARE(
+        plainRenderProfile.value(QStringLiteral("blockCount")).toInt(),
+        plainRenderer.renderedDocumentBlocks().size());
+    QVERIFY(plainRenderer.hasRenderedBlocks());
+}
+
+void WhatSonCppRegressionTests::structuredBlockRenderer_keepsLargePlainDocumentsOnNativeSurfacePath()
+{
+    ContentsStructuredBlockRenderer renderer;
+    renderer.setBackgroundRefreshEnabled(true);
+    const QString sourceText = QString(33 * 1024, QLatin1Char('p')) + QStringLiteral("\nplain tail");
+
+    renderer.setSourceText(sourceText);
+
+    QVERIFY(!renderer.renderPending());
+    const QVariantMap renderProfile = renderer.lastRenderProfile();
+    QCOMPARE(renderProfile.value(QStringLiteral("mode")).toString(), QStringLiteral("large-plain-native"));
+    QCOMPARE(renderProfile.value(QStringLiteral("sourceLength")).toInt(), sourceText.size());
+    QCOMPARE(renderProfile.value(QStringLiteral("blockCount")).toInt(), 1);
+    QCOMPARE(renderer.renderedDocumentBlocks().size(), 1);
+
+    const QVariantMap block = renderer.renderedDocumentBlocks().constFirst().toMap();
+    QCOMPARE(block.value(QStringLiteral("type")).toString(), QStringLiteral("text-group"));
+    QCOMPARE(block.value(QStringLiteral("sourceStart")).toInt(), 0);
+    QCOMPARE(block.value(QStringLiteral("sourceEnd")).toInt(), sourceText.size());
+    QCOMPARE(block.value(QStringLiteral("sourceText")).toString(), QString());
+    QCOMPARE(block.value(QStringLiteral("plainText")).toString(), QString());
+    QVERIFY(renderer.hasRenderedBlocks());
+    QVERIFY(renderer.hasNonResourceRenderedBlocks());
 }
 
 void WhatSonCppRegressionTests::structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup()

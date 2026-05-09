@@ -17,7 +17,7 @@
 
 namespace
 {
-    constexpr auto kLibraryDraftLabel = "Draft";
+    constexpr auto kLibraryDraftLabel = "Drafts";
 
     QString normalizeFolderPath(QString value)
     {

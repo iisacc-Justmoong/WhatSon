@@ -55,6 +55,12 @@ Wraps the live `LV.TextEditor` used by the note document surface.
 - The rendered overlay visibility follows rendered projection availability, not native composition state. During typing
   and IME composition the RichText projection stays mounted so previously formatted lines do not collapse to the
   plain logical editor surface.
+- Very large plain documents that have no rendered projection and no RAW tag opener stay on the native `LV.TextEditor`
+  source surface. In that mode the RichText overlay, logical-surface mutation bridge, hidden geometry probe text, and
+  line-number metrics source binding are disabled so accepting a large paste does not immediately duplicate the full
+  document across QML text surfaces. Cursor normalization, visible-content selection checks, and atomic-resource range
+  checks also collapse to native identity/no-op decisions in this mode, so moving the caret through a large plain note
+  does not scan the RAW source for hidden tag boundaries on every cursor tick.
 - While the rendered overlay is hidden, the rendered surface does not add pointer handlers above the `LV.TextEditor`;
   OS/Qt pointer selection remains the selection gesture path.
 - While the rendered overlay is visible, RAW offsets and RichText document positions are not used as native surface

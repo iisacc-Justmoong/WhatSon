@@ -10,6 +10,8 @@ Implements ordinary plain-text RAW source replacement for editor typing paths.
 - Clamps source bounds against an `int`-safe `QString` length before stitching.
 - Escapes inserted literal text before it is written back into `.wsnbody`.
 - Canonicalizes committed or pasted web links into proprietary `<weblink ...>...</weblink>` RAW tags.
+- Skips that synchronous web-link canonicalization for very large replacements so clipboard-sized edits are not blocked
+  by a live regex scan; the `.wsnbody` persistence serializer remains the canonical save-time web-link pass.
 
 ## Boundary
 

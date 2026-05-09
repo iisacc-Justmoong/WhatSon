@@ -1115,6 +1115,7 @@ private slots:
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
+    void debugTrace_summarizesLargeTextFromPreviewOnly();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void architecturePolicyLock_blocksMutableWiringAfterLock();
@@ -1157,7 +1158,7 @@ private slots:
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
-    void libraryHierarchyController_synthesizesSystemBucketsForEmptyRuntimeSnapshots();
+    void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
     void navigationModeController_cyclesActiveSections();
     void editorViewModeController_cyclesActiveSections();
     void onboardingRouteBootstrapController_syncsEmbeddedOnboardingLifecycle();
@@ -1189,6 +1190,7 @@ private slots:
     void structuredCollectionPolicy_flattensImplicitInteractiveTextBlocksIntoSingleGroups();
     void structuredBlockRenderer_publishesSingleNormalizedInteractiveStream();
     void structuredBlockRenderer_reportsAsyncRenderProfileForLargeStructuredDocuments();
+    void structuredBlockRenderer_keepsLargePlainDocumentsOnNativeSurfacePath();
     void structuredBlockRenderer_keepsEmptyNotesFocusableWithOneTextGroup();
     void structuredBlockRenderer_keepsTrailingResourceInsertionsEditable();
     void structuredBlockRenderer_keepsResourceOnlyTrailingLineEditable();
@@ -1273,6 +1275,7 @@ private slots:
     void qmlInlineFormatEditor_placesLogicalGutterRowsAtIncreasingY();
     void qmlInlineFormatEditor_placesResourceGutterRowsAfterFrame();
     void qmlInlineFormatEditor_separatesBlankGutterRowAfterResourceFrame();
+    void qmlInlineFormatEditor_usesNativeSurfaceForLargePlainDocuments();
     void qmlStructuredDocumentFlow_routesBottomBlankClickToBodyEnd();
     void qmlStructuredDocumentFlow_routesBodyClickToRenderedCursorPosition();
     void qmlStructuredDocumentFlow_preservesRenderedPointerDragSelectionInsideFlickable();
@@ -1311,6 +1314,7 @@ private slots:
     void logicalTextBridge_advancesCursorPastClosingWebLinkTag();
     void logicalTextBridge_mapsSourceCursorInsideInlineTagsToVisibleBoundary();
     void logicalTextBridge_notifiesLogicalToSourceOffsetChanges();
+    void logicalTextBridge_usesIdentityOffsetsForLargePlainText();
     void logicalTextBridge_mapsResourceTagsToAtomicLogicalPlaceholders();
     void editorTagInsertionController_preservesInlineTagBoundariesWhenReformatting();
     void qmlStructuredEditors_bindPaperPaletteIntoPagePrintMode();
@@ -1319,6 +1323,7 @@ private slots:
     void qmlEditors_routeRenderedHyperlinksToExternalBrowser();
     void qmlContentsView_composesFigmaFrameFromLvrsParts();
     void qmlContentsView_partsKeepEditorProjectionReadOnlyAndNativeInputSafe();
+    void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void resourceBitmapViewer_projectsRenderableImagePreviewState();
     void editorSessionController_preservesLocalEditorAuthorityAgainstSameNoteModelSync();

@@ -11,8 +11,12 @@ Implements the live note-editor display backend used by `ContentViewLayout.qml`.
 - Synchronizes the editor session from active-note state first, then falls back to the note-list model snapshot.
 - Commits editor changes by mutating the RAW session text and forwarding the same RAW body to the active content
   controller's `saveCurrentBodyText(QString)` method.
-- Re-publishes session text into `ContentsEditorPresentationProjection` and `ContentsStructuredBlockRenderer`, then
-  feeds renderer-owned block metadata into `ContentsBodyResourceRenderer`.
+- Re-publishes session text into `ContentsEditorPresentationProjection` and `ContentsStructuredBlockRenderer` from the
+  `editorTextChanged` signal path, then feeds renderer-owned block metadata into `ContentsBodyResourceRenderer`.
+  Live-edit commit does not call those sync functions a second time after the save coordinator has already mutated the
+  session.
+- Large plain editor text is not mirrored into resource-tag string properties on every keystroke. The resource-tag
+  controller can resolve the current source from the bound editor session if an explicit resource command later needs it.
 - Emits `editorViewportResetRequested()` only when a requested refresh changes the bound note identity
   (`noteId`/`noteDirectoryPath`). Same-note body refreshes, save/reconcile entry updates, and index refresh signals
   preserve the editor viewport so typing near the bottom cannot yank the document back to the first line.

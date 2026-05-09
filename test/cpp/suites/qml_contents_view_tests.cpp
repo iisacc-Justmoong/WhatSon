@@ -103,6 +103,24 @@ void WhatSonCppRegressionTests::qmlContentsView_partsKeepEditorProjectionReadOnl
     QVERIFY(!editorViewSource.contains(QStringLiteral("InputMethod.")));
 }
 
+void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog()
+{
+    const QString onboardingSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/window/OnboardingContent.qml"));
+
+    QVERIFY(!onboardingSource.isEmpty());
+    QVERIFY(onboardingSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(onboardingSource.contains(
+        QStringLiteral("readonly property bool useDirectoryCreateHubFlow: root.isMobilePlatform || Qt.platform.os === \"osx\"")));
+    QVERIFY(!onboardingSource.contains(QStringLiteral("useMobileCreateDirectoryFlow")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("if (root.useDirectoryCreateHubFlow)\n                root.openCreateHubDirectoryDialog();")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("if (root.useDirectoryCreateHubFlow)\n            return null;")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("FolderDialog {\n        id: createHubDirectoryDialog")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("root.hubSessionController.createHubInDirectoryUrl(selectedFolder, root.requestedCreateHubFileName);")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("fileMode: FileDialog.SaveFile")));
+    QVERIFY(onboardingSource.contains(QStringLiteral("root.createHubDialogInstance = createHubDialogComponent.createObject(root);")));
+}
+
 void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents()
 {
     const QList<QString> tokenizedFiles = {

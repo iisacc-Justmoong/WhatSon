@@ -17,6 +17,38 @@ ContentsResourceTagController::ContentsResourceTagController(QObject* parent)
 
 ContentsResourceTagController::~ContentsResourceTagController() = default;
 
+QString ContentsResourceTagController::resolvedEditorText() const
+{
+    if (!m_editorText.isEmpty())
+    {
+        return m_editorText;
+    }
+    const QVariant sessionText = propertyValue(m_editorSession, "editorText");
+    if (sessionText.isValid() && !sessionText.isNull())
+    {
+        return sessionText.toString();
+    }
+    return m_editorText;
+}
+
+QString ContentsResourceTagController::resolvedDocumentPresentationSourceText() const
+{
+    if (!m_documentPresentationSourceText.isEmpty())
+    {
+        return m_documentPresentationSourceText;
+    }
+    return resolvedEditorText();
+}
+
+QString ContentsResourceTagController::resolvedSelectedNoteBodyText() const
+{
+    if (!m_selectedNoteBodyText.isEmpty())
+    {
+        return m_selectedNoteBodyText;
+    }
+    return resolvedEditorText();
+}
+
 int ContentsResourceTagController::currentEditorCursorPosition() const
 {
     return invokeInt(m_view, "currentEditorCursorPosition");
@@ -29,7 +61,7 @@ QVariantList ContentsResourceTagController::normalizedImportedResourceEntries(co
 
 int ContentsResourceTagController::currentResourceInsertionSourceOffset() const
 {
-    const QString currentSourceText = m_editorText;
+    const QString currentSourceText = resolvedEditorText();
     if (m_showStructuredDocumentFlow && m_structuredDocumentFlow)
     {
         const int structuredOffset = invokeInt(
@@ -114,11 +146,11 @@ bool ContentsResourceTagController::resourceTagLossDetected(
 
     const bool localEditorAuthority = boolProperty(m_editorSession, "localEditorAuthority");
     const int selectedBodyCount = (!localEditorAuthority && m_selectedNoteBodyNoteId == m_selectedNoteId)
-        ? canonicalResourceTagCount(m_selectedNoteBodyText)
+        ? canonicalResourceTagCount(resolvedSelectedNoteBodyText())
         : 0;
     const int baselineCount = std::max(
         { canonicalResourceTagCount(previousSourceText),
-          canonicalResourceTagCount(m_documentPresentationSourceText),
+          canonicalResourceTagCount(resolvedDocumentPresentationSourceText()),
           selectedBodyCount });
     return baselineCount > canonicalResourceTagCount(nextSourceText);
 }
@@ -146,7 +178,7 @@ bool ContentsResourceTagController::insertImportedResourceTags(const QVariant& i
         return false;
     }
 
-    const QString currentSourceText = m_editorText;
+    const QString currentSourceText = resolvedEditorText();
     const int insertionOffset = currentResourceInsertionSourceOffset();
     const QVariantMap insertionPayload = m_resourceInsertionPolicy->buildResourceInsertionPayload(
         currentSourceText,

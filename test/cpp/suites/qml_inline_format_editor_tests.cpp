@@ -155,7 +155,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int surfaceSelectionStartLogicalOffset: 0")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int surfaceSelectionEndLogicalOffset: 0")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property int surfaceSelectionCursorLogicalOffset: 0")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.logicalSurfaceActive ? control.displayGeometryText : \"\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function atomicResourceHitAtPoint(localX, localY)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function visibleLogicalSelectionEndpointAtPoint(localX, localY, anchorLogicalOffset)")));
@@ -245,6 +245,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_keepsNativeTextEditInputUn
     QVERIFY(inlineEditorSource.contains(QStringLiteral("property var normalizedHtmlBlocks: []")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedOverlayVisible: control.renderedOverlayAvailable")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedOverlayAvailable: control.showRenderedOutput")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("&& control.renderedText.length > 0")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool renderedResourceOverlayPinned: control.renderedOverlayAvailable")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("function hasAtomicRenderedResourceBlocks()")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("&& (!control.nativeCompositionActive() || control.renderedResourceOverlayPinned)")));
@@ -289,7 +290,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property real displayBodyHeight: Math.max(0, control.displayTextContentHeight)")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var visualLineWidthRatios")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: lineNumberRailMetrics.rows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.rows")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryRows: editorGeometryProvider.lineNumberGeometryRows")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var lineNumberGeometryResourceBlockHeights: control.resourceVisualBlockHeights()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int visualLineCount: visualLineMetrics.visualLineCount")));
@@ -310,7 +311,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("id: editorGeometryProvider")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredLineWidthRatios")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("measuredVisualLineCount")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: lineNumberRailMetrics.logicalLineRanges")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.logicalLineRanges")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("geometryRows")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("resourceVisualBlocks: control.resourceVisualBlocks")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("renderedHtml: control.renderedText")));
@@ -318,7 +319,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(inlineEditorSource.contains(QStringLiteral("visualItem: control.renderedOverlayVisible ? renderedOverlay : textInput.editorItem")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("resourceItem: renderedOverlay")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("targetItem: control")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourceText: control.text")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourceText: control.largeDocumentNativeSurface ? \"\" : control.text")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("logicalText: control.displayGeometryText")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("geometryProvider:")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("textGeometryItem:")));
@@ -341,7 +342,7 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function resourceSelectionRectangleForBlock(block)")));
     QVERIFY(!inlineEditorSource.contains(QStringLiteral("function buildAtomicResourceSelectionRects()")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("objectName: \"contentsInlineFormatRenderedGeometryProbe\"")));
-    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.displayGeometryText")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.logicalSurfaceActive ? control.displayGeometryText : \"\"")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textFormat: TextEdit.PlainText")));
     QVERIFY(inlineEditorSource.contains(QStringLiteral("textMargin: LV.Theme.gapNone")));
     QVERIFY(documentFlowSource.contains(QStringLiteral("property string logicalText: \"\"")));
@@ -407,6 +408,28 @@ void WhatSonCppRegressionTests::qmlInlineFormatEditor_projectsVisibleGeometryFro
         "logicalCursorPosition: editorDisplayBackend.presentationProjection.logicalLengthForSourceText(")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
         "logicalLineCount: editorDisplayBackend.presentationProjection.logicalLineCount")));
+}
+
+void WhatSonCppRegressionTests::qmlInlineFormatEditor_usesNativeSurfaceForLargePlainDocuments()
+{
+    const QString inlineEditorSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/contents/editor/ContentsInlineFormatEditor.qml"));
+
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property int largeDocumentNativeSurfaceLengthThreshold: 32 * 1024")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool largeDocumentNativeSurface: control.showRenderedOutput")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("String(control.renderedText || \"\").length <= 0")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("String(control.text || \"\").indexOf(\"<\") < 0")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property bool logicalSurfaceActive: control.renderedOverlayAvailable")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("readonly property var logicalGutterRows: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.rows")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("lineNumberRanges: control.largeDocumentNativeSurface ? [] : lineNumberRailMetrics.logicalLineRanges")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("sourceText: control.largeDocumentNativeSurface ? \"\" : control.text")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("normalizedHtmlBlocks: control.largeDocumentNativeSurface")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("text: control.logicalSurfaceActive ? control.displayGeometryText : \"\"")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("visible: control.logicalSurfaceActive && control.displayGeometryText.length > 0")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.largeDocumentNativeSurface)")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("control.previousRawCursorPosition = textInput.cursorPosition;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("return rangeEnd > rangeStart;")));
+    QVERIFY(inlineEditorSource.contains(QStringLiteral("if (control.largeDocumentNativeSurface)\n            return false;")));
 }
 
 void WhatSonCppRegressionTests::qmlInlineFormatEditor_positionsVisibleProbeFromLogicalDisplayText()

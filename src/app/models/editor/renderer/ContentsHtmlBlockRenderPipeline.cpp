@@ -22,6 +22,7 @@ namespace
     namespace Callouts = WhatSon::ContentsCalloutHtmlRenderer;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
+    constexpr int kLargeLiteralEditorSurfaceFastPathSourceLength = 32 * 1024;
     constexpr int kResourceEditorPlaceholderLineCount = 1;
 
     QString editorDocumentParagraphHtml(const QString& innerHtml)
@@ -99,6 +100,12 @@ namespace
     QString normalizeSourceText(const QString& sourceText)
     {
         return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
+    }
+
+    bool canUseLargeLiteralEditorSurfaceFastPath(const QString& sourceText)
+    {
+        return sourceText.size() >= kLargeLiteralEditorSurfaceFastPathSourceLength
+            && !sourceText.contains(QLatin1Char('<'));
     }
 
     QString textFragmentHtml(const QString& sourceText)
@@ -411,6 +418,11 @@ ContentsHtmlBlockRenderPipeline::RenderResult ContentsHtmlBlockRenderPipeline::r
     const QString normalizedSourceText = normalizeSourceText(sourceText);
     if (normalizedSourceText.isEmpty())
     {
+        return result;
+    }
+    if (canUseLargeLiteralEditorSurfaceFastPath(normalizedSourceText))
+    {
+        result.correctedSourceText = normalizedSourceText;
         return result;
     }
 

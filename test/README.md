@@ -102,6 +102,12 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   can show the new `.wsnhead <openCount>` without reselection.
 - Active-note tracking coverage now pins atomic snapshot publication before per-property change signals, preventing
   editor observers from binding a newly selected note id to the previous note's body text during rapid note switches.
+- Large clipboard-paste coverage now pins the editor hot path: C++ visible-text mutation accepts oversized replacements
+  without synchronous URL auto-wrapping, large literal editor surfaces stay on the native text path instead of forcing
+  an immediate RichText/iiHtmlBlock rebuild, large plain QML surfaces disable overlay/probe/gutter duplication, logical
+  text offsets stay in identity mode without a document-sized cache, cursor/selection policy avoids hidden-tag scans on
+  the native plain path, large plain structured-block metadata avoids body-sized placeholder copies, and large structured
+  snapshots render through the worker-backed path.
 - Build-target hygiene coverage now pins `whatson_clean_build_extras`, keeps generated dev-tool file lists under
   `build/CMakeFiles/whatson_dev/`, and rejects root-level `build/` clutter such as stale WhatSon logs, screenshots,
   note-body backup XML, and `.DS_Store` files.
@@ -203,8 +209,9 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   state.
 - Resources and progress now each pin their domain fallback semantics in the C++ suite, so the initial active UI row
   (`Image`, `First draft`) remains identical to the list filter applied by the corresponding controller.
-- Library hierarchy runtime snapshot coverage now pins the app-owned system bucket baseline: a newly created hub with
-  empty `Folders.wsfolders` must still render `All Library`, `Draft`, and `Today`.
+- Library hierarchy scaffold coverage now pins the hub-independent app-owned baseline: constructor setup,
+  load-failure recovery, empty depth input, and a newly created hub with empty `Folders.wsfolders` must still render
+  `All Library`, `Drafts`, and `Today`.
 - Startup hub selection now also pins the “no blueprint fallback” rule, so clearing the persisted selection cannot
   silently reopen a sample workspace during regression runs.
 - Startup hub persistence now also pins the selection-URL/bookmark contract plus the iOS direct `.wshub` picker source
@@ -213,6 +220,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Startup presentation now also pins the "resolver success is not enough" rule, so a persisted hub that resolves to a
   path but still fails runtime load reopens onboarding on both desktop and mobile instead of leaving the app on a
   blank workspace shell.
+- Onboarding QML coverage now pins macOS Create new hub to the folder-dialog creation route, so Finder sidebar
+  navigation remains available while the final `.wshub` name still comes from the inline Hub name field.
 - Hub creation now also pins the `WhatSonHubPackager` split, so package-root materialization and Apple package
   presentation remain separate from the scaffold files written by `WhatSonHubCreator`.
 - The content-surface mode helper now also pins note-vs-resource editor routing, so a direct resource list model

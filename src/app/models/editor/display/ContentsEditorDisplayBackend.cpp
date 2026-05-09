@@ -9,6 +9,17 @@
 
 using namespace WhatSon::Editor::DynamicObjectSupport;
 
+namespace
+{
+    constexpr qsizetype kLargePlainEditorTextLengthThreshold = 32 * 1024;
+
+    bool canUseLargePlainEditorTextFastPath(const QString& text)
+    {
+        return text.size() >= kLargePlainEditorTextLengthThreshold
+            && !text.contains(QLatin1Char('<'));
+    }
+}
+
 ContentsEditorDisplayBackend::ContentsEditorDisplayBackend(QObject* parent)
     : QObject(parent)
     , m_editorSession(this)
@@ -285,8 +296,6 @@ bool ContentsEditorDisplayBackend::commitEditedSourceText(const QString& text)
     if (!changed)
         return false;
 
-    syncProjectionInputs();
-    syncResourceInputs();
     emit editorTextEdited(m_editorSession.editorText());
     return true;
 }
@@ -546,15 +555,26 @@ void ContentsEditorDisplayBackend::syncProjectionInputs()
 
 void ContentsEditorDisplayBackend::syncResourceInputs()
 {
+    const QString editorText = m_editorSession.editorText();
+    const bool largePlainEditorText = canUseLargePlainEditorTextFastPath(editorText);
+
     m_bodyResourceRenderer.setNoteId(currentNoteId());
     m_bodyResourceRenderer.setNoteDirectoryPath(currentNoteDirectoryPath());
     m_bodyResourceRenderer.setDocumentBlocks(m_structuredBlockRenderer.renderedDocumentBlocks());
     m_resourceTagController.setProperty("bodyResourceRenderer", QVariant::fromValue(static_cast<QObject*>(&m_bodyResourceRenderer)));
     m_resourceTagController.setProperty("editorSession", QVariant::fromValue(static_cast<QObject*>(&m_editorSession)));
-    m_resourceTagController.setProperty("editorText", m_editorSession.editorText());
-    m_resourceTagController.setProperty("documentPresentationSourceText", m_editorSession.editorText());
     m_resourceTagController.setProperty("selectedNoteId", currentNoteId());
     m_resourceTagController.setProperty("selectedNoteBodyNoteId", currentNoteId());
+    if (largePlainEditorText)
+    {
+        m_resourceTagController.setProperty("editorText", QString());
+        m_resourceTagController.setProperty("documentPresentationSourceText", QString());
+        m_resourceTagController.setProperty("selectedNoteBodyText", QString());
+        return;
+    }
+
+    m_resourceTagController.setProperty("editorText", editorText);
+    m_resourceTagController.setProperty("documentPresentationSourceText", editorText);
     m_resourceTagController.setProperty("selectedNoteBodyText", currentRawBodyText());
 }
 

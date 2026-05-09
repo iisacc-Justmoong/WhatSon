@@ -73,6 +73,27 @@ void WhatSonCppRegressionTests::logicalTextBridge_notifiesLogicalToSourceOffsetC
     QCOMPARE(projection.logicalOffsetForSourceOffsetWithAffinity(styledSourceText.size(), true), projection.logicalText().size());
 }
 
+void WhatSonCppRegressionTests::logicalTextBridge_usesIdentityOffsetsForLargePlainText()
+{
+    ContentsLogicalTextBridge bridge;
+    const QString sourceText = QString(33 * 1024, QLatin1Char('x')) + QStringLiteral("\nplain tail");
+    bridge.setText(sourceText);
+
+    QCOMPARE(bridge.logicalText(), sourceText);
+    QVERIFY(bridge.logicalToSourceOffsets().isEmpty());
+    QCOMPARE(bridge.sourceOffsetForLogicalOffset(1024), 1024);
+    QCOMPARE(bridge.sourceOffsetForVisibleLogicalOffset(sourceText.size() + 99, sourceText.size()), sourceText.size());
+    QCOMPARE(bridge.logicalOffsetForSourceOffset(2048), 2048);
+    QCOMPARE(bridge.logicalOffsetForSourceOffsetWithAffinity(sourceText.size(), true), sourceText.size());
+    QCOMPARE(bridge.logicalLengthForSourceText(sourceText), sourceText.size());
+
+    ContentsEditorPresentationProjection projection;
+    projection.setSourceText(sourceText);
+    QCOMPARE(projection.logicalText(), sourceText);
+    QCOMPARE(projection.sourceOffsetForLogicalOffset(4096), 4096);
+    QCOMPARE(projection.logicalOffsetForSourceOffsetWithAffinity(sourceText.size(), false), sourceText.size());
+}
+
 void WhatSonCppRegressionTests::logicalTextBridge_mapsResourceTagsToAtomicLogicalPlaceholders()
 {
     const QString resourceTag =

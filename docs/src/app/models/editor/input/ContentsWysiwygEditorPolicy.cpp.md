@@ -13,6 +13,9 @@ Implements WYSIWYG editor policy for the inline note body surface.
 - Builds visible-text mutation payloads from the native logical text delta. Inserted visible text is escaped for RAW
   `.wsnbody`, deleted/replaced ranges skip hidden inline wrapper boundaries, and committed web-link text can still be
   promoted through the canonical note-body web-link support.
+- Large visible replacements bypass that synchronous web-link scan so a very large clipboard paste is accepted as a RAW
+  source mutation immediately instead of blocking the editor input turn. The persistence serializer can still run the
+  canonical web-link pass when the buffered body snapshot is written.
 - Treats transparent semantic containers such as `<callout>`, `<agenda>`, and `<task>` as hidden edit boundaries for
   visible-text mutations. When a collapsed shortcut creates an empty callout, the next typed character is inserted
   inside that RAW pair instead of before the opening tag.

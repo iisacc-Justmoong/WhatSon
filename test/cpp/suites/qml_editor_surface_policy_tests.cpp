@@ -368,6 +368,18 @@ void WhatSonCppRegressionTests::qmlStructuredEditors_commitsPlainTextBlocksDirec
     QVERIFY(displayBackendSource.contains(QStringLiteral("commitEditedSourceText")));
     QVERIFY(displayBackendSource.contains(QStringLiteral("m_editorSaveCoordinator.commitEditedSourceText")));
     QVERIFY(!displayBackendSource.contains(QStringLiteral("saveCurrentBodyText")));
+
+    const int commitStart = displayBackendSource.indexOf(
+        QStringLiteral("bool ContentsEditorDisplayBackend::commitEditedSourceText"));
+    const int commitEnd = displayBackendSource.indexOf(
+        QStringLiteral("void ContentsEditorDisplayBackend::commitDocumentPresentationRefresh"));
+    QVERIFY(commitStart >= 0);
+    QVERIFY(commitEnd > commitStart);
+    const QString commitBody = displayBackendSource.mid(commitStart, commitEnd - commitStart);
+    QVERIFY(!commitBody.contains(QStringLiteral("syncProjectionInputs();")));
+    QVERIFY(!commitBody.contains(QStringLiteral("syncResourceInputs();")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("canUseLargePlainEditorTextFastPath")));
+    QVERIFY(displayBackendSource.contains(QStringLiteral("m_resourceTagController.setProperty(\"editorText\", QString())")));
 }
 
 void WhatSonCppRegressionTests::qmlStructuredEditors_insertsInlineFormatTagsAtCollapsedCursor()

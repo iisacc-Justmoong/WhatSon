@@ -23,6 +23,10 @@
 - `WHATSON_IIXML_TRACE_MODE` controls local `iiXml` parser trace visibility. It defaults to off because the parser
   emits one `qDebug` message for many internal parse steps.
 
+## Text Summaries
+- `summarizeText(...)` reports the original character count and a normalized preview only. It must not normalize or copy
+  the entire source string, because editor trace detail arguments are often built even when tracing is disabled.
+
 ## Message Filter
 - `installThirdPartyTraceMessageFilter()` is called from `src/app/main.cpp` immediately after Qt application bootstrap.
 - The filter drops only `QtDebugMsg` entries whose message starts with `iiXml::` when `WHATSON_IIXML_TRACE_MODE` is not
@@ -32,7 +36,7 @@
 
 ## Verification
 - `test/cpp/suites/debug_trace_filter_tests.cpp` locks the suppression predicate, warning passthrough behavior, main
-  startup installation call, and environment variable contract.
+  startup installation call, environment variable contract, and large-text preview-only summary behavior.
 
 ## Extension Notes
 - Keep the filter as a narrow text-prefix gate for local dependencies that do not expose a logging API.

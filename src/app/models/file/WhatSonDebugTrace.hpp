@@ -241,17 +241,17 @@ namespace WhatSon::Debug
 
     inline QString summarizeText(const QString& text, const int previewLength = 96)
     {
-        const QString normalized = text.normalized(QString::NormalizationForm_C)
+        const int safePreviewLength = std::max(0, previewLength);
+        const QString preview = text.left(safePreviewLength)
+            .normalized(QString::NormalizationForm_C)
             .replace(u'\n', QStringLiteral("\\n"))
             .replace(u'\r', QStringLiteral("\\r"));
-        const int safePreviewLength = std::max(0, previewLength);
-        const QString preview = normalized.left(safePreviewLength);
-        if (normalized.size() <= safePreviewLength)
+        if (text.size() <= safePreviewLength)
         {
-            return QStringLiteral("len=%1 preview=\"%2\"").arg(normalized.size()).arg(preview);
+            return QStringLiteral("len=%1 preview=\"%2\"").arg(text.size()).arg(preview);
         }
 
-        return QStringLiteral("len=%1 preview=\"%2\"...(truncated)").arg(normalized.size()).arg(preview);
+        return QStringLiteral("len=%1 preview=\"%2\"...(truncated)").arg(text.size()).arg(preview);
     }
 
     inline QString ownerFromSignature(const QString& signature)

@@ -142,6 +142,29 @@ void WhatSonCppRegressionTests::wysiwygEditorPolicy_mapsVisibleSelectionBackToRa
         calloutReplacementPayload.value(QStringLiteral("nextSourceText")).toString(),
         QStringLiteral("<callout>Zeta</callout>"));
 
+    const QString pastePrefix = QStringLiteral("Lead");
+    const QString largePasteText =
+        QString(17 * 1024, QLatin1Char('x'))
+        + QStringLiteral(" https://www.iisacc.com/large-paste ");
+    projection.setSourceText(pastePrefix);
+    const QVariantMap largePastePayload = policy.visibleTextMutationPayload(
+        pastePrefix,
+        &projection,
+        projection.logicalText(),
+        pastePrefix + largePasteText,
+        (pastePrefix + largePasteText).size());
+    QVERIFY(largePastePayload.value(QStringLiteral("applied")).toBool());
+    QCOMPARE(
+        largePastePayload.value(QStringLiteral("replacementText")).toString(),
+        largePasteText);
+    QCOMPARE(
+        largePastePayload.value(QStringLiteral("nextSourceText")).toString(),
+        pastePrefix + largePasteText);
+    QVERIFY(
+        !largePastePayload.value(QStringLiteral("nextSourceText"))
+             .toString()
+             .contains(QStringLiteral("<weblink")));
+
     const QVariantMap resourceBlock{
         {QStringLiteral("renderDelegateType"), QStringLiteral("resource")},
         {QStringLiteral("htmlBlockObjectSource"), QStringLiteral("iiHtmlBlock")},

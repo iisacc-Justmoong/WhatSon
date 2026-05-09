@@ -37,7 +37,7 @@
 
 namespace
 {
-    constexpr auto kLibraryDraftLabel = "Draft";
+    constexpr auto kLibraryDraftLabel = "Drafts";
     constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
 
@@ -328,7 +328,7 @@ namespace
         return item;
     }
 
-    QVector<LibraryHierarchyItem> prependSystemBuckets(QVector<LibraryHierarchyItem> items)
+    QVector<LibraryHierarchyItem> prependInAppLibraryScaffold(QVector<LibraryHierarchyItem> items)
     {
         QVector<LibraryHierarchyItem> combined;
         combined.reserve(3 + items.size());
@@ -347,29 +347,19 @@ namespace
         return combined;
     }
 
-    bool hasRequiredSystemBuckets(const QVector<LibraryHierarchyItem>& items)
+    bool hasCompleteInAppLibraryScaffold(const QVector<LibraryHierarchyItem>& items)
     {
-        bool hasAll = false;
-        bool hasDraft = false;
-        bool hasToday = false;
-        for (const LibraryHierarchyItem& item : items)
+        if (items.size() < 3)
         {
-            switch (item.systemBucket)
-            {
-            case LibraryHierarchyItem::SystemBucket::All:
-                hasAll = true;
-                break;
-            case LibraryHierarchyItem::SystemBucket::Draft:
-                hasDraft = true;
-                break;
-            case LibraryHierarchyItem::SystemBucket::Today:
-                hasToday = true;
-                break;
-            case LibraryHierarchyItem::SystemBucket::None:
-                break;
-            }
+            return false;
         }
-        return hasAll && hasDraft && hasToday;
+
+        return items.at(0).systemBucket == LibraryHierarchyItem::SystemBucket::All
+            && items.at(0).label == QLatin1String(kLibraryAllLabel)
+            && items.at(1).systemBucket == LibraryHierarchyItem::SystemBucket::Draft
+            && items.at(1).label == QLatin1String(kLibraryDraftLabel)
+            && items.at(2).systemBucket == LibraryHierarchyItem::SystemBucket::Today
+            && items.at(2).label == QLatin1String(kLibraryTodayLabel);
     }
 
     QString hierarchyItemKey(const LibraryHierarchyItem& item, int fallbackIndex)
@@ -1006,8 +996,8 @@ LibraryHierarchyController::LibraryHierarchyController(QObject* parent)
         {
             updateNoteItemCount();
         });
-    syncModel();
-    refreshNoteListForSelection();
+    applyInAppLibraryScaffold();
+    setSelectedIndex(-1);
 }
 
 LibraryHierarchyController::~LibraryHierarchyController() = default;
@@ -1155,9 +1145,9 @@ void LibraryHierarchyController::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("count=%1").arg(depthItems.size()));
     const QSet<QString> preservedExpandedKeys = expandedHierarchyItemKeys(m_items);
 
-    if (depthItems.isEmpty() && m_runtimeIndexLoaded)
+    if (depthItems.isEmpty())
     {
-        if (m_foldersHierarchyLoaded)
+        if (m_runtimeIndexLoaded && m_foldersHierarchyLoaded)
         {
             WhatSon::Debug::traceSelf(this,
                                       QStringLiteral("library.controller"),
@@ -1169,12 +1159,12 @@ void LibraryHierarchyController::setDepthItems(const QVariantList& depthItems)
 
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.controller"),
-                                  QStringLiteral("setDepthItems.useIndexedBuckets"),
+                                  QStringLiteral("setDepthItems.useInAppLibraryScaffold"),
                                   QStringLiteral("all=%1 draft=%2 today=%3")
                                   .arg(m_indexedState.allNotes().size())
                                   .arg(m_indexedState.draftNotes().size())
                                   .arg(m_indexedState.todayNotes().size()));
-        applyIndexedBuckets();
+        applyInAppLibraryScaffold();
         setSelectedIndex(-1);
         return;
     }
@@ -1189,7 +1179,7 @@ void LibraryHierarchyController::setDepthItems(const QVariantList& depthItems)
         ++ordinal;
     }
 
-    m_items = m_runtimeIndexLoaded ? prependSystemBuckets(std::move(parsedItems)) : std::move(parsedItems);
+    m_items = prependInAppLibraryScaffold(std::move(parsedItems));
     finalizeFolderItems(&m_items, true);
     dropReservedTodayFolderItems(&m_items);
     restoreExpandedHierarchyItemKeys(&m_items, preservedExpandedKeys);
@@ -1225,12 +1215,14 @@ bool LibraryHierarchyController::loadFromWshub(const QString& wshubPath, QString
     {
         m_runtimeIndexLoaded = false;
         m_foldersHierarchyLoaded = false;
+        m_indexedState.clear();
+        emit indexedNotesSnapshotChanged();
         if (errorMessage != nullptr)
         {
             *errorMessage = indexError;
         }
-        m_noteListModel.setItems({});
-        updateNoteItemCount();
+        applyInAppLibraryScaffold();
+        setSelectedIndex(-1);
         updateLoadState(false, indexError);
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.controller"),
@@ -1324,7 +1316,7 @@ bool LibraryHierarchyController::loadFromWshub(const QString& wshubPath, QString
 
     if (!folderEntries.isEmpty())
     {
-        m_items = prependSystemBuckets(buildFolderItems(folderEntries));
+        m_items = prependInAppLibraryScaffold(buildFolderItems(folderEntries));
         finalizeFolderItems(&m_items, true);
         dropReservedTodayFolderItems(&m_items);
         m_foldersHierarchyLoaded = true;
@@ -1347,7 +1339,7 @@ bool LibraryHierarchyController::loadFromWshub(const QString& wshubPath, QString
         return true;
     }
 
-    applyIndexedBuckets();
+    applyInAppLibraryScaffold();
     setSelectedIndex(-1);
 
     WhatSon::Debug::traceSelf(this,
@@ -1380,11 +1372,8 @@ void LibraryHierarchyController::applyRuntimeSnapshot(
         emit indexedNotesSnapshotChanged();
         m_runtimeIndexLoaded = false;
         m_foldersHierarchyLoaded = false;
-        m_items.clear();
-        m_bucketRanges.clear();
-        syncModel();
-        m_noteListModel.setItems({});
-        updateNoteItemCount();
+        applyInAppLibraryScaffold();
+        setSelectedIndex(-1);
         updateLoadState(false, errorMessage);
         return;
     }
@@ -1401,7 +1390,7 @@ void LibraryHierarchyController::applyRuntimeSnapshot(
 
     const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
     const bool hierarchySourceChanged =
-        !hasRequiredSystemBuckets(m_items) || !folderDepthEntriesEqual(currentFolderEntries, folderEntries);
+        !hasCompleteInAppLibraryScaffold(m_items) || !folderDepthEntriesEqual(currentFolderEntries, folderEntries);
 
     if (!hierarchySourceChanged)
     {
@@ -1412,7 +1401,7 @@ void LibraryHierarchyController::applyRuntimeSnapshot(
 
     if (!folderEntries.isEmpty())
     {
-        m_items = prependSystemBuckets(buildFolderItems(folderEntries));
+        m_items = prependInAppLibraryScaffold(buildFolderItems(folderEntries));
         finalizeFolderItems(&m_items, true);
         dropReservedTodayFolderItems(&m_items);
         restoreExpandedHierarchyItemKeys(&m_items, preservedExpandedKeys);
@@ -1423,7 +1412,7 @@ void LibraryHierarchyController::applyRuntimeSnapshot(
     }
     else
     {
-        applyIndexedBuckets();
+        applyInAppLibraryScaffold();
     }
 
     int restoredSelectionIndex = selectedHierarchyIndexForKey(m_items, preservedSelectionKey);
@@ -2217,7 +2206,7 @@ bool LibraryHierarchyController::applyHierarchyNodes(const QVariantList& hierarc
     dropReservedTodayFolderItems(&stagedItems);
     if (preserveSystemBucketPrefix)
     {
-        stagedItems = prependSystemBuckets(std::move(stagedItems));
+        stagedItems = prependInAppLibraryScaffold(std::move(stagedItems));
         if (selectedIndex >= 0)
         {
             selectedIndex += 3;
@@ -3346,9 +3335,9 @@ void LibraryHierarchyController::refreshNoteListForSelectionAndNotifyHierarchyMo
     emit hierarchyModelChanged();
 }
 
-void LibraryHierarchyController::applyIndexedBuckets()
+void LibraryHierarchyController::applyInAppLibraryScaffold()
 {
-    m_items = prependSystemBuckets({});
+    m_items = prependInAppLibraryScaffold({});
     m_foldersHierarchyLoaded = false;
     rebuildBucketRanges();
     m_createdFolderSequence = nextFolderSequence(m_items);

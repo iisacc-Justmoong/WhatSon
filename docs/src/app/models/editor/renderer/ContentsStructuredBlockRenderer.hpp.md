@@ -16,7 +16,8 @@ QML-facing render models.
 - `correctedSourceText`: canonical RAW source projection suggested by the file-layer structured-tag linter.
 - `correctionSuggested`: convenience bit telling QML whether the current source differs from that canonical projection.
 - `backgroundRefreshEnabled`: lets QML move structured parse/canonicalization work off the UI thread when the editor is
-  not actively focused.
+  not actively focused. Very large plain documents with no RAW tag opener use the native-surface metadata path instead of
+  scheduling a background structured parse.
 - `renderPending`: tells QML that a worker-thread structured render is still in flight.
 - `hasRenderedBlocks`: cheap QML visibility helper.
 - `hasNonResourceRenderedBlocks`: tells QML whether the parsed document contains explicit blocks other than

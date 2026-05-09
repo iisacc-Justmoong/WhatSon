@@ -6,6 +6,9 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 ## Key Behavior
 - Runs `ContentsWsnBodyBlockParser` first and treats that ordered block list as the only source of block-level render
   truth.
+- Very large literal source snapshots that contain no RAW tag opener use a native-surface fast path: the pipeline
+  preserves the normalized source text but publishes no RichText overlay tokens, letting the plain-text editor display
+  the committed clipboard text before any expensive iiXml/iiHtmlBlock projection work is needed.
 - If the parser/linter suggests a deterministic canonical RAW projection that differs from the incoming snapshot,
   reparses that corrected source before assembling final HTML tokens and blocks.
   This keeps legacy divider aliases such as `<hr>` and other safe structured-tag repairs aligned with the same final
@@ -33,6 +36,8 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
   `WhatSon::ContentsTextFormatRendererInternal::renderInlineTaggedTextFragmentToHtml(..., SourceEditing)` so stored
   proprietary inline tags such as `<bold>` and `<italic>` become editor RichText spans instead of being reprojected
   through the persistence layer's plain-text `bodyPlainLinesFromDocument(...)` path.
+- Delegates transparent `<callout>...</callout>` projection to `ContentsCalloutHtmlRenderer`, whose output uses a
+  Qt RichText-compatible table and a `3px` `bgcolor="#d9d9d9"` leading-bar cell instead of CSS-only border drawing.
 - Textual fragments are split back into paragraph-flow HTML after that rich-text projection. Newlines produced by
   ordinary Enter therefore materialize as real `<p ...>` slots, and empty lines become `&nbsp;` paragraphs instead of
   remaining as zero-height trailing `<br/>` breaks.
@@ -53,9 +58,14 @@ Builds editor HTML tokens and normalized HTML blocks from parser-owned RAW docum
 - Stored inline style tags such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must render as RichText
   style HTML in `documentHtml`, `htmlTokens`, and `normalizedHtmlBlocks`; escaped literal `<bold>` / `<italic>` text is
   a renderer regression.
+- Stored `<callout>...</callout>` source must render as a full-width `#262728` table with a `width="3"` /
+  `bgcolor="#d9d9d9"` leading-bar cell; relying on unsupported `border-radius` or CSS-only cell background is a
+  renderer regression.
 - A `resource` block must normalize to one atomic block without `whatson-resource-block` comment markers; visual frame
   rendering belongs to the structured resource delegate path.
 - A legacy divider alias such as `<hr>After` must first canonicalize to `</break>After`, then normalize into separate
   `break` and trailing `text` HTML blocks so the editor surface does not lose the following prose.
 - A multi-block note whose inline style tag opens in one text block and closes in a later text block must force the
   legacy document-composition fallback instead of silently dropping the carried style in the final editor HTML.
+- A large literal paste with no RAW tag opener must not force the iiXml/iiHtmlBlock RichText overlay pipeline before
+  the native editor can display the new text.

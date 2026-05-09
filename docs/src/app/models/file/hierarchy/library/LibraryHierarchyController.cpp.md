@@ -49,9 +49,10 @@
 - `setDepthItems(...)` preserves expansion by stable hierarchy key before replacing the row vector. External folder
   structure refreshes may add, remove, or reorder rows, but they must not change the expansion state of surviving
   folders.
-- Runtime snapshot application treats `All Library`, `Draft`, and `Today` as app-owned system buckets, not hub-authored
-  folder rows. An empty-folder runtime snapshot from a newly created hub must still synthesize those three fixed rows
-  before reporting an unchanged hierarchy source.
+- Library hierarchy always starts from the hub-independent in-app scaffold: `All Library`, `Drafts`, and `Today`.
+  These rows are app-owned system buckets, not hub-authored folder rows. Constructor setup, load-failure recovery,
+  empty depth input, and empty-folder runtime snapshots must keep those three fixed rows visible before reporting an
+  unchanged hierarchy source.
 - `setItemExpanded(...)` accepts any row that advertises `showChevron`, including accent root folders. Protected-root
   policy remains a rename/delete guard; it must not block a visible chevron from folding or unfolding its descendants.
 - When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
@@ -83,8 +84,8 @@
     note delete, folder clear, or one-note metadata reload even when the hierarchy rows themselves did not rebuild
   - folder-structure reloads and folder creation must not expand or collapse existing library rows unless the user
     explicitly performed an expansion command
-  - an empty-folder runtime snapshot from a new hub must still publish `All Library`, `Draft`, and `Today`
-    before any user-authored folders exist
+  - constructor setup, load-failure recovery, empty depth input, and an empty-folder runtime snapshot from a new hub
+    must still publish `All Library`, `Drafts`, and `Today` before any user-authored folders exist
   - accent root folders with visible chevrons must accept targeted `setItemExpanded(...)` changes even though the same
     rows remain protected from rename/delete mutations
   - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.

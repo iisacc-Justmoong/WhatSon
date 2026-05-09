@@ -6,9 +6,12 @@ This QML surface owns the shared LVRS onboarding experience for desktop and mobi
 ## Dialog Routing
 - The shared onboarding surface now exposes an inline `Hub name` LVRS input so both desktop and mobile creation flows
   derive their package name from the same user-editable source instead of hardcoding `Untitled.wshub`.
-- Desktop hub creation still uses a lazily created `FileDialog` in `SaveFile` mode so the final `.wshub` target path
-  is not pre-instantiated before the user confirms creation, but the suggested save target now tracks the current hub
-  name field.
+- macOS and mobile hub creation use the `FolderDialog` path and synthesize the final `.wshub` package name from the
+  inline Hub name field. This keeps the native folder browser/sidebar navigation available while still routing the
+  final scaffold through `OnboardingHubController::createHubInDirectoryUrl(...)`.
+- Windows/Linux desktop hub creation still uses a lazily created `FileDialog` in `SaveFile` mode so the final `.wshub`
+  target path is not pre-instantiated before the user confirms creation, but the suggested save target now tracks the
+  current hub name field.
 - The Qt dialog start folder is now injected only when each dialog is opened instead of staying permanently bound to
   `currentFolderUrl`, so desktop/mobile pickers can traverse away from the initial folder without being snapped back to
   the onboarding default directory during navigation.
@@ -23,9 +26,9 @@ This QML surface owns the shared LVRS onboarding experience for desktop and mobi
 ## iOS Provider Behaviour
 - The iOS onboarding guidance now explicitly tells the user to browse Files or cloud storage, then either select the
   `.wshub` package directly or open it and choose any file or folder inside it before confirming with `Open`.
-- Mobile hub creation now keeps the selected folder URL as the security-scoped authority, resolves the final package
-  path under that folder, and lets `OnboardingHubController` invoke the shared `WhatSonHubCreator` callback directly
-  for the full `.wshub` scaffold.
+- Mobile and macOS folder-based hub creation now keep the selected folder URL as the authority, resolve the final
+  package path under that folder, and let `OnboardingHubController` invoke the shared `WhatSonHubCreator` callback
+  directly for the full `.wshub` scaffold.
 - Accepted URLs from the native picker are forwarded to
   `OnboardingHubController::prepareHubSelectionFromUrl(...)`, which keeps the ancestor-remap/security-scoped restore
   path centralized in the controller instead of duplicating it in QML.

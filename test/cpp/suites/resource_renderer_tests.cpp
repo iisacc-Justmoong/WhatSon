@@ -62,6 +62,15 @@ void WhatSonCppRegressionTests::resourceRenderer_resolvesIiXmlResourceTagsAndStr
     QCOMPARE(renderedResource.value(QStringLiteral("imageHeight")).toInt(), 7);
 
     ContentsResourceTagController resourceTagController;
+    ContentsEditorSessionController editorSession;
+    editorSession.setEditorText(sourceText);
+    QVERIFY(resourceTagController.setProperty("editorSession", QVariant::fromValue<QObject*>(&editorSession)));
+    QVERIFY(resourceTagController.setProperty("selectedNoteId", QStringLiteral("note-alpha")));
+    QVERIFY(resourceTagController.setProperty("selectedNoteBodyNoteId", QStringLiteral("note-alpha")));
+    QVERIFY(resourceTagController.setProperty("documentPresentationSourceText", QString()));
+    QVERIFY(resourceTagController.setProperty("selectedNoteBodyText", QString()));
+    QVERIFY(resourceTagController.resourceTagLossDetected(QString(), QStringLiteral("plain text")));
+
     ContentsInlineResourcePresentationController inlinePresentation;
     QVERIFY(inlinePresentation.setProperty("bodyResourceRenderer", QVariant::fromValue<QObject*>(&bodyRenderer)));
     QVERIFY(inlinePresentation.setProperty("resourceTagController", QVariant::fromValue<QObject*>(&resourceTagController)));

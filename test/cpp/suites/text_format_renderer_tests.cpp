@@ -35,6 +35,15 @@ void WhatSonCppRegressionTests::textFormatRenderer_appliesPaperPaletteToEditorAn
     QVERIFY(paperPreviewHtml.contains(QStringLiteral("color:#111111")));
     QVERIFY(paperPreviewHtml.contains(QStringLiteral("color:#1F5FBF")));
     QVERIFY(paperPreviewHtml.contains(QStringLiteral("background-color:#E7EAEE")));
+
+    ContentsTextFormatRenderer largeLiteralRenderer;
+    const QString largeLiteralSource = QString(33 * 1024, QLatin1Char('x')) + QStringLiteral("\nplain tail");
+    largeLiteralRenderer.setSourceText(largeLiteralSource);
+    QCOMPARE(largeLiteralRenderer.sourceText(), largeLiteralSource);
+    QVERIFY(largeLiteralRenderer.editorSurfaceHtml().isEmpty());
+    QVERIFY(largeLiteralRenderer.htmlTokens().isEmpty());
+    QVERIFY(largeLiteralRenderer.normalizedHtmlBlocks().isEmpty());
+    QVERIFY(!largeLiteralRenderer.htmlOverlayVisible());
 }
 
 void WhatSonCppRegressionTests::plainTextSourceMutator_wrapsCommittedUrlsIntoCanonicalWebLinks()
@@ -73,6 +82,17 @@ void WhatSonCppRegressionTests::plainTextSourceMutator_wrapsCommittedUrlsIntoCan
         0,
         QStringLiteral("[Doc](https://example.com)"));
     QCOMPARE(markdownSource, QStringLiteral("[Doc](https://example.com)"));
+
+    const QString largePastedUrl =
+        QString(17 * 1024, QLatin1Char('x'))
+        + QStringLiteral(" https://www.iisacc.com/large-paste ");
+    const QString largePastedSource = sourceMutator.applyPlainTextReplacementToSource(
+        QString(),
+        0,
+        0,
+        largePastedUrl);
+    QCOMPARE(largePastedSource, largePastedUrl);
+    QVERIFY(!largePastedSource.contains(QStringLiteral("<weblink")));
 }
 
 void WhatSonCppRegressionTests::inlineStyleOverlayRenderer_republishesHtmlOverlayVisibility()
@@ -104,10 +124,15 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("<task")));
     QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("background-color:#262728")));
     QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("bgcolor=\"#262728\"")));
+    QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("<td width=\"3\" bgcolor=\"#d9d9d9\"")));
+    QVERIFY(projection.editorSurfaceHtml().contains(
+        QStringLiteral("background-color:#d9d9d9;font-size:1px;line-height:1px;\"></td>")));
     QVERIFY(projection.editorSurfaceHtml().contains(QStringLiteral("width:100%")));
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("width:295")));
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("height:22px")));
     QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("white-space:nowrap")));
+    QVERIFY(!projection.editorSurfaceHtml().contains(QStringLiteral("border-radius")));
     QVERIFY(projection.htmlTokens().size() >= 3);
     QVERIFY(projection.normalizedHtmlBlocks().size() >= 3);
 
@@ -146,8 +171,10 @@ void WhatSonCppRegressionTests::editorPresentationProjection_publishesHtmlBlockP
     QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("<strong style=\"font-weight:900;\">Alpha")));
     QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("background-color:#262728")));
     QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("<td width=\"3\" bgcolor=\"#d9d9d9\"")));
     QVERIFY(legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("width:100%")));
     QVERIFY(!legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("height:22px")));
+    QVERIFY(!legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("border-radius")));
     QVERIFY(!legacyRenderer.editorSurfaceHtml().contains(QStringLiteral("<callout")));
 
     const QString projectionHeaderSource = readUtf8SourceFile(

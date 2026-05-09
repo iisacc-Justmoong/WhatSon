@@ -50,5 +50,6 @@ private:
     QString m_text;
     QString m_logicalText;
     QVector<int> m_logicalToSourceOffsets;
+    bool m_identityOffsetMode = false;
     int m_logicalLineCount = 1;
 };

@@ -15,6 +15,7 @@ namespace
 
     constexpr char16_t kResourceLogicalPlaceholderCharacter = 0xfffc;
     constexpr int kResourceLogicalPlaceholderLength = 1;
+    constexpr int kLargeNativePlainTextProjectionLength = 32 * 1024;
 
     int boundedContainerSize(const qsizetype size) noexcept
     {
@@ -25,6 +26,12 @@ namespace
     int boundedQStringSize(const QString& text) noexcept
     {
         return boundedContainerSize(text.size());
+    }
+
+    bool canUseIdentityOffsetMode(const QString& text) noexcept
+    {
+        return text.size() >= kLargeNativePlainTextProjectionLength
+            && !text.contains(QLatin1Char('<'));
     }
 
     QString normalizedHtmlTagName(const QStringView tagToken)
@@ -298,12 +305,20 @@ int ContentsLogicalTextBridge::logicalLineCount() const noexcept
 
 int ContentsLogicalTextBridge::logicalLengthForSourceText(const QString& text) const
 {
+    if (canUseIdentityOffsetMode(text))
+    {
+        return boundedQStringSize(text);
+    }
     return boundedQStringSize(normalizeLogicalText(text));
 }
 
 QVariantList ContentsLogicalTextBridge::logicalToSourceOffsets() const
 {
     QVariantList offsets;
+    if (m_identityOffsetMode)
+    {
+        return offsets;
+    }
     offsets.reserve(boundedContainerSize(m_logicalToSourceOffsets.size()));
     for (const int offset : m_logicalToSourceOffsets)
     {
@@ -334,6 +349,10 @@ int ContentsLogicalTextBridge::sourceOffsetForVisibleLogicalOffset(
 
 int ContentsLogicalTextBridge::logicalOffsetForSourceOffset(const int sourceOffset) const
 {
+    if (m_identityOffsetMode)
+    {
+        return std::clamp(sourceOffset, 0, boundedQStringSize(m_text));
+    }
     return logicalOffsetForSourceOffsetInText(m_text, sourceOffset);
 }
 
@@ -635,17 +654,25 @@ void ContentsLogicalTextBridge::refreshTextState()
         QStringLiteral("logicalTextBridge"),
         QStringLiteral("refreshTextState"),
         QStringLiteral("source=%1").arg(WhatSon::Debug::summarizeText(m_text)));
-    const QString nextLogicalText = normalizeLogicalText(m_text);
+    const bool nextIdentityOffsetMode = canUseIdentityOffsetMode(m_text);
+    const QString nextLogicalText = nextIdentityOffsetMode ? m_text : normalizeLogicalText(m_text);
     if (m_logicalText != nextLogicalText)
     {
         m_logicalText = nextLogicalText;
         emit logicalTextChanged();
     }
-    const QVector<int> nextLogicalToSourceOffsets =
-        buildLogicalToSourceOffsets(m_text, m_logicalText.size());
+    const QVector<int> nextLogicalToSourceOffsets = nextIdentityOffsetMode
+        ? QVector<int>{}
+        : buildLogicalToSourceOffsets(m_text, m_logicalText.size());
+    const bool identityOffsetModeChanged = m_identityOffsetMode != nextIdentityOffsetMode;
+    m_identityOffsetMode = nextIdentityOffsetMode;
     if (m_logicalToSourceOffsets != nextLogicalToSourceOffsets)
     {
         m_logicalToSourceOffsets = nextLogicalToSourceOffsets;
+        emit logicalToSourceOffsetsChanged();
+    }
+    else if (identityOffsetModeChanged)
+    {
         emit logicalToSourceOffsetsChanged();
     }
 

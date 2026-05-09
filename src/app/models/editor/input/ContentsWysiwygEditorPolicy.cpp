@@ -16,6 +16,8 @@ namespace
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
     namespace WebLinks = WhatSon::NoteBodyWebLinkSupport;
 
+    constexpr int kSynchronousWebLinkScanCharacterLimit = 16 * 1024;
+
     QVariantMap mapFromVariant(const QVariant& value)
     {
         if (value.metaType().id() == QMetaType::QVariantMap)
@@ -772,8 +774,11 @@ QVariantMap ContentsWysiwygEditorPolicy::visibleTextMutationPayload(
         + replacementSource
         + sourceText.mid(sourceEnd);
 
+    const bool replacementFitsSynchronousWebLinkScan =
+        replacementText.size() <= kSynchronousWebLinkScanCharacterLimit;
     const bool replacementContainsStandaloneWebLink =
-        WebLinks::containsDetectableWebLink(replacementText);
+        replacementFitsSynchronousWebLinkScan
+        && WebLinks::containsDetectableWebLink(replacementText);
     const bool replacementCommitsPotentialWebLink = replacementText.size() == 1
         && QStringLiteral(" \t\n.,;:!?)]}\"'").contains(replacementText);
     if (replacementContainsStandaloneWebLink || replacementCommitsPotentialWebLink)

@@ -45,6 +45,9 @@
   inside C++, so visible editor offsets can be mapped back into RAW source without exposing that table to QML.
 - `logicalToSourceOffsetsChanged()` is emitted only when the cached table actually changes. Higher-level C++ projection
   objects use it to invalidate derived cursor state.
+- Large plain source snapshots that do not contain a RAW tag opener use an identity-offset mode. The bridge keeps
+  logical text equal to source text, answers source/logical offset mapping in O(1), and does not materialize the
+  per-character offset vector unless the document leaves the native large-text path.
 - `logicalLengthForSourceText(...)` now reuses the same normalization path for ad-hoc fragments, giving QML list-toggle
   code a stable way to measure rewritten source lines in logical editor coordinates before restoring selection/cursor
   state.
@@ -66,6 +69,9 @@
   source splices do not shift away from the intended logical cursor positions.
 - The offset-cache export helper must keep compiling when Qt container `size()` returns `qsizetype` on Apple
   toolchains.
+- For large plain native text, the bridge must leave `logicalText` identical to source text while keeping the exported
+  offset-cache list empty; source/logical mapping invokables stay identity-based so editor code does not allocate a
+  document-sized offset table.
 - When source contains canonical `</break>` divider tags, the offset cache must still expose one logical
   character step per divider so selection-to-source splices stay aligned.
 - When source contains multiple `<task>` children inside one `<agenda>`, the offset cache must treat task boundaries

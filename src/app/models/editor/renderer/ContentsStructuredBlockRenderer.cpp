@@ -15,24 +15,7 @@
 namespace
 {
     constexpr int kBackgroundRenderSourceLengthThreshold = 2048;
-
-    bool containsIgnoreCase(const QString& text, const QString& token)
-    {
-        return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
-    }
-
-    bool mayContainBreakBlock(const QString& sourceText)
-    {
-        return containsIgnoreCase(sourceText, QStringLiteral("</break"))
-            || containsIgnoreCase(sourceText, QStringLiteral("<break"))
-            || containsIgnoreCase(sourceText, QStringLiteral("<hr"))
-            || containsIgnoreCase(sourceText, QStringLiteral("</hr"));
-    }
-
-    bool mayContainResourceBlock(const QString& sourceText)
-    {
-        return containsIgnoreCase(sourceText, QStringLiteral("<resource"));
-    }
+    constexpr int kLargePlainNativeSurfaceLengthThreshold = 32 * 1024;
 
     int boundedTextIndex(const QString& text, const int index)
     {
@@ -75,6 +58,12 @@ namespace
     int logicalLineCountHintForPlainText(const QString& plainText)
     {
         return std::max(1, static_cast<int>(plainText.count(QLatin1Char('\n'))) + 1);
+    }
+
+    bool canUseLargePlainNativeSurfaceRenderFastPath(const QString& sourceText)
+    {
+        return sourceText.size() >= kLargePlainNativeSurfaceLengthThreshold
+            && !sourceText.contains(QLatin1Char('<'));
     }
 
     void applyDocumentBlockTraits(
@@ -138,6 +127,26 @@ namespace
             &payload,
             resolvedTypeName,
             isAtomicDocumentBlockType(resolvedTypeName) ? QString() : blockSourceText);
+        return payload;
+    }
+
+    QVariantMap largePlainNativeSurfaceBlockPayload(const QString& sourceText)
+    {
+        QVariantMap payload;
+        payload.insert(QStringLiteral("atomicBlock"), false);
+        payload.insert(QStringLiteral("flattenedInteractiveChildCount"), 1);
+        payload.insert(QStringLiteral("flattenedInteractiveGroup"), true);
+        payload.insert(QStringLiteral("focusSourceOffset"), 0);
+        payload.insert(QStringLiteral("groupedBlocks"), QVariantList{});
+        payload.insert(QStringLiteral("logicalLineCountHint"), 1);
+        payload.insert(QStringLiteral("minimapRepresentativeCharCount"), 0);
+        payload.insert(QStringLiteral("minimapVisualKind"), QStringLiteral("text"));
+        payload.insert(QStringLiteral("plainText"), QString());
+        payload.insert(QStringLiteral("sourceEnd"), sourceText.size());
+        payload.insert(QStringLiteral("sourceStart"), 0);
+        payload.insert(QStringLiteral("sourceText"), QString());
+        payload.insert(QStringLiteral("textEditable"), true);
+        payload.insert(QStringLiteral("type"), QStringLiteral("text-group"));
         return payload;
     }
 
@@ -350,6 +359,25 @@ void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
             .arg(m_backgroundRefreshEnabled)
             .arg(shouldRenderInBackground())
             .arg(WhatSon::Debug::summarizeText(m_sourceText)));
+    if (canUseLargePlainNativeSurfaceRenderFastPath(m_sourceText))
+    {
+        updateRenderPending(false);
+        m_activeRenderSequence = 0;
+
+        RenderResult result;
+        result.renderedDocumentBlocks = QVariantList{largePlainNativeSurfaceBlockPayload(m_sourceText)};
+        result.renderProfile = QVariantMap{
+            {QStringLiteral("blockCount"), result.renderedDocumentBlocks.size()},
+            {QStringLiteral("corrected"), false},
+            {QStringLiteral("elapsedMs"), 0},
+            {QStringLiteral("mode"), QStringLiteral("large-plain-native")},
+            {QStringLiteral("sourceLength"), m_sourceText.size()}
+        };
+        result.sourceText = m_sourceText;
+        applyRenderResult(result);
+        return;
+    }
+
     if (shouldRenderInBackground())
     {
         updateRenderPending(true);
@@ -407,8 +435,7 @@ bool ContentsStructuredBlockRenderer::shouldRenderInBackground() const noexcept
 {
     return m_backgroundRefreshEnabled
         && m_sourceText.size() >= kBackgroundRenderSourceLengthThreshold
-        && (mayContainResourceBlock(m_sourceText)
-            || mayContainBreakBlock(m_sourceText));
+        && !canUseLargePlainNativeSurfaceRenderFastPath(m_sourceText);
 }
 
 void ContentsStructuredBlockRenderer::applyRenderResult(const RenderResult& result)

@@ -95,11 +95,18 @@ void WhatSonCppRegressionTests::editorRendererPipeline_rendersCalloutTagsAsFigma
     QVERIFY(!result.documentHtml.contains(QStringLiteral("<callout")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("background-color:#262728")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("background-color:#d9d9d9")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("bgcolor=\"#262728\"")));
+    QVERIFY(result.documentHtml.contains(QStringLiteral("<td width=\"3\" bgcolor=\"#d9d9d9\"")));
+    QVERIFY(result.documentHtml.contains(
+        QStringLiteral("background-color:#d9d9d9;font-size:1px;line-height:1px;\"></td>")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("width:100%")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("&nbsp;")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("&amp;nbsp;")));
     QVERIFY(!result.documentHtml.contains(QStringLiteral("width:295")));
     QVERIFY(!result.documentHtml.contains(QStringLiteral("height:22px")));
     QVERIFY(!result.documentHtml.contains(QStringLiteral("white-space:nowrap")));
+    QVERIFY(!result.documentHtml.contains(QStringLiteral("border-radius")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("font-family:Pretendard")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("font-size:12px")));
     QVERIFY(result.documentHtml.contains(QStringLiteral("line-height:12px")));
@@ -110,14 +117,22 @@ void WhatSonCppRegressionTests::editorRendererPipeline_rendersCalloutTagsAsFigma
     QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("<br/>")));
     QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("Second line")));
     QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("width:100%")));
+    QVERIFY(multilineResult.documentHtml.contains(QStringLiteral("<td width=\"3\" bgcolor=\"#d9d9d9\"")));
+    QVERIFY(!multilineResult.documentHtml.contains(QStringLiteral("&nbsp;")));
+    QVERIFY(!multilineResult.documentHtml.contains(QStringLiteral("&amp;nbsp;")));
     QVERIFY(!multilineResult.documentHtml.contains(QStringLiteral("height:22px")));
+    QVERIFY(!multilineResult.documentHtml.contains(QStringLiteral("border-radius")));
 
     QVERIFY(!result.htmlTokens.isEmpty());
     const QVariantMap token = result.htmlTokens.first().toMap();
     QVERIFY(token.value(QStringLiteral("overlayVisible")).toBool());
     QVERIFY(token.value(QStringLiteral("calloutBlock")).toBool());
     QCOMPARE(token.value(QStringLiteral("renderDelegateType")).toString(), QStringLiteral("text"));
-    QVERIFY(token.value(QStringLiteral("html")).toString().startsWith(QStringLiteral("<table")));
+    const QString tokenHtml = token.value(QStringLiteral("html")).toString();
+    QVERIFY(tokenHtml.startsWith(QStringLiteral("<table")));
+    QVERIFY(tokenHtml.contains(QStringLiteral("<td width=\"3\" bgcolor=\"#d9d9d9\"")));
+    QVERIFY(tokenHtml.contains(QStringLiteral("background-color:#d9d9d9;font-size:1px;line-height:1px;\"></td>")));
+    QVERIFY(!tokenHtml.contains(QStringLiteral("&nbsp;")));
 
     bool foundCalloutBlock = false;
     for (const QVariant& blockValue : result.normalizedHtmlBlocks)

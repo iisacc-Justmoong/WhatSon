@@ -65,11 +65,11 @@ Builds canonical structured render data from `.wsnbody` source text.
   `structuredParseVerification` payload instead of only break-specific lint.
 - Notes that do not contain any proprietary structured tags now still fall back entirely through the parser, but the
   fallback is no longer "one giant text block"; it is one ordered paragraph stream derived from RAW line breaks.
-- When the host enables `backgroundRefreshEnabled`, notes that may contain resource/break blocks now
-  publish a cheap single-text-block placeholder immediately and compute the expensive structured render snapshot on a
-  worker thread.
-- The renderer still keeps tiny local fast-path helpers for that background gate and placeholder publish path:
-  case-insensitive tag probes (`mayContainResourceBlock`, `mayContainBreakBlock`) plus a minimal
+- When the host enables `backgroundRefreshEnabled`, sufficiently large structured notes publish a cheap
+  single-text-block placeholder immediately and compute the expensive structured render snapshot on a worker thread.
+  Very large plain notes with no RAW tag opener take a lighter native-surface path instead: they publish one metadata-only
+  text group and do not copy the whole body into placeholder `sourceText`/`plainText` fields or queue a parser worker.
+- The renderer still keeps tiny local fast-path helpers for that background placeholder publish path: a minimal
   `documentBlockPayload(...)` builder for the temporary plain-text placeholder.
   That placeholder builder now mirrors the same generic block-trait shape as the parser result, so empty/initial
   structured hosts do not fall back to a different payload contract.
