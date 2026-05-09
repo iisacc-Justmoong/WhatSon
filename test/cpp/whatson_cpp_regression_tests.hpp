@@ -1113,6 +1113,7 @@ private slots:
     void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
+    void cmakeBuildTargets_cleanTransientBuildDiagnostics();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
@@ -1152,6 +1153,7 @@ private slots:
     void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_syncsAttachedEditorSessionFromActiveNote();
+    void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();

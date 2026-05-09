@@ -55,6 +55,8 @@
 - `scripts/test_*.py` 아래의 Python 테스트 스크립트는 제거되었으며 다시 도입하면 안 된다. 자동 회귀 커버리지는 CTest와 `test/`의 C++ 회귀 suite 아래에 유지한다.
 - 사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.
 - 기본 작업 흐름은 인계 전 가장 작은 관련 검증 게이트를 실행하고, 모든 생성 산출물을 `build/` 아래에 둔다.
+- `build/` 루트에는 임시 WhatSon 진단 로그, 스크린샷 PNG, `.wsnbody` 백업 XML, Finder metadata를 남기지 않는다.
+  불가피한 임시 산출물은 소유 하위 디렉터리에 두고, 일반 회귀 흐름은 `whatson_clean_build_extras`로 루트 clutter를 정리해야 한다.
 
 ### 계층 컨트롤러 소유권 (중요)
 
@@ -274,6 +276,7 @@ import LVRS 1.0 as LV
 2. 수정된 QML은 LVRS import와 component usage 일관성을 유지한다.
 3. model/controller/view contract는 signal-slot hook을 보존한다. C++에서는 `signals`+`slots`, QML view에서는 `signal` + callable hook function을 사용한다.
 4. 사용자가 명시적으로 달리 지시하지 않는 한 인계 전 `build/`에서 가장 작은 관련 검증 게이트를 실행하고, 대체 build directory를 만들지 않는다.
+5. 빌드/검증 중 생성된 임시 진단 로그, 스크린샷, 백업 파일은 `build/` 루트에 남기지 않는다.
 
 ## 유지보수 규칙
 

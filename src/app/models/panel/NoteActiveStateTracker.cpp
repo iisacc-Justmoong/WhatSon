@@ -709,21 +709,34 @@ void NoteActiveStateTracker::setActiveNoteState(
     if (entryChanged)
     {
         m_activeNoteEntry = std::move(noteEntry);
-        emit activeNoteEntryChanged();
     }
     if (noteIdChanged)
     {
         m_activeNoteId = std::move(noteId);
-        emit activeNoteIdChanged();
     }
     if (noteDirectoryPathChanged)
     {
         m_activeNoteDirectoryPath = std::move(noteDirectoryPath);
-        emit activeNoteDirectoryPathChanged();
     }
     if (noteBodyTextChanged)
     {
         m_activeNoteBodyText = std::move(noteBodyText);
+    }
+
+    if (entryChanged)
+    {
+        emit activeNoteEntryChanged();
+    }
+    if (noteIdChanged)
+    {
+        emit activeNoteIdChanged();
+    }
+    if (noteDirectoryPathChanged)
+    {
+        emit activeNoteDirectoryPathChanged();
+    }
+    if (noteBodyTextChanged)
+    {
         emit activeNoteBodyTextChanged();
     }
     if (previousHasActiveNote != hasActiveNote())

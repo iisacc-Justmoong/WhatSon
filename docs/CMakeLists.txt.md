@@ -6,8 +6,12 @@
 - Delegates large custom-target groups to `cmake/root/*/CMakeLists.txt` so the root file remains an orchestration surface instead of a full target catalog.
 
 ## Current Root Split
-- `cmake/root/build/CMakeLists.txt`: maintained regression targets such as `whatson_build_regression` and `whatson_regression`.
+- `cmake/root/build/CMakeLists.txt`: maintained regression targets such as `whatson_build_regression` and
+  `whatson_regression`, plus `whatson_clean_build_extras`, which removes stale root-level diagnostic logs, ad-hoc
+  screenshots, `.wsnbody` backup XML, and Finder metadata from `build/`. The regression gate runs this cleanup before
+  and after CTest so build-root clutter does not survive normal verification.
 - `cmake/root/dev/CMakeLists.txt`: developer tooling targets such as `whatson_qmllint`, `whatson_qmlformat_*`, and `whatson_clang_tidy`.
+  Generated QML/C++ file lists live under `build/CMakeFiles/whatson_dev/`, not directly in the build root.
 - `cmake/root/runtime/CMakeLists.txt`: run, healthcheck, mobile launch/export aliases, and iOS Xcode-project generation.
 - `cmake/root/distribution/CMakeLists.txt`: install/export/package targets and the dedicated `build-trial` mirror flow.
 
@@ -18,6 +22,8 @@
   put bundle executable paths or product target names in the custom target's `DEPENDS` list, because macOS app bundles
   can otherwise be interpreted as file dependencies without a make rule.
 - Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
+- Keep `build/` free of ad-hoc diagnostic artifacts. Build-system support files may exist there, but temporary
+  WhatSon logs/images/backups should be routed under owned subdirectories or removed by `whatson_clean_build_extras`.
 - User-built local libraries under `~/.local` are surfaced through cacheable root prefixes. `iiXml` and `iiHtmlBlock`
   are required when the app or regression suite is enabled, and are discovered through their CMake package configs
   before child target wiring runs. iOS builds must use platform packages, not the host macOS dylib prefixes: provide

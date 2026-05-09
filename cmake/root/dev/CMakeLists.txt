@@ -65,11 +65,12 @@ if (WHATSON_ENABLE_DEV_TOOLING)
     set(WHATSON_DEV_CPP_FILES_ABS ${WHATSON_DEV_CPP_FILES})
     list(TRANSFORM WHATSON_DEV_CPP_FILES_ABS PREPEND "${CMAKE_SOURCE_DIR}/")
 
-    set(WHATSON_DEV_QML_FILELIST "${CMAKE_BINARY_DIR}/whatson_qml_files.txt")
+    set(WHATSON_DEV_FILELIST_DIR "${CMAKE_BINARY_DIR}/CMakeFiles/whatson_dev")
+    set(WHATSON_DEV_QML_FILELIST "${WHATSON_DEV_FILELIST_DIR}/whatson_qml_files.txt")
     string(REPLACE ";" "\n" _whatson_dev_qml_filelist_text "${WHATSON_DEV_QML_FILES_ABS}")
     file(GENERATE OUTPUT "${WHATSON_DEV_QML_FILELIST}" CONTENT "${_whatson_dev_qml_filelist_text}\n")
 
-    set(WHATSON_DEV_CPP_FILELIST "${CMAKE_BINARY_DIR}/whatson_cpp_files.txt")
+    set(WHATSON_DEV_CPP_FILELIST "${WHATSON_DEV_FILELIST_DIR}/whatson_cpp_files.txt")
     string(REPLACE ";" "\n" _whatson_dev_cpp_filelist_text "${WHATSON_DEV_CPP_FILES_ABS}")
     file(GENERATE OUTPUT "${WHATSON_DEV_CPP_FILELIST}" CONTENT "${_whatson_dev_cpp_filelist_text}\n")
 

@@ -31,3 +31,34 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
     QVERIFY(testCmakeSource.contains(QStringLiteral("iiXml::iiXml")));
     QVERIFY(testCmakeSource.contains(QStringLiteral("iiHtmlBlock::iiHtmlBlock")));
 }
+
+void WhatSonCppRegressionTests::cmakeBuildTargets_cleanTransientBuildDiagnostics()
+{
+    const QString buildCmakeSource = readUtf8SourceFile(QStringLiteral("cmake/root/build/CMakeLists.txt"));
+    const QString devCmakeSource = readUtf8SourceFile(QStringLiteral("cmake/root/dev/CMakeLists.txt"));
+    const QString cleanupScriptSource = readUtf8SourceFile(QStringLiteral("cmake/CleanWhatSonBuildExtras.cmake"));
+
+    QVERIFY(!buildCmakeSource.isEmpty());
+    QVERIFY(!devCmakeSource.isEmpty());
+    QVERIFY(!cleanupScriptSource.isEmpty());
+
+    QVERIFY(buildCmakeSource.contains(QStringLiteral("add_custom_target(whatson_clean_build_extras")));
+    QVERIFY(buildCmakeSource.contains(QStringLiteral("CleanWhatSonBuildExtras.cmake")));
+    QVERIFY(buildCmakeSource.contains(QStringLiteral("add_dependencies(whatson_regression whatson_clean_build_extras)")));
+    QVERIFY(buildCmakeSource.contains(QStringLiteral("COMMAND \"${CMAKE_CTEST_COMMAND}\" --output-on-failure -L cpp_regression")));
+
+    QVERIFY(devCmakeSource.contains(QStringLiteral("set(WHATSON_DEV_FILELIST_DIR \"${CMAKE_BINARY_DIR}/CMakeFiles/whatson_dev\")")));
+    QVERIFY(devCmakeSource.contains(QStringLiteral("${WHATSON_DEV_FILELIST_DIR}/whatson_qml_files.txt")));
+    QVERIFY(devCmakeSource.contains(QStringLiteral("${WHATSON_DEV_FILELIST_DIR}/whatson_cpp_files.txt")));
+    QVERIFY(!devCmakeSource.contains(QStringLiteral("${CMAKE_BINARY_DIR}/whatson_qml_files.txt")));
+    QVERIFY(!devCmakeSource.contains(QStringLiteral("${CMAKE_BINARY_DIR}/whatson_cpp_files.txt")));
+
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson-*.png")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("*.wsnbody.backup.xml")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("*.wsnbody.pre-*-backup.xml")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral(".DS_Store")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_qmllint.latest.log")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_qmllint_diagnostic.log")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_cpp_files.txt")));
+    QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_qml_files.txt")));
+}

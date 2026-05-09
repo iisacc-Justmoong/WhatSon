@@ -185,3 +185,69 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_syncsAttachedEditorSessio
 
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
 }
+
+void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals()
+{
+    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
+
+    FakeSelectionNoteListModel libraryModel;
+    libraryModel.setCurrentNoteId(QStringLiteral("library-note"));
+    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.wsnote"));
+    libraryModel.setCurrentBodyText(QStringLiteral("Library body"));
+
+    FakeSelectionNoteListModel tagsModel;
+    tagsModel.setCurrentNoteId(QStringLiteral("tags-note"));
+    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.wsnote"));
+    tagsModel.setCurrentBodyText(QStringLiteral("Tags body"));
+
+    FakeHierarchyController libraryController(QStringLiteral("library"));
+    FakeHierarchyController tagsController(QStringLiteral("tags"));
+    libraryController.setNoteListModelObject(&libraryModel);
+    tagsController.setNoteListModelObject(&tagsModel);
+
+    HierarchyControllerProvider provider;
+    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryController},
+        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags), &tagsController},
+    });
+
+    SidebarHierarchyController sidebarController;
+    sidebarController.setControllerProvider(&provider);
+
+    NoteActiveStateTracker tracker;
+    QString bodyTextDuringTagsNoteIdSignal;
+    QString noteDirectoryPathDuringTagsNoteIdSignal;
+    QVariantMap noteEntryDuringTagsNoteIdSignal;
+    QObject::connect(
+        &tracker,
+        &NoteActiveStateTracker::activeNoteIdChanged,
+        &tracker,
+        [
+            &tracker,
+            &bodyTextDuringTagsNoteIdSignal,
+            &noteDirectoryPathDuringTagsNoteIdSignal,
+            &noteEntryDuringTagsNoteIdSignal
+        ]()
+        {
+            if (tracker.activeNoteId() != QStringLiteral("tags-note"))
+            {
+                return;
+            }
+            bodyTextDuringTagsNoteIdSignal = tracker.activeNoteBodyText();
+            noteDirectoryPathDuringTagsNoteIdSignal = tracker.activeNoteDirectoryPath();
+            noteEntryDuringTagsNoteIdSignal = tracker.activeNoteEntry();
+        });
+
+    tracker.setHierarchyContextSource(&sidebarController);
+    sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
+
+    QCOMPARE(bodyTextDuringTagsNoteIdSignal, QStringLiteral("Tags body"));
+    QCOMPARE(noteDirectoryPathDuringTagsNoteIdSignal, QStringLiteral("/tmp/tags-note.wsnote"));
+    QCOMPARE(
+        noteEntryDuringTagsNoteIdSignal.value(QStringLiteral("noteId")).toString(),
+        QStringLiteral("tags-note"));
+    QVERIFY(!noteEntryDuringTagsNoteIdSignal.contains(QStringLiteral("bodyText")));
+    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Tags body"));
+
+    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
+}

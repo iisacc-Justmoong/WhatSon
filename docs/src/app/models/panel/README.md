@@ -14,7 +14,9 @@ These classes are not the core domain state. They are adaptation layers between:
 - `FocusedNoteDeletionBridge`: focused-note deletion helper.
 - `NoteActiveStateTracker`: app-wide active-note state tracker that follows the active hierarchy context, publishes
   normalized `activeNoteId` / `activeNoteDirectoryPath` / `activeNoteEntry` / `activeNoteBodyText` for QML, and
-  synchronizes the attached editor session from that same active-note snapshot.
+  synchronizes the attached editor session from that same active-note snapshot. It commits the full active-note
+  snapshot before emitting per-property change signals so synchronous editor observers cannot see a new note id with a
+  previous note body.
 - `NoteListModelContractBridge`: dynamic note-list search/selection contract adapter used by `ListBarLayout.qml`.
 - `PanelController` and `PanelControllerRegistry`: panel-specific controller routing and hook dispatch.
 

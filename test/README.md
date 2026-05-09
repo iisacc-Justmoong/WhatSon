@@ -100,6 +100,11 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Note-management coverage now pins activity counters: changed direct editor body persistence increments persisted
   `.wsnhead <modifiedCount>`, and successful open-count writes trigger a metadata reload so the active detail surface
   can show the new `.wsnhead <openCount>` without reselection.
+- Active-note tracking coverage now pins atomic snapshot publication before per-property change signals, preventing
+  editor observers from binding a newly selected note id to the previous note's body text during rapid note switches.
+- Build-target hygiene coverage now pins `whatson_clean_build_extras`, keeps generated dev-tool file lists under
+  `build/CMakeFiles/whatson_dev/`, and rejects root-level `build/` clutter such as stale WhatSon logs, screenshots,
+  note-body backup XML, and `.DS_Store` files.
 - macOS body-tag shortcut coverage now also pins Option-modified key codes and `KeyEvent.text`, so `Cmd+Option+C`
   still resolves to the callout insertion command even when Qt reports the key as `ç`/`Ç`; QML coverage also locks the
   focused native-editor event-filter path that prevents those characters from being committed as ordinary prose.
