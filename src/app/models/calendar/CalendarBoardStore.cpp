@@ -1,8 +1,8 @@
 #include "app/models/calendar/CalendarBoardStore.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/hierarchy/library/LibraryNotePreviewText.hpp"
-#include "app/models/file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
+#include "app/models/hierarchy/library/LibraryNotePreviewText.hpp"
+#include "app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>

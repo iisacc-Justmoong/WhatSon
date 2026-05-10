@@ -1,6 +1,6 @@
 #include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 
-#include "app/models/file/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
+#include "app/models/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>

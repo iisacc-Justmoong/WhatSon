@@ -18,17 +18,17 @@
 - 데몬 진입점: `src/daemon/main.cpp`
 - 루트 빌드 정의: `CMakeLists.txt` 및 `cmake/root/*/CMakeLists.txt` 아래의 그룹화된 루트 타깃 shard
 - 기본 QML 루트: `src/app/qml/Main.qml`
-- 라이브러리 계층 백엔드: `src/app/models/file/hierarchy/library`
-- 라이브러리 계층 모델/컨트롤러: `src/app/models/file/hierarchy/library/LibraryHierarchyModel.*`,
-  `src/app/models/file/hierarchy/library/LibraryHierarchyController.*`
-- 라이브러리 오른쪽 패널 목록 모델: `src/app/models/file/hierarchy/library/LibraryNoteListModel.*`
+- 라이브러리 계층 백엔드: `src/app/models/hierarchy/library`
+- 라이브러리 계층 모델/컨트롤러: `src/app/models/hierarchy/library/LibraryHierarchyModel.*`,
+  `src/app/models/hierarchy/library/LibraryHierarchyController.*`
+- 라이브러리 오른쪽 패널 목록 모델: `src/app/models/hierarchy/library/LibraryNoteListModel.*`
 - 허브 배치 store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
-- 태그 depth provider: `src/app/models/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
+- 태그 depth provider: `src/app/models/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
 - 허브 런타임 store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
 - 런타임 병렬 bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
-- 태그 런타임 상태 store: `src/app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
-- 태그 계층 모델/컨트롤러: `src/app/models/file/hierarchy/tags/TagsHierarchyModel.*`,
-  `src/app/models/file/hierarchy/tags/TagsHierarchyController.*`
+- 태그 런타임 상태 store: `src/app/models/hierarchy/tags/WhatSonHubTagsStateStore.*`
+- 태그 계층 모델/컨트롤러: `src/app/models/hierarchy/tags/TagsHierarchyModel.*`,
+  `src/app/models/hierarchy/tags/TagsHierarchyController.*`
 - 내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,
   `src/app/models/navigationbar/NavigationModeSectionController.*`,
   `src/app/models/navigationbar/NavigationModeController.*`
@@ -54,7 +54,7 @@
 
 ### 계층 컨트롤러 소유권 (중요)
 
-- 각 계층 타입은 `src/app/models/file/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.
+- 각 계층 타입은 `src/app/models/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.
 - 모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.
 - 표준 매핑:
     - Library -> `LibraryHierarchyController`
@@ -67,10 +67,10 @@
     - Preset -> `PresetHierarchyController`
 - 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
 - 런타임 계층 Controller wiring에는 flat/shared hierarchy model abstraction을 금지한다.
-- model/support 코드는 `src/app/models/file/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
+- model/support 코드는 `src/app/models/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
 - Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,
   반복되는 depth item parsing/serialization/selection/expansion support는
-  `src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다.
+  `src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다.
 - Projects 계층은 Library 계층처럼 child project를 허용하는 nested depth tree다. `ProjectsHierarchyController`와
   `ProjectLists.wsproj` parser/store/creator는 depth, child drop, subtree delete/reorder를 보존해야 하며 flat-only
   project list 정책으로 되돌리면 안 된다.
@@ -275,7 +275,7 @@ import LVRS 1.0 as LV
 - 명령 예시와 실제 output path를 docs에서 동기화한다.
 - project-local C++ include는 configured include root 기준의 repository-absolute include를 사용한다. basename-only 또는 file-relative include 대신 `app/...`, `extension/...`, `test/...`를 사용한다.
 - model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.
-- hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/file/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.
+- hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.
 - QML에는 SRP를 강제한다. 하나의 QML 파일이 layout shell, rendering delegate, interaction logic을 함께 품기 시작하면 같은 domain directory 아래의 dedicated sibling module로 분리하고 parent screen에서 compose한다.
 - 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.
 - decomposition work와 quality gate를 맞춘다.

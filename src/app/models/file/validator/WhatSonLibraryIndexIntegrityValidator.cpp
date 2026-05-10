@@ -1,8 +1,8 @@
 #include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
-#include "app/models/file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
+#include "app/models/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
+#include "app/models/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
 #include <QDir>
 #include <QFileInfo>

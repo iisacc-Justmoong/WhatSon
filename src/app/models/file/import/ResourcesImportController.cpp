@@ -3,9 +3,9 @@
 #include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #include "app/models/file/import/WhatSonResourceClipboardImportSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
-#include "app/models/file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
+#include "app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QClipboard>

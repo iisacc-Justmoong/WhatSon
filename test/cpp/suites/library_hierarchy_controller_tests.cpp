@@ -3,9 +3,9 @@
 void WhatSonCppRegressionTests::libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots()
 {
     const QString controllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.cpp"));
     const QString controllerDoc = readUtf8SourceFile(
-        QStringLiteral("docs/src/app/models/file/hierarchy/library/LibraryHierarchyController.cpp.md"));
+        QStringLiteral("docs/src/app/models/hierarchy/library/LibraryHierarchyController.cpp.md"));
 
     QVERIFY(controllerSource.contains(QStringLiteral("constexpr auto kLibraryDraftLabel = \"Drafts\";")));
     QVERIFY(controllerSource.contains(QStringLiteral("makeSystemBucketItem(QLatin1String(kLibraryAllLabel), LibraryHierarchyItem::SystemBucket::All)")));

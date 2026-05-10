@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/models/file/hierarchy/IHierarchyController.hpp"
+#include "app/models/hierarchy/IHierarchyController.hpp"
 
 #include <QMetaObject>
 #include <QObject>

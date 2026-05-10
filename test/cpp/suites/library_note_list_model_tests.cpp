@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/file/hierarchy/library/LibraryNotePreviewText.hpp"
+#include "app/models/hierarchy/library/LibraryNotePreviewText.hpp"
 
 namespace
 {

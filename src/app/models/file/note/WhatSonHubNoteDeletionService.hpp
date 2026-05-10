@@ -2,7 +2,7 @@
 
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
-#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 #include "app/models/file/hub/WhatSonHubStat.hpp"
 #include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
 #include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"

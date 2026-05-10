@@ -1,6 +1,6 @@
 #include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
 
-#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"

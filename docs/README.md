@@ -23,7 +23,7 @@ The mirror has two goals.
 1. `docs/src/app/README.md`
 2. `docs/src/app/main.cpp.md`
 3. `docs/src/app/qml/Main.qml.md`
-4. `docs/src/app/models/file/hierarchy/README.md`
+4. `docs/src/app/models/hierarchy/README.md`
 5. `docs/src/app/models/panel/README.md`
 6. `docs/src/app/qml/view/panels/sidebar/README.md`
 

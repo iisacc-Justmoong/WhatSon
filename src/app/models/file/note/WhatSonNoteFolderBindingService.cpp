@@ -1,7 +1,7 @@
 #include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
 
 #include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
-#include "app/models/file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 
 #include <QSet>
 

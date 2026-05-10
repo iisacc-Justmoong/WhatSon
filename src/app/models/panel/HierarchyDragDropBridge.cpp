@@ -1,7 +1,7 @@
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 
 #include "app/policy/ArchitecturePolicyLock.hpp"
-#include "app/models/file/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 
 #include <QStringList>
 

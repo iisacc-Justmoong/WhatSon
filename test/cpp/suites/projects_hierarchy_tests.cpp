@@ -1,8 +1,8 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.hpp"
-#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
-#include "app/models/file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "app/models/hierarchy/projects/WhatSonProjectsHierarchyCreator.hpp"
+#include "app/models/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
+#include "app/models/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 
 namespace
 {
@@ -80,9 +80,9 @@ void WhatSonCppRegressionTests::projectsHierarchyParser_roundTripsNestedProjectT
 void WhatSonCppRegressionTests::projectsHierarchyController_keepsNestedProjectPolicy()
 {
     const QString controllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/projects/ProjectsHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"));
     const QString supportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/projects/ProjectsHierarchyControllerSupport.hpp"));
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyControllerSupport.hpp"));
 
     QVERIFY(!controllerSource.isEmpty());
     QVERIFY(!supportSource.isEmpty());

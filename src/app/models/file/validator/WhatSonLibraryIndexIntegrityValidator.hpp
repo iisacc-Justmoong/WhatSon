@@ -2,7 +2,7 @@
 
 #include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/file/validator/WhatSonNoteStorageValidator.hpp"
-#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
 #include <QStringList>

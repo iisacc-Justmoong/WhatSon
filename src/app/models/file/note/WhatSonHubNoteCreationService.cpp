@@ -3,7 +3,7 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
-#include "app/models/file/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
+#include "app/models/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>

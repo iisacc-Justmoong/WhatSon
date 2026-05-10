@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/models/calendar/ICalendarBoardStore.hpp"
-#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QDate>
 #include <QHash>

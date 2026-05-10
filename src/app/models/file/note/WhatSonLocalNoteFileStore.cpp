@@ -6,9 +6,9 @@
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
-#include "app/models/file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
-#include "app/models/file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "app/models/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "app/models/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 
 #include <QDateTime>
 #include <QDir>

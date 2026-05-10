@@ -446,16 +446,29 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     const QDir repositoryRoot(repositoryRootPath());
     QVERIFY(repositoryRoot.exists());
 
+    QVERIFY2(
+        QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/hierarchy"))).exists(),
+        "Hierarchy backend must live in its own model shard.");
+    QVERIFY2(
+        QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/hierarchy"))).exists(),
+        "Hierarchy backend documentation must mirror the standalone model shard.");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/file/hierarchy"))).exists(),
+        "Hierarchy backend must not be nested under the persistent file-storage shard.");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/hierarchy"))).exists(),
+        "Hierarchy backend docs must not be nested under the persistent file-storage docs.");
+
     const QString namedSupportPath =
-        QStringLiteral("src/app/models/file/hierarchy/WhatSonNamedStringHierarchySupport.hpp");
+        QStringLiteral("src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp");
     const QString projectionHeaderPath =
-        QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.hpp");
+        QStringLiteral("src/app/models/hierarchy/library/WhatSonLibraryNoteListProjection.hpp");
     const QString projectionSourcePath =
-        QStringLiteral("src/app/models/file/hierarchy/library/WhatSonLibraryNoteListProjection.cpp");
+        QStringLiteral("src/app/models/hierarchy/library/WhatSonLibraryNoteListProjection.cpp");
     const QString noteRecordSupportHeaderPath =
-        QStringLiteral("src/app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp");
+        QStringLiteral("src/app/models/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp");
     const QString noteRecordSupportSourcePath =
-        QStringLiteral("src/app/models/file/hierarchy/WhatSonHierarchyNoteRecordSupport.cpp");
+        QStringLiteral("src/app/models/hierarchy/WhatSonHierarchyNoteRecordSupport.cpp");
     const QString clipboardSupportHeaderPath =
         QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.hpp");
     const QString clipboardSupportSourcePath =
@@ -483,25 +496,25 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         QFileInfo::exists(repositoryRoot.filePath(clipboardSupportSourcePath)),
         "Clipboard image extraction support must stay out of the ResourcesImportController.");
     const QString eventSupportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyControllerSupport.hpp"));
+        QStringLiteral("src/app/models/hierarchy/event/EventHierarchyControllerSupport.hpp"));
     const QString presetSupportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/preset/PresetHierarchyControllerSupport.hpp"));
+        QStringLiteral("src/app/models/hierarchy/preset/PresetHierarchyControllerSupport.hpp"));
     QVERIFY(eventSupportSource.contains(QStringLiteral("WhatSonNamedStringHierarchySupport.hpp")));
     QVERIFY(presetSupportSource.contains(QStringLiteral("WhatSonNamedStringHierarchySupport.hpp")));
 
     const QString eventControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/event/EventHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/event/EventHierarchyController.cpp"));
     const QString presetControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/preset/PresetHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/preset/PresetHierarchyController.cpp"));
     QVERIFY(!eventControllerSource.contains(QStringLiteral("expandedEventItemKeys")));
     QVERIFY(!eventControllerSource.contains(QStringLiteral("selectedEventIndexForKey")));
     QVERIFY(!presetControllerSource.contains(QStringLiteral("expandedPresetItemKeys")));
     QVERIFY(!presetControllerSource.contains(QStringLiteral("selectedPresetIndexForKey")));
 
     const QString libraryControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.cpp"));
     const QString libraryControllerHeader = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/library/LibraryHierarchyController.hpp"));
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.hpp"));
     const QString projectionSource = readUtf8SourceFile(projectionSourcePath);
     QVERIFY(libraryControllerHeader.contains(QStringLiteral("WhatSonLibraryNoteListProjection")));
     QVERIFY(!libraryControllerHeader.contains(QStringLiteral("m_noteListItemCache")));
@@ -511,15 +524,15 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(libraryControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
 
     const QString projectsControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/projects/ProjectsHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"));
     QVERIFY(projectsControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
     QVERIFY(projectsControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
     QVERIFY(!projectsControllerSource.contains(QStringLiteral("int indexOfNoteRecordById(")));
 
     const QString bookmarksControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp"));
     const QString progressControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/hierarchy/progress/ProgressHierarchyController.cpp"));
+        QStringLiteral("src/app/models/hierarchy/progress/ProgressHierarchyController.cpp"));
     QVERIFY(bookmarksControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
     QVERIFY(bookmarksControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
     QVERIFY(progressControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
@@ -533,6 +546,15 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(resourcesImportControllerSource.contains(QStringLiteral("ClipboardImportSupport::extractClipboardImage")));
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
+
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/file)")));
+    QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/hierarchy)")));
+    const QString hierarchyCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/models/hierarchy/CMakeLists.txt"));
+    QVERIFY(hierarchyCmakeSource.contains(QStringLiteral(
+        "whatson_app_register_directory_sources(\"${CMAKE_CURRENT_SOURCE_DIR}\" RECURSE)")));
+    QVERIFY(hierarchyCmakeSource.contains(QStringLiteral(
+        "whatson_app_register_directory_include_directories(\"${CMAKE_CURRENT_SOURCE_DIR}\")")));
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));

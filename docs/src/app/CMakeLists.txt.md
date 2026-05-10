@@ -58,7 +58,7 @@
   `sensor/UnusedResourcesSensor.hpp` keep compiling after those domains moved under `src/app/models/`.
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
   registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
-  `models/sidebar`, and `models/file/hierarchy/*`.
+  `models/sidebar`, and `models/hierarchy/*`.
 - `src/app/models/editor` is an explicit model-domain shard again. Root CMake enters it with
   `add_subdirectory(models/editor)`, while the shard owns recursive source registration for editor-domain C++ such as
   `SetTag.*`, `SetProperty.*`, and `GetProperty.*`. Runtime editor QML still mounts the LVRS `TextEditor` surface

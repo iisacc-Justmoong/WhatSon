@@ -6,7 +6,7 @@
 
 ## Scope
 - Mirrored source directory: `src/app/models/file`
-- Child directories: 12
+- Child directories: 11
 - Child files: 1
 
 ## Child Directories
@@ -14,7 +14,6 @@
 - `conflict`
 - `diff`
 - `export`
-- `hierarchy`
 - `hub`
 - `import`
 - `note`
@@ -37,6 +36,8 @@
 ## Migration Note
 - The file domain now lives under `src/app/models/file`; build/test include paths and mirrored docs must resolve the
   model-domain location instead of the retired `src/app/file` root.
+- Hierarchy model/controller code has moved out to `src/app/models/hierarchy`; this file shard now owns persistent
+  hub/note/resource storage and related IO helpers, not hierarchy controller composition.
 
 ## 한국어
 

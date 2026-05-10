@@ -2,7 +2,7 @@
 
 #include "app/models/file/hub/WhatSonHubStore.hpp"
 #include "app/models/file/hub/WhatSonHubPlacementStore.hpp"
-#include "app/models/file/hierarchy/tags/WhatSonHubTagsStateStore.hpp"
+#include "app/models/hierarchy/tags/WhatSonHubTagsStateStore.hpp"
 
 #include <QHash>
 #include <QString>

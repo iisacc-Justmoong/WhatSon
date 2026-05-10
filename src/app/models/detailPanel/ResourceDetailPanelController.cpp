@@ -1,7 +1,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 
 #include "app/policy/ArchitecturePolicyLock.hpp"
-#include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 
 ResourceDetailPanelController::ResourceDetailPanelController(QObject* parent)
     : QObject(parent)

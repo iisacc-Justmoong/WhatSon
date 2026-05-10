@@ -5,14 +5,14 @@
 #include "app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubRuntimeStore.hpp"
-#include "app/models/file/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
-#include "app/models/file/hierarchy/event/EventHierarchyController.hpp"
-#include "app/models/file/hierarchy/library/LibraryHierarchyController.hpp"
-#include "app/models/file/hierarchy/preset/PresetHierarchyController.hpp"
-#include "app/models/file/hierarchy/progress/ProgressHierarchyController.hpp"
-#include "app/models/file/hierarchy/projects/ProjectsHierarchyController.hpp"
-#include "app/models/file/hierarchy/resources/ResourcesHierarchyController.hpp"
-#include "app/models/file/hierarchy/tags/TagsHierarchyController.hpp"
+#include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
+#include "app/models/hierarchy/event/EventHierarchyController.hpp"
+#include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
+#include "app/models/hierarchy/preset/PresetHierarchyController.hpp"
+#include "app/models/hierarchy/progress/ProgressHierarchyController.hpp"
+#include "app/models/hierarchy/projects/ProjectsHierarchyController.hpp"
+#include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/hierarchy/tags/TagsHierarchyController.hpp"
 
 #include <QElapsedTimer>
 #include <utility>

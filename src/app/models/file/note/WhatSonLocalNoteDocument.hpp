@@ -2,7 +2,7 @@
 
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
-#include "app/models/file/hierarchy/library/LibraryNoteRecord.hpp"
+#include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
 
