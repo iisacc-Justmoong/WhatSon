@@ -286,9 +286,17 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
 
     const QStringList requiredFiles{
         QStringLiteral("src/app/models/editor/CMakeLists.txt"),
+        QStringLiteral("src/app/models/editor/GetProperty.cpp"),
+        QStringLiteral("src/app/models/editor/GetProperty.h"),
+        QStringLiteral("src/app/models/editor/SetProperty.cpp"),
+        QStringLiteral("src/app/models/editor/SetProperty.h"),
         QStringLiteral("src/app/models/editor/SetTag.cpp"),
         QStringLiteral("src/app/models/editor/SetTag.h"),
         QStringLiteral("docs/src/app/models/editor/README.md"),
+        QStringLiteral("docs/src/app/models/editor/GetProperty.cpp.md"),
+        QStringLiteral("docs/src/app/models/editor/GetProperty.h.md"),
+        QStringLiteral("docs/src/app/models/editor/SetProperty.cpp.md"),
+        QStringLiteral("docs/src/app/models/editor/SetProperty.h.md"),
         QStringLiteral("docs/src/app/models/editor/SetTag.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetTag.h.md")
     };
@@ -301,6 +309,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.h")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.h")));
 
@@ -514,6 +526,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
 }

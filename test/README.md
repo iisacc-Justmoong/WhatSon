@@ -43,9 +43,10 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   `TextEditor.qml`, and `Minimap.qml`; `TextEditor.qml` is rooted in `LV.TextEditor` with an empty `filePath`.
 - Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
   editor minimap backends and any extra contents-view QML beyond those three files.
-- Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, rejects unsupported
-  XML-ish names, supports `header` / `subheader` / `resource`, and reserializes body documents through the note-body
-  persistence boundary.
+- Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, while `SetProperty`
+  uses dynamic string attribute names with inferred string/int/float/bool values. `GetProperty` captures tag
+  attributes into in-app key/value state with the matching inferred value kinds. These paths reserialize or project
+  body documents through the note-body persistence boundary.
 - The same coverage now verifies that `Main.qml` keeps the restored desktop/mobile shell while the removed editor
   view-mode selector/controller family stays absent.
 - The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list
