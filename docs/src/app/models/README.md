@@ -17,7 +17,8 @@ owning model domains instead of a separate view-model tree.
 - They must not take ownership of LVRS view composition or sidebar/detail-panel routing concerns.
 - Sensor-style models should prefer RAW hub files (`.wsnbody`, `.wsresource`, `resource.xml`) as their read source.
 - `content/mobile` helpers should remain route/state coordinators only; they must not absorb sidebar or editor
-  ownership. The current workspace editor interface is QML-only `LV.TextEditor` composition with no editor model domain.
+  ownership. The current workspace editor interface uses QML-only `LV.TextEditor` composition and receives the selected
+  note body path from `NoteActiveStateTracker`.
 
 ## 한국어
 

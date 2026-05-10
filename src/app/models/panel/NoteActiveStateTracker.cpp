@@ -1,5 +1,6 @@
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
 
@@ -213,6 +214,12 @@ namespace
             noteEntry.value(QStringLiteral("noteDirectoryPath")).toString());
     }
 
+    QString noteBodyPathFromDirectoryPath(const QString& noteDirectoryPath)
+    {
+        return normalizeNoteDirectoryPath(
+            WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    }
+
     void stabilizeQmlBindingOwnership(QObject* object)
     {
         if (object != nullptr)
@@ -324,6 +331,11 @@ QString NoteActiveStateTracker::activeNoteId() const
 QString NoteActiveStateTracker::activeNoteDirectoryPath() const
 {
     return m_activeNoteDirectoryPath;
+}
+
+QString NoteActiveStateTracker::activeNoteBodyPath() const
+{
+    return m_activeNoteBodyPath;
 }
 
 QString NoteActiveStateTracker::activeNoteBodyText() const
@@ -570,13 +582,18 @@ void NoteActiveStateTracker::setActiveNoteState(
     noteDirectoryPath = normalizeNoteDirectoryPath(std::move(noteDirectoryPath));
     if (noteId.isEmpty())
     {
+        noteDirectoryPath.clear();
         noteBodyText.clear();
     }
+    const QString noteBodyPath = noteId.isEmpty()
+        ? QString()
+        : noteBodyPathFromDirectoryPath(noteDirectoryPath);
 
     const bool previousHasActiveNote = hasActiveNote();
     const bool entryChanged = m_activeNoteEntry != noteEntry;
     const bool noteIdChanged = m_activeNoteId != noteId;
     const bool noteDirectoryPathChanged = m_activeNoteDirectoryPath != noteDirectoryPath;
+    const bool noteBodyPathChanged = m_activeNoteBodyPath != noteBodyPath;
     const bool noteBodyTextChanged = m_activeNoteBodyText != noteBodyText;
 
     if (entryChanged)
@@ -590,6 +607,10 @@ void NoteActiveStateTracker::setActiveNoteState(
     if (noteDirectoryPathChanged)
     {
         m_activeNoteDirectoryPath = std::move(noteDirectoryPath);
+    }
+    if (noteBodyPathChanged)
+    {
+        m_activeNoteBodyPath = noteBodyPath;
     }
     if (noteBodyTextChanged)
     {
@@ -608,6 +629,10 @@ void NoteActiveStateTracker::setActiveNoteState(
     {
         emit activeNoteDirectoryPathChanged();
     }
+    if (noteBodyPathChanged)
+    {
+        emit activeNoteBodyPathChanged();
+    }
     if (noteBodyTextChanged)
     {
         emit activeNoteBodyTextChanged();
@@ -616,7 +641,7 @@ void NoteActiveStateTracker::setActiveNoteState(
     {
         emit hasActiveNoteChanged();
     }
-    if (entryChanged || noteIdChanged || noteDirectoryPathChanged || noteBodyTextChanged)
+    if (entryChanged || noteIdChanged || noteDirectoryPathChanged || noteBodyPathChanged || noteBodyTextChanged)
     {
         emit activeNoteStateChanged();
     }

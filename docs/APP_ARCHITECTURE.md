@@ -8,9 +8,9 @@ note list, content slot, and detail panel. The content slot mounts `ContentViewL
 `Gutter.qml`, `TextEditor.qml`, and `Minimap.qml`.
 
 ## Mobile Shell
-The mobile shell remains mounted for adaptive/mobile layouts. Its editor route uses the same backend-free
-`ContentViewLayout.qml` surface while keeping the existing route scaffold, hierarchy page, note-list page, and detail
-page chrome.
+The mobile shell remains mounted for adaptive/mobile layouts. Its editor route uses the same `ContentViewLayout.qml`
+surface and forwards active-note state so the selected note body file is edited while keeping the existing route
+scaffold, hierarchy page, note-list page, and detail page chrome.
 
 ## Root Ownership
 `Main.qml` owns startup routing, onboarding presentation, the restored workspace chrome, and render-quality resize
@@ -20,7 +20,7 @@ Runtime objects now arrive from `WhatSonQmlContextBinder` as direct LVRS context
 view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime lookup.
 
 The binder no longer publishes an editor view-mode controller. The active editor surface is the LVRS `TextEditor`
-composition path with an empty `filePath`.
+composition path with `filePath` bound to `NoteActiveStateTracker.activeNoteBodyPath`.
 
 ## View Behavior Ownership
 QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient

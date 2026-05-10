@@ -20,6 +20,7 @@ class NoteActiveStateTracker final : public QObject
     Q_PROPERTY(QVariantMap activeNoteEntry READ activeNoteEntry NOTIFY activeNoteEntryChanged)
     Q_PROPERTY(QString activeNoteId READ activeNoteId NOTIFY activeNoteIdChanged)
     Q_PROPERTY(QString activeNoteDirectoryPath READ activeNoteDirectoryPath NOTIFY activeNoteDirectoryPathChanged)
+    Q_PROPERTY(QString activeNoteBodyPath READ activeNoteBodyPath NOTIFY activeNoteBodyPathChanged)
     Q_PROPERTY(QString activeNoteBodyText READ activeNoteBodyText NOTIFY activeNoteBodyTextChanged)
     Q_PROPERTY(bool hasActiveNote READ hasActiveNote NOTIFY hasActiveNoteChanged)
 
@@ -36,6 +37,7 @@ public:
     QVariantMap activeNoteEntry() const;
     QString activeNoteId() const;
     QString activeNoteDirectoryPath() const;
+    QString activeNoteBodyPath() const;
     QString activeNoteBodyText() const;
     bool hasActiveNote() const noexcept;
 
@@ -50,6 +52,7 @@ signals:
     void activeNoteEntryChanged();
     void activeNoteIdChanged();
     void activeNoteDirectoryPathChanged();
+    void activeNoteBodyPathChanged();
     void activeNoteBodyTextChanged();
     void hasActiveNoteChanged();
     void activeNoteStateChanged();
@@ -78,6 +81,7 @@ private:
     QVariantMap m_activeNoteEntry;
     QString m_activeNoteId;
     QString m_activeNoteDirectoryPath;
+    QString m_activeNoteBodyPath;
     QString m_activeNoteBodyText;
     int m_activeHierarchyIndex = 0;
 };

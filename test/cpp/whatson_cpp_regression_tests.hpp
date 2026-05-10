@@ -1125,6 +1125,7 @@ private slots:
     void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
+    void noteActiveStateTracker_publishesBodyPathForLvrsTextEditorBinding();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();

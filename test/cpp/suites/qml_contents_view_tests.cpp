@@ -21,6 +21,12 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("filePath: \"\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property string activeNoteBodyPath")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeNoteBodyPath !== undefined")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.activeNoteBodyPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
@@ -55,7 +61,7 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(!mainSource.isEmpty());
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("LV.CodeEditor {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: \"\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(!combinedSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
     QVERIFY(!combinedSource.contains(QStringLiteral("ContentsEditorDisplayBackend")));
     QVERIFY(!combinedSource.contains(QStringLiteral("ContentsStructuredDocumentFlow")));

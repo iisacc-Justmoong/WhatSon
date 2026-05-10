@@ -5,8 +5,8 @@
 `NoteActiveStateTracker` is the app-wide, QML-facing active-note state object.
 
 It observes one `IActiveHierarchyContextSource`, follows its current active note-list model, and republishes the
-normalized note selection as a single stable object contract. It no longer owns editor-session synchronization; the
-LVRS `TextEditor` surface is mounted independently from the removed editor backend stack.
+normalized note selection as a single stable object contract. It also resolves the selected note's `.wsnbody` file path
+so the LVRS `TextEditor` surface can bind directly to the active note document.
 
 ## Public Contract
 
@@ -20,6 +20,7 @@ LVRS `TextEditor` surface is mounted independently from the removed editor backe
   - `activeNoteEntry`
   - `activeNoteId`
   - `activeNoteDirectoryPath`
+  - `activeNoteBodyPath`
   - `activeNoteBodyText`
   - `hasActiveNote`
 - Signals:
@@ -34,6 +35,8 @@ LVRS `TextEditor` surface is mounted independently from the removed editor backe
 - A readable-but-empty `currentNoteEntry` / `currentNoteId` contract clears the active note instead of preserving stale
   identity.
 - `activeNoteDirectoryPath` is normalized with `QDir::cleanPath` and never publishes `"."`.
+- `activeNoteBodyPath` is resolved through `WhatSon::NoteBodyPersistence::resolveBodyPath(...)` and is empty when no
+  note is active.
 - `bodyText` is not published inside `activeNoteEntry`; the note-list body value is exposed separately as
   `activeNoteBodyText` for read-side UI consumers that still need selection context.
 
@@ -41,4 +44,5 @@ LVRS `TextEditor` surface is mounted independently from the removed editor backe
 
 - 대상: `src/app/models/panel/NoteActiveStateTracker.hpp`
 - 역할: 사이드바의 active hierarchy context를 따라 현재 active note 상태를 전역 QML 객체 하나로 노출한다.
-- 기준: note-list selection, note source, editor session, persistence를 수정하지 않는다.
+- 기준: note-list selection, note source, editor session을 수정하지 않는다. 다만 선택된 노트의 body file path는
+  읽기 전용 상태로 계산해 QML에 제공한다.

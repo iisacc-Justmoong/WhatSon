@@ -32,10 +32,14 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(!contentViewLayoutSource.isEmpty());
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: \"\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readOnly: textEditor.noteBodyFilePath.trim().length === 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
     QVERIFY(textEditorSource.contains(QStringLiteral("showScrollBar: false")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsView")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeNoteBodyPath")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.activeNoteBodyPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));

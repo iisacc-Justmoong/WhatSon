@@ -6,6 +6,8 @@ import LVRS 1.0 as LV
 LV.TextEditor {
     id: textEditor
 
+    property string noteBodyFilePath: ""
+
     backgroundColor: "transparent"
     backgroundColorDisabled: "transparent"
     backgroundColorFocused: "transparent"
@@ -14,7 +16,7 @@ LV.TextEditor {
     cornerRadius: LV.Theme.gapNone
     editorHeight: Math.max(1, height)
     fieldMinHeight: LV.Theme.gap16
-    filePath: ""
+    filePath: textEditor.noteBodyFilePath
     fontFamily: LV.Theme.fontBody
     fontPixelSize: LV.Theme.textBody
     fontWeight: LV.Theme.textBodyWeight
@@ -22,6 +24,7 @@ LV.TextEditor {
     insetVertical: LV.Theme.gapNone
     objectName: "contentsTextEditor"
     preferNativeGestures: true
+    readOnly: textEditor.noteBodyFilePath.trim().length === 0
     showScrollBar: false
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor

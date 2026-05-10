@@ -32,7 +32,7 @@
 - Known hotspots and refactor priorities
 
 ## Notes
-- Calendar QML remains in the module, but the backend-free TextEditor `ContentViewLayout.qml` no longer mounts these pages.
+- Calendar QML remains in the module, but the TextEditor `ContentViewLayout.qml` no longer mounts these pages.
 - Day/week/month/year pages now consume the shared calendar backend through dedicated calendar controllers.
 - `AgendaPage.qml` consumes `AgendaController` and renders date header, location summary, all-day events,
   timed events, and agenda-item completion rows inside the content-surface calendar route.
@@ -55,7 +55,7 @@
   non-selected current-day cells.
 - Shared calendar chrome now routes visible chip/header/control metrics through LVRS `gap`, `radius`, `stroke`, and
   `scaleMetric(...)` helpers instead of page-local pixel literals.
-- Projected note chips remain page-local interactions; the backend-free TextEditor content surface does not own them.
+- Projected note chips remain page-local interactions; the TextEditor content surface does not own them.
 - Week view keeps one intentional limitation: the compressed `title +N` slot-summary chip cannot open a note directly
   because the current weekly slot UI still represents multiple entries with one shared hit target.
 - Month view now resolves pager pages and day cells by numeric index against the latest projection arrays, so the

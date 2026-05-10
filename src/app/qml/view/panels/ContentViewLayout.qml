@@ -23,6 +23,11 @@ Item {
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
     property var noteActiveState: null
+    readonly property string activeNoteBodyPath: contentViewLayout.noteActiveState
+            && contentViewLayout.noteActiveState.hasActiveNote
+            && contentViewLayout.noteActiveState.activeNoteBodyPath !== undefined
+            ? String(contentViewLayout.noteActiveState.activeNoteBodyPath).trim()
+            : ""
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -67,6 +72,7 @@ Item {
             ContentsView.TextEditor {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                noteBodyFilePath: contentViewLayout.activeNoteBodyPath
                 objectName: "contentsDisplayTextEditor"
             }
 

@@ -2,7 +2,8 @@
 
 ## Role
 `Main.qml` is the root LVRS `ApplicationWindow` and the owner of startup routing. The workspace route keeps the existing
-desktop/mobile shell layout, while the content slot uses the backend-free `ContentViewLayout.qml` surface.
+desktop/mobile shell layout, while the content slot uses `ContentViewLayout.qml` to bind the selected note body file
+into the LVRS text editor surface.
 
 ## Runtime Shape
 - Onboarding routes and the iOS inline onboarding sequence remain owned here.
@@ -29,5 +30,6 @@ desktop/mobile shell layout, while the content slot uses the backend-free `Conte
 ## 한국어
 
 - workspace 인터페이스는 기존 shell/layout을 유지한다.
-- `Main.qml`은 온보딩/라우팅과 desktop/mobile workspace branch를 유지하되 content slot의 TextEditor 백엔드는 제거한다.
+- `Main.qml`은 온보딩/라우팅과 desktop/mobile workspace branch를 유지하되 content slot은 선택된 노트의
+  `.wsnbody` 파일을 LVRS TextEditor에 직접 연결한다.
 - `editorViewModeController` 및 `NavigationEditorViewBar.qml` 기반 보기 모드 선택 계약은 제거된 계약이다.
