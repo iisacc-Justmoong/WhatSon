@@ -1,4 +1,4 @@
-#include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 
 #include <QRandomGenerator>
 

@@ -8,7 +8,7 @@
 #include "app/models/hierarchy/progress/ProgressHierarchyController.hpp"
 #include "app/models/hierarchy/projects/ProjectsHierarchyController.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
-#include "app/models/file/import/ResourcesImportController.hpp"
+#include "app/models/file/resource/ResourcesImportController.hpp"
 #include "app/models/hierarchy/tags/TagsHierarchyController.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"

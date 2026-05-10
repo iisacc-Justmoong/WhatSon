@@ -6,7 +6,7 @@
 void WhatSonCppRegressionTests::resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation()
 {
     const QString importControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/import/ResourcesImportController.cpp"));
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp"));
 
     QVERIFY(!importControllerSource.isEmpty());
     QVERIFY(importControllerSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);

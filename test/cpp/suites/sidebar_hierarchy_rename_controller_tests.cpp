@@ -32,6 +32,29 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
 
+void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString listBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ListBarLayout.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(!listBarSource.isEmpty());
+    QVERIFY(listBarSource.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")));
+
+    const qsizetype noteDropSurfaceIndex = sidebarSource.indexOf(QStringLiteral("id: noteDropSurface"));
+    QVERIFY(noteDropSurfaceIndex >= 0);
+
+    const qsizetype dropKeysIndex = sidebarSource.indexOf(QStringLiteral("keys: [\"whatson.library.note\"]"), noteDropSurfaceIndex);
+    const qsizetype emptyPayloadGuardIndex = sidebarSource.indexOf(QStringLiteral("if (noteIds.length <= 0)"), noteDropSurfaceIndex);
+    const qsizetype hierarchyReorderIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"));
+
+    QVERIFY(dropKeysIndex > noteDropSurfaceIndex);
+    QVERIFY(emptyPayloadGuardIndex > noteDropSurfaceIndex);
+    QVERIFY(hierarchyReorderIndex >= 0);
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsDirectlyFromQml()
 {
     const QString sidebarSource = readUtf8SourceFile(

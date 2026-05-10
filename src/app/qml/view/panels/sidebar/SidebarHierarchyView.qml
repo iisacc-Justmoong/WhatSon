@@ -2188,6 +2188,12 @@ Rectangle {
 
         function updateAcceptance(drag) {
             const noteIds = sidebarHierarchyView.noteIdsFromDragPayload(drag);
+            if (noteIds.length <= 0) {
+                sidebarHierarchyView.clearNoteDropPreview();
+                if (drag)
+                    drag.accepted = false;
+                return;
+            }
             const accepted = sidebarHierarchyView.updateNoteDropPreviewAtPosition(drag ? drag.x : 0, drag ? drag.y : 0, noteIds, noteDropSurface);
             if (drag)
                 drag.accepted = accepted;
@@ -2195,9 +2201,16 @@ Rectangle {
 
         anchors.fill: hierarchyTree
         enabled: sidebarHierarchyView.hierarchyNoteDropSurfaceEnabled
+        keys: ["whatson.library.note"]
 
         onDropped: function (drop) {
             const noteIds = sidebarHierarchyView.noteIdsFromDragPayload(drop);
+            if (noteIds.length <= 0) {
+                sidebarHierarchyView.clearNoteDropPreview();
+                if (drop)
+                    drop.accepted = false;
+                return;
+            }
             const committed = sidebarHierarchyView.commitNoteDropAtPosition(drop ? drop.x : 0, drop ? drop.y : 0, noteIds, noteDropSurface);
             if (drop)
                 drop.accepted = committed;

@@ -246,12 +246,17 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
   drop.
+- The note-drop `DropArea` is keyed to the note-list drag key (`whatson.library.note`). It must not accept unkeyed
+  hierarchy-item drags, because those need to fall through to LVRS `Hierarchy` so tree reorder can emit
+  `listItemMoved`.
 - Dropping a note-list item on a concrete folder hierarchy row is a membership mutation: the view resolves the hovered
   row index, forwards the dragged note id array through `HierarchyDragDropBridge.assignNotesToFolder(...)`, and treats a
   successful commit as `hierarchy.noteDrop`.
 - The `DropArea` stays enabled whenever a `HierarchyDragDropBridge` is wired. It must not gate itself on
   `noteDropContractAvailable`, because that prevents drag enter/drop events from reaching the controller at all. The
   controller and domain Controller capability remain responsible for accepting or rejecting a concrete target.
+- Empty or non-note drag payloads are explicitly rejected and clear the note-drop preview. This is a defensive fallback
+  around the key filter and prevents a stale note hover state from making hierarchy reorder look handled.
 - That folder-drop path depends on inline `noteDropController.normalizeNoteIds(...)` returning a concrete
   array. If the helper falls through without `return normalized;`, the sidebar will reject every note-list-to-folder
   drop as an empty payload.

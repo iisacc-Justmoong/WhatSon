@@ -458,6 +458,22 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY2(
         !QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/hierarchy"))).exists(),
         "Hierarchy backend docs must not be nested under the persistent file-storage docs.");
+    QVERIFY2(
+        QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/file/resource"))).exists(),
+        "Resource file support must live under the file/resource model shard.");
+    QVERIFY2(
+        QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/resource"))).exists(),
+        "Resource file support documentation must mirror the file/resource model shard.");
+    const QString legacyResourceImportSourceDirectory =
+        QStringLiteral("src/app/models/file") + QStringLiteral("/import");
+    const QString legacyResourceImportDocsDirectory =
+        QStringLiteral("docs/src/app/models/file") + QStringLiteral("/import");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(legacyResourceImportSourceDirectory)).exists(),
+        "Resource file support must not use the old import model shard.");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(legacyResourceImportDocsDirectory)).exists(),
+        "Resource file support docs must not use the old import model shard.");
 
     const QString namedSupportPath =
         QStringLiteral("src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp");
@@ -470,9 +486,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     const QString noteRecordSupportSourcePath =
         QStringLiteral("src/app/models/hierarchy/WhatSonHierarchyNoteRecordSupport.cpp");
     const QString clipboardSupportHeaderPath =
-        QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.hpp");
+        QStringLiteral("src/app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp");
     const QString clipboardSupportSourcePath =
-        QStringLiteral("src/app/models/file/import/WhatSonResourceClipboardImportSupport.cpp");
+        QStringLiteral("src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp");
 
     QVERIFY2(
         QFileInfo::exists(repositoryRoot.filePath(namedSupportPath)),
@@ -539,7 +555,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
 
     const QString resourcesImportControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/import/ResourcesImportController.cpp"));
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp"));
     QVERIFY(resourcesImportControllerSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport.hpp")));
     QVERIFY(resourcesImportControllerSource.contains(
         QStringLiteral("ClipboardImportSupport::clipboardContainsImportableImage")));
@@ -557,6 +573,11 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         "whatson_app_register_directory_include_directories(\"${CMAKE_CURRENT_SOURCE_DIR}\")")));
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(testCMakeSource.contains(QStringLiteral(
+        "src/app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral(
+        "src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp")));
+    QVERIFY(!testCMakeSource.contains(legacyResourceImportSourceDirectory));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/insert/TagInsertionWriter.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));

@@ -1,4 +1,4 @@
-# `src/app/models/file/import/ResourcesImportController.hpp`
+# `src/app/models/file/resource/ResourcesImportController.hpp`
 
 ## Role
 

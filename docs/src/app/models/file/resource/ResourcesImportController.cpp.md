@@ -1,4 +1,4 @@
-# `src/app/models/file/import/ResourcesImportController.cpp`
+# `src/app/models/file/resource/ResourcesImportController.cpp`
 
 ## Responsibility
 

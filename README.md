@@ -375,7 +375,7 @@ WhatSon is an LVRS-based Qt Quick application.
   resource-card overlay from the current presentation snapshot so the dropped asset appears immediately instead of
   waiting for a later filesystem reread.
 - Clipboard image MIME/data-url extraction now lives in
-  `src/app/models/file/import/WhatSonResourceClipboardImportSupport.*`; `ResourcesImportController` remains the import
+  `src/app/models/file/resource/WhatSonResourceClipboardImportSupport.*`; `ResourcesImportController` remains the import
   orchestration owner for conflict detection, package persistence, note-source injection, and reload callbacks.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.

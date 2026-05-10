@@ -1,4 +1,4 @@
-#include "app/models/file/import/WhatSonResourceClipboardImportSupport.hpp"
+#include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 
 #include <QByteArray>
 #include <QClipboard>

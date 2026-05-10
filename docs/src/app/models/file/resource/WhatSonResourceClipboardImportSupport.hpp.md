@@ -1,4 +1,4 @@
-# `src/app/models/file/import/WhatSonResourceClipboardImportSupport.hpp`
+# `src/app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp`
 
 ## Responsibility
 

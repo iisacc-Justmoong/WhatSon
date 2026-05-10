@@ -19,11 +19,13 @@
   single-note fallback for older capability surfaces.
 - Clears hover preview state whenever the payload is empty or the hovered folder cannot accept any of the dragged notes.
   The controller, not the outer `DropArea.enabled` binding, owns this target-level accept/reject decision.
+- The outer hierarchy drop surface is still restricted to `whatson.library.note` drag keys. Hierarchy item drags must
+  remain outside the note-drop surface so LVRS can perform tree reorder through its own `listItemMoved` signal.
 
 ## Regression Notes
 
-- `test/cpp/suites/contents_display_view_tests.cpp` locks the note-drop surface contract so the `DropArea` remains open
-  until the controller and Controller capability reject a concrete target.
+- `test/cpp/suites/sidebar_hierarchy_rename_controller_tests.cpp` locks the note-drop surface contract so the `DropArea`
+  remains open for note drags, rejects empty payloads, and does not intercept hierarchy item reorder drags.
 - Regression checklist:
     - JSON `application/x-whatson-note-ids` payloads must decode into a unique ordered note-id list.
     - Plain-text newline-separated payloads must still decode into the same note-id set.

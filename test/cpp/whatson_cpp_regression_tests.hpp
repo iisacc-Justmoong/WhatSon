@@ -5,8 +5,8 @@
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "app/models/file/import/WhatSonResourceClipboardImportSupport.hpp"
+#include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 #define private public
 #include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -1189,6 +1189,7 @@ private slots:
     void sidebarHierarchyController_reactsToProviderMappingChanges();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
+    void sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags();
     void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void startupHubResolver_returnsEmptyWithoutPersistedSelection();

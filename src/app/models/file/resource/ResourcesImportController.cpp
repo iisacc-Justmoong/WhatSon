@@ -1,7 +1,7 @@
-#include "app/models/file/import/ResourcesImportController.hpp"
+#include "app/models/file/resource/ResourcesImportController.hpp"
 
-#include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "app/models/file/import/WhatSonResourceClipboardImportSupport.hpp"
+#include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
