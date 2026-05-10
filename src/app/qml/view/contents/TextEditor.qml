@@ -8,17 +8,8 @@ LV.TextEditor {
 
     property bool editorReadOnly: false
     property string noteBodyFilePath: ""
-    property var documentModel: null
-    property var imeAdapter: null
     property var viewportFlickable: null
-    readonly property int cursorPosition: textEditor.documentModel
-            && textEditor.documentModel.cursorPosition !== undefined
-            ? Number(textEditor.documentModel.cursorPosition) || 0
-            : 0
-    readonly property string editorDocumentText: textEditor.documentModel
-            && textEditor.documentModel.text !== undefined
-            ? String(textEditor.documentModel.text)
-            : ""
+    readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
@@ -52,25 +43,16 @@ LV.TextEditor {
     }
 
     function replaceEditorDocumentText(nextText, nextCursorPosition) {
-        if (!textEditor.documentModel)
-            return false;
-
-        textEditor.documentModel.text = nextText === undefined || nextText === null
+        textEditor.text = nextText === undefined || nextText === null
                 ? ""
                 : String(nextText);
-        if (textEditor.documentModel.cursorPosition !== undefined)
-            textEditor.documentModel.cursorPosition = Math.max(0, Number(nextCursorPosition) || 0);
-        if (textEditor.documentModel.saveFile !== undefined
-                && textEditor.filePath.trim().length > 0)
-            return Boolean(textEditor.documentModel.saveFile(textEditor.filePath));
+        textEditor.cursorPosition = Math.max(0, Number(nextCursorPosition) || 0);
         return true;
     }
 
     function pasteNativeClipboardText() {
-        if (!textEditor.imeAdapter || textEditor.imeAdapter.paste === undefined)
-            return false;
-        textEditor.imeAdapter.forceActiveFocus();
-        textEditor.imeAdapter.paste();
+        textEditor.forceEditorFocus();
+        textEditor.paste();
         return true;
     }
 
@@ -99,11 +81,5 @@ LV.TextEditor {
         textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
                     textEditor,
                     "editorViewportFlickable");
-        textEditor.documentModel = textEditor.findDescendantByObjectName(
-                    textEditor,
-                    "textDocumentModel");
-        textEditor.imeAdapter = textEditor.findDescendantByObjectName(
-                    textEditor,
-                    "editorImeAdapter");
     }
 }
