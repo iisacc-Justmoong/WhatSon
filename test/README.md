@@ -44,7 +44,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 - Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
   editor minimap backends and any extra contents-view QML beyond those three files.
 - Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, rejects unsupported
-  XML-ish names, and reserializes body documents through the note-body persistence boundary.
+  XML-ish names, supports `header` / `subheader` / `resource`, and reserializes body documents through the note-body
+  persistence boundary.
 - The same coverage now verifies that `Main.qml` keeps the restored desktop/mobile shell while the removed editor
   view-mode selector/controller family stays absent.
 - The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list

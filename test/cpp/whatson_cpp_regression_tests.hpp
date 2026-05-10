@@ -1082,6 +1082,7 @@ private slots:
     void debugTrace_summarizesLargeTextFromPreviewOnly();
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
     void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
+    void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();

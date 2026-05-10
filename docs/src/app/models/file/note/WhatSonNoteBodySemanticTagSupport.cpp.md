@@ -9,11 +9,11 @@ Implements the shared semantic-tag lookup used by note-body persistence and edit
   tag should become its own document block.
 - Treats `resource` and `break` as canonical note-body format blocks.
 - Maps legacy title-like tags onto heading-style HTML spans using the same visual scale as the markdown heading preview:
-  - `title` / `h1`
-  - `subTitle` / `subtitle` / `h2`
+  - `header` / `title` / `h1`
+  - `subheader` / `subTitle` / `subtitle` / `h2`
   - `eventTitle` / `h3`
 - The same registry now also distinguishes generic gap text (`type=text`) from explicit semantic text-tag blocks such
-  as `paragraph`, `title`, `subtitle`, and `eventtitle`.
+  as `paragraph`, `header`, `subheader`, `title`, `subtitle`, and `eventtitle`.
 - Treats `next` as a rendered line-break alias without forcing the save path to drop that legacy source token.
 - Marks `event`, `callout`, `agenda`, and `task` as transparent semantic containers so read-side renderers can consume
   their children without painting the wrapper tag literally.

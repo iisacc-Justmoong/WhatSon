@@ -21,11 +21,14 @@ namespace
     int semanticHeadingLevel(const QString& elementName)
     {
         const QString normalizedName = normalizedTagName(elementName);
-        if (normalizedName == QStringLiteral("title") || normalizedName == QStringLiteral("h1"))
+        if (normalizedName == QStringLiteral("header")
+            || normalizedName == QStringLiteral("title")
+            || normalizedName == QStringLiteral("h1"))
         {
             return 1;
         }
-        if (normalizedName == QStringLiteral("subtitle")
+        if (normalizedName == QStringLiteral("subheader")
+            || normalizedName == QStringLiteral("subtitle")
             || normalizedName == QStringLiteral("h2"))
         {
             return 2;
@@ -53,6 +56,8 @@ namespace
     {
         const QString normalizedName = normalizedTagName(elementName);
         return normalizedName == QStringLiteral("title")
+            || normalizedName == QStringLiteral("header")
+            || normalizedName == QStringLiteral("subheader")
             || normalizedName == QStringLiteral("subtitle")
             || normalizedName == QStringLiteral("eventtitle")
             || normalizedName == QStringLiteral("eventdescription");

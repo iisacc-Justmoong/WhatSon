@@ -28,6 +28,9 @@ void WhatSonCppRegressionTests::editorSetTag_usesStaticAgendaTemplateAndRejectsU
     SetTag input;
     QVERIFY(input.availableTagNames().contains(QStringLiteral("callout")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("agenda")));
+    QVERIFY(input.availableTagNames().contains(QStringLiteral("header")));
+    QVERIFY(input.availableTagNames().contains(QStringLiteral("subheader")));
+    QVERIFY(input.availableTagNames().contains(QStringLiteral("resource")));
 
     QVERIFY(input.configureTagName(QStringLiteral("agenda")));
     QCOMPARE(input.tagName(), QStringLiteral("agenda"));
@@ -57,6 +60,57 @@ void WhatSonCppRegressionTests::editorSetTag_usesStaticAgendaTemplateAndRejectsU
     QCOMPARE(
         unsupportedResult.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("Alpha"));
+}
+
+void WhatSonCppRegressionTests::editorSetTag_addsHeaderSubheaderAndResourceTemplates()
+{
+    SetTag input;
+
+    const QVariantMap headerDescriptor = input.staticTagDescriptor(QStringLiteral("header"));
+    QVERIFY(headerDescriptor.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(headerDescriptor.value(QStringLiteral("openingToken")).toString(), QStringLiteral("<header>"));
+    QCOMPARE(headerDescriptor.value(QStringLiteral("closingToken")).toString(), QStringLiteral("</header>"));
+
+    const QVariantMap subheaderResult = input.insertNamedTagIntoSource(
+        QStringLiteral("subheader"),
+        QStringLiteral("Intro: "),
+        7,
+        0);
+    QVERIFY(subheaderResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        subheaderResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Intro: <subheader></subheader>"));
+    QCOMPARE(
+        subheaderResult.value(QStringLiteral("cursorPosition")).toInt(),
+        QStringLiteral("Intro: <subheader>").size());
+
+    const QString bodyDocument = WhatSon::NoteBodyPersistence::serializeBodyDocument(
+        QStringLiteral("note"),
+        QStringLiteral("Alpha\nBeta"));
+    const QVariantMap headerDocumentResult = input.insertNamedTagIntoBodyDocument(
+        QStringLiteral("header"),
+        QStringLiteral("note"),
+        bodyDocument,
+        0,
+        5);
+    QVERIFY(headerDocumentResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(
+            headerDocumentResult.value(QStringLiteral("bodyDocumentText")).toString()),
+        QStringLiteral("<header>Alpha</header>\nBeta"));
+
+    const QVariantMap resourceResult = input.insertNamedTagIntoBodyDocument(
+        QStringLiteral("resource"),
+        QStringLiteral("note"),
+        bodyDocument,
+        5,
+        0);
+    QVERIFY(resourceResult.value(QStringLiteral("valid")).toBool());
+    const QString resourceDocument = resourceResult.value(QStringLiteral("bodyDocumentText")).toString();
+    QVERIFY(resourceDocument.contains(QStringLiteral("    <resource />\n")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(resourceDocument),
+        QStringLiteral("Alpha\n<resource />\nBeta"));
 }
 
 void WhatSonCppRegressionTests::editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument()

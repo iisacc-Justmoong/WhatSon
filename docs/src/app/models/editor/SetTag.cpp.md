@@ -8,11 +8,13 @@ Implements the `SetTag` editor-domain input object.
 
 - Static tag insertion is allow-list based; arbitrary XML tag names are rejected.
 - Supported templates include transparent/editor semantic wrappers such as `callout`, `agenda`, `task`, `event`,
-  `title`, inline formatting tags such as `bold` and `highlight`, canonical body `tag`, and the source divider token
-  `break`.
+  heading-style wrappers such as `header`, `subheader`, and `title`, inline formatting tags such as `bold` and
+  `highlight`, canonical body `tag`, the source divider token `break`, and a placeholder `resource` body block.
 - Selection mutation wraps selected source text between the opening and closing tokens.
 - Empty selection mutation places the returned cursor position inside the inserted paired tag, or after the token for
   self-contained source tokens such as `break`.
+- Self-contained document-body tokens such as `break` and `resource` are inserted on a standalone source line so
+  `WhatSon::NoteBodyPersistence` can serialize them as direct `.wsnbody <body>` children.
 - Document mutation always reuses `WhatSon::NoteBodyPersistence` for `.wsnbody` source projection and serialization
   so the editor input object does not own parser or persistence policy.
 

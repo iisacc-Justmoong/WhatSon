@@ -14,8 +14,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - The directory is registered through its own CMake shard and the root app target reaches it with
   `add_subdirectory(models/editor)`.
 - Editor-domain C++ belongs here only when it is backend model/controller logic rather than view-local QML behavior.
-- `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates and can
-  insert them into editor source text or into a serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`.
+- `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
+  including `header`, `subheader`, and standalone `resource`, and can insert them into editor source text or into a
+  serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`.
 - Minimap display backends, parser/projection/rendering pipelines, persistence sessions, and legacy editor view-mode
   controllers remain outside this shard unless a new documented contract explicitly reintroduces them.
 
@@ -32,5 +33,6 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 위치: `docs/src/app/models/editor`
 - 역할: 이 파일은 editor model shard의 구조, 책임, CMake 등록 계약, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체다.
+- 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체이며 `header`,
+  `subheader`, `resource`를 포함한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

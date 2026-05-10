@@ -6,11 +6,18 @@
 
 namespace
 {
+    enum class StaticBodyTagInsertionMode
+    {
+        WrapSelection,
+        StandaloneLine
+    };
+
     struct StaticBodyTag
     {
         QString canonicalName;
         QString openingToken;
         QString closingToken;
+        StaticBodyTagInsertionMode insertionMode = StaticBodyTagInsertionMode::WrapSelection;
 
         bool isValid() const noexcept
         {
@@ -66,6 +73,22 @@ namespace
                 QStringLiteral("event"),
                 QStringLiteral("<event>"),
                 QStringLiteral("</event>")
+            };
+        }
+        if (normalized == QStringLiteral("header"))
+        {
+            return {
+                QStringLiteral("header"),
+                QStringLiteral("<header>"),
+                QStringLiteral("</header>")
+            };
+        }
+        if (normalized == QStringLiteral("subheader"))
+        {
+            return {
+                QStringLiteral("subheader"),
+                QStringLiteral("<subheader>"),
+                QStringLiteral("</subheader>")
             };
         }
         if (normalized == QStringLiteral("title") || normalized == QStringLiteral("h1"))
@@ -162,7 +185,17 @@ namespace
             return {
                 QStringLiteral("break"),
                 QStringLiteral("</break>"),
-                QString()
+                QString(),
+                StaticBodyTagInsertionMode::StandaloneLine
+            };
+        }
+        if (normalized == QStringLiteral("resource"))
+        {
+            return {
+                QStringLiteral("resource"),
+                QStringLiteral("<resource />"),
+                QString(),
+                StaticBodyTagInsertionMode::StandaloneLine
             };
         }
         return {};
@@ -175,6 +208,8 @@ namespace
             QStringLiteral("agenda"),
             QStringLiteral("task"),
             QStringLiteral("event"),
+            QStringLiteral("header"),
+            QStringLiteral("subheader"),
             QStringLiteral("title"),
             QStringLiteral("subtitle"),
             QStringLiteral("eventTitle"),
@@ -185,7 +220,8 @@ namespace
             QStringLiteral("strikethrough"),
             QStringLiteral("highlight"),
             QStringLiteral("tag"),
-            QStringLiteral("break")
+            QStringLiteral("break"),
+            QStringLiteral("resource")
         };
     }
 
@@ -238,14 +274,35 @@ namespace
         const int selectionEnd = std::max(anchor, active);
         const int normalizedSelectionLength = selectionEnd - selectionStart;
         const QString selectedText = normalizedSourceText.mid(selectionStart, normalizedSelectionLength);
-        const QString insertedText = bodyTag.openingToken + selectedText + bodyTag.closingToken;
-        const QString mutatedSourceText =
-            normalizedSourceText.left(selectionStart)
-            + insertedText
-            + normalizedSourceText.mid(selectionEnd);
-        const int nextCursorPosition = selectedText.isEmpty()
-            ? selectionStart + bodyTag.openingToken.size()
-            : selectionStart + insertedText.size();
+
+        QString insertedText;
+        QString mutatedSourceText;
+        int nextCursorPosition = selectionStart;
+        if (bodyTag.insertionMode == StaticBodyTagInsertionMode::StandaloneLine)
+        {
+            const QString beforeSelection = normalizedSourceText.left(selectionStart);
+            const QString afterSelection = normalizedSourceText.mid(selectionEnd);
+            const QString prefix = !beforeSelection.isEmpty() && !beforeSelection.endsWith(QLatin1Char('\n'))
+                ? QStringLiteral("\n")
+                : QString();
+            const QString suffix = !afterSelection.isEmpty() && !afterSelection.startsWith(QLatin1Char('\n'))
+                ? QStringLiteral("\n")
+                : QString();
+            insertedText = prefix + bodyTag.openingToken + suffix;
+            mutatedSourceText = beforeSelection + insertedText + afterSelection;
+            nextCursorPosition = beforeSelection.size() + prefix.size() + bodyTag.openingToken.size();
+        }
+        else
+        {
+            insertedText = bodyTag.openingToken + selectedText + bodyTag.closingToken;
+            mutatedSourceText =
+                normalizedSourceText.left(selectionStart)
+                + insertedText
+                + normalizedSourceText.mid(selectionEnd);
+            nextCursorPosition = selectedText.isEmpty()
+                ? selectionStart + bodyTag.openingToken.size()
+                : selectionStart + insertedText.size();
+        }
 
         QVariantMap result;
         result.insert(QStringLiteral("valid"), true);
@@ -295,6 +352,9 @@ QVariantMap SetTag::staticTagDescriptor(const QString& tagName) const
     descriptor.insert(QStringLiteral("closingToken"), bodyTag.closingToken);
     descriptor.insert(QStringLiteral("emptyInsertionText"), bodyTag.openingToken + bodyTag.closingToken);
     descriptor.insert(QStringLiteral("emptyCursorOffset"), bodyTag.openingToken.size());
+    descriptor.insert(
+        QStringLiteral("standaloneLine"),
+        bodyTag.insertionMode == StaticBodyTagInsertionMode::StandaloneLine);
     return descriptor;
 }
 

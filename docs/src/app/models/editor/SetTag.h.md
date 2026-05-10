@@ -10,13 +10,16 @@ inserting those templates into editor source text or into a serialized body docu
 ## Public Contract
 
 - Default tag: `callout`
-- `availableTagNames()` returns the static body-tag names that can be inserted.
+- `availableTagNames()` returns the static body-tag names that can be inserted, including `header`, `subheader`, and
+  `resource`.
 - `configureTagName(...)` changes the active tag only when the requested name resolves to a known static template.
 - `insertIntoSource(...)` inserts the active template into editor-facing body source text.
 - `insertNamedTagIntoSource(...)` performs the same mutation without changing the active tag.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to
   editor source, apply the static source mutation, and reserialize the document through
   `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
+- `resource` is a static placeholder block (`<resource />`) and is line-isolated during source mutation so persistence
+  stores it as a direct body child rather than escaped paragraph prose.
 - Unsupported tag names return an invalid result and leave source/document text unchanged.
 
 ## Signals And Slots
