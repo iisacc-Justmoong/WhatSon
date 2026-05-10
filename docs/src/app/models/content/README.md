@@ -14,8 +14,8 @@
 ## Architectural Notes
 - `mobile` owns mobile-only route planning, back-swipe, pop-repair, and hierarchy-selection preservation helpers that
   keep compact workspace navigation deterministic across note/detail/editor transitions.
-- The former editor backend model shard has been removed; content helpers must not depend on parser, projection,
-  renderer, session, minimap, or structured-document editor objects.
+- Editor-domain model objects now live in the explicit `src/app/models/editor` shard; content helpers must not depend on
+  parser, projection, renderer, session, minimap, or structured-document editor objects.
 
 ## Verification Notes
 - Mobile content helpers are covered by the shared `whatson_cpp_regression` suite, including route-state restore and

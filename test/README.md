@@ -41,8 +41,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 
 - Runtime editor QML coverage pins the center editor route to exactly three contents views: `Gutter.qml`,
   `TextEditor.qml`, and `Minimap.qml`; `TextEditor.qml` is rooted in `LV.TextEditor` with an empty `filePath`.
-- Source-tree policy coverage rejects the removed `src/app/models/editor` backend shard and any extra contents-view
-  QML beyond those three files.
+- Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
+  editor minimap backends and any extra contents-view QML beyond those three files.
 - The same coverage now verifies that `Main.qml` keeps the restored desktop/mobile shell while the removed editor
   view-mode selector/controller family stays absent.
 - The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list

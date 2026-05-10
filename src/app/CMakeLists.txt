@@ -187,9 +187,7 @@ function(whatson_app_register_directory_qml base_dir)
             RESOURCE_FILES ${_whatson_qml_resource_files})
 endfunction()
 
-qt_add_executable(WhatSon main.cpp
-        models/editor/write/SetTag.cpp
-        models/editor/write/SetTag.h)
+qt_add_executable(WhatSon main.cpp)
 target_include_directories(WhatSon PRIVATE
         "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -213,6 +211,7 @@ endif ()
 add_subdirectory(models/calendar)
 add_subdirectory(models/content)
 add_subdirectory(models/detailPanel)
+add_subdirectory(models/editor)
 add_subdirectory(models/file)
 add_subdirectory(models/navigationbar)
 add_subdirectory(models/onboarding)

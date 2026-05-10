@@ -8,7 +8,7 @@
 - Source path: `src/app/CMakeLists.txt`
 - Source kind: CMake build definition
 - File name: `CMakeLists.txt`
-- Approximate line count: 312
+- Approximate line count: 332
 
 ## Responsibility
 - Owns the `WhatSon` app target shell and keeps the LVRS / Qt Quick baseline close to the app entrypoint.
@@ -19,6 +19,7 @@
 - `src/app/models/calendar/CMakeLists.txt`
 - `src/app/models/content/CMakeLists.txt`
 - `src/app/models/detailPanel/CMakeLists.txt`
+- `src/app/models/editor/CMakeLists.txt`
 - `src/app/models/file/CMakeLists.txt`
 - `src/app/models/navigationbar/CMakeLists.txt`
 - `src/app/models/onboarding/CMakeLists.txt`
@@ -58,9 +59,10 @@
 - The former `src/app/viewmodel` shard has been removed. Runtime controller sources that still affect behavior are
   registered from their owning model-domain shards, such as `models/navigationbar`, `models/panel`,
   `models/sidebar`, and `models/file/hierarchy/*`.
-- The former `src/app/models/editor` shard has been removed. Runtime editor QML now mounts the LVRS `TextEditor`
-  surface directly instead of compiling parser, projection, renderer, session, input-policy, minimap, or tag-command
-  backends.
+- `src/app/models/editor` is an explicit model-domain shard again. Root CMake enters it with
+  `add_subdirectory(models/editor)`, while the shard owns recursive source registration for editor-domain C++ such as
+  `SetTag.*`. Runtime editor QML still mounts the LVRS `TextEditor` surface directly instead of compiling parser,
+  projection, renderer, session, input-policy, minimap, or legacy view-mode backends.
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.

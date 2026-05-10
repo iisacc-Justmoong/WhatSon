@@ -1091,7 +1091,7 @@ private slots:
     void hubMountValidator_rejectsIncompleteHubPackage();
     void sourceTree_usesRepositoryAbsoluteProjectIncludes();
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
-    void sourceTree_keepsEditorModelBackendRemoved();
+    void sourceTree_keepsEditorModelBackendRegistered();
     void sourceTree_keepsContentsQmlUnderViewContents();
     void sourceTree_keepsHierarchyBackendDecomposed();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();

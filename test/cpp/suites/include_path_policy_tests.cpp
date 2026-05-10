@@ -268,16 +268,51 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
 
-void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRemoved()
+void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
 {
     const QDir repositoryRoot(repositoryRootPath());
     QVERIFY(repositoryRoot.exists());
 
-    const QStringList forbiddenDirectories{
+    const QStringList requiredDirectories{
         QStringLiteral("src/app/models/editor"),
+        QStringLiteral("docs/src/app/models/editor")
+    };
+    for (const QString& relativePath : requiredDirectories)
+    {
+        QVERIFY2(
+            QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Editor model shard must stay present: %1").arg(relativePath)));
+    }
+
+    const QStringList requiredFiles{
+        QStringLiteral("src/app/models/editor/CMakeLists.txt"),
+        QStringLiteral("src/app/models/editor/SetTag.cpp"),
+        QStringLiteral("src/app/models/editor/SetTag.h"),
+        QStringLiteral("docs/src/app/models/editor/README.md"),
+        QStringLiteral("docs/src/app/models/editor/SetTag.cpp.md"),
+        QStringLiteral("docs/src/app/models/editor/SetTag.h.md")
+    };
+    for (const QString& relativePath : requiredFiles)
+    {
+        QVERIFY2(
+            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Editor model shard file must stay present: %1").arg(relativePath)));
+    }
+
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.h")));
+
+    const QString editorCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/models/editor/CMakeLists.txt"));
+    QVERIFY(editorCmakeSource.contains(QStringLiteral(
+        "whatson_app_register_directory_sources(\"${CMAKE_CURRENT_SOURCE_DIR}\" RECURSE)")));
+    QVERIFY(editorCmakeSource.contains(QStringLiteral(
+        "whatson_app_register_directory_include_directories(\"${CMAKE_CURRENT_SOURCE_DIR}\")")));
+
+    const QStringList forbiddenDirectories{
         QStringLiteral("src/app/models/minimap"),
         QStringLiteral("src/app/models/editor/display/minimap"),
-        QStringLiteral("docs/src/app/models/editor"),
         QStringLiteral("docs/src/app/models/minimap"),
         QStringLiteral("docs/src/app/models/editor/display/minimap")
     };
@@ -285,11 +320,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRemoved()
     {
         QVERIFY2(
             !QDir(repositoryRoot.filePath(relativePath)).exists(),
-            qPrintable(QStringLiteral("Removed editor backend directory must stay absent: %1").arg(relativePath)));
+            qPrintable(QStringLiteral("Removed editor minimap backend directory must stay absent: %1").arg(relativePath)));
     }
 
-    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
 
     const QStringList forbiddenFiles{
