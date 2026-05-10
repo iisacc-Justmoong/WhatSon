@@ -8,6 +8,28 @@ LV.TextEditor {
 
     property bool editorReadOnly: false
     property string noteBodyFilePath: ""
+    property var viewportFlickable: null
+    readonly property real viewportContentY: textEditor.viewportFlickable
+            && textEditor.viewportFlickable.contentY !== undefined
+            ? Number(textEditor.viewportFlickable.contentY)
+            : 0
+
+    function findDescendantByObjectName(root, objectName) {
+        if (!root || root.children === undefined)
+            return null;
+
+        const childItems = root.children;
+        for (let childIndex = 0; childIndex < childItems.length; ++childIndex) {
+            const child = childItems[childIndex];
+            if (child && child.objectName === objectName)
+                return child;
+
+            const descendant = textEditor.findDescendantByObjectName(child, objectName);
+            if (descendant)
+                return descendant;
+        }
+        return null;
+    }
 
     backgroundColor: "transparent"
     backgroundColorDisabled: "transparent"
@@ -29,4 +51,10 @@ LV.TextEditor {
     showScrollBar: false
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor
+
+    Component.onCompleted: {
+        textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
+                    textEditor,
+                    "editorViewportFlickable");
+    }
 }

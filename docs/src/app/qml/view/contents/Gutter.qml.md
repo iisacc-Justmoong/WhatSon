@@ -9,10 +9,14 @@ separator.
 
 - Root type: `Item`.
 - Imports: `QtQuick` and `LVRS 1.0 as LV`.
-- It exposes only view inputs: `lineCount`, `lineHeight`, `contentY`, colors, and `showLineNumbers`.
+- It exposes only view inputs: `sourceFilePath`, `selectedNoteId`, `selectedNoteDirectoryPath`, `parsedLineCount`,
+  `lineCount`, `lineHeight`, `contentY`, colors, and `showLineNumbers`.
+- The caller is responsible for passing the selected source session file and parsed line count. The gutter only renders
+  line numbers and follows the editor viewport offset.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.
 
 ## 한국어
 
 - 기준: contents 내부 QML에서 허용되는 세 뷰 중 거터 담당 파일이다.
+- 동작: 선택 노트의 session file 경로와 C++ parsed line count를 입력으로 받아 line number rail만 표시한다.
 - 금지: source snapshot, projection, rendering pipeline, persistence, editor backend wiring을 추가하지 않는다.

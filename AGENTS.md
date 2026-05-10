@@ -124,6 +124,9 @@
   `NoteEditorDocumentSession`이 만든 parsed RAW source session file을 가리킨다. 선택된 노트가 없으면
   blank session file 또는 빈 문자열로 둔다.
 - `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 mount한다.
+- `Gutter.qml`은 선택 노트 id/path, parsed source session file 경로, C++ `NoteEditorDocumentSession`의
+  `parsedLineCount`, 그리고 `TextEditor.qml`이 전달하는 viewport offset/line height만 입력으로 받아 line
+  number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의

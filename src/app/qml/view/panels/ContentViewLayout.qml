@@ -28,6 +28,18 @@ Item {
             && contentViewLayout.noteEditorSession.editorFilePath !== undefined
             ? String(contentViewLayout.noteEditorSession.editorFilePath).trim()
             : ""
+    readonly property string editorActiveNoteId: contentViewLayout.noteEditorSession
+            && contentViewLayout.noteEditorSession.activeNoteId !== undefined
+            ? String(contentViewLayout.noteEditorSession.activeNoteId).trim()
+            : ""
+    readonly property string editorActiveNoteDirectoryPath: contentViewLayout.noteEditorSession
+            && contentViewLayout.noteEditorSession.activeNoteDirectoryPath !== undefined
+            ? String(contentViewLayout.noteEditorSession.activeNoteDirectoryPath).trim()
+            : ""
+    readonly property int editorParsedLineCount: contentViewLayout.noteEditorSession
+            && contentViewLayout.noteEditorSession.parsedLineCount !== undefined
+            ? Math.max(0, Number(contentViewLayout.noteEditorSession.parsedLineCount) || 0)
+            : 0
     readonly property bool editorReadOnly: !contentViewLayout.noteEditorSession
             || contentViewLayout.noteEditorSession.readOnly === undefined
             || Boolean(contentViewLayout.noteEditorSession.readOnly)
@@ -70,9 +82,18 @@ Item {
             ContentsView.Gutter {
                 Layout.fillHeight: true
                 Layout.preferredWidth: implicitWidth
+                contentY: contentsTextEditor.viewportContentY
+                lineCount: contentViewLayout.editorParsedLineCount
+                lineHeight: contentsTextEditor.lineHeight
+                parsedLineCount: contentViewLayout.editorParsedLineCount
+                selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
+                selectedNoteId: contentViewLayout.editorActiveNoteId
+                sourceFilePath: contentViewLayout.editorSourceFilePath
             }
 
             ContentsView.TextEditor {
+                id: contentsTextEditor
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 editorReadOnly: contentViewLayout.editorReadOnly

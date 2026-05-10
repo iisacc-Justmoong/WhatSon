@@ -17,6 +17,7 @@ class NoteEditorDocumentSession final : public QObject
     Q_PROPERTY(QString editorFilePath READ editorFilePath NOTIFY editorFilePathChanged)
     Q_PROPERTY(QString activeNoteId READ activeNoteId NOTIFY activeNoteChanged)
     Q_PROPERTY(QString activeNoteDirectoryPath READ activeNoteDirectoryPath NOTIFY activeNoteChanged)
+    Q_PROPERTY(int parsedLineCount READ parsedLineCount NOTIFY parsedLineCountChanged)
     Q_PROPERTY(bool hasActiveNote READ hasActiveNote NOTIFY activeNoteChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(bool readOnly READ readOnly NOTIFY readOnlyChanged)
@@ -32,6 +33,7 @@ public:
     QString editorFilePath() const;
     QString activeNoteId() const;
     QString activeNoteDirectoryPath() const;
+    int parsedLineCount() const noexcept;
     bool hasActiveNote() const noexcept;
     bool loading() const noexcept;
     bool readOnly() const noexcept;
@@ -49,6 +51,7 @@ signals:
     void noteActiveStateChanged();
     void editorFilePathChanged();
     void activeNoteChanged();
+    void parsedLineCountChanged();
     void loadingChanged();
     void readOnlyChanged();
     void lastErrorChanged();
@@ -106,6 +109,7 @@ private:
     void setActiveNoteContext(
         const QString& noteId,
         const QString& noteDirectoryPath);
+    void setParsedLineCount(int parsedLineCount);
     void setLoading(bool loading);
     void setReadOnly(bool readOnly);
     void setLastError(const QString& lastError);
@@ -121,6 +125,7 @@ private:
     QString m_pendingLoadNoteId;
     QString m_pendingLoadNoteDirectoryPath;
     quint64 m_pendingLoadSequence = 0;
+    int m_parsedLineCount = 0;
     bool m_loading = false;
     bool m_readOnly = true;
     QString m_lastError;

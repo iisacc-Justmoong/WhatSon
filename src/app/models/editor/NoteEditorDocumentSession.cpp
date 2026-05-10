@@ -41,6 +41,14 @@ namespace
         return QString::fromLatin1(
             QCryptographicHash::hash(value.toUtf8(), QCryptographicHash::Sha256).toHex().left(16));
     }
+
+    int lineCountForEditorSource(const QString& text)
+    {
+        QString normalized = text;
+        normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        normalized.replace(QChar('\r'), QChar('\n'));
+        return normalized.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size();
+    }
 } // namespace
 
 NoteEditorDocumentSession::NoteEditorDocumentSession(QObject* parent)
@@ -119,6 +127,11 @@ QString NoteEditorDocumentSession::activeNoteDirectoryPath() const
     return m_activeNoteDirectoryPath;
 }
 
+int NoteEditorDocumentSession::parsedLineCount() const noexcept
+{
+    return m_parsedLineCount;
+}
+
 bool NoteEditorDocumentSession::hasActiveNote() const noexcept
 {
     return !m_activeNoteId.trimmed().isEmpty();
@@ -193,6 +206,7 @@ bool NoteEditorDocumentSession::clearEditor()
     m_pendingLoadNoteId.clear();
     m_pendingLoadNoteDirectoryPath.clear();
     setActiveNoteContext(QString(), QString());
+    setParsedLineCount(0);
     setLoading(false);
     setReadOnly(true);
     setLastError(QString());
@@ -224,6 +238,8 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         emit editorSourcePersistFinished(contextIterator->noteId, false, readError);
         return false;
     }
+
+    setParsedLineCount(lineCountForEditorSource(sourceText));
 
     emit editorSourcePersistRequested(contextIterator->noteId, normalizedEditorFilePath);
     const bool enqueued = m_noteManagementCoordinator.persistEditorTextForNoteAtPath(
@@ -281,6 +297,7 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
     {
         switchToBlankEditorFile();
         setActiveNoteContext(QString(), QString());
+        setParsedLineCount(0);
         setReadOnly(true);
         setLastError(errorMessage.trimmed().isEmpty()
                          ? QStringLiteral("Failed to load note body text.")
@@ -303,6 +320,7 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
         sessionFilePath,
         {loadedNoteId, loadedNoteDirectoryPath});
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
+    setParsedLineCount(lineCountForEditorSource(text));
     setLastError(QString());
     setReadOnly(false);
     setEditorFilePath(sessionFilePath);
@@ -481,6 +499,18 @@ void NoteEditorDocumentSession::setActiveNoteContext(
     m_activeNoteId = normalizedNoteId;
     m_activeNoteDirectoryPath = normalizedNoteDirectoryPath;
     emit activeNoteChanged();
+}
+
+void NoteEditorDocumentSession::setParsedLineCount(const int parsedLineCount)
+{
+    const int normalizedLineCount = qMax(0, parsedLineCount);
+    if (m_parsedLineCount == normalizedLineCount)
+    {
+        return;
+    }
+
+    m_parsedLineCount = normalizedLineCount;
+    emit parsedLineCountChanged();
 }
 
 void NoteEditorDocumentSession::setLoading(const bool loading)

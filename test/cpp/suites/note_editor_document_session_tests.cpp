@@ -52,6 +52,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsParsedSourceFile
     QVERIFY(QFileInfo(editorFilePath).isFile());
     QCOMPARE(session.activeNoteId(), QStringLiteral("session-note"));
     QCOMPARE(session.activeNoteDirectoryPath(), QDir::cleanPath(noteDirectoryPath));
+    QCOMPARE(session.parsedLineCount(), 2);
     QVERIFY(!session.readOnly());
 
     const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(editorFilePath);
@@ -61,19 +62,21 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsParsedSourceFile
         mountedEditorSource,
         QStringLiteral("Visible line\n<resource path=\"asset.png\" />"));
 
-    const QString editedSource = QStringLiteral("Changed line\n<resource path=\"asset.png\" />");
+    const QString editedSource = QStringLiteral("Changed line\nInserted line\n<resource path=\"asset.png\" />");
     QVERIFY(writeUtf8FileForNoteEditorSessionTest(editorFilePath, editedSource));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     QVERIFY(session.persistEditorFile(editorFilePath));
     QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
     QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+    QCOMPARE(session.parsedLineCount(), 3);
 
     const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
     const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(bodyPath);
     QVERIFY(persistedBodyDocument.contains(QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")));
     QVERIFY(persistedBodyDocument.contains(QStringLiteral("<contents id=\"session-note\">")));
     QVERIFY(persistedBodyDocument.contains(QStringLiteral("<paragraph>Changed line</paragraph>")));
+    QVERIFY(persistedBodyDocument.contains(QStringLiteral("<paragraph>Inserted line</paragraph>")));
     QVERIFY(persistedBodyDocument.contains(QStringLiteral("<resource path=\"asset.png\" />")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
@@ -104,6 +107,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhen
 
     const QString editorFilePath = session.editorFilePath();
     QVERIFY(!editorFilePath.isEmpty());
+    QCOMPARE(session.parsedLineCount(), 1);
     QVERIFY(writeUtf8FileForNoteEditorSessionTest(editorFilePath, QStringLiteral("Unsaved session line")));
 
     QVERIFY(session.openNoteForEditing(QStringLiteral("reselected-note"), noteDirectoryPath));

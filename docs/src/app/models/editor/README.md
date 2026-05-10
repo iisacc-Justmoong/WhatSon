@@ -35,7 +35,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, writes that source into a cache/session file for LVRS
-  `TextEditor.filePath`, and persists LVRS sync-finished edits back through the note body persistence path.
+  `TextEditor.filePath`, exposes parsed line count for the gutter, and persists LVRS sync-finished edits back through
+  the note body persistence path.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -44,7 +45,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
 - Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` parsed-source mounting,
-  unsupported input rejection, and `.wsnbody` reserialization.
+  parsed line-count reporting, unsupported input rejection, and `.wsnbody` reserialization.
 
 ## 한국어
 
@@ -60,5 +61,5 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 parsed RAW source session file을
-  `LV.TextEditor`에 연결하고, 저장 시 다시 `.wsnbody`로 serialize한다.
+  `LV.TextEditor`에 연결하고, 거터용 parsed line count를 노출하며, 저장 시 다시 `.wsnbody`로 serialize한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

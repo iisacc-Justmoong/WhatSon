@@ -12,6 +12,9 @@ the three contents views side by side.
 The text editor view is rooted in LVRS `TextEditor` and receives a parsed RAW source session file path from
 `NoteEditorDocumentSession.editorFilePath`.
 
+The gutter receives the same selected source context plus `NoteEditorDocumentSession.parsedLineCount`, the editor line
+height, and the editor viewport offset. It does not read or parse the note file itself.
+
 ## Shell Inputs
 The restored shell can still assign legacy layout inputs such as note-list, sidebar, resource-import, and calendar
 handles into this component. `noteEditorSession` is consumed only to bind the parsed source session file into
@@ -24,6 +27,7 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 - Do not add parser, projection, rendering, snapshot, resource, calendar, or editor view-mode wiring here.
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
   `syncFinished -> NoteEditorDocumentSession.persistEditorFile(...)` hook.
+- Keep gutter wiring limited to selected-note metadata, parsed line count, line height, and viewport offset.
 - Do not mount `LV.CodeEditor`, raw `TextEdit`, RichText overlays, or legacy editor backend objects.
 - Keep the component as a view-only LVRS composition layer.
 
@@ -37,5 +41,6 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 - 내부 배치는 거터, `LV.TextEditor` wrapper, 미니맵으로 끝난다.
 - shell 호환 입력은 받을 수 있고 active note의 parsed RAW source session file만 `LV.TextEditor.filePath`로
   넘긴다.
+- 거터에는 선택 노트 경로, parsed line count, 줄 높이, viewport offset만 전달한다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.

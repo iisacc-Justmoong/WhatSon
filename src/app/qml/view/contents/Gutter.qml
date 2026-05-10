@@ -7,18 +7,29 @@ Item {
     id: gutter
 
     property real contentY: 0
-    property int lineCount: 0
+    property int parsedLineCount: 0
+    property int lineCount: parsedLineCount
+    property string sourceFilePath: ""
+    property string selectedNoteId: ""
+    property string selectedNoteDirectoryPath: ""
     property real lineHeight: LV.Theme.gap20
     property color lineNumberColor: LV.Theme.descriptionColor
     property color separatorColor: LV.Theme.strokeSoft
     property bool showLineNumbers: true
+    readonly property bool hasSelectedSource: gutter.selectedNoteId.trim().length > 0
+            && gutter.sourceFilePath.trim().length > 0
+    readonly property int lineNumberDigitCount: Math.max(
+            2,
+            String(Math.max(1, gutter.lineCount)).length)
 
     clip: true
-    implicitWidth: LV.Theme.gap24 + LV.Theme.gap12
+    implicitWidth: LV.Theme.gap12 + gutter.lineNumberDigitCount * LV.Theme.gap8
     objectName: "contentsGutter"
 
     Repeater {
-        model: Math.max(0, gutter.lineCount)
+        model: gutter.hasSelectedSource && gutter.showLineNumbers
+               ? Math.max(0, gutter.lineCount)
+               : 0
 
         delegate: Text {
             required property int index
@@ -30,7 +41,7 @@ Item {
             height: gutter.lineHeight
             horizontalAlignment: Text.AlignRight
             text: String(index + 1)
-            visible: gutter.showLineNumbers
+            visible: gutter.showLineNumbers && gutter.hasSelectedSource
             width: Math.max(0, gutter.width - LV.Theme.gap8)
             y: Math.round(index * gutter.lineHeight - gutter.contentY)
         }
