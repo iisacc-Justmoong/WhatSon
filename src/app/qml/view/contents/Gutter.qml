@@ -14,7 +14,6 @@ Item {
     property string selectedNoteDirectoryPath: ""
     property real lineHeight: LV.Theme.gap20
     property color lineNumberColor: LV.Theme.descriptionColor
-    property color separatorColor: LV.Theme.strokeSoft
     property bool showLineNumbers: true
     readonly property bool hasSelectedSource: gutter.selectedNoteId.trim().length > 0
             && gutter.sourceFilePath.trim().length > 0
@@ -45,13 +44,5 @@ Item {
             width: Math.max(0, gutter.width - LV.Theme.gap8)
             y: Math.round(index * gutter.lineHeight - gutter.contentY)
         }
-    }
-
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.top: parent.top
-        color: gutter.separatorColor
-        width: Math.max(1, Math.round(LV.Theme.strokeThin))
     }
 }

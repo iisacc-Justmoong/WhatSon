@@ -24,6 +24,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(gutterSource.contains(QStringLiteral("property string selectedNoteDirectoryPath: \"\"")));
     QVERIFY(gutterSource.contains(QStringLiteral("readonly property bool hasSelectedSource")));
     QVERIFY(gutterSource.contains(QStringLiteral("gutter.contentY")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("separatorColor")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("anchors.right: parent.right")));
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));

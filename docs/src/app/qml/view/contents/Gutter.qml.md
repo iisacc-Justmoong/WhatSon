@@ -2,8 +2,7 @@
 
 ## Responsibility
 
-`Gutter.qml` is the only contents-side gutter view. It is a QML-only visual rail for line numbers and the editor
-separator.
+`Gutter.qml` is the only contents-side gutter view. It is a QML-only visual rail for line numbers.
 
 ## Contract
 
@@ -13,10 +12,12 @@ separator.
   `lineCount`, `lineHeight`, `contentY`, colors, and `showLineNumbers`.
 - The caller is responsible for passing the selected source session file and parsed line count. The gutter only renders
   line numbers and follows the editor viewport offset.
+- It does not draw a separator between the gutter and editor.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.
 
 ## 한국어
 
 - 기준: contents 내부 QML에서 허용되는 세 뷰 중 거터 담당 파일이다.
 - 동작: 선택 노트의 session file 경로와 C++ parsed line count를 입력으로 받아 line number rail만 표시한다.
+- 동작: 거터 우측과 에디터 좌측 사이의 분리선은 그리지 않는다.
 - 금지: source snapshot, projection, rendering pipeline, persistence, editor backend wiring을 추가하지 않는다.
