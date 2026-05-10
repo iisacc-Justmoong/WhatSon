@@ -514,5 +514,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
-    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
 }

@@ -42,6 +42,7 @@
 #include "app/models/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
+#include "app/models/editor/SetTag.h"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
 #include "app/models/panel/NoteListModelContractBridge.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
@@ -1079,6 +1080,9 @@ private slots:
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void debugTrace_summarizesLargeTextFromPreviewOnly();
+    void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
+    void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
+    void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();

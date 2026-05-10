@@ -32,6 +32,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchySelectionCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyNavigationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetTag.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/IO/WhatSonSystemIoGateway.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonLocalNoteVersionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubPackager.cpp"
