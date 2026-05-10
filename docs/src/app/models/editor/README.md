@@ -9,6 +9,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
+  - `insert/TagInsertionWriter.hpp`
+  - `insert/TagInsertionWriter.cpp`
+  - `NoteEditorDocumentSession.hpp`
+  - `NoteEditorDocumentSession.cpp`
   - `SetProperty.h`
   - `SetProperty.cpp`
   - `SetTag.h`
@@ -21,19 +25,26 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
   including `header`, `subheader`, and standalone `resource`, and can insert them into editor source text or into a
   serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`.
+- `insert/TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
+  static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
+  the actual `.wsnbody` document is updated.
 - `SetProperty` is the dynamic `.wsnbody` tag-attribute mutation object. It receives the property name as a string,
   infers the value serialization from `QVariant`, and writes string, integer, float, or boolean attribute values into
   the tag under the requested cursor position.
 - `GetProperty` is the read-side `.wsnbody` tag-attribute capture object. It stores the current tag's dynamic
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
-- Minimap display backends, parser/projection/rendering pipelines, persistence sessions, and legacy editor view-mode
-  controllers remain outside this shard unless a new documented contract explicitly reintroduces them.
+- `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
+  selected `.wsnbody` into editor-facing RAW source, writes that source into a cache/session file for LVRS
+  `TextEditor.filePath`, and persists LVRS sync-finished edits back through the note body persistence path.
+- Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
+  this shard unless a new documented contract explicitly reintroduces them.
 
 ## Verification Notes
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
-- Runtime C++ coverage verifies `SetTag` source insertion, `SetProperty` dynamic attribute mutation, `GetProperty`
-  key/value capture, unsupported input rejection, and `.wsnbody` reserialization.
+- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `SetProperty`
+  dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` parsed-source mounting,
+  unsupported input rejection, and `.wsnbody` reserialization.
 
 ## 한국어
 
@@ -45,6 +56,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체이며 `header`,
   `subheader`, `resource`를 포함한다.
+- 현재: `insert/TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
+- 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 parsed RAW source session file을
+  `LV.TextEditor`에 연결하고, 저장 시 다시 `.wsnbody`로 serialize한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

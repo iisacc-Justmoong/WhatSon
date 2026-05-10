@@ -23,11 +23,14 @@ Item {
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
     property var noteActiveState: null
-    readonly property string activeNoteBodyPath: contentViewLayout.noteActiveState
-            && contentViewLayout.noteActiveState.hasActiveNote
-            && contentViewLayout.noteActiveState.activeNoteBodyPath !== undefined
-            ? String(contentViewLayout.noteActiveState.activeNoteBodyPath).trim()
+    property var noteEditorSession: null
+    readonly property string editorSourceFilePath: contentViewLayout.noteEditorSession
+            && contentViewLayout.noteEditorSession.editorFilePath !== undefined
+            ? String(contentViewLayout.noteEditorSession.editorFilePath).trim()
             : ""
+    readonly property bool editorReadOnly: !contentViewLayout.noteEditorSession
+            || contentViewLayout.noteEditorSession.readOnly === undefined
+            || Boolean(contentViewLayout.noteEditorSession.readOnly)
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -72,8 +75,16 @@ Item {
             ContentsView.TextEditor {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                noteBodyFilePath: contentViewLayout.activeNoteBodyPath
+                editorReadOnly: contentViewLayout.editorReadOnly
+                noteBodyFilePath: contentViewLayout.editorSourceFilePath
                 objectName: "contentsDisplayTextEditor"
+
+                onSyncFinished: function(path) {
+                    if (contentViewLayout.noteEditorSession
+                            && contentViewLayout.noteEditorSession.persistEditorFile !== undefined) {
+                        contentViewLayout.noteEditorSession.persistEditorFile(path);
+                    }
+                }
             }
 
             ContentsView.Minimap {

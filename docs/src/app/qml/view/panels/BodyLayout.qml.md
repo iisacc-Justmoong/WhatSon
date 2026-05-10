@@ -27,8 +27,8 @@ right detail panel.
 - Year-calendar month/day routing is also re-emitted upward as `monthCalendarOverlayOpenRequested`, so the desktop app
   shell can swap from year view to month view without breaking the overlay ownership contract.
 - `ContentViewLayout.qml` accepts restored shell inputs for compatibility. Its editor binding consumes
-  `noteActiveState.activeNoteBodyPath` only, while editor-session/import/editor-mode backends remain removed from the
-  TextEditor surface.
+  `noteEditorSession.editorFilePath` and the LVRS sync-finished hook only, while import/editor-mode backends remain
+  removed from the TextEditor surface.
 - The desktop shell now resolves the effective deletion target for `ListBarLayout` from the active
   hierarchy first. If the active hierarchy publishes its own delete/clear-folder contract
   (`deleteNoteById`, `deleteNotesByIds`, `clearNoteFoldersById`, or `clearNoteFoldersByIds`), that
@@ -39,8 +39,8 @@ right detail panel.
 - `ContentViewLayout.qml` no longer consumes note-list objects during hierarchy-domain switches.
 - The desktop shell now prefers the global `noteActiveState.activeNoteListModel` for list/content binding and only
   falls back to `sidebarHierarchyController.activeNoteListModel` when the global state object is not supplied.
-- The center editor surface now mounts only the LVRS `TextEditor` path and connects it to the selected note's
-  `.wsnbody` file.
+- The center editor surface now mounts only the LVRS `TextEditor` path and connects it to the selected note's parsed
+  RAW source session file.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from named `LV.Theme` width/gap/stroke
@@ -61,5 +61,5 @@ right detail panel.
     objects themselves, not only the highlighted toolbar index.
   - Switching from Resources back to Library must restore library-row metadata such as folder and tag chips from the
     same active note-list model that the editor surface uses.
-  - Desktop content routing passes `noteActiveState` into the editor host so the selected note body file can be bound
-    to LVRS `TextEditor.filePath`, but it must not reintroduce editor-session sync through a removed backend object.
+  - Desktop content routing passes `noteEditorSession` into the editor host so the selected note's parsed source
+    session file can be bound to LVRS `TextEditor.filePath`, but it must not expose the raw `.wsnbody` XML container.

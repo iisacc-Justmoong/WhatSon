@@ -49,6 +49,7 @@ LV.ApplicationWindow {
     readonly property var rootPanelControllerRegistry: panelControllerRegistry
     readonly property var rootSidebarHierarchyController: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
     readonly property var rootNoteActiveState: typeof noteActiveState !== "undefined" ? noteActiveState : null
+    readonly property var rootNoteEditorSession: typeof noteEditorSession !== "undefined" ? noteEditorSession : null
     readonly property var rootResourcesImportController: typeof resourcesImportController !== "undefined" ? resourcesImportController : null
     readonly property var rootAgendaController: typeof agendaController !== "undefined" ? agendaController : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
@@ -673,6 +674,7 @@ LV.ApplicationWindow {
                     minSidebarWidth: applicationWindow.minSidebarWidth
                     noteDeletionController: applicationWindow.rootLibraryNoteMutationController
                     noteActiveState: applicationWindow.rootNoteActiveState
+                    noteEditorSession: applicationWindow.rootNoteEditorSession
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     resourcesImportController: applicationWindow.rootResourcesImportController
@@ -734,6 +736,7 @@ LV.ApplicationWindow {
             controlSurfaceColor: applicationWindow.mobileControlSurfaceColor
             navigationModeController: applicationWindow.rootNavigationModeController
             noteActiveState: applicationWindow.rootNoteActiveState
+            noteEditorSession: applicationWindow.rootNoteEditorSession
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames

@@ -27,6 +27,9 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteActiveState = nullptr;")));
     QVERIFY(binderSource.contains(
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"noteActiveState\")")));
+    QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteEditorSession = nullptr;")));
+    QVERIFY(binderSource.contains(
+        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"noteEditorSession\")")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlControllerBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlViewModelBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("appendControllerBinding")));
@@ -34,8 +37,11 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
 
     QVERIFY(mainCppSource.contains(QStringLiteral("const lvrs::QmlContextBindResult workspaceContextBindResult")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteActiveStateTracker noteActiveState;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("NoteEditorDocumentSession noteEditorSession;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("noteEditorSession.setNoteActiveState(&noteActiveState);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteActiveState = &noteActiveState;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteEditorSession = &noteEditorSession;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine, workspaceContextObjects)")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextBindResult.errorMessage()")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine.rootContext()")));

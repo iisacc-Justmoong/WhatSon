@@ -4,8 +4,8 @@
 
 Implements global active-note tracking by subscribing to the active hierarchy context and the currently active
 note-list model.
-It deliberately stops at selection and file-path publication; editor-session mounting, projection, and rendering are no
-longer responsibilities of this object.
+It deliberately stops at selection and package-path publication; parsed editor-session mounting, projection, and
+rendering are not responsibilities of this object.
 
 ## Behavior Summary
 

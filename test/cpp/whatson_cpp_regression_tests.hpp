@@ -43,6 +43,8 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/file/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
+#include "app/models/editor/insert/TagInsertionWriter.hpp"
+#include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/editor/SetProperty.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -1092,6 +1094,9 @@ private slots:
     void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
+    void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
+    void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
+    void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
@@ -1125,7 +1130,9 @@ private slots:
     void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
-    void noteActiveStateTracker_publishesBodyPathForLvrsTextEditorBinding();
+    void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
+    void noteEditorDocumentSession_mountsParsedSourceFileAndPersistsBodyDocument();
+    void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();

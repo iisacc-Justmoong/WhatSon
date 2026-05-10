@@ -189,7 +189,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
 }
 
-void WhatSonCppRegressionTests::noteActiveStateTracker_publishesBodyPathForLvrsTextEditorBinding()
+void WhatSonCppRegressionTests::noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution()
 {
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
 

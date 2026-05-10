@@ -6,8 +6,9 @@ Implements root context-object binding for the workspace runtime graph through t
 
 ## Bound Properties
 The implementation registers the root workspace objects under stable context-property names. This includes hierarchy,
-detail, navigation, import, scheduler, calendar, panel-runtime controllers, and the app-wide `noteActiveState` tracker.
-It no longer registers an editor view-mode controller; the workspace editor surface is the LVRS `TextEditor` path.
+detail, navigation, import, scheduler, calendar, panel-runtime controllers, the app-wide `noteActiveState` tracker, and
+the `noteEditorSession` parsed-source bridge. It no longer registers an editor view-mode controller; the workspace
+editor surface is the LVRS `TextEditor` path.
 
 ## Test Coverage
 

@@ -38,6 +38,7 @@
   `src/app/models/sidebar/HierarchyControllerProvider.*`,
   `src/app/models/sidebar/SidebarHierarchyController.*`
 - 전역 노트 active 상태 추적 객체: `src/app/models/panel/NoteActiveStateTracker.*`
+- 지속 태그 삽입 writer: `src/app/models/editor/insert/TagInsertionWriter.*`
 - 아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`
 - 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.
 
@@ -116,11 +117,12 @@
 - workspace route의 shell/layout은 기존 status bar, navigation bar, sidebar, note list, detail panel,
   mobile hierarchy scaffold 구조를 유지한다.
 - editor content surface는 LVRS `TextEditor` 중심으로 유지하되, active note의 `.wsnbody` 파일 경로를
-  `LV.TextEditor.filePath`에 직접 연결한다. `ContentViewLayout.qml`은 shell에서 넘어오는 active-note 상태를
-  파일 경로 바인딩으로만 소비할 수 있다.
+  직접 연결하지 않는다. `ContentViewLayout.qml`은 `NoteEditorDocumentSession`이 만든 parsed RAW source
+  session file 경로만 `LV.TextEditor.filePath`로 소비할 수 있다.
 - contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 허용한다.
-- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath`를 통해 선택된 노트의
-  `.wsnbody` 파일을 가리킨다. 선택된 노트가 없으면 빈 문자열로 둔다.
+- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath`를 통해
+  `NoteEditorDocumentSession`이 만든 parsed RAW source session file을 가리킨다. 선택된 노트가 없으면
+  blank session file 또는 빈 문자열로 둔다.
 - `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 mount한다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
@@ -128,21 +130,25 @@
   Plain/Page/Print/Web/Presentation 선택 계약은 제거된 계약이며 재도입하지 않는다.
 - 새 편집 정책은 LVRS `TextEditor` 갱신 계약이 먼저 정의된 뒤 그 계약을 중심으로 추가한다. 기존 QML 호환 wrapper,
   RichText overlay, 직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge를 되살리지 않는다.
-- `.wsnote/.wsnbody` parser/projection/rendering, tag mutation 같은 domain 책임은 현재 editor QML 계약의
-  일부가 아니며, 재도입이 필요하면 C++/LVRS 계약 문서를 먼저 갱신한다. 현재 허용되는 저장 경로는
-  LVRS `TextEditor`의 파일 sync 계약과 C++ `NoteActiveStateTracker.activeNoteBodyPath` 계산이다.
+- `.wsnote/.wsnbody` parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.
+  노트 본문을 편집기에 연결할 때는 C++ `NoteEditorDocumentSession`이 `.wsnbody`를 parsed RAW source로
+  mount하고, LVRS `TextEditor`의 session file sync 뒤 C++ persistence가 다시 `.wsnbody`로 serialize해야 한다.
+- 태그 삽입을 실제 파일에 반영할 때는 C++ `TagInsertionWriter`가 `SetTag`의 RAW source 변환 결과를 받아
+  `WhatSonLocalNoteFileStore`를 통해 `.wsnbody`에 저장한다. QML은 대상 노트와 cursor/selection만 전달한다.
 
 ### 입력기 권한 (중요)
 
 - editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor` path에 맡겨야 한다. 현재 LVRS 갱신 계약에서는
-  note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 선택된 note body 파일 경로를 따른다.
+  note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 parsed RAW source session file 경로를
+  따른다.
 - 현재 editor QML은 ordinary note editing을 위한 custom text input handler, tag-management key handler,
   shortcut-surface, rendered selection handler를 설치하지 않는다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
 - text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.
-  파일 읽기/저장은 LVRS `TextEditor`의 `filePath` 기반 sync 계약에 맡긴다.
+  입력 표면의 파일 읽기/저장은 LVRS `TextEditor`의 `filePath` 기반 sync 계약에 맡기되, `.wsnbody`
+  parse/serialize는 C++ `NoteEditorDocumentSession`이 담당한다.
 
 ## LVRS 통합의 단일 Source of Truth
 
@@ -196,13 +202,14 @@ import LVRS 1.0 as LV
 - Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
 - Workspace route: `Main.qml`은 기존 desktop/mobile layout shell을 유지한다. `BodyLayout.qml`의 content slot이
   `src/app/qml/view/panels/ContentViewLayout.qml`을 mount하고, 그 내부는 gutter/TextEditor/minimap으로 제한하되
-  선택된 노트의 `.wsnbody` 파일을 `LV.TextEditor.filePath`에 연결한다.
+  선택된 노트의 `.wsnbody`를 C++에서 parsed RAW source session file로 mount한 뒤 `LV.TextEditor.filePath`에
+  연결한다.
 - View directory(legacy `shell`과 `pages`에서 병합됨):
     - `src/app/qml/view/panels/StatusBarLayout.qml`
     - `src/app/qml/view/panels/NavigationBarLayout.qml`
     - `src/app/qml/view/panels/BodyLayout.qml`
     - `src/app/qml/view/mobile/MobilePageScaffold.qml`(shared mobile workspace scaffold)
-    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(routed mobile workspace page. editor route는 `ContentViewLayout.qml`을 통해 active note body file을 편집한다)
+    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(routed mobile workspace page. editor route는 `ContentViewLayout.qml`을 통해 active note의 parsed source session file을 편집한다)
     - `src/app/qml/view/panels/ListBarLayout.qml`(Figma-driven list bar panel, node `73:2635`)
     - `src/app/qml/view/panels/ListBarHeader.qml`(Figma-driven list bar header, node `134:3180`)
         - `src/app/qml/view/panels/NoteListItem.qml`(Figma-driven note item card, node `119:3028`)

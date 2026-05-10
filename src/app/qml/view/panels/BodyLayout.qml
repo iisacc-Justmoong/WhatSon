@@ -39,6 +39,7 @@ Item {
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionController: null
     property var noteActiveState: null
+    property var noteEditorSession: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
         if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
@@ -259,6 +260,7 @@ Item {
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
                 noteActiveState: hStack.noteActiveState
+                noteEditorSession: hStack.noteEditorSession
                 noteListModel: hStack.activeNoteListModel
                 panelControllerRegistry: null
                 resourcesImportController: hStack.resourcesImportController

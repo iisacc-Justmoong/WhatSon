@@ -6,7 +6,8 @@
 
 It observes one `IActiveHierarchyContextSource`, follows its current active note-list model, and republishes the
 normalized note selection as a single stable object contract. It also resolves the selected note's `.wsnbody` file path
-so the LVRS `TextEditor` surface can bind directly to the active note document.
+for C++ consumers that need package-location context. The LVRS `TextEditor` surface must consume
+`NoteEditorDocumentSession.editorFilePath`, not this raw body path.
 
 ## Public Contract
 
@@ -44,5 +45,5 @@ so the LVRS `TextEditor` surface can bind directly to the active note document.
 
 - 대상: `src/app/models/panel/NoteActiveStateTracker.hpp`
 - 역할: 사이드바의 active hierarchy context를 따라 현재 active note 상태를 전역 QML 객체 하나로 노출한다.
-- 기준: note-list selection, note source, editor session을 수정하지 않는다. 다만 선택된 노트의 body file path는
-  읽기 전용 상태로 계산해 QML에 제공한다.
+- 기준: note-list selection, note source, editor session을 수정하지 않는다. 선택된 노트의 body file path는
+  읽기 전용 위치 정보이며, `LV.TextEditor.filePath`에는 직접 연결하지 않는다.

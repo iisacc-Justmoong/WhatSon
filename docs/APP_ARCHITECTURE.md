@@ -9,8 +9,8 @@ note list, content slot, and detail panel. The content slot mounts `ContentViewL
 
 ## Mobile Shell
 The mobile shell remains mounted for adaptive/mobile layouts. Its editor route uses the same `ContentViewLayout.qml`
-surface and forwards active-note state so the selected note body file is edited while keeping the existing route
-scaffold, hierarchy page, note-list page, and detail page chrome.
+surface and forwards the note editor session so the selected note's parsed RAW source is edited while keeping the
+existing route scaffold, hierarchy page, note-list page, and detail page chrome.
 
 ## Root Ownership
 `Main.qml` owns startup routing, onboarding presentation, the restored workspace chrome, and render-quality resize
@@ -20,7 +20,11 @@ Runtime objects now arrive from `WhatSonQmlContextBinder` as direct LVRS context
 view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime lookup.
 
 The binder no longer publishes an editor view-mode controller. The active editor surface is the LVRS `TextEditor`
-composition path with `filePath` bound to `NoteActiveStateTracker.activeNoteBodyPath`.
+composition path with `filePath` bound to `NoteEditorDocumentSession.editorFilePath`, a parsed RAW source session file
+that is serialized back into `.wsnbody` by C++.
+
+Persisted tag insertion is not a QML parsing concern. `TagInsertionWriter` lives in `src/app/models/editor/insert`,
+delegates tag-source mutation to `SetTag`, and writes the result back through `WhatSonLocalNoteFileStore`.
 
 ## View Behavior Ownership
 QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient

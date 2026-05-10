@@ -275,7 +275,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
 
     const QStringList requiredDirectories{
         QStringLiteral("src/app/models/editor"),
-        QStringLiteral("docs/src/app/models/editor")
+        QStringLiteral("src/app/models/editor/insert"),
+        QStringLiteral("docs/src/app/models/editor"),
+        QStringLiteral("docs/src/app/models/editor/insert")
     };
     for (const QString& relativePath : requiredDirectories)
     {
@@ -288,6 +290,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("src/app/models/editor/CMakeLists.txt"),
         QStringLiteral("src/app/models/editor/GetProperty.cpp"),
         QStringLiteral("src/app/models/editor/GetProperty.h"),
+        QStringLiteral("src/app/models/editor/insert/TagInsertionWriter.cpp"),
+        QStringLiteral("src/app/models/editor/insert/TagInsertionWriter.hpp"),
         QStringLiteral("src/app/models/editor/SetProperty.cpp"),
         QStringLiteral("src/app/models/editor/SetProperty.h"),
         QStringLiteral("src/app/models/editor/SetTag.cpp"),
@@ -295,6 +299,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("docs/src/app/models/editor/README.md"),
         QStringLiteral("docs/src/app/models/editor/GetProperty.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/GetProperty.h.md"),
+        QStringLiteral("docs/src/app/models/editor/insert/README.md"),
+        QStringLiteral("docs/src/app/models/editor/insert/TagInsertionWriter.cpp.md"),
+        QStringLiteral("docs/src/app/models/editor/insert/TagInsertionWriter.hpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetProperty.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetProperty.h.md"),
         QStringLiteral("docs/src/app/models/editor/SetTag.cpp.md"),
@@ -311,6 +318,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.cpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/insert/TagInsertionWriter.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/insert/TagInsertionWriter.hpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.cpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.h")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
@@ -527,6 +536,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/insert/TagInsertionWriter.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));

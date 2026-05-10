@@ -7,6 +7,7 @@ owning model domains instead of a separate view-model tree.
 ## Current Domains
 - `calendar`: calendar board state and system-calendar integration.
 - `content`: mobile-navigation helpers that coordinate legacy QML route state.
+- `editor`: active note source sessions and persisted editor mutation command objects such as tag insertion writers.
 - `file`: persistent hub/note/resource storage, validation, import/export, sync, and hierarchy backends.
 - `sensor`: hub inspection objects that derive lightweight read-side facts such as unused resource packages.
 - `detailPanel`, `navigationbar`, `onboarding`, `panel`, and `sidebar`: QML-facing controller objects that remain
@@ -17,8 +18,8 @@ owning model domains instead of a separate view-model tree.
 - They must not take ownership of LVRS view composition or sidebar/detail-panel routing concerns.
 - Sensor-style models should prefer RAW hub files (`.wsnbody`, `.wsresource`, `resource.xml`) as their read source.
 - `content/mobile` helpers should remain route/state coordinators only; they must not absorb sidebar or editor
-  ownership. The current workspace editor interface uses QML-only `LV.TextEditor` composition and receives the selected
-  note body path from `NoteActiveStateTracker`.
+  ownership. The current workspace editor interface uses QML-only `LV.TextEditor` composition and receives a parsed
+  active-note source session file from `NoteEditorDocumentSession`.
 
 ## 한국어
 
@@ -28,4 +29,5 @@ owning model domains instead of a separate view-model tree.
 - 위치: `docs/src/app/models`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
+- 현재: `editor` 도메인은 active note source session과 실제 `.wsnbody`에 반영되는 편집 command 객체를 소유한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

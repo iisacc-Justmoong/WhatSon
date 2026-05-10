@@ -1,0 +1,29 @@
+# `src/app/models/editor/NoteEditorDocumentSession.cpp`
+
+## Responsibility
+
+Implements the active note editor document session.
+
+## Runtime Flow
+
+1. Active-note changes are read from `NoteActiveStateTracker`.
+2. `ContentsNoteManagementCoordinator` loads the selected note body as canonical editor-facing RAW source.
+3. The source is written to a cache/session `.wsnsource` file.
+4. QML binds that session file into LVRS `TextEditor.filePath`.
+5. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, and the session delegates persistence
+   back through `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized.
+
+## Guardrails
+
+- The session creates blank/source session files outside the note package.
+- The session keeps a file-path-to-note-context map so late sync signals from a previous editor file still persist to
+  the note that originally owned that file.
+- Re-selecting the same note keeps the existing session source file intact, so unsaved editor state is not overwritten
+  by a redundant body reload.
+- It must not expose the raw XML body file as the editor file path.
+
+## 한국어
+
+- 이 구현은 `.wsnbody` XML을 그대로 에디터에 띄우지 않는다.
+- 선택된 노트의 본문을 RAW source로 파싱해 session file에 쓰고, LVRS 저장 이벤트를 다시 `.wsnbody`
+  직렬화 경로로 연결한다.

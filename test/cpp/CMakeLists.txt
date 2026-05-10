@@ -33,6 +33,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyNavigationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/GetProperty.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/insert/TagInsertionWriter.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/NoteEditorDocumentSession.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetProperty.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetTag.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/IO/WhatSonSystemIoGateway.cpp"

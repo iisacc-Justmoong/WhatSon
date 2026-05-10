@@ -51,6 +51,7 @@ Item {
     ]
     property var navigationModeController: null
     property var noteActiveState: null
+    property var noteEditorSession: null
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool detailPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.detailRoutePath
@@ -769,6 +770,7 @@ Item {
             libraryHierarchyController: noteCreationCoordinator.noteCreationController
             minimapVisible: false
             noteActiveState: mobileHierarchyPage.noteActiveState
+            noteEditorSession: mobileHierarchyPage.noteEditorSession
             noteListModel: mobileHierarchyPage.activeNoteListModel
             resourcesImportController: mobileHierarchyPage.resourcesImportController
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
