@@ -1,37 +1,19 @@
 # `src/app/models/file/note/WhatSonHubNoteMutationSupport.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`WhatSonHubNoteMutationSupport.hpp` exposes narrow note-domain helpers used by note CRUD, versioning, package
+normalization, and library-record synchronization.
 
-## Source Metadata
-- Source path: `src/app/models/file/note/WhatSonHubNoteMutationSupport.hpp`
-- Source kind: C++ header
-- File name: `WhatSonHubNoteMutationSupport.hpp`
-- Approximate line count: 23
+## Public API
+- `currentNoteTimestamp()` returns the local note timestamp format used by header mutations.
+- `indexOfNoteRecordById(...)` and `createUniqueNoteId(...)` support library note create/delete flows.
+- `ensureDirectoryPath(...)`, `readUtf8File(...)`, `writeUtf8File(...)`, `removeFilePath(...)`,
+  `removeDirectoryPath(...)`, and `pathExists(...)` provide the note-domain filesystem surface after the shared IO object
+  layer was removed.
+- `resolveNoteHeaderPath(...)` resolves the materialized `.wsnhead` path for a library record.
+- `syncNoteRecordFromDocument(...)` copies persisted note document fields back into an in-memory record.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
-
-### Classes and Structs
-- None detected during scaffold generation.
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Dependency Notes
+- The helper is a namespace-only C++ surface and exposes no QObject or QML binding.
+- It depends on `WhatSonLocalNoteDocument.hpp`, not `WhatSonLocalNoteFileStore.hpp`, so file-store code can reuse the
+  helper without introducing a header cycle.

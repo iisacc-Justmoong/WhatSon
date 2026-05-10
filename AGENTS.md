@@ -127,6 +127,10 @@
 - `Gutter.qml`은 선택 노트 id/path, parsed source session file 경로, C++ `NoteEditorDocumentSession`의
   `parsedLineCount`, 그리고 `TextEditor.qml`이 전달하는 viewport offset/line height만 입력으로 받아 line
   number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
+- clipboard image paste는 예외적으로 `ContentViewLayout.qml`의 얇은 `StandardKey.Paste` command wiring을
+  허용한다. 이 QML은 `ResourcesImportController.importClipboardImageForEditor()`,
+  `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`, `TextEditor.qml`의 LVRS document 반영 hook만
+  순서대로 호출해야 하며, MIME 판별, resource import, RAW tag 생성, `.wsnbody` persistence 정책을 구현하면 안 된다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
@@ -145,7 +149,8 @@
   note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 parsed RAW source session file 경로를
   따른다.
 - 현재 editor QML은 ordinary note editing을 위한 custom text input handler, tag-management key handler,
-  shortcut-surface, rendered selection handler를 설치하지 않는다.
+  rendered selection handler를 설치하지 않는다. 단 clipboard image paste의 `StandardKey.Paste` command wiring은
+  위 편집기 Source of Truth 섹션의 제한 안에서만 허용한다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.

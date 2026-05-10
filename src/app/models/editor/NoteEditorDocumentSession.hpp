@@ -6,6 +6,8 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QVariantList>
+#include <QVariantMap>
 #include <QtTypes>
 
 class NoteActiveStateTracker;
@@ -46,6 +48,11 @@ public:
         const QString& noteDirectoryPath);
     Q_INVOKABLE bool clearEditor();
     Q_INVOKABLE bool persistEditorFile(const QString& editorFilePath);
+    Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
+        const QString& bodySourceText,
+        int cursorPosition,
+        int selectionLength,
+        const QVariantList& importedEntries);
 
 signals:
     void noteActiveStateChanged();

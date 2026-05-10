@@ -1,6 +1,7 @@
 #include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "app/models/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
@@ -135,7 +136,7 @@ bool WhatSonLibraryIndexIntegrityValidator::rewriteIndexesFromRecords(
 
         WhatSonLibraryHierarchyCreator libraryCreator;
         QString writeError;
-        if (!m_ioGateway.writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &writeError))
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &writeError))
         {
             WhatSon::Debug::trace(
                 QStringLiteral("library.validator"),

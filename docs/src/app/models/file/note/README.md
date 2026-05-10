@@ -106,6 +106,8 @@
   - unchanged body snapshots must short-circuit before inflating the counter
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
   - snapshot/diff persistence is delegated to `src/app/models/file/diff/WhatSonLocalNoteVersionStore.*`
+- The shared IO object layer has been removed. Note package CRUD now uses note-domain mutation support for direct Qt
+  filesystem operations, including atomic `QSaveFile` UTF-8 overwrites.
 
 
 ## Intended Detailed Sections

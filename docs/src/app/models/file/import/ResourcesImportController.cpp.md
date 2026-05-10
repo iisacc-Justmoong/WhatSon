@@ -72,6 +72,9 @@ The implementation now supports two closely related sequences.
   same-name duplicate alerts that were caused by the old fixed `clipboard-image.png` placeholder.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
   not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
+- `ContentViewLayout.qml` now uses the clipboard-image editor path directly on paste: it refreshes availability,
+  imports the clipboard image for editor metadata, asks `NoteEditorDocumentSession` to build the RAW resource insertion,
+  and reloads resources after the LVRS document is updated.
 
 ## Failure Rule
 
@@ -89,3 +92,4 @@ signal.
 - Desktop/mobile editor drop surfaces, which import the files and then inject `<resource ...>` source tags into the
   current note before requesting the deferred resources runtime reload.
 - The compatibility wrappers that keep older drag/drop-style callers on the same code path.
+- The note editor paste shortcut, which imports clipboard screenshots/images and links them into the active note.

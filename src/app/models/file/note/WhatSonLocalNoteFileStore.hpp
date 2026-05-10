@@ -1,7 +1,6 @@
 #pragma once
 
 #include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 
 #include <QJsonObject>
 #include <QString>
@@ -64,6 +63,4 @@ private:
 
     bool loadHeaderStore(const QString& headerPath, WhatSonNoteHeaderStore* outHeaderStore, QString* errorMessage = nullptr) const;
     void applyBodyDocumentText(const QString& bodyDocumentText, WhatSonLocalNoteDocument* document) const;
-
-    WhatSonSystemIoGateway m_ioGateway;
 };

@@ -26,5 +26,5 @@
   - `.wsnversion` and `.wsnpaint` get schema defaults.
 
 ## Dependency Notes
-- Uses `WhatSonSystemIoGateway` for read/write/delete operations and error propagation.
+- Uses direct Qt path checks plus note-domain mutation support for read/write/delete operations and error propagation.
 - Exposes no QObject surface; this is a pure filesystem validation utility used by runtime validators.

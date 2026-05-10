@@ -1,6 +1,7 @@
 #include "app/models/file/note/WhatSonHubNoteDeletionService.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 
 #include <QDateTime>
@@ -158,7 +159,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     QString previousIndexText;
     const bool hadIndexFile = QFileInfo(indexPath).isFile();
     QString ioError;
-    if (hadIndexFile && !m_ioGateway.readUtf8File(indexPath, &previousIndexText, &ioError))
+    if (hadIndexFile && !WhatSon::NoteMutationSupport::readUtf8File(indexPath, &previousIndexText, &ioError))
     {
         restoreStagedDirectory();
         if (errorMessage != nullptr)
@@ -186,10 +187,10 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     {
         if (hadIndexFile)
         {
-            m_ioGateway.writeUtf8File(indexPath, previousIndexText, nullptr);
+            WhatSon::NoteMutationSupport::writeUtf8File(indexPath, previousIndexText, nullptr);
             return;
         }
-        m_ioGateway.removeFile(indexPath, nullptr);
+        WhatSon::NoteMutationSupport::removeFilePath(indexPath, nullptr);
     };
 
     QString normalizedStatPath = normalizePath(request.statPath);
@@ -212,12 +213,12 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         }
         if (hadStatFile)
         {
-            m_ioGateway.writeUtf8File(normalizedStatPath, previousStatText, nullptr);
+            WhatSon::NoteMutationSupport::writeUtf8File(normalizedStatPath, previousStatText, nullptr);
             return;
         }
         if (wroteStatFile)
         {
-            m_ioGateway.removeFile(normalizedStatPath, nullptr);
+            WhatSon::NoteMutationSupport::removeFilePath(normalizedStatPath, nullptr);
         }
     };
 
@@ -227,7 +228,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         if (hadStatFile)
         {
             QString rawStatText;
-            if (!m_ioGateway.readUtf8File(normalizedStatPath, &rawStatText, &ioError))
+            if (!WhatSon::NoteMutationSupport::readUtf8File(normalizedStatPath, &rawStatText, &ioError))
             {
                 restoreIndexFile();
                 restoreStagedDirectory();
@@ -290,7 +291,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         statRoot.insert(QStringLiteral("createdAtUtc"), statCreatedAtUtc);
         statRoot.insert(QStringLiteral("lastModifiedAtUtc"), nowUtc);
 
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             normalizedStatPath,
             QString::fromUtf8(QJsonDocument(statRoot).toJson(QJsonDocument::Indented)),
             &ioError))

@@ -115,3 +115,41 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhen
     QCOMPARE(readUtf8FileForNoteEditorSessionTest(editorFilePath), QStringLiteral("Unsaved session line"));
     QCOMPARE(loadedSpy.count(), 1);
 }
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+
+    QVariantMap importedResource;
+    importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-1"));
+    importedResource.insert(
+        QStringLiteral("resourcePath"),
+        QStringLiteral("Workspace.wsresources/capture-1.wsresource"));
+    importedResource.insert(QStringLiteral("type"), QStringLiteral("image"));
+    importedResource.insert(QStringLiteral("format"), QStringLiteral(".png"));
+    importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
+
+    const QVariantMap result = session.insertImportedResourcesIntoSource(
+        QStringLiteral("Alpha\nBeta"),
+        5,
+        0,
+        QVariantList{importedResource});
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        result.value(QStringLiteral("insertedText")).toString(),
+        QStringLiteral(
+            "\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />"));
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral(
+            "Alpha\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />\nBeta"));
+    QCOMPARE(
+        result.value(QStringLiteral("cursorPosition")).toInt(),
+        QStringLiteral(
+            "Alpha\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />").size());
+}

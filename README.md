@@ -671,9 +671,9 @@ filesystem remains the first writer of record before runtime projections or exte
   boundary: it captures full working-tree snapshots into `.wsnversion`, tracks `currentSnapshotId` vs
   `headSnapshotId`, computes compact header/body diffs between any two snapshots, supports detached checkout of an
   existing snapshot, and appends a fresh rollback snapshot when the user restores an older state.
-App-owned filesystem mutations are also serialized through `src/app/models/file/IO/WhatSonSystemIoGateway.*`. UTF-8 file
-overwrites now commit through an atomic save path, and library index / note companion writes no longer bypass that
-gateway with ad-hoc `QFile` truncation helpers.
+App-owned note filesystem mutations no longer route through a shared IO object layer. Note mutation support uses direct
+Qt file primitives for UTF-8 reads, atomic `QSaveFile` overwrites, directory creation, and cleanup so unrelated
+note/resource operations are not serialized by a global gateway.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -1138,12 +1138,10 @@ Library runtime classification behavior:
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date; literal `<folder>Today</folder>`
   values are ignored rather than treated as concrete folder membership
 
-Runtime IO components (`src/app/models/file/IO`):
+Runtime IO note:
 
-- `WhatSonIoEventListener`: accepts LVRS/runtime event names with prefix filtering and queues IO events.
-- `WhatSonSystemIoGateway`: owns filesystem UTF-8 read/write/append/remove and directory utility operations.
-- `WhatSonIoRuntimeController`: bridges queued IO events to system IO operations (`io.ensureDir`,
-  `io.writeUtf8`, `io.appendUtf8`, `io.readUtf8`, `io.removeFile`) and stores structured last-result output.
+- The former shared IO object layer has been removed. Note CRUD, version, validator, and library-index code now performs
+  the narrow filesystem operation it owns directly or through note-domain mutation support.
 
 Bookmarks runtime behavior:
 

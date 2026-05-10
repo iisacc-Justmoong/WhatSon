@@ -1,7 +1,10 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
+#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
+#include <algorithm>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -48,6 +51,37 @@ namespace
         normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         normalized.replace(QChar('\r'), QChar('\n'));
         return normalized.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size();
+    }
+
+    int clampedPosition(const int position, const int textSize)
+    {
+        return std::clamp(position, 0, textSize);
+    }
+
+    QVariantMap invalidImportedResourcesInsertionResult(
+        const QString& bodySourceText,
+        const int cursorPosition,
+        const int selectionLength,
+        const QString& errorMessage)
+    {
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        const int sourceSize = normalizedSourceText.size();
+        const int anchor = clampedPosition(cursorPosition, sourceSize);
+        const int active = clampedPosition(cursorPosition + selectionLength, sourceSize);
+        const int selectionStart = std::min(anchor, active);
+        const int selectionEnd = std::max(anchor, active);
+
+        QVariantMap result;
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("bodySourceText"), normalizedSourceText);
+        result.insert(QStringLiteral("cursorPosition"), anchor);
+        result.insert(QStringLiteral("selectionStart"), selectionStart);
+        result.insert(QStringLiteral("selectionLength"), selectionEnd - selectionStart);
+        result.insert(QStringLiteral("insertedText"), QString());
+        result.insert(QStringLiteral("insertedCount"), 0);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        return result;
     }
 } // namespace
 
@@ -253,6 +287,77 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         emit editorSourcePersistFinished(contextIterator->noteId, false, error);
     }
     return enqueued;
+}
+
+QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
+    const QString& bodySourceText,
+    const int cursorPosition,
+    const int selectionLength,
+    const QVariantList& importedEntries)
+{
+    const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+    QStringList resourceTags;
+    resourceTags.reserve(importedEntries.size());
+
+    for (const QVariant& importedEntry : importedEntries)
+    {
+        const QVariantMap importedResource = importedEntry.toMap();
+        if (importedResource.isEmpty())
+        {
+            continue;
+        }
+
+        const QString resourceTag =
+            WhatSon::NoteBodyResourceTagGenerator::buildCanonicalResourceTag(importedResource).trimmed();
+        if (!resourceTag.isEmpty())
+        {
+            resourceTags.push_back(resourceTag);
+        }
+    }
+
+    if (resourceTags.isEmpty())
+    {
+        const QString errorMessage = QStringLiteral("Imported resources did not produce note resource tags.");
+        setLastError(errorMessage);
+        return invalidImportedResourcesInsertionResult(
+            normalizedSourceText,
+            cursorPosition,
+            selectionLength,
+            errorMessage);
+    }
+
+    const int sourceSize = normalizedSourceText.size();
+    const int anchor = clampedPosition(cursorPosition, sourceSize);
+    const int active = clampedPosition(cursorPosition + selectionLength, sourceSize);
+    const int selectionStart = std::min(anchor, active);
+    const int selectionEnd = std::max(anchor, active);
+    const QString beforeSelection = normalizedSourceText.left(selectionStart);
+    const QString afterSelection = normalizedSourceText.mid(selectionEnd);
+    const QString insertedBlock = resourceTags.join(QLatin1Char('\n'));
+    const QString prefix = !beforeSelection.isEmpty() && !beforeSelection.endsWith(QLatin1Char('\n'))
+        ? QStringLiteral("\n")
+        : QString();
+    const QString suffix = !afterSelection.isEmpty() && !afterSelection.startsWith(QLatin1Char('\n'))
+        ? QStringLiteral("\n")
+        : QString();
+    const QString insertedText = prefix + insertedBlock + suffix;
+    const QString mutatedSourceText = beforeSelection + insertedText + afterSelection;
+
+    setLastError(QString());
+
+    QVariantMap result;
+    result.insert(QStringLiteral("valid"), true);
+    result.insert(QStringLiteral("changed"), true);
+    result.insert(QStringLiteral("bodySourceText"), mutatedSourceText);
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        beforeSelection.size() + prefix.size() + insertedBlock.size());
+    result.insert(QStringLiteral("selectionStart"), selectionStart);
+    result.insert(QStringLiteral("selectionLength"), selectionEnd - selectionStart);
+    result.insert(QStringLiteral("insertedText"), insertedText);
+    result.insert(QStringLiteral("insertedCount"), resourceTags.size());
+    result.insert(QStringLiteral("errorMessage"), QString());
+    return result;
 }
 
 void NoteEditorDocumentSession::refreshFromActiveNoteState()

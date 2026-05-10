@@ -563,3 +563,28 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
 }
+
+void WhatSonCppRegressionTests::sourceTree_forbidsSharedFileIoObjectLayer()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QString obsoleteSourceDirectory =
+        QStringLiteral("src/app/models/file") + QStringLiteral("/IO");
+    const QString obsoleteDocsDirectory =
+        QStringLiteral("docs/src/app/models/file") + QStringLiteral("/IO");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(obsoleteSourceDirectory)).exists(),
+        "The old shared file IO model directory must stay removed.");
+    QVERIFY2(
+        !QDir(repositoryRoot.filePath(obsoleteDocsDirectory)).exists(),
+        "The old shared file IO documentation directory must stay removed.");
+
+    const QString obsoleteGatewayName =
+        QStringLiteral("WhatSonSystem") + QStringLiteral("IoGateway");
+    const QString obsoleteRuntimeName =
+        QStringLiteral("WhatSonIo") + QStringLiteral("RuntimeController");
+    const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(!testCMakeSource.contains(obsoleteGatewayName));
+    QVERIFY(!testCMakeSource.contains(obsoleteRuntimeName));
+}

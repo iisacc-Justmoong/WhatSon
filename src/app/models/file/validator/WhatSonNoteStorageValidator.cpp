@@ -1,5 +1,7 @@
 #include "app/models/file/validator/WhatSonNoteStorageValidator.hpp"
 
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -248,9 +250,10 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
             return true;
         }
 
-        const QStringList fileNames = m_ioGateway.listFileNames(normalizedDirectoryPath);
-        for (const QString& fileName : fileNames)
+        const QFileInfoList fileInfos = noteDir.entryInfoList(QStringList{}, QDir::Files, QDir::Name);
+        for (const QFileInfo& fileInfo : fileInfos)
         {
+            const QString fileName = fileInfo.fileName();
             if (!fileName.endsWith(suffix, Qt::CaseInsensitive))
             {
                 continue;
@@ -263,15 +266,15 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
             }
 
             QString sourceText;
-            if (!m_ioGateway.readUtf8File(sourcePath, &sourceText, errorMessage))
+            if (!WhatSon::NoteMutationSupport::readUtf8File(sourcePath, &sourceText, errorMessage))
             {
                 return false;
             }
-            if (!m_ioGateway.writeUtf8File(targetPath, sourceText, errorMessage))
+            if (!WhatSon::NoteMutationSupport::writeUtf8File(targetPath, sourceText, errorMessage))
             {
                 return false;
             }
-            if (!m_ioGateway.removeFile(sourcePath, errorMessage))
+            if (!WhatSon::NoteMutationSupport::removeFilePath(sourcePath, errorMessage))
             {
                 return false;
             }
@@ -282,7 +285,7 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
         {
             return true;
         }
-        return m_ioGateway.writeUtf8File(targetPath, fallbackText, errorMessage);
+        return WhatSon::NoteMutationSupport::writeUtf8File(targetPath, fallbackText, errorMessage);
     };
 
     if (!materializeBySuffix(QStringLiteral(".wsnhead"), targetHeaderPath, createEmptyHeaderDocumentText(normalizedNoteId)))
@@ -318,7 +321,7 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
         const QString entryPath = entryInfo.absoluteFilePath();
         if (entryInfo.isSymLink())
         {
-            if (!m_ioGateway.removeFile(entryPath, errorMessage))
+            if (!WhatSon::NoteMutationSupport::removeFilePath(entryPath, errorMessage))
             {
                 return false;
             }
@@ -327,7 +330,7 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
 
         if (entryInfo.isDir())
         {
-            if (!m_ioGateway.removeDirectoryRecursively(entryPath, errorMessage))
+            if (!WhatSon::NoteMutationSupport::removeDirectoryPath(entryPath, errorMessage))
             {
                 return false;
             }
@@ -339,7 +342,7 @@ bool WhatSonNoteStorageValidator::normalizeWsnotePackageByDirectoryPath(
             continue;
         }
 
-        if (!m_ioGateway.removeFile(entryPath, errorMessage))
+        if (!WhatSon::NoteMutationSupport::removeFilePath(entryPath, errorMessage))
         {
             return false;
         }

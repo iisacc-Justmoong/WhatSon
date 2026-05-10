@@ -67,6 +67,54 @@ Item {
             contentViewLayout.panelController.requestControllerHook(hookReason);
         contentViewLayout.viewHookRequested();
     }
+    function listLikeCount(value) {
+        if (value === undefined || value === null)
+            return 0;
+        if (value.length !== undefined)
+            return Math.max(0, Number(value.length) || 0);
+        if (value.count !== undefined)
+            return Math.max(0, Number(value.count) || 0);
+        return 0;
+    }
+    function pasteClipboardImageIntoEditor() {
+        if (!contentViewLayout.resourcesImportController
+                || !contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.resourcesImportController.importClipboardImageForEditor === undefined
+                || contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource === undefined)
+            return false;
+
+        const importedEntries = contentViewLayout.resourcesImportController.importClipboardImageForEditor();
+        if (contentViewLayout.listLikeCount(importedEntries) <= 0)
+            return false;
+
+        const insertion = contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource(
+                    contentsTextEditor.editorDocumentText,
+                    contentsTextEditor.cursorPosition,
+                    0,
+                    importedEntries);
+        if (!insertion || !Boolean(insertion.valid))
+            return false;
+
+        if (!contentsTextEditor.replaceEditorDocumentText(
+                    String(insertion.bodySourceText),
+                    Number(insertion.cursorPosition) || 0))
+            return false;
+
+        if (contentViewLayout.resourcesImportController.reloadImportedResources !== undefined)
+            return Boolean(contentViewLayout.resourcesImportController.reloadImportedResources());
+        return true;
+    }
+    function handleEditorPasteShortcut() {
+        if (!contentViewLayout.resourcesImportController
+                || contentViewLayout.resourcesImportController.refreshClipboardImageAvailabilitySnapshot === undefined
+                || !contentViewLayout.resourcesImportController.refreshClipboardImageAvailabilitySnapshot()) {
+            contentsTextEditor.pasteNativeClipboardText();
+            return;
+        }
+
+        contentViewLayout.pasteClipboardImageIntoEditor();
+    }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -113,6 +161,15 @@ Item {
                 Layout.preferredWidth: implicitWidth
                 visible: contentViewLayout.minimapVisible
             }
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: StandardKey.Paste
+
+            onActivated: contentViewLayout.handleEditorPasteShortcut()
         }
     }
 }

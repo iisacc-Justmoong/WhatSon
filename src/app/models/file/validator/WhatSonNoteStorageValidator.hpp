@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
@@ -22,6 +21,4 @@ private:
         const QString& noteDirectoryPath,
         const QString& noteId,
         QString* errorMessage = nullptr) const;
-
-    mutable WhatSonSystemIoGateway m_ioGateway;
 };

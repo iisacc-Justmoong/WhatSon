@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/file/validator/WhatSonNoteStorageValidator.hpp"
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 
@@ -32,7 +31,5 @@ private:
     bool pathIsWithinRoot(const QString& path, const QString& rootPath) const;
     bool recordBelongsToLibraryRoot(const LibraryNoteRecord& record, const QString& libraryRoot) const;
     QStringList noteIdsForLibraryRoot(const QVector<LibraryNoteRecord>& records, const QString& libraryRoot) const;
-
-    WhatSonSystemIoGateway m_ioGateway;
     WhatSonNoteStorageValidator m_noteStorageValidator;
 };

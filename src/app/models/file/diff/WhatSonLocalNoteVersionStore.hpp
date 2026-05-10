@@ -2,7 +2,6 @@
 
 #include "app/models/file/note/WhatSonLocalNoteDocument.hpp"
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 
 #include <QString>
 #include <QVector>
@@ -140,5 +139,4 @@ private:
         const QString& toLabel = QString()) const;
 
     WhatSonLocalNoteFileStore m_localNoteFileStore;
-    WhatSonSystemIoGateway m_ioGateway;
 };

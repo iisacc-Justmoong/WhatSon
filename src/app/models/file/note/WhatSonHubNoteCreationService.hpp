@@ -44,7 +44,6 @@ public:
 
 private:
     WhatSonLocalNoteFileStore m_localNoteFileStore;
-    WhatSonSystemIoGateway m_ioGateway;
     WhatSonHubStructureValidator m_hubStructureValidator;
     WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;
 };

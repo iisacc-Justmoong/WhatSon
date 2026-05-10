@@ -32,6 +32,6 @@ The implementation provides path resolution helpers and an in-place normalizer f
 - Legacy directories (for example `attachments`) are removed recursively.
 
 ## Error Handling
-- Every filesystem mutation uses `WhatSonSystemIoGateway`.
+- Filesystem mutation uses direct Qt file/directory primitives through the note-domain mutation support functions.
 - Any failed read/write/delete operation returns `false` and propagates a descriptive message through `errorMessage`.
 - Successful normalization is idempotent for already-clean packages.

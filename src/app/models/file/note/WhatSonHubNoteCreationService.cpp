@@ -189,7 +189,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
     QString previousIndexText;
     const bool hadIndexFile = QFileInfo(indexPath).isFile();
-    if (hadIndexFile && !m_ioGateway.readUtf8File(indexPath, &previousIndexText, &createError))
+    if (hadIndexFile && !WhatSon::NoteMutationSupport::readUtf8File(indexPath, &previousIndexText, &createError))
     {
         rollbackNoteDirectory();
         if (errorMessage != nullptr)
@@ -217,10 +217,10 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     {
         if (hadIndexFile)
         {
-            m_ioGateway.writeUtf8File(indexPath, previousIndexText, nullptr);
+            WhatSon::NoteMutationSupport::writeUtf8File(indexPath, previousIndexText, nullptr);
             return;
         }
-        m_ioGateway.removeFile(indexPath, nullptr);
+        WhatSon::NoteMutationSupport::removeFilePath(indexPath, nullptr);
     };
 
     QString statPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(request.statPath);
@@ -243,12 +243,12 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
         }
         if (hadStatFile)
         {
-            m_ioGateway.writeUtf8File(statPath, previousStatText, nullptr);
+            WhatSon::NoteMutationSupport::writeUtf8File(statPath, previousStatText, nullptr);
             return;
         }
         if (wroteStatFile)
         {
-            m_ioGateway.removeFile(statPath, nullptr);
+            WhatSon::NoteMutationSupport::removeFilePath(statPath, nullptr);
         }
     };
 
@@ -259,7 +259,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
         if (hadStatFile)
         {
             QString rawStatText;
-            if (!m_ioGateway.readUtf8File(statPath, &rawStatText, &createError))
+            if (!WhatSon::NoteMutationSupport::readUtf8File(statPath, &rawStatText, &createError))
             {
                 restoreIndexFile();
                 rollbackNoteDirectory();
@@ -322,7 +322,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
         statRoot.insert(QStringLiteral("createdAtUtc"), statCreatedAtUtc);
         statRoot.insert(QStringLiteral("lastModifiedAtUtc"), nowUtc);
 
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             statPath,
             QString::fromUtf8(QJsonDocument(statRoot).toJson(QJsonDocument::Indented)),
             &createError))

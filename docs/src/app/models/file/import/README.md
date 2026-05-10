@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/import`
 - Child directories: 0
-- Child files: 2
+- Child files: 6
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,10 @@
 ## Child Files
 - `ResourcesImportController.cpp`
 - `ResourcesImportController.hpp`
+- `WhatSonClipboardResourceImportFileNamePolicy.cpp`
+- `WhatSonClipboardResourceImportFileNamePolicy.hpp`
+- `WhatSonResourceClipboardImportSupport.cpp`
+- `WhatSonResourceClipboardImportSupport.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

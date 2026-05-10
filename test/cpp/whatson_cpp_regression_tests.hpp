@@ -6,6 +6,7 @@
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/file/import/WhatSonClipboardResourceImportFileNamePolicy.hpp"
+#include "app/models/file/import/WhatSonResourceClipboardImportSupport.hpp"
 #define private public
 #include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -1112,6 +1113,7 @@ private slots:
     void sourceTree_keepsEditorModelBackendRegistered();
     void sourceTree_keepsContentsQmlUnderViewContents();
     void sourceTree_keepsHierarchyBackendDecomposed();
+    void sourceTree_forbidsSharedFileIoObjectLayer();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
     void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
     void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
@@ -1133,6 +1135,7 @@ private slots:
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
     void noteEditorDocumentSession_mountsParsedSourceFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
+    void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
@@ -1174,6 +1177,7 @@ private slots:
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
+    void resourceClipboardImportSupport_extractsMimeImagePayloads();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();

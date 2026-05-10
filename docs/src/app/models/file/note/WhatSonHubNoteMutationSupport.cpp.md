@@ -8,6 +8,10 @@ after local mutations.
 It no longer owns note sidecar manifest generation. Package scaffold responsibility now lives in
 `WhatSonLocalNoteFileStore`.
 
+The former shared IO gateway has also been removed. This implementation now performs the small filesystem operations
+owned by note mutation flows directly through Qt primitives: `QDir` for directories, `QFile` for reads/removals, and
+`QSaveFile` for atomic UTF-8 overwrites.
+
 ## Folder Synchronization
 
 The runtime sync path now copies both folder paths and folder UUIDs from the parsed note document

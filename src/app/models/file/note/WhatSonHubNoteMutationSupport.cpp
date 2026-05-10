@@ -4,13 +4,25 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QRandomGenerator>
+#include <QSaveFile>
 #include <QSet>
 
 namespace
 {
     constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
+
+    QString normalizeFileSystemPath(QString path)
+    {
+        path = path.trimmed();
+        if (path.isEmpty())
+        {
+            return {};
+        }
+        return QDir::cleanPath(path);
+    }
 
     QString randomAlphaNumericSegment(int length)
     {
@@ -121,7 +133,8 @@ QString WhatSon::NoteMutationSupport::createUniqueNoteId(
 
 bool WhatSon::NoteMutationSupport::ensureDirectoryPath(const QString& directoryPath, QString* errorMessage)
 {
-    if (directoryPath.trimmed().isEmpty())
+    const QString normalizedPath = normalizeFileSystemPath(directoryPath);
+    if (normalizedPath.isEmpty())
     {
         if (errorMessage != nullptr)
         {
@@ -130,8 +143,61 @@ bool WhatSon::NoteMutationSupport::ensureDirectoryPath(const QString& directoryP
         return false;
     }
 
-    WhatSonSystemIoGateway ioGateway;
-    return ioGateway.ensureDirectory(directoryPath, errorMessage);
+    if (QDir(normalizedPath).exists())
+    {
+        return true;
+    }
+
+    QDir directory;
+    if (directory.mkpath(normalizedPath))
+    {
+        return true;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        *errorMessage = QStringLiteral("Failed to create directory: %1").arg(normalizedPath);
+    }
+    return false;
+}
+
+bool WhatSon::NoteMutationSupport::readUtf8File(
+    const QString& filePath,
+    QString* outText,
+    QString* errorMessage)
+{
+    if (outText == nullptr)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("outText must not be null.");
+        }
+        return false;
+    }
+
+    const QString normalizedPath = normalizeFileSystemPath(filePath);
+    if (normalizedPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("File path must not be empty.");
+        }
+        return false;
+    }
+
+    QFile file(normalizedPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to open file for reading: %1 (%2)")
+                .arg(normalizedPath, file.errorString());
+        }
+        return false;
+    }
+
+    *outText = QString::fromUtf8(file.readAll());
+    return true;
 }
 
 bool WhatSon::NoteMutationSupport::writeUtf8File(
@@ -139,20 +205,129 @@ bool WhatSon::NoteMutationSupport::writeUtf8File(
     const QString& text,
     QString* errorMessage)
 {
-    WhatSonSystemIoGateway ioGateway;
-    return ioGateway.writeUtf8File(filePath, text, errorMessage);
+    const QString normalizedPath = normalizeFileSystemPath(filePath);
+    if (normalizedPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("File path must not be empty.");
+        }
+        return false;
+    }
+
+    const QString parentPath = QFileInfo(normalizedPath).absolutePath();
+    if (!parentPath.isEmpty())
+    {
+        QString ensureError;
+        if (!ensureDirectoryPath(parentPath, &ensureError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = ensureError;
+            }
+            return false;
+        }
+    }
+
+    QSaveFile file(normalizedPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to open file for writing: %1 (%2)")
+                .arg(normalizedPath, file.errorString());
+        }
+        return false;
+    }
+
+    const QByteArray utf8Bytes = text.toUtf8();
+    const qint64 bytesWritten = file.write(utf8Bytes);
+    if (bytesWritten != utf8Bytes.size())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to write UTF-8 bytes: %1 (%2)")
+                .arg(normalizedPath, file.errorString());
+        }
+        return false;
+    }
+
+    if (!file.commit())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to commit UTF-8 file: %1 (%2)")
+                .arg(normalizedPath, file.errorString());
+        }
+        return false;
+    }
+
+    return true;
 }
 
 bool WhatSon::NoteMutationSupport::removeFilePath(const QString& filePath, QString* errorMessage)
 {
-    WhatSonSystemIoGateway ioGateway;
-    return ioGateway.removeFile(filePath, errorMessage);
+    const QString normalizedPath = normalizeFileSystemPath(filePath);
+    if (normalizedPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("File path must not be empty.");
+        }
+        return false;
+    }
+
+    QFile file(normalizedPath);
+    if (!file.exists())
+    {
+        return true;
+    }
+    if (file.remove())
+    {
+        return true;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        *errorMessage = QStringLiteral("Failed to remove file: %1 (%2)")
+            .arg(normalizedPath, file.errorString());
+    }
+    return false;
 }
 
 bool WhatSon::NoteMutationSupport::removeDirectoryPath(const QString& directoryPath, QString* errorMessage)
 {
-    WhatSonSystemIoGateway ioGateway;
-    return ioGateway.removeDirectoryRecursively(directoryPath, errorMessage);
+    const QString normalizedPath = normalizeFileSystemPath(directoryPath);
+    if (normalizedPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Directory path must not be empty.");
+        }
+        return false;
+    }
+
+    QDir directory(normalizedPath);
+    if (!directory.exists())
+    {
+        return true;
+    }
+    if (directory.removeRecursively())
+    {
+        return true;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        *errorMessage = QStringLiteral("Failed to remove directory recursively: %1").arg(normalizedPath);
+    }
+    return false;
+}
+
+bool WhatSon::NoteMutationSupport::pathExists(const QString& path)
+{
+    const QString normalizedPath = normalizeFileSystemPath(path);
+    return !normalizedPath.isEmpty() && QFileInfo::exists(normalizedPath);
 }
 
 QString WhatSon::NoteMutationSupport::resolveNoteHeaderPath(const LibraryNoteRecord& note)

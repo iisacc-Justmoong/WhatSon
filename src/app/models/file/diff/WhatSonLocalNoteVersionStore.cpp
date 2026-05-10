@@ -1,5 +1,6 @@
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 
@@ -322,10 +323,13 @@ bool WhatSonLocalNoteVersionStore::ensureState(
         return false;
     }
 
-    if (!m_ioGateway.exists(versionPath))
+    if (!WhatSon::NoteMutationSupport::pathExists(versionPath))
     {
         QString writeError;
-        if (!m_ioGateway.writeUtf8File(versionPath, createEmptyVersionDocumentText(noteId), &writeError))
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
+            versionPath,
+            createEmptyVersionDocumentText(noteId),
+            &writeError))
         {
             if (errorMessage != nullptr)
             {
@@ -337,7 +341,7 @@ bool WhatSonLocalNoteVersionStore::ensureState(
 
     QString rawText;
     QString readError;
-    if (!m_ioGateway.readUtf8File(versionPath, &rawText, &readError))
+    if (!WhatSon::NoteMutationSupport::readUtf8File(versionPath, &rawText, &readError))
     {
         if (errorMessage != nullptr)
         {
@@ -411,7 +415,7 @@ bool WhatSonLocalNoteVersionStore::writeState(
     root.insert(QStringLiteral("currentSnapshotId"), state.currentSnapshotId.trimmed());
     root.insert(QStringLiteral("headSnapshotId"), state.headSnapshotId.trimmed());
     root.insert(QStringLiteral("snapshots"), snapshotsArray);
-    return m_ioGateway.writeUtf8File(
+    return WhatSon::NoteMutationSupport::writeUtf8File(
         versionPath,
         QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented)),
         errorMessage);
@@ -449,9 +453,10 @@ bool WhatSonLocalNoteVersionStore::readWorkingTreeSnapshot(
     }
 
     QString headerText;
-    if (!normalizedDocument.noteHeaderPath.trimmed().isEmpty() && m_ioGateway.exists(normalizedDocument.noteHeaderPath))
+    if (!normalizedDocument.noteHeaderPath.trimmed().isEmpty()
+        && WhatSon::NoteMutationSupport::pathExists(normalizedDocument.noteHeaderPath))
     {
-        if (!m_ioGateway.readUtf8File(normalizedDocument.noteHeaderPath, &headerText, &readError))
+        if (!WhatSon::NoteMutationSupport::readUtf8File(normalizedDocument.noteHeaderPath, &headerText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -469,9 +474,13 @@ bool WhatSonLocalNoteVersionStore::readWorkingTreeSnapshot(
     normalizedDocument.normalizeBodyFields();
 
     QString bodyDocumentText;
-    if (!normalizedDocument.noteBodyPath.trimmed().isEmpty() && m_ioGateway.exists(normalizedDocument.noteBodyPath))
+    if (!normalizedDocument.noteBodyPath.trimmed().isEmpty()
+        && WhatSon::NoteMutationSupport::pathExists(normalizedDocument.noteBodyPath))
     {
-        if (!m_ioGateway.readUtf8File(normalizedDocument.noteBodyPath, &bodyDocumentText, &readError))
+        if (!WhatSon::NoteMutationSupport::readUtf8File(
+            normalizedDocument.noteBodyPath,
+            &bodyDocumentText,
+            &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -517,7 +526,7 @@ bool WhatSonLocalNoteVersionStore::applySnapshotToWorkingTree(
                                  : normalizePath(baseDocument.noteBodyPath);
 
     QString ioError;
-    if (!m_ioGateway.ensureDirectory(noteDirectoryPath, &ioError))
+    if (!WhatSon::NoteMutationSupport::ensureDirectoryPath(noteDirectoryPath, &ioError))
     {
         if (errorMessage != nullptr)
         {
@@ -526,7 +535,7 @@ bool WhatSonLocalNoteVersionStore::applySnapshotToWorkingTree(
         return false;
     }
 
-    if (!m_ioGateway.writeUtf8File(headerPath, snapshot.headerText, &ioError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(headerPath, snapshot.headerText, &ioError))
     {
         if (errorMessage != nullptr)
         {
@@ -534,7 +543,7 @@ bool WhatSonLocalNoteVersionStore::applySnapshotToWorkingTree(
         }
         return false;
     }
-    if (!m_ioGateway.writeUtf8File(bodyPath, snapshot.bodyDocumentText, &ioError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(bodyPath, snapshot.bodyDocumentText, &ioError))
     {
         if (errorMessage != nullptr)
         {

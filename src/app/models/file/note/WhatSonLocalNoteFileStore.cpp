@@ -1,6 +1,7 @@
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
 
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
@@ -298,7 +299,7 @@ namespace
         {
             QString rawTagsText;
             QString readError;
-            if (!WhatSonSystemIoGateway().readUtf8File(tagsFilePath, &rawTagsText, &readError))
+            if (!WhatSon::NoteMutationSupport::readUtf8File(tagsFilePath, &rawTagsText, &readError))
             {
                 if (errorMessage != nullptr)
                 {
@@ -506,7 +507,7 @@ bool WhatSonLocalNoteFileStore::loadHeaderStore(
 
     QString rawHeaderText;
     QString readError;
-    if (!m_ioGateway.readUtf8File(headerPath, &rawHeaderText, &readError))
+    if (!WhatSon::NoteMutationSupport::readUtf8File(headerPath, &rawHeaderText, &readError))
     {
         if (errorMessage != nullptr)
         {
@@ -630,7 +631,7 @@ bool WhatSonLocalNoteFileStore::createNote(
     }
 
     QString ensureError;
-    if (!m_ioGateway.ensureDirectory(noteDirectoryPath, &ensureError))
+    if (!WhatSon::NoteMutationSupport::ensureDirectoryPath(noteDirectoryPath, &ensureError))
     {
         if (errorMessage != nullptr)
         {
@@ -666,7 +667,10 @@ bool WhatSonLocalNoteFileStore::createNote(
 
     WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
     QString writeError;
-    if (!m_ioGateway.writeUtf8File(headerPath, headerCreator.createHeaderText(request.headerStore), &writeError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(
+        headerPath,
+        headerCreator.createHeaderText(request.headerStore),
+        &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -675,7 +679,7 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
 
-    if (!m_ioGateway.writeUtf8File(bodyPath, bodyDocumentText, &writeError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(bodyPath, bodyDocumentText, &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -684,7 +688,10 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
 
-    if (!m_ioGateway.writeUtf8File(versionPath, createEmptyVersionDocumentText(request.headerStore.noteId()), &writeError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(
+        versionPath,
+        createEmptyVersionDocumentText(request.headerStore.noteId()),
+        &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -693,7 +700,10 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
 
-    if (!m_ioGateway.writeUtf8File(paintPath, createEmptyPaintDocumentText(request.headerStore.noteId()), &writeError))
+    if (!WhatSon::NoteMutationSupport::writeUtf8File(
+        paintPath,
+        createEmptyPaintDocumentText(request.headerStore.noteId()),
+        &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -799,7 +809,7 @@ bool WhatSonLocalNoteFileStore::readNote(
     {
         QString rawBodyText;
         QString readError;
-        if (!m_ioGateway.readUtf8File(resolvedBodyPath, &rawBodyText, &readError))
+        if (!WhatSon::NoteMutationSupport::readUtf8File(resolvedBodyPath, &rawBodyText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -875,7 +885,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
                                   : normalizePath(request.document.notePaintPath);
 
     QString ensureError;
-    if (!m_ioGateway.ensureDirectory(noteDirectoryPath, &ensureError))
+    if (!WhatSon::NoteMutationSupport::ensureDirectoryPath(noteDirectoryPath, &ensureError))
     {
         if (errorMessage != nullptr)
         {
@@ -904,7 +914,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
         existingBodyDocument = [this, &bodyPath, &existingBodyReadError]()
         {
             QString rawText;
-            if (!m_ioGateway.readUtf8File(bodyPath, &rawText, &existingBodyReadError))
+            if (!WhatSon::NoteMutationSupport::readUtf8File(bodyPath, &rawText, &existingBodyReadError))
             {
                 return QString();
             }
@@ -1027,9 +1037,9 @@ bool WhatSonLocalNoteFileStore::updateNote(
         && modifiedCountAfterUpdate == modifiedCountBeforeUpdate + 1;
 
     QString writeError;
-    if (!versionPath.isEmpty() && !m_ioGateway.exists(versionPath))
+    if (!versionPath.isEmpty() && !WhatSon::NoteMutationSupport::pathExists(versionPath))
     {
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             versionPath,
             createEmptyVersionDocumentText(request.document.headerStore.noteId()),
             &writeError))
@@ -1042,9 +1052,9 @@ bool WhatSonLocalNoteFileStore::updateNote(
         }
     }
 
-    if (!paintPath.isEmpty() && !m_ioGateway.exists(paintPath))
+    if (!paintPath.isEmpty() && !WhatSon::NoteMutationSupport::pathExists(paintPath))
     {
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             paintPath,
             createEmptyPaintDocumentText(request.document.headerStore.noteId()),
             &writeError))
@@ -1059,7 +1069,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
 
     if (persistBody)
     {
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             bodyPath,
             serializedBodyDocument,
             &writeError))
@@ -1075,7 +1085,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
     if (persistHeader)
     {
         WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
-        if (!m_ioGateway.writeUtf8File(
+        if (!WhatSon::NoteMutationSupport::writeUtf8File(
             headerPath,
             headerCreator.createHeaderText(request.document.headerStore),
             &writeError))
@@ -1173,7 +1183,7 @@ bool WhatSonLocalNoteFileStore::deleteNote(DeleteRequest request, QString* error
     }
 
     QString removeError;
-    if (!m_ioGateway.removeDirectoryRecursively(noteDirectoryPath, &removeError))
+    if (!WhatSon::NoteMutationSupport::removeDirectoryPath(noteDirectoryPath, &removeError))
     {
         if (errorMessage != nullptr)
         {

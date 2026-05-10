@@ -13,6 +13,8 @@ Declares the active note editor document session object.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Provides `persistEditorFile(path)` for the LVRS `syncFinished` hook.
+- Provides `insertImportedResourcesIntoSource(...)`, which converts imported resource metadata into canonical
+  standalone RAW `<resource ... />` source insertion results for clipboard/drop flows.
 
 ## Guardrails
 
@@ -25,3 +27,5 @@ Declares the active note editor document session object.
 - `editorFilePath`는 `.wsnbody` 원문이 아니라 parsed RAW source session file이어야 한다.
 - `parsedLineCount`는 거터 표시용 라인 수이며 QML이 직접 파일을 읽거나 파싱하지 않게 한다.
 - LVRS가 session file 저장을 끝내면 `persistEditorFile(...)`이 다시 `.wsnbody` 저장 경로로 넘긴다.
+- clipboard/drop resource metadata를 노트 source에 넣을 때는 `insertImportedResourcesIntoSource(...)`가
+  canonical `<resource ... />` 삽입 결과를 계산한다.

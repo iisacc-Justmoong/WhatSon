@@ -52,6 +52,8 @@ This Controller translates external local file URLs into resource package import
   identical to drag/drop imports.
   The temporary asset file name is now a random 32-character mixed-case alphanumeric key, so clipboard-originated
   resources do not reuse an ambiguous placeholder name inside the resource store.
+  Editor paste callers use the `ForEditor` variant so the active note can insert the returned resource metadata before
+  the deferred runtime reload.
 - `importClipboardImageWithConflictPolicy(...)`, `importClipboardImageForEditorWithConflictPolicy(...)`
   Clipboard-image variants of the same explicit conflict-policy flow.
 - `reloadImportedResources()`

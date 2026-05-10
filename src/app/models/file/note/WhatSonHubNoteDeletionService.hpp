@@ -1,7 +1,6 @@
 #pragma once
 
 #include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "app/models/file/IO/WhatSonSystemIoGateway.hpp"
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 #include "app/models/file/hub/WhatSonHubStat.hpp"
 #include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
@@ -42,7 +41,6 @@ public:
 
 private:
     WhatSonLocalNoteFileStore m_localNoteFileStore;
-    WhatSonSystemIoGateway m_ioGateway;
     WhatSonHubStructureValidator m_hubStructureValidator;
     WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;
     WhatSonNoteStorageValidator m_noteStorageValidator;
