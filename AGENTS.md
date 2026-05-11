@@ -134,7 +134,9 @@
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
-  Plain/Page/Print/Web/Presentation 선택 계약은 제거된 계약이며 재도입하지 않는다.
+  Plain/Page/Print/Web/Presentation 선택 계약은 navigation bar의 view-mode 콤보박스 계약으로 유지한다.
+  단, 이 콤보박스는 현재 editor surface를 `LV.TextEditor`에서 다른 renderer로 전환하는 백엔드 계약이 아니며,
+  `ContentViewLayout.qml`은 계속 parsed RAW source session file만 `LV.TextEditor.filePath`로 소비해야 한다.
 - 새 편집 정책은 LVRS `TextEditor` 갱신 계약이 먼저 정의된 뒤 그 계약을 중심으로 추가한다. 기존 QML 호환 wrapper,
   RichText overlay, 직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge를 되살리지 않는다.
 - `.wsnote/.wsnbody` parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.

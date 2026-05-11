@@ -343,7 +343,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
 
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
 
-    const QStringList forbiddenFiles{
+    const QStringList requiredEditorViewModeFiles{
         QStringLiteral("src/app/models/navigationbar/EditorViewModeController.cpp"),
         QStringLiteral("src/app/models/navigationbar/EditorViewModeController.hpp"),
         QStringLiteral("src/app/models/navigationbar/EditorViewSectionController.cpp"),
@@ -360,19 +360,24 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("docs/src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml.md"),
         QStringLiteral("test/cpp/suites/editor_view_mode_controller_tests.cpp")
     };
-    for (const QString& relativePath : forbiddenFiles)
+    for (const QString& relativePath : requiredEditorViewModeFiles)
     {
         QVERIFY2(
-            !QFileInfo::exists(repositoryRoot.filePath(relativePath)),
-            qPrintable(QStringLiteral("Removed editor view-mode contract must stay absent: %1").arg(relativePath)));
+            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Restored editor view-mode contract must stay present: %1").arg(relativePath)));
     }
 
     const QString qmlContextBinderHeader = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.hpp"));
     const QString qmlContextBinderSource = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp"));
-    QVERIFY(!qmlContextBinderHeader.contains(QStringLiteral("editorViewModeController")));
-    QVERIFY(!qmlContextBinderSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(qmlContextBinderHeader.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(qmlContextBinderSource.contains(QStringLiteral("editorViewModeController")));
+
+    const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewModeController.cpp")));
+    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewSectionController.cpp")));
+    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewState.cpp")));
 }
 
 void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()

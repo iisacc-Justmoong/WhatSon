@@ -4,7 +4,7 @@
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 
-void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithoutEditorViewMode()
+void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewModeCombo()
 {
     const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
     const QString mobileHierarchyPageSource = readUtf8SourceFile(
@@ -46,7 +46,7 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithoutEditorView
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("canonicalRoutePlanner.canonicalRoutePlan(")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("selectionCoordinator.activeHierarchyBindingSnapshotFromSidebar(")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("mobileHierarchyPage.noteActiveState.activeNoteListModel")));
-    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var editorViewModeController: null")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("noteActiveState: mobileHierarchyPage.noteActiveState")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("resourcesImportController: mobileHierarchyPage.resourcesImportController")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController")));
@@ -61,8 +61,8 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithoutEditorView
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("backSwipeCoordinator.beginGesturePlan(")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("property color controlSurfaceColor: LV.Theme.panelBackground10")));
-    QVERIFY(!mobileScaffoldSource.contains(QStringLiteral("compactEditorViewVisible")));
-    QVERIFY(!mobileScaffoldSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(mobileScaffoldSource.contains(QStringLiteral("property bool compactEditorViewVisible: false")));
+    QVERIFY(mobileScaffoldSource.contains(QStringLiteral("property var editorViewModeController: null")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("compactSurfaceColor: mobilePageScaffold.controlSurfaceColor")));
     QVERIFY(mobileScaffoldSource.contains(
@@ -74,7 +74,8 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithoutEditorView
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("SidebarHierarchyInteractionController")));
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("NoteListModelContractBridge")));
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("WhatSonIosHubPickerBridge")));
-    QVERIFY(!navigationBarSource.contains(QStringLiteral("NavigationEditorViewBar")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("NavigationEditorViewBar")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("editorViewModeController: navigationBar.editorViewModeController")));
     QVERIFY(navigationBarSource.contains(
         QStringLiteral("property color compactSurfaceColor: LV.Theme.panelBackground10")));
     QVERIFY(statusBarSource.contains(

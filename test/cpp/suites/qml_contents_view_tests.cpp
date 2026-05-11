@@ -137,8 +137,8 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(mainSource.contains(QStringLiteral("MobilePageView.MobileHierarchyPage {")));
     QVERIFY(!mainSource.contains(QStringLiteral("editorOnlyWorkspaceComponent")));
     QVERIFY(!mainSource.contains(QStringLiteral("BodyPanelView.ContentViewLayout {")));
-    QVERIFY(!mainSource.contains(QStringLiteral("NavigationEditorViewBar")));
-    QVERIFY(!mainSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(mainSource.contains(QStringLiteral("rootEditorViewModeController")));
+    QVERIFY(mainSource.contains(QStringLiteral("editorViewModeController: applicationWindow.rootEditorViewModeController")));
 }
 
 void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog()

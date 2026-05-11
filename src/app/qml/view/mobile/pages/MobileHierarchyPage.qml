@@ -28,6 +28,7 @@ Item {
     property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property string detailRoutePath: "/mobile/detail"
     readonly property string editorRoutePath: "/mobile/editor"
+    property var editorViewModeController: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
 
@@ -632,11 +633,13 @@ Item {
         canvasColor: mobileHierarchyPage.canvasColor
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
         compactDetailPanelVisible: mobileHierarchyPage.editorPageActive
+        compactEditorViewVisible: mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
         compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive
         compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         detailPanelCollapsed: !mobileHierarchyPage.detailPageActive
+        editorViewModeController: mobileHierarchyPage.editorViewModeController
         navigationModeController: mobileHierarchyPage.navigationModeController
         statusPlaceholderText: mobileHierarchyPage.statusPlaceholderText
         statusSearchText: mobileHierarchyPage.statusSearchText

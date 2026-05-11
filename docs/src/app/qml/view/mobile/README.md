@@ -20,7 +20,8 @@
 - `pages/MobileHierarchyPage.qml` keeps the existing hierarchy, note-list, editor, and detail route shell, while the
   editor route forwards `NoteEditorDocumentSession` into `ContentViewLayout.qml` so the selected note's editor HTML
   session file is editable.
-- The compact editor view-mode selector path remains removed.
+- The compact editor route forwards the restored editor view-mode controller into `NavigationBarLayout` so the small
+  `View` combo can be shown beside the navigation mode combo.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

@@ -19,6 +19,10 @@
 - `modeBar`
 - `editorViewBar`
 
+## Current Notes
+- The bar forwards `editorViewModeController` into `NavigationEditorViewBar`.
+- Desktop navigation shows the restored `View` combo beside the primary `Mode` combo.
+
 ### Required Properties
 - None detected during scaffold generation.
 

@@ -19,9 +19,9 @@ policy. It does not route TextEditor mutations through parser/projection/renderi
 Runtime objects now arrive from `WhatSonQmlContextBinder` as direct LVRS context-object bindings. QML does not use a
 view-model layer or a `LV.Controllers`/`LV.ViewModels` registry for runtime lookup.
 
-The binder no longer publishes an editor view-mode controller. The active editor surface is the LVRS `TextEditor`
-composition path with `filePath` bound to `NoteEditorDocumentSession.editorFilePath`, a parsed RAW source session file
-that is serialized back into `.wsnbody` by C++.
+The binder publishes the restored editor view-mode controller for navigation chrome only. The active editor surface is
+still the LVRS `TextEditor` composition path with `filePath` bound to `NoteEditorDocumentSession.editorFilePath`, a
+parsed RAW source session file that is serialized back into `.wsnbody` by C++.
 
 Persisted tag insertion is not a QML parsing concern. `TagInsertionWriter` lives in `src/app/models/editor`,
 delegates tag-source mutation to `SetTag`, and writes the result back through `WhatSonLocalNoteFileStore`.
@@ -52,8 +52,8 @@ Composition-root code now links those modules through `IActiveHierarchyContextSo
 
 Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`, and the hierarchy row baseline still resolves to a `20px` LVRS item height.
 
-`MobileHierarchyPage.qml` remains part of the adaptive/mobile workspace mount path and no longer forwards editor
-view-mode controller state.
+`MobileHierarchyPage.qml` remains part of the adaptive/mobile workspace mount path and forwards editor view-mode
+controller state only into the compact navigation bar combo.
 
 ## Control Surfaces
 The compact control menu anchors from the trigger's bottom-right point. On the mobile hierarchy/control route, that trigger uses the `toolwindowtodo` glyph plus the built-in LVRS chevron instead of the old project-structure icon, and the trigger keeps the Figma `2 / 4 / 2 / 2` padding contract.

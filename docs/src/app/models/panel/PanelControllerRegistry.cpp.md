@@ -14,6 +14,10 @@
 - Declared namespaces present: yes
 - QObject macro present: no
 
+## Current Notes
+- The registry includes `navigation.NavigationEditorViewBar` so the restored editor view-mode combo can request panel
+  hooks consistently with the other navigation controls.
+
 ### Classes and Structs
 - None detected during scaffold generation.
 

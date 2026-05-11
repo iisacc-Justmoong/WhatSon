@@ -18,7 +18,8 @@
 ## Recent Notes
 - `MobileHierarchyPage.qml` is mounted by the adaptive/mobile `Main.qml` workspace route.
 - The file keeps the routed hierarchy, note-list, editor, and detail shell. The editor route uses
-  `ContentViewLayout.qml`, forwards `noteEditorSession`, and does not forward editor view-mode controller state.
+  `ContentViewLayout.qml`, forwards `noteEditorSession`, and forwards editor view-mode controller state only to compact
+  navigation chrome.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

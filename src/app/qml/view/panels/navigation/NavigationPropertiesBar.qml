@@ -5,6 +5,7 @@ LV.HStack {
     id: propertiesBar
 
     property bool compactMode: false
+    property var editorViewModeController: null
     property var navigationModeController: null
     property bool sidebarCollapsed: false
     readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("navigation.NavigationPropertiesBar") : null
@@ -32,6 +33,12 @@ LV.HStack {
         id: modeBar
 
         navigationModeController: propertiesBar.navigationModeController
+        visible: !propertiesBar.compactMode
+    }
+    NavigationEditorViewBar {
+        id: editorViewBar
+
+        editorViewModeController: propertiesBar.editorViewModeController
         visible: !propertiesBar.compactMode
     }
 }

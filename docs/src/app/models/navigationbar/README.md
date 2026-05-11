@@ -7,12 +7,18 @@
 ## Scope
 - Mirrored source directory: `src/app/models/navigationbar`
 - Child directories: 0
-- Child files: 6
+- Child files: 12
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `EditorViewModeController.cpp`
+- `EditorViewModeController.hpp`
+- `EditorViewSectionController.cpp`
+- `EditorViewSectionController.hpp`
+- `EditorViewState.cpp`
+- `EditorViewState.hpp`
 - `NavigationModeSectionController.cpp`
 - `NavigationModeSectionController.hpp`
 - `NavigationModeState.cpp`
@@ -31,7 +37,8 @@
 ## Current Notes
 - Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking state cycling,
   invalid-value rejection, and active-section synchronization for `NavigationModeController`.
-- The editor view-mode controller family was removed with the LVRS `TextEditor`-only editor contract.
+- The editor view-mode controller family is restored for the navigation bar `Plain/Page/Print/Web/Presentation`
+  combo box. It owns chrome selection state only; the note editor surface remains the LVRS `TextEditor` path.
 
 ## 한국어
 
@@ -40,5 +47,6 @@
 - 대상: ``src/app/models/navigationbar`` (`docs/src/app/models/navigationbar/README.md`)
 - 위치: `docs/src/app/models/navigationbar`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재 editor view-mode controller 계열은 네비게이션바 콤보박스 상태를 위해 유지된다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

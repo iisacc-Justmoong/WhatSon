@@ -38,6 +38,7 @@ LV.ApplicationWindow {
     readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? (LV.Theme.gap20 + LV.Theme.gap20) / (hierarchyToolbarCount - 1) : LV.Theme.gapNone
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
+    readonly property var rootEditorViewModeController: typeof editorViewModeController !== "undefined" ? editorViewModeController : null
     readonly property int libraryHierarchyIndex: 0
     readonly property var rootLibraryHierarchyController: typeof libraryHierarchyController !== "undefined" ? libraryHierarchyController : null
     readonly property var rootLibraryNoteMutationController: typeof libraryNoteMutationController !== "undefined" ? libraryNoteMutationController : null
@@ -643,6 +644,7 @@ LV.ApplicationWindow {
 
                     compactMode: false
                     detailPanelCollapsed: applicationWindow.hideRightPanel
+                    editorViewModeController: applicationWindow.rootEditorViewModeController
                     navigationModeController: applicationWindow.rootNavigationModeController
                     panelColor: applicationWindow.desktopPanelSurfaceColor
                     panelHeight: applicationWindow.navigationBarHeight
@@ -734,6 +736,7 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: applicationWindow.mobileControlSurfaceColor
+            editorViewModeController: applicationWindow.rootEditorViewModeController
             navigationModeController: applicationWindow.rootNavigationModeController
             noteActiveState: applicationWindow.rootNoteActiveState
             noteEditorSession: applicationWindow.rootNoteEditorSession

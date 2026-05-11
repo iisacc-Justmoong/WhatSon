@@ -26,7 +26,7 @@ handles into this component. `noteEditorSession` is consumed only to bind the ed
 and to notify the C++ session when LVRS finishes syncing that session file. Other inputs remain
 compatibility handles and are not used to mount parser, projection, renderer, resource editor, or calendar page logic.
 
-`editorViewModeController` remains removed and must not be reintroduced.
+`editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
 ## Guardrails
 - Do not add parser, projection, rendering, snapshot, resource editor, calendar, or editor view-mode wiring here.

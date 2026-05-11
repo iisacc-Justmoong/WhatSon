@@ -34,6 +34,9 @@
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
+#include "app/models/navigationbar/EditorViewSectionController.hpp"
+#include "app/models/navigationbar/EditorViewState.hpp"
+#include "app/models/navigationbar/EditorViewModeController.hpp"
 #include "app/models/navigationbar/NavigationModeSectionController.hpp"
 #include "app/models/navigationbar/NavigationModeState.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
@@ -1177,11 +1180,12 @@ private slots:
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
-    void mobileChrome_keepsRestoredShellWithoutEditorViewMode();
+    void mobileChrome_keepsRestoredShellWithEditorViewModeCombo();
     void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
     void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
     void mobileHierarchyNavigationCoordinator_routesBackAsDismissTargets();
     void navigationModeController_cyclesActiveSections();
+    void editorViewModeController_cyclesActiveSections();
     void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();

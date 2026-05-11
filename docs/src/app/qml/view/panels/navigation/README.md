@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/navigation`
 - Child directories: 3
-- Child files: 9
+- Child files: 10
 
 ## Child Directories
 - `control`
@@ -20,6 +20,7 @@
 - `NavigationApplicationCalendarBar.qml`
 - `NavigationApplicationPreferenceBar.qml`
 - `NavigationCalendarBar.qml`
+- `NavigationEditorViewBar.qml`
 - `NavigationInformationBar.qml`
 - `NavigationModeBar.qml`
 - `NavigationPreferenceBar.qml`
@@ -28,8 +29,8 @@
 ## Recent Notes
 - The small shared navigation bars now use `LV.Theme.gap...` tokens for their inter-button spacing instead of local
   integer literals such as `2`, `4`, `8`, or `12`.
-- `NavigationEditorViewBar.qml` was removed with the editor view-mode contract; navigation no longer exposes
-  Plain/Page/Print/Web/Presentation selection.
+- `NavigationEditorViewBar.qml` is restored as the navigation chrome for `Plain/Page/Print/Web/Presentation`
+  selection. It updates `EditorViewModeController` only and does not replace the LVRS `TextEditor` editor surface.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -46,5 +47,6 @@
 - 대상: ``src/app/qml/view/panels/navigation`` (`docs/src/app/qml/view/panels/navigation/README.md`)
 - 위치: `docs/src/app/qml/view/panels/navigation`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- `NavigationEditorViewBar.qml`은 다시 네비게이션바의 view-mode 콤보박스를 담당한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
