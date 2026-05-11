@@ -14,6 +14,18 @@ LV.TextEditor {
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
             : 0
+    readonly property real editorVisualLineHeight: {
+        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        if (editorSurface
+                && editorSurface.contentHeight !== undefined
+                && editorSurface.lineCount !== undefined) {
+            const visualLineCount = Math.max(1, Number(editorSurface.lineCount) || 1);
+            const visualContentHeight = Number(editorSurface.contentHeight) || 0;
+            if (visualContentHeight > 0)
+                return Math.max(1, visualContentHeight / visualLineCount);
+        }
+        return Math.max(1, Number(textEditor.lineHeight) || 1);
+    }
 
     function findDescendantByObjectName(root, objectName) {
         if (!root)

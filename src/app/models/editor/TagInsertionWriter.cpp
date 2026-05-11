@@ -1,4 +1,4 @@
-#include "app/models/editor/insert/TagInsertionWriter.hpp"
+#include "app/models/editor/TagInsertionWriter.hpp"
 
 #include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
 

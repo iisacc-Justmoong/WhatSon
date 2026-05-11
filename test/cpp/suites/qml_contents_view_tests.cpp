@@ -35,6 +35,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("String(textEditor.text)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real viewportContentY")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorVisualLineHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.contentHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.lineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorViewportFlickable")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function pasteNativeClipboardText")));
@@ -66,7 +70,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineCount: contentViewLayout.editorParsedLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentY: contentsTextEditor.viewportContentY")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineHeight: contentsTextEditor.lineHeight")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineHeight: contentsTextEditor.editorVisualLineHeight")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("persistEditorFile(path)")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.activeNoteBodyPath")));

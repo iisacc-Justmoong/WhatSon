@@ -9,8 +9,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
-  - `insert/TagInsertionWriter.hpp`
-  - `insert/TagInsertionWriter.cpp`
+  - `TagInsertionWriter.hpp`
+  - `TagInsertionWriter.cpp`
   - `NoteEditorDocumentSession.hpp`
   - `NoteEditorDocumentSession.cpp`
   - `SetProperty.h`
@@ -25,7 +25,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
   including `header`, `subheader`, and standalone `resource`, and can insert them into editor source text or into a
   serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`.
-- `insert/TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
+- `TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
   static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
   the actual `.wsnbody` document is updated.
 - `SetProperty` is the dynamic `.wsnbody` tag-attribute mutation object. It receives the property name as a string,
@@ -59,7 +59,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체이며 `header`,
   `subheader`, `resource`를 포함한다.
-- 현재: `insert/TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
+- 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session

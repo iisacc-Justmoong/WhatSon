@@ -23,7 +23,7 @@ The binder no longer publishes an editor view-mode controller. The active editor
 composition path with `filePath` bound to `NoteEditorDocumentSession.editorFilePath`, a parsed RAW source session file
 that is serialized back into `.wsnbody` by C++.
 
-Persisted tag insertion is not a QML parsing concern. `TagInsertionWriter` lives in `src/app/models/editor/insert`,
+Persisted tag insertion is not a QML parsing concern. `TagInsertionWriter` lives in `src/app/models/editor`,
 delegates tag-source mutation to `SetTag`, and writes the result back through `WhatSonLocalNoteFileStore`.
 
 ## View Behavior Ownership

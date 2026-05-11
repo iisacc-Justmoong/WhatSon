@@ -8,7 +8,7 @@
 - Source path: `src/app/CMakeLists.txt`
 - Source kind: CMake build definition
 - File name: `CMakeLists.txt`
-- Approximate line count: 332
+- Approximate line count: 343
 
 ## Responsibility
 - Owns the `WhatSon` app target shell and keeps the LVRS / Qt Quick baseline close to the app entrypoint.
@@ -81,6 +81,8 @@
   those PNGs into the bundle root with a `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
   `CFBundleIcons` fallback metadata. A direct Xcode/device build therefore still has a valid home-screen icon even
   when the generated asset catalog path fails.
+- The macOS resource shard exports `WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE`, and `src/app/CMakeLists.txt` copies
+  `AppIcon.icns` into `Contents/Resources` after link so `CFBundleIconFile` always points at a staged bundle resource.
 - The host-side `whatson_generate_ios_xcodeproj` export path still runs a dedicated post-export patch script for the generated `WhatSon.xcodeproj`.
   CMake already emits the iOS `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it does not attach that asset catalog to the app target's `PBXResourcesBuildPhase`.
   The patch script remains the preferred path for compiling `Assets.car`, while the bundle-root PNG fallback prevents blank icons when that build-phase entry is missing.

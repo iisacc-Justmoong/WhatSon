@@ -330,4 +330,14 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_IOS_POST_BUILD_BUNDLE
     endforeach ()
 endif ()
 
+if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE)
+    add_custom_command(TARGET WhatSon POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E make_directory
+            "$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources"
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE}"
+            "$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources/AppIcon.icns"
+            VERBATIM)
+endif ()
+
 add_subdirectory(cmake/runtime)

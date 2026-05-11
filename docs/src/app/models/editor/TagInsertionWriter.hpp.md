@@ -1,4 +1,4 @@
-# `src/app/models/editor/insert/TagInsertionWriter.hpp`
+# `src/app/models/editor/TagInsertionWriter.hpp`
 
 ## Responsibility
 

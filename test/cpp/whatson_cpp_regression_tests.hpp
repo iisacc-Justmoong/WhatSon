@@ -44,7 +44,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
-#include "app/models/editor/insert/TagInsertionWriter.hpp"
+#include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/editor/SetProperty.h"
 #include "app/models/editor/SetTag.h"
@@ -1168,6 +1168,7 @@ private slots:
     void sourceTree_forbidsSharedFileIoObjectLayer();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
     void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
+    void appleBundleIconPackaging_stagesDesktopIcnsIntoMacosBundleResources();
     void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
     void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();

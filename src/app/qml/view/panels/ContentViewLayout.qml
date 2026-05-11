@@ -136,7 +136,7 @@ Item {
                 Layout.preferredWidth: implicitWidth
                 contentY: contentsTextEditor.viewportContentY
                 lineCount: contentViewLayout.editorParsedLineCount
-                lineHeight: contentsTextEditor.lineHeight
+                lineHeight: contentsTextEditor.editorVisualLineHeight
                 parsedLineCount: contentViewLayout.editorParsedLineCount
                 selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
                 selectedNoteId: contentViewLayout.editorActiveNoteId

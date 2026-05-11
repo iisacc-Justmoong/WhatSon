@@ -36,7 +36,10 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorVisualLineHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineHeight: contentsTextEditor.editorVisualLineHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("showScrollBar: false")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsView")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession")));
@@ -97,7 +100,7 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndO
 {
     const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
 
-    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
     verifyNoTokens(textEditorSource, {
         QStringLiteral("Keys.onPressed"),
         QStringLiteral("Keys.onReleased"),
