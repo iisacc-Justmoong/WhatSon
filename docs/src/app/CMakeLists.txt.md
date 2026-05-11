@@ -81,8 +81,13 @@
   those PNGs into the bundle root with a `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
   `CFBundleIcons` fallback metadata. A direct Xcode/device build therefore still has a valid home-screen icon even
   when the generated asset catalog path fails.
-- The macOS resource shard exports `WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE`, and `src/app/CMakeLists.txt` copies
-  `AppIcon.icns` into `Contents/Resources` after link so `CFBundleIconFile` always points at a staged bundle resource.
+- Apple builds pass `MACOSX_BUNDLE` at `qt_add_executable` time. The macOS resource shard attaches
+  `AppIcon.icns` to the `WhatSon` target with `MACOSX_PACKAGE_LOCATION "Resources"`, while
+  `platform/Apple/Info.plist` declares `CFBundleIconFile` as `AppIcon.icns` and runtime CMake sets
+  `MACOSX_BUNDLE_ICON_FILE`. The same shard also exports the icon path for a `POST_BUILD` bundle copy, because the
+  current Makefile generator can omit the packaged source copy even when the declarative bundle source is present.
+  Finder and Dock therefore resolve the `.app` bundle icon from `Contents/Resources/AppIcon.icns`, not from Qt's qrc
+  resource system.
 - The host-side `whatson_generate_ios_xcodeproj` export path still runs a dedicated post-export patch script for the generated `WhatSon.xcodeproj`.
   CMake already emits the iOS `WhatSonIcons.xcassets` file reference and `PBXBuildFile`, but it does not attach that asset catalog to the app target's `PBXResourcesBuildPhase`.
   The patch script remains the preferred path for compiling `Assets.car`, while the bundle-root PNG fallback prevents blank icons when that build-phase entry is missing.

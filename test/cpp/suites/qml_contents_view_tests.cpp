@@ -52,6 +52,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportContentHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportWidth")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.5")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPadding")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorMeasuredContentHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorRenderedLineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorVisualLineHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorLineMetricsRevision: 0")));
@@ -64,8 +68,11 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.contentHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("- textEditor.editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.lineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorViewportFlickable")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function pasteNativeClipboardText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.cursorPosition = Math.max")));
@@ -118,7 +125,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceFilePath: contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteId: contentViewLayout.editorActiveNoteId")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineCount: contentViewLayout.editorParsedLineCount")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineCount: contentsTextEditor.editorRenderedLineCount")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("lineCount: contentViewLayout.editorParsedLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentY: contentsTextEditor.viewportContentY")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("fallbackLineHeight: contentsTextEditor.editorVisualLineHeight")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricProvider: contentsTextEditor.editorLineMetricsFor")));
@@ -169,7 +177,10 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(!textEditorSource.contains(QStringLiteral("LV.CodeEditor {")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real viewportContentY")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorRenderedLineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.5")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLineMetricsFor(lineIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));

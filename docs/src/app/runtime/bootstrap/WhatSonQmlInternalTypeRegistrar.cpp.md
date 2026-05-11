@@ -11,8 +11,8 @@ registers that manifest through LVRS `QmlTypeRegistrar`.
   display-backend, resource-viewer, or paper helper types.
 - The note editor QML path mounts `LV.TextEditor` through `src/app/qml/view/contents/TextEditor.qml`; it does not require a C++
   editor backend registration.
-- Remaining registrations are shell/navigation helpers such as mobile route coordinators, note-list and hierarchy
-  interaction bridges, and the iOS onboarding picker.
+- Remaining registrations are shell/navigation helpers such as the mobile event surface classifier, mobile route
+  coordinators, note-list and hierarchy interaction bridges, and the iOS onboarding picker.
 
 ## Test Coverage
 

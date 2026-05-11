@@ -10,6 +10,7 @@ LV.TextEditor {
     property string noteBodyFilePath: ""
     property var viewportFlickable: null
     property int editorLineMetricsRevision: 0
+    property real editorBottomViewportPaddingRatio: 0.5
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
@@ -29,6 +30,27 @@ LV.TextEditor {
             && textEditor.editorItem.width !== undefined
             ? Math.max(1, Number(textEditor.editorItem.width) || 1)
             : Math.max(1, Number(textEditor.width) || 1)
+    readonly property real editorBottomViewportPadding: Math.max(
+            0,
+            textEditor.editorViewportHeight * Math.max(0, Number(textEditor.editorBottomViewportPaddingRatio) || 0))
+    readonly property real editorMeasuredContentHeight: {
+        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        if (!editorSurface || editorSurface.contentHeight === undefined)
+            return 0;
+
+        const measuredHeight = Number(editorSurface.contentHeight) || 0;
+        return Math.max(0, measuredHeight - textEditor.editorBottomViewportPadding);
+    }
+    readonly property int editorRenderedLineCount: {
+        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        if (editorSurface && editorSurface.lineCount !== undefined)
+            return Math.max(0, Math.floor(Number(editorSurface.lineCount) || 0));
+
+        const documentText = textEditor.editorDocumentText;
+        return documentText.trim().length > 0
+                ? Math.max(1, documentText.split("\n").length)
+                : 0;
+    }
     readonly property int editorCursorLineIndex: textEditor.cursorLineIndexFor(
             textEditor.editorDocumentText,
             textEditor.cursorPosition)
@@ -37,8 +59,8 @@ LV.TextEditor {
         if (editorSurface
                 && editorSurface.contentHeight !== undefined
                 && editorSurface.lineCount !== undefined) {
-            const visualLineCount = Math.max(1, Number(editorSurface.lineCount) || 1);
-            const visualContentHeight = Number(editorSurface.contentHeight) || 0;
+            const visualLineCount = Math.max(1, textEditor.editorRenderedLineCount);
+            const visualContentHeight = textEditor.editorMeasuredContentHeight;
             if (visualContentHeight > 0)
                 return Math.max(1, visualContentHeight / visualLineCount);
         }
@@ -237,6 +259,14 @@ LV.TextEditor {
     onHeightChanged: textEditor.bumpEditorLineMetricsRevision()
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
     onTextChanged: textEditor.bumpEditorLineMetricsRevision()
+    onEditorBottomViewportPaddingChanged: textEditor.bumpEditorLineMetricsRevision()
+
+    Binding {
+        property: "bottomPadding"
+        restoreMode: Binding.RestoreBindingOrValue
+        target: textEditor.editorItem
+        value: textEditor.editorBottomViewportPadding
+    }
 
     Connections {
         target: textEditor.editorItem

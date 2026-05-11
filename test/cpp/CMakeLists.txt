@@ -29,6 +29,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/MonthlyUnusedNote.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/sensor/UnusedResourcesSensor.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyRouteStateStore.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileEventSurfaceController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchySelectionCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyNavigationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.cpp"

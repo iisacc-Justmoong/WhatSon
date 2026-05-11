@@ -137,7 +137,7 @@ Item {
                 contentY: contentsTextEditor.viewportContentY
                 currentLineIndex: contentsTextEditor.editorCursorLineIndex
                 fallbackLineHeight: contentsTextEditor.editorVisualLineHeight
-                lineCount: contentViewLayout.editorParsedLineCount
+                lineCount: contentsTextEditor.editorRenderedLineCount
                 lineMetricProvider: contentsTextEditor.editorLineMetricsFor
                 lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
                 parsedLineCount: contentViewLayout.editorParsedLineCount

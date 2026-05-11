@@ -1172,7 +1172,7 @@ private slots:
     void sourceTree_forbidsSharedFileIoObjectLayer();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
     void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
-    void appleBundleIconPackaging_stagesDesktopIcnsIntoMacosBundleResources();
+    void appleBundleIconPackaging_usesMacosAppBundleIconResourceContract();
     void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
     void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
@@ -1230,6 +1230,7 @@ private slots:
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();
     void qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative();
+    void mobileEventSurfaceController_classifiesTapScrollAndGestures();
     void resourceDetailPanelController_tracksCurrentResourceSelection();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();

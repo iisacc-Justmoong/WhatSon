@@ -1,6 +1,7 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
 #include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
+#include "app/models/content/mobile/MobileEventSurfaceController.hpp"
 #include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
@@ -33,6 +34,8 @@ namespace
     QList<lvrs::QmlTypeRegistration> internalQmlTypeRegistrationManifest()
     {
         return {
+            whatsonInternalCreatableType<MobileEventSurfaceController>(
+                QStringLiteral("MobileEventSurfaceController")),
             whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
                 QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
             whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(

@@ -13,6 +13,12 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
+- `editorBottomViewportPaddingRatio` defaults to `0.5`; the wrapper applies that viewport-relative value to the public
+  LVRS editor item's bottom padding so the last line can be scrolled up near the middle of the visible editor.
+- `editorMeasuredContentHeight` subtracts that artificial bottom padding from the rich-text content height before
+  calculating fallback visual line height, keeping the sibling gutter line spacing tied to real text lines.
+- `editorRenderedLineCount` exposes the public LVRS editor item's rendered `lineCount` so the sibling gutter can create
+  line-number rows for the actual visual editor surface instead of stopping at the parsed RAW source line count.
 - `editorCursorLineIndex` is derived from the public `text` and `cursorPosition` APIs and gives the sibling gutter the
   current logical cursor line for its visual indicator.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
@@ -40,10 +46,14 @@
 - 선택된 노트가 있으면 `noteBodyFilePath`를 통해 C++이 만든 editor HTML session file을 편집한다.
 - 거터 동기화를 위해 editor viewport의 `contentY`와 line-index 기반 metric provider를 얇게 전달한다. 각 줄
   번호는 `editorLineMetricsFor(lineIndex)`를 통해 실제 LVRS editor line의 위치와 높이를 받아 맞춘다.
+- 거터가 생성할 줄 번호 개수는 `editorRenderedLineCount`로 제공한다. 이 값은 C++ session의 parsed RAW source
+  line count가 아니라 LVRS editor surface의 실제 렌더 라인 수다.
 - 현재 cursor line indicator를 위해 공개 `text`와 `cursorPosition`에서 계산한 `editorCursorLineIndex`도 거터에
   전달한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
+- 본문 하단에는 viewport 높이의 50%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
+  화면 중앙 부근까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 fallback line-height 계산에서 제외한다.
 - `preferNativeGestures`는 `LV.Theme.mobileTarget`을 따른다. 데스크톱에서 이를 강제로 켜면 포커스 중
   LVRS wheel scroll 경로가 꺼져 본문 스크롤이 막힌 것처럼 보인다.
 - 이미지 paste 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영하고,

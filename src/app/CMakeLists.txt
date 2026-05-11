@@ -187,7 +187,14 @@ function(whatson_app_register_directory_qml base_dir)
             RESOURCE_FILES ${_whatson_qml_resource_files})
 endfunction()
 
-qt_add_executable(WhatSon main.cpp)
+set(_whatson_executable_options)
+if (APPLE)
+    list(APPEND _whatson_executable_options MACOSX_BUNDLE)
+endif ()
+
+qt_add_executable(WhatSon
+        ${_whatson_executable_options}
+        main.cpp)
 target_include_directories(WhatSon PRIVATE
         "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}"

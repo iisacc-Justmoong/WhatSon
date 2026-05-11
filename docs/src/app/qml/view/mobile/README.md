@@ -7,12 +7,13 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/mobile`
 - Child directories: 1
-- Child files: 1
+- Child files: 2
 
 ## Child Directories
 - `pages`
 
 ## Child Files
+- `MobileEventSurface.qml`
 - `MobilePageScaffold.qml`
 
 ## Recent Notes
@@ -22,6 +23,8 @@
   session file is editable.
 - The compact editor route forwards the restored editor view-mode controller into `NavigationBarLayout` so the small
   `View` combo can be shown beside the navigation mode combo.
+- `MobileEventSurface.qml` is the LVRS-backed mobile editor event surface. It forwards touch-point snapshots to
+  `MobileEventSurfaceController`, which classifies touch, scroll direction, and multi-finger gesture direction in C++.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -39,6 +42,8 @@
 - 위치: `docs/src/app/qml/view/mobile`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
 - 현재 workspace에서는 adaptive/mobile layout에서 mobile scaffold를 mount한다.
+- `MobileEventSurface.qml`은 mobile editor event surface이며, QML은 touch point snapshot만 전달하고 C++이
+  touch, scroll direction, multi-finger gesture direction을 분류한다.
 - mobile editor route는 `ContentViewLayout.qml`을 통해 active note의 editor HTML session file을
   `LV.TextEditor`에 연결한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.

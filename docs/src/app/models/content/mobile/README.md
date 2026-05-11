@@ -8,6 +8,8 @@
 - Child directories: 0
 
 ## Key Helpers
+- `MobileEventSurfaceController` classifies raw mobile editor touch-point snapshots into touch, scroll, and gesture
+  events. It owns direction and finger-count policy so `MobileEventSurface.qml` can remain a forwarding surface.
 - `MobileHierarchyRouteStateStore` preserves route-adjacent selection state such as the last observed route path, the
   note-list selection to restore, and pop-repair request ids.
 - `MobileHierarchySelectionCoordinator` snapshots sidebar hierarchy bindings and resolves the currently selected
@@ -22,6 +24,7 @@
 ## Verification Notes
 - `test/cpp/suites/mobile_chrome_tests.cpp` exercises the route-state store normalization path and the sidebar-binding
   snapshot fallback path so mobile navigation helpers stay covered by the in-repo regression gate.
+- The same suite covers `MobileEventSurfaceController` tap, scroll, and multi-finger gesture classification.
 - The same suite now also pins `dismissPagePlan(...)` plus the source-locked `dismissCurrentPage()` wiring in
   `MobileHierarchyPage.qml`, so mobile back navigation cannot regress to raw `router.back()` pops from the editor.
 
@@ -32,5 +35,7 @@
 - 대상: ``src/app/models/content/mobile`` (`docs/src/app/models/content/mobile/README.md`)
 - 위치: `docs/src/app/models/content/mobile`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 현재: `MobileEventSurfaceController`는 QML surface가 전달한 touch point snapshot을 touch, scroll, gesture로
+  분류하고 방향 및 finger count를 payload로 제공한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
