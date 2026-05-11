@@ -3,6 +3,7 @@
 #include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 
+#include <QJSValue>
 #include <QStringList>
 
 namespace
@@ -23,6 +24,22 @@ namespace
         }
 
         return normalized;
+    }
+
+    QVariantList normalizedHierarchyNodes(const QVariant& hierarchyNodes)
+    {
+        if (!hierarchyNodes.isValid() || hierarchyNodes.isNull())
+        {
+            return {};
+        }
+
+        if (hierarchyNodes.userType() == qMetaTypeId<QJSValue>())
+        {
+            const QVariant converted = hierarchyNodes.value<QJSValue>().toVariant();
+            return converted.canConvert<QVariantList>() ? converted.toList() : QVariantList{};
+        }
+
+        return hierarchyNodes.canConvert<QVariantList>() ? hierarchyNodes.toList() : QVariantList{};
     }
 }
 
@@ -98,16 +115,17 @@ QString HierarchyDragDropBridge::selectedItemKey() const
 }
 
 bool HierarchyDragDropBridge::applyHierarchyReorder(
-    const QVariantList& hierarchyNodes,
+    const QVariant& hierarchyNodes,
     const QString& activeItemKey)
 {
     auto* reorderCapability = qobject_cast<IHierarchyReorderCapability*>(m_hierarchyController);
-    if (reorderCapability == nullptr || !m_reorderContractAvailable || hierarchyNodes.isEmpty())
+    const QVariantList normalizedNodes = normalizedHierarchyNodes(hierarchyNodes);
+    if (reorderCapability == nullptr || !m_reorderContractAvailable || normalizedNodes.isEmpty())
     {
         return false;
     }
 
-    return reorderCapability->applyHierarchyNodes(hierarchyNodes, resolvedActiveItemKey(activeItemKey));
+    return reorderCapability->applyHierarchyNodes(normalizedNodes, resolvedActiveItemKey(activeItemKey));
 }
 
 bool HierarchyDragDropBridge::canAcceptNoteDrop(int index, const QString& noteId) const

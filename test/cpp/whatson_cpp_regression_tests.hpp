@@ -333,6 +333,57 @@ private:
     bool m_supportsNoteDrop = true;
 };
 
+class FakeReorderHierarchyController final : public FakeHierarchyController,
+                                             public IHierarchyReorderCapability
+{
+    Q_OBJECT
+    Q_INTERFACES(IHierarchyReorderCapability)
+
+public:
+    explicit FakeReorderHierarchyController(const QString& labelPrefix, QObject* parent = nullptr)
+        : FakeHierarchyController(labelPrefix, parent)
+    {
+    }
+
+    bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString()) override
+    {
+        if (!m_supportsReorder || hierarchyNodes.isEmpty())
+        {
+            return false;
+        }
+
+        m_appliedNodes = hierarchyNodes;
+        m_appliedActiveItemKey = activeItemKey.trimmed();
+        setNodes(hierarchyNodes);
+        return true;
+    }
+
+    bool supportsHierarchyNodeReorder() const noexcept override
+    {
+        return m_supportsReorder;
+    }
+
+    QVariantList appliedNodes() const
+    {
+        return m_appliedNodes;
+    }
+
+    QString appliedActiveItemKey() const
+    {
+        return m_appliedActiveItemKey;
+    }
+
+    void setSupportsReorder(bool supported) noexcept
+    {
+        m_supportsReorder = supported;
+    }
+
+private:
+    QVariantList m_appliedNodes;
+    QString m_appliedActiveItemKey;
+    bool m_supportsReorder = true;
+};
+
 class FakeSidebarSelectionStore final : public ISidebarSelectionStore
 {
     Q_OBJECT
@@ -1105,6 +1156,7 @@ private slots:
     void foldersHierarchySessionService_preservesEscapedLiteralSlashFolderPaths();
     void hierarchyControllerProvider_normalizesMappingsAndAvoidsDuplicateSignals();
     void hierarchyDragDropBridge_assignsDraggedNoteListItemsToFolderCapability();
+    void hierarchyDragDropBridge_appliesReorderFromQmlArrayModel();
     void hierarchyTreeItemSupport_clampsNegativeSelectionToFirstVisibleRow();
     void hubMountValidator_acceptsCompleteHubPackage();
     void hubMountValidator_rejectsIncompleteHubPackage();
@@ -1133,10 +1185,12 @@ private slots:
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
-    void noteEditorDocumentSession_mountsParsedSourceFileAndPersistsBodyDocument();
+    void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
+    void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
+    void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();

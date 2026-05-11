@@ -74,8 +74,11 @@ namespace
         QVariantMap result;
         result.insert(QStringLiteral("valid"), false);
         result.insert(QStringLiteral("changed"), false);
-        result.insert(QStringLiteral("bodySourceText"), normalizedSourceText);
-        result.insert(QStringLiteral("cursorPosition"), anchor);
+    result.insert(QStringLiteral("bodySourceText"), normalizedSourceText);
+    result.insert(
+        QStringLiteral("editorDocumentText"),
+        WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), normalizedSourceText));
+    result.insert(QStringLiteral("cursorPosition"), anchor);
         result.insert(QStringLiteral("selectionStart"), selectionStart);
         result.insert(QStringLiteral("selectionLength"), selectionEnd - selectionStart);
         result.insert(QStringLiteral("insertedText"), QString());
@@ -264,15 +267,18 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         return false;
     }
 
-    QString sourceText;
+    QString editorDocumentText;
     QString readError;
-    if (!readEditorSourceFile(normalizedEditorFilePath, &sourceText, &readError))
+    if (!readEditorSourceFile(normalizedEditorFilePath, &editorDocumentText, &readError))
     {
         setLastError(readError);
         emit editorSourcePersistFinished(contextIterator->noteId, false, readError);
         return false;
     }
 
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        contextIterator->noteId,
+        editorDocumentText);
     setParsedLineCount(lineCountForEditorSource(sourceText));
 
     emit editorSourcePersistRequested(contextIterator->noteId, normalizedEditorFilePath);
@@ -342,6 +348,9 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
         : QString();
     const QString insertedText = prefix + insertedBlock + suffix;
     const QString mutatedSourceText = beforeSelection + insertedText + afterSelection;
+    const QString editorDocumentText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        m_activeNoteId,
+        mutatedSourceText);
 
     setLastError(QString());
 
@@ -349,6 +358,7 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     result.insert(QStringLiteral("valid"), true);
     result.insert(QStringLiteral("changed"), true);
     result.insert(QStringLiteral("bodySourceText"), mutatedSourceText);
+    result.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
     result.insert(
         QStringLiteral("cursorPosition"),
         beforeSelection.size() + prefix.size() + insertedBlock.size());
@@ -412,7 +422,10 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
 
     const QString sessionFilePath = editorFilePathForNote(loadedNoteId, loadedNoteDirectoryPath);
     QString writeError;
-    if (!writeEditorSourceFile(sessionFilePath, text, &writeError))
+    const QString editorDocumentText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        loadedNoteId,
+        text);
+    if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
     {
         switchToBlankEditorFile();
         setActiveNoteContext(QString(), QString());

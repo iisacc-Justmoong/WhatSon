@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
+#include <QTextDocument>
 
 #include <utility>
 
@@ -655,6 +656,28 @@ namespace
         const QString normalized = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
         return normalized;
     }
+
+    bool looksLikeEditorRichText(const QString& text)
+    {
+        const QString folded = text.left(4096).toCaseFolded();
+        return folded.contains(QStringLiteral("<!doctype html"))
+            || folded.contains(QStringLiteral("<html"))
+            || folded.contains(QStringLiteral("<body"))
+            || folded.contains(QStringLiteral("<meta name=\"qrichtext\""))
+            || folded.contains(QStringLiteral("<p"))
+            || folded.contains(QStringLiteral("</p>"))
+            || folded.contains(QStringLiteral("<div"))
+            || folded.contains(QStringLiteral("</div>"))
+            || folded.contains(QStringLiteral("<br"))
+            || folded.contains(QStringLiteral("<span"))
+            || folded.contains(QStringLiteral("</span>"))
+            || folded.contains(QStringLiteral("<strong"))
+            || folded.contains(QStringLiteral("</strong>"))
+            || folded.contains(QStringLiteral("<em"))
+            || folded.contains(QStringLiteral("</em>"))
+            || folded.contains(QStringLiteral("<a "))
+            || folded.contains(QStringLiteral("<hr"));
+    }
 }
 
 namespace WhatSon::NoteBodyPersistence
@@ -756,6 +779,29 @@ namespace WhatSon::NoteBodyPersistence
             htmlLines.push_back(renderInlineSourceToHtml(line));
         }
         return htmlLines.join(QStringLiteral("<br/>"));
+    }
+
+    QString editorHtmlFromBodySource(const QString& noteId, const QString& bodySourceText)
+    {
+        return htmlProjectionFromBodyDocument(serializeBodyDocument(noteId, bodySourceText));
+    }
+
+    QString sourceTextFromEditorDocument(const QString&, const QString& editorDocumentText)
+    {
+        const QString normalizedEditorText = normalizeBodyPlainText(editorDocumentText);
+        if (normalizedEditorText.trimmed().isEmpty())
+        {
+            return {};
+        }
+
+        if (!looksLikeEditorRichText(normalizedEditorText))
+        {
+            return normalizedEditorText;
+        }
+
+        QTextDocument document;
+        document.setHtml(normalizedEditorText);
+        return normalizeBodyPlainText(document.toPlainText());
     }
 
     QString firstLineFromBodyDocument(const QString& bodyDocumentText)

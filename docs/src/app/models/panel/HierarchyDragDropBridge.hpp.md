@@ -15,7 +15,8 @@ It exposes three ideas to QML.
   - `noteDropContractAvailable`
   - `selectedItemKey`
 - Invokables:
-  - `applyHierarchyReorder(...)`
+  - `applyHierarchyReorder(...)`, accepting either a C++ `QVariantList` or the JS-array-shaped `var` model handed back
+    by QML after LVRS has applied a hierarchy item move.
   - `canAcceptNoteDrop(...)`
   - `canAcceptNoteDropList(...)`
   - `assignNoteToFolder(...)`

@@ -39,8 +39,8 @@ right detail panel.
 - `ContentViewLayout.qml` no longer consumes note-list objects during hierarchy-domain switches.
 - The desktop shell now prefers the global `noteActiveState.activeNoteListModel` for list/content binding and only
   falls back to `sidebarHierarchyController.activeNoteListModel` when the global state object is not supplied.
-- The center editor surface now mounts only the LVRS `TextEditor` path and connects it to the selected note's parsed
-  RAW source session file.
+- The center editor surface now mounts only the LVRS `TextEditor` path and connects it to the selected note's editor
+  HTML session file.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from named `LV.Theme` width/gap/stroke
@@ -61,5 +61,5 @@ right detail panel.
     objects themselves, not only the highlighted toolbar index.
   - Switching from Resources back to Library must restore library-row metadata such as folder and tag chips from the
     same active note-list model that the editor surface uses.
-  - Desktop content routing passes `noteEditorSession` into the editor host so the selected note's parsed source
+  - Desktop content routing passes `noteEditorSession` into the editor host so the selected note's editor HTML
     session file can be bound to LVRS `TextEditor.filePath`, but it must not expose the raw `.wsnbody` XML container.

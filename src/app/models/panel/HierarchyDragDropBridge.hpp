@@ -30,7 +30,7 @@ public:
     bool noteDropContractAvailable() const noexcept;
     QString selectedItemKey() const;
 
-    Q_INVOKABLE bool applyHierarchyReorder(const QVariantList& hierarchyNodes,
+    Q_INVOKABLE bool applyHierarchyReorder(const QVariant& hierarchyNodes,
                                            const QString& activeItemKey = QString());
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
     Q_INVOKABLE bool canAcceptNoteDropList(int index, const QVariantList& noteIds) const;

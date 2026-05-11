@@ -71,7 +71,7 @@ LV.TextEditor {
     insetHorizontal: LV.Theme.gapNone
     insetVertical: LV.Theme.gapNone
     objectName: "contentsTextEditor"
-    preferNativeGestures: true
+    preferNativeGestures: LV.Theme.mobileTarget
     readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0
     showScrollBar: false
     textColor: LV.Theme.bodyColor

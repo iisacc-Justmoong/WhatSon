@@ -96,8 +96,12 @@ Item {
         if (!insertion || !Boolean(insertion.valid))
             return false;
 
+        const editorDocumentText = insertion.editorDocumentText !== undefined
+                && insertion.editorDocumentText !== null
+                ? String(insertion.editorDocumentText)
+                : String(insertion.bodySourceText);
         if (!contentsTextEditor.replaceEditorDocumentText(
-                    String(insertion.bodySourceText),
+                    editorDocumentText,
                     Number(insertion.cursorPosition) || 0))
             return false;
 

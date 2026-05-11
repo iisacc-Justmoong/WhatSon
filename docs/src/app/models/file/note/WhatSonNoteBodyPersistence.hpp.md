@@ -33,6 +33,11 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   `</break>`. This projection now avoids an extra structured-tag linter rewrite pass so passive file reads do not
   mutate the editor RAW shape. Empty text-block tags around standalone blocks are projected as explicit newline
   boundaries instead of being ignored as zero-character content.
+- `editorHtmlFromBodySource(...)` projects canonical editor source into the rich-text session document consumed by
+  LVRS `TextEditor`; logical source newlines become explicit `<br/>` boundaries so the editor surface cannot collapse
+  authored note lines into one rendered paragraph.
+- `sourceTextFromEditorDocument(...)` converts synced LVRS rich-text/HTML document text back into canonical source
+  before `.wsnbody` persistence. Plain RAW source input is passed through with normalized line endings.
 - Standalone `resource` and `break` editor source lines persist as direct `.wsnbody` body-format children. They must
   not be rewrapped as escaped paragraph text once they are recognized as body blocks. Agenda/task and callout source
   lines are paragraph RAW text.

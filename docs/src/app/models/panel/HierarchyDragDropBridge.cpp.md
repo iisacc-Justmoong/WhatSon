@@ -18,7 +18,9 @@ This implementation adapts drag/drop operations from QML into capability-based h
 - reorder support is enabled
 - the incoming node list is not empty
 
-The bridge forwards the caller-provided active item key when available and otherwise falls back to the currently selected key.
+The incoming model may be either a C++ `QVariantList` or a QML/JS array variant from `LV.Hierarchy.model`; the bridge
+normalizes both forms before calling the controller. The bridge forwards the caller-provided active item key when
+available and otherwise falls back to the currently selected key.
 
 ## Note-Drop Path
 `canAcceptNoteDrop(...)` and `assignNoteToFolder(...)` both:

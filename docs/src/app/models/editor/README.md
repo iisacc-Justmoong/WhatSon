@@ -34,9 +34,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `GetProperty` is the read-side `.wsnbody` tag-attribute capture object. It stores the current tag's dynamic
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
-  selected `.wsnbody` into editor-facing RAW source, writes that source into a cache/session file for LVRS
-  `TextEditor.filePath`, exposes parsed line count for the gutter, builds imported-resource source insertions for
-  editor paste/drop flows, and persists LVRS sync-finished edits back through the note body persistence path.
+  selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
+  LVRS `TextEditor.filePath`, exposes parsed source line count for the gutter, builds imported-resource source
+  insertions for editor paste/drop flows, and persists LVRS sync-finished rich-text edits back through the note body
+  persistence path after converting them to canonical source.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -44,7 +45,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
 - Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `SetProperty`
-  dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` parsed-source mounting,
+  dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, unsupported input rejection, and `.wsnbody`
   reserialization.
 
@@ -61,7 +62,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `insert/TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
-- 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 parsed RAW source session file을
-  `LV.TextEditor`에 연결하고, 거터용 parsed line count 및 imported-resource source insertion을 제공하며,
-  저장 시 다시 `.wsnbody`로 serialize한다.
+- 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
+  file을 `LV.TextEditor`에 연결하고, 거터용 parsed line count 및 imported-resource source insertion을 제공하며,
+  저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

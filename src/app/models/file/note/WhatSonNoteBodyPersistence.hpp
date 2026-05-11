@@ -11,6 +11,8 @@ namespace WhatSon::NoteBodyPersistence
     QString plainTextFromBodyDocument(const QString& bodyDocumentText);
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText);
     QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText);
+    QString editorHtmlFromBodySource(const QString& noteId, const QString& bodySourceText);
+    QString sourceTextFromEditorDocument(const QString& noteId, const QString& editorDocumentText);
     QString firstLineFromBodyDocument(const QString& bodyDocumentText);
     QString firstLineFromBodyPlainText(const QString& text);
     QString resolveBodyPath(const QString& noteDirectoryPath);

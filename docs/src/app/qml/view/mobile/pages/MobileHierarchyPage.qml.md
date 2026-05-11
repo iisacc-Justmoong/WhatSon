@@ -6,7 +6,7 @@
 ## Current Contract
 - The page keeps the existing routed hierarchy, note-list, editor, and detail body components.
 - The editor body uses `ContentViewLayout.qml` as the TextEditor surface and forwards `noteEditorSession` so the
-  selected note's parsed RAW source session file can be edited.
+  selected note's editor HTML session file can be edited.
 - It no longer owns or forwards `editorViewModeController`.
 - Sidebar, note-list, resource import, calendar overlay, and mobile route coordinator wiring remain part of the shell.
 
@@ -24,6 +24,6 @@ rendering, resource editor, calendar page, or editor view-mode backend objects. 
 ## 한국어
 
 - 현재 앱 workspace에서는 adaptive/mobile layout에서 이 mobile shell을 mount한다.
-- editor route는 `ContentViewLayout.qml`을 사용하고 active note의 parsed RAW source session file을
+- editor route는 `ContentViewLayout.qml`을 사용하고 active note의 editor HTML session file을
   `LV.TextEditor`에 연결한다.
 - hierarchy, note-list, detail, calendar, sidebar, import shell 연결은 유지하고 editor view mode만 제거 상태로 둔다.

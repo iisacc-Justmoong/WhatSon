@@ -37,6 +37,35 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonic
         QStringLiteral("<weblink href=\"www.iisacc.com\">www.iisacc.com</weblink>")));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks()
+{
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        QStringLiteral("First line\nSecond line"));
+
+    QCOMPARE(editorHtml, QStringLiteral("First line<br/>Second line"));
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines()
+{
+    const QString editorHtml = QStringLiteral(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" "
+        "\"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        "<html><head><meta name=\"qrichtext\" content=\"1\" /></head>"
+        "<body><p>First line</p><p>Second line</p></body></html>");
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("note"),
+            editorHtml),
+        QStringLiteral("First line\nSecond line"));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("note"),
+            QStringLiteral("First line<br/>Second line")),
+        QStringLiteral("First line\nSecond line"));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()
 {
     const QString crossedInlineSource = QStringLiteral("<bold>첫 줄\n둘째 줄</bold>");

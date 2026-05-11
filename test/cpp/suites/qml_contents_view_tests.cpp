@@ -41,6 +41,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.cursorPosition = Math.max")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.paste()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: true")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("property var documentModel")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("property var imeAdapter")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("textDocumentModel")));
@@ -57,6 +59,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("replaceEditorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("refreshClipboardImageAvailabilitySnapshot")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("reloadImportedResources")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertion.editorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Paste")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceFilePath: contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteId: contentViewLayout.editorActiveNoteId")));

@@ -10,7 +10,7 @@
 - Imports: `QtQuick` and `LVRS 1.0 as LV`.
 - It exposes only view inputs: `sourceFilePath`, `selectedNoteId`, `selectedNoteDirectoryPath`, `parsedLineCount`,
   `lineCount`, `lineHeight`, `contentY`, colors, and `showLineNumbers`.
-- The caller is responsible for passing the selected source session file and parsed line count. The gutter only renders
+- The caller is responsible for passing the selected editor session file and parsed line count. The gutter only renders
   line numbers and follows the editor viewport offset.
 - It does not draw a separator between the gutter and editor.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.

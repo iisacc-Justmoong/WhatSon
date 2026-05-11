@@ -24,7 +24,7 @@ namespace
     }
 } // namespace
 
-void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsParsedSourceFileAndPersistsBodyDocument()
+void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument()
 {
     QTemporaryDir workspaceDir;
     QVERIFY(workspaceDir.isValid());
@@ -58,9 +58,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsParsedSourceFile
     const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(editorFilePath);
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<?xml")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<contents")));
-    QCOMPARE(
-        mountedEditorSource,
-        QStringLiteral("Visible line\n<resource path=\"asset.png\" />"));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("Visible line<br/>")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("&lt;resource path=&quot;asset.png&quot; /&gt;")));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("Visible line\n<resource")));
 
     const QString editedSource = QStringLiteral("Changed line\nInserted line\n<resource path=\"asset.png\" />");
     QVERIFY(writeUtf8FileForNoteEditorSessionTest(editorFilePath, editedSource));
@@ -147,6 +147,10 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
         QStringLiteral(
             "Alpha\n<resource type=\"image\" format=\".png\" "
             "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />\nBeta"));
+    const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(editorDocumentText.contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("<br/>Beta")));
     QCOMPARE(
         result.value(QStringLiteral("cursorPosition")).toInt(),
         QStringLiteral(

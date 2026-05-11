@@ -93,6 +93,12 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
   - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
+- `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
+  `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
+  line breaks, inline style rendering, and escaped resource text stay aligned with the persisted note body contract.
+- `sourceTextFromEditorDocument(...)` is the inverse editor-session boundary. It detects LVRS/Qt rich-text HTML,
+  extracts its visible text with preserved paragraph and `<br/>` boundaries, and returns normalized canonical source
+  for persistence. Non-rich RAW source is passed through unchanged apart from line-ending normalization.
 - The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
   - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
     `.wsnbody` parse/read path regenerates the editor RichText
