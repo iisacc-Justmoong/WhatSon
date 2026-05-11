@@ -15,11 +15,17 @@ Item {
     property real fallbackLineHeight: LV.Theme.gap20
     property var lineMetricProvider: null
     property int lineMetricsRevision: 0
+    property int currentLineIndex: -1
     property color lineNumberColor: LV.Theme.descriptionColor
+    property color currentLineIndicatorColor: LV.Theme.accentBlue
     property bool showLineNumbers: true
     readonly property int minimumLineNumberDigitCount: 6
     readonly property bool hasSelectedSource: gutter.selectedNoteId.trim().length > 0
             && gutter.sourceFilePath.trim().length > 0
+    readonly property bool hasCurrentLineIndicator: gutter.hasSelectedSource
+            && gutter.showLineNumbers
+            && gutter.currentLineIndex >= 0
+            && gutter.currentLineIndex < Math.max(0, gutter.lineCount)
     readonly property int lineNumberDigitCount: Math.max(
             gutter.minimumLineNumberDigitCount,
             String(Math.max(1, gutter.lineCount)).length)
@@ -63,21 +69,42 @@ Item {
                ? Math.max(0, gutter.lineCount)
                : 0
 
-        delegate: Text {
+        delegate: Item {
+            id: lineNumberRow
+
             required property int index
             readonly property var lineMetric: gutter.lineMetricAt(index)
+            readonly property bool currentLineActive: gutter.hasCurrentLineIndicator && index === gutter.currentLineIndex
 
-            color: gutter.lineNumberColor
-            elide: Text.ElideLeft
-            font.family: LV.Theme.fontBody
-            font.pixelSize: LV.Theme.textCaption
             height: Math.max(1, Number(lineMetric.height) || gutter.fallbackLineHeight)
-            horizontalAlignment: Text.AlignRight
-            text: String(index + 1)
-            verticalAlignment: Text.AlignVCenter
             visible: gutter.showLineNumbers && gutter.hasSelectedSource
-            width: Math.max(0, gutter.width - LV.Theme.gap8)
+            width: gutter.width
             y: Math.round((Number(lineMetric.y) || 0) - gutter.contentY)
+
+            Text {
+                color: gutter.lineNumberColor
+                elide: Text.ElideLeft
+                font.family: LV.Theme.fontBody
+                font.pixelSize: LV.Theme.textCaption
+                height: parent.height
+                horizontalAlignment: Text.AlignRight
+                text: String(lineNumberRow.index + 1)
+                verticalAlignment: Text.AlignVCenter
+                width: Math.max(0, parent.width - LV.Theme.gap12)
+                x: LV.Theme.gapNone
+            }
+
+            Rectangle {
+                color: gutter.currentLineIndicatorColor
+                height: Math.max(LV.Theme.gap12, Math.min(parent.height, LV.Theme.gap16))
+                objectName: "contentsGutterCurrentLineIndicator"
+                opacity: 0.92
+                radius: width / 2
+                visible: lineNumberRow.currentLineActive
+                width: Math.max(LV.Theme.gap2, LV.Theme.strokeThin * 2)
+                x: Math.max(LV.Theme.gapNone, parent.width - width - LV.Theme.gap2)
+                y: Math.max(LV.Theme.gapNone, (parent.height - height) / 2)
+            }
         }
     }
 }

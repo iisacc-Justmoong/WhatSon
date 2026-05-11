@@ -13,6 +13,8 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
+- `editorCursorLineIndex` is derived from the public `text` and `cursorPosition` APIs and gives the sibling gutter the
+  current logical cursor line for its visual indicator.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLineMetricsFor(lineIndex)` finds the peer visual line on the public LVRS `editorItem` using
@@ -38,6 +40,8 @@
 - 선택된 노트가 있으면 `noteBodyFilePath`를 통해 C++이 만든 editor HTML session file을 편집한다.
 - 거터 동기화를 위해 editor viewport의 `contentY`와 line-index 기반 metric provider를 얇게 전달한다. 각 줄
   번호는 `editorLineMetricsFor(lineIndex)`를 통해 실제 LVRS editor line의 위치와 높이를 받아 맞춘다.
+- 현재 cursor line indicator를 위해 공개 `text`와 `cursorPosition`에서 계산한 `editorCursorLineIndex`도 거터에
+  전달한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
 - `preferNativeGestures`는 `LV.Theme.mobileTarget`을 따른다. 데스크톱에서 이를 강제로 켜면 포커스 중

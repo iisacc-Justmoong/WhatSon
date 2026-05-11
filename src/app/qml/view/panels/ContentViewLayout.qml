@@ -135,6 +135,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredWidth: implicitWidth
                 contentY: contentsTextEditor.viewportContentY
+                currentLineIndex: contentsTextEditor.editorCursorLineIndex
                 fallbackLineHeight: contentsTextEditor.editorVisualLineHeight
                 lineCount: contentViewLayout.editorParsedLineCount
                 lineMetricProvider: contentsTextEditor.editorLineMetricsFor

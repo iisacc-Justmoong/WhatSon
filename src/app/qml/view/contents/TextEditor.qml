@@ -29,6 +29,9 @@ LV.TextEditor {
             && textEditor.editorItem.width !== undefined
             ? Math.max(1, Number(textEditor.editorItem.width) || 1)
             : Math.max(1, Number(textEditor.width) || 1)
+    readonly property int editorCursorLineIndex: textEditor.cursorLineIndexFor(
+            textEditor.editorDocumentText,
+            textEditor.cursorPosition)
     readonly property real editorVisualLineHeight: {
         const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
         if (editorSurface
@@ -49,6 +52,18 @@ LV.TextEditor {
 
     function bumpEditorLineMetricsRevision() {
         textEditor.editorLineMetricsRevision = (textEditor.editorLineMetricsRevision + 1) % 1000000;
+    }
+
+    function cursorLineIndexFor(documentText, cursorPosition) {
+        const normalizedText = documentText === undefined || documentText === null
+                ? ""
+                : String(documentText);
+        const safeCursorPosition = Math.max(
+                    0,
+                    Math.min(
+                        normalizedText.length,
+                        Math.floor(Number(cursorPosition) || 0)));
+        return normalizedText.slice(0, safeCursorPosition).split("\n").length - 1;
     }
 
     function buildEditorVisualLineMetrics(requiredCount, fallbackHeight) {

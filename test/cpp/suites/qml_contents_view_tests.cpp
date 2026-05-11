@@ -24,7 +24,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(gutterSource.contains(QStringLiteral("property string selectedNoteDirectoryPath: \"\"")));
     QVERIFY(gutterSource.contains(QStringLiteral("property var lineMetricProvider: null")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int lineMetricsRevision: 0")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property int currentLineIndex: -1")));
+    QVERIFY(gutterSource.contains(QStringLiteral("property color currentLineIndicatorColor: LV.Theme.accentBlue")));
     QVERIFY(gutterSource.contains(QStringLiteral("readonly property int minimumLineNumberDigitCount: 6")));
+    QVERIFY(gutterSource.contains(QStringLiteral("readonly property bool hasCurrentLineIndicator")));
     QVERIFY(gutterSource.contains(QStringLiteral("gutter.minimumLineNumberDigitCount")));
     QVERIFY(gutterSource.contains(QStringLiteral("implicitWidth: LV.Theme.gap12 + gutter.lineNumberDigitCount * LV.Theme.gap8")));
     QVERIFY(gutterSource.contains(QStringLiteral("function lineMetricAt(lineIndex)")));
@@ -33,7 +36,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(gutterSource.contains(QStringLiteral("lineMetricProvider(normalizedIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("lineMetric.y")));
     QVERIFY(gutterSource.contains(QStringLiteral("lineMetric.height")));
-    QVERIFY(!gutterSource.contains(QStringLiteral("Rectangle {")));
+    QVERIFY(gutterSource.contains(QStringLiteral("objectName: \"contentsGutterCurrentLineIndicator\"")));
+    QVERIFY(gutterSource.contains(QStringLiteral("gutter.hasCurrentLineIndicator && index === gutter.currentLineIndex")));
+    QVERIFY(gutterSource.contains(QStringLiteral("radius: width / 2")));
     QVERIFY(!gutterSource.contains(QStringLiteral("separatorColor")));
     QVERIFY(!gutterSource.contains(QStringLiteral("anchors.right: parent.right")));
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
@@ -47,8 +52,11 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportContentHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportWidth")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorVisualLineHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorLineMetricsRevision: 0")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function cursorLineIndexFor(documentText, cursorPosition)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("slice(0, safeCursorPosition).split(\"\\n\").length - 1")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLineMetricsFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function buildEditorVisualLineMetrics(requiredCount, fallbackHeight)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
@@ -115,6 +123,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("fallbackLineHeight: contentsTextEditor.editorVisualLineHeight")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricProvider: contentsTextEditor.editorLineMetricsFor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("currentLineIndex: contentsTextEditor.editorCursorLineIndex")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentText: contentsTextEditor.editorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentY: contentsTextEditor.viewportContentY")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentHeight: contentsTextEditor.editorViewportContentHeight")));
@@ -160,6 +169,7 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(!textEditorSource.contains(QStringLiteral("LV.CodeEditor {")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real viewportContentY")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLineMetricsFor(lineIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));
