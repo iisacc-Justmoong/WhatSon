@@ -14,7 +14,7 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
 
 ## Architectural Notes
 - Diff/version code was consolidated from `src/app/models/file/note` into this domain.
-- `file/note/WhatSonLocalNoteFileStore` remains the note package orchestrator and delegates version snapshot/diff
+- `file/note/local/WhatSonLocalNoteFileStore` remains the note package orchestrator and delegates version snapshot/diff
   persistence to this module.
 
 ## Dependency Direction

@@ -1,6 +1,6 @@
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
 

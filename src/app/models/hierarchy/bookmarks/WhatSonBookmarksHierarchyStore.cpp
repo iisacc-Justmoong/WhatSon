@@ -1,6 +1,6 @@
 #include "app/models/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
 
-#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 
 #include <utility>

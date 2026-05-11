@@ -587,6 +587,115 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
 }
 
+void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByResponsibility()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QString noteRoot = QStringLiteral("src/app/models/file/note");
+    const QString docsNoteRoot = QStringLiteral("docs/src/app/models/file/note");
+    const QStringList requiredSourceDirectories{
+        noteRoot + QStringLiteral("/body"),
+        noteRoot + QStringLiteral("/folder"),
+        noteRoot + QStringLiteral("/header"),
+        noteRoot + QStringLiteral("/hub"),
+        noteRoot + QStringLiteral("/local"),
+        noteRoot + QStringLiteral("/package"),
+        noteRoot + QStringLiteral("/session"),
+        noteRoot + QStringLiteral("/support")
+    };
+    for (const QString& relativePath : requiredSourceDirectories)
+    {
+        QVERIFY2(
+            QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Note file shard directory must stay classified: %1").arg(relativePath)));
+    }
+
+    const QStringList requiredDocsDirectories{
+        docsNoteRoot + QStringLiteral("/body"),
+        docsNoteRoot + QStringLiteral("/folder"),
+        docsNoteRoot + QStringLiteral("/header"),
+        docsNoteRoot + QStringLiteral("/hub"),
+        docsNoteRoot + QStringLiteral("/local"),
+        docsNoteRoot + QStringLiteral("/package"),
+        docsNoteRoot + QStringLiteral("/session"),
+        docsNoteRoot + QStringLiteral("/support")
+    };
+    for (const QString& relativePath : requiredDocsDirectories)
+    {
+        QVERIFY2(
+            QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Note file documentation shard directory must stay classified: %1").arg(relativePath)));
+    }
+
+    const QStringList requiredFiles{
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.hpp"),
+        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingRepository.cpp"),
+        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingRepository.hpp"),
+        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingService.cpp"),
+        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingService.hpp"),
+        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderSemantics.hpp"),
+        noteRoot + QStringLiteral("/header/WhatSonBookmarkColorPalette.hpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderCreator.cpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderCreator.hpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderParser.cpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderParser.hpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.cpp"),
+        noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.hpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteCreationService.cpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteCreationService.hpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteDeletionService.cpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteDeletionService.hpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteFolderClearService.cpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteFolderClearService.hpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteMutationSupport.cpp"),
+        noteRoot + QStringLiteral("/hub/WhatSonHubNoteMutationSupport.hpp"),
+        noteRoot + QStringLiteral("/local/WhatSonLocalNoteDocument.hpp"),
+        noteRoot + QStringLiteral("/local/WhatSonLocalNoteFileStore.cpp"),
+        noteRoot + QStringLiteral("/local/WhatSonLocalNoteFileStore.hpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.cpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.hpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteCreator.cpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteCreator.hpp"),
+        noteRoot + QStringLiteral("/session/ContentsNoteManagementCoordinator.cpp"),
+        noteRoot + QStringLiteral("/session/ContentsNoteManagementCoordinator.hpp"),
+        noteRoot + QStringLiteral("/support/WhatSonIiXmlDocumentSupport.cpp"),
+        noteRoot + QStringLiteral("/support/WhatSonIiXmlDocumentSupport.hpp")
+    };
+    for (const QString& relativePath : requiredFiles)
+    {
+        QVERIFY2(
+            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Classified note file must stay present: %1").arg(relativePath)));
+    }
+
+    const QStringList flatNoteFiles =
+        QDir(repositoryRoot.filePath(noteRoot)).entryList(
+            QStringList{QStringLiteral("*.cpp"), QStringLiteral("*.hpp"), QStringLiteral("*.h")},
+            QDir::Files,
+            QDir::Name);
+    QVERIFY2(
+        flatNoteFiles.isEmpty(),
+        qPrintable(QStringLiteral("Note file shard root must not keep flat C++ files: %1").arg(flatNoteFiles.join(QLatin1Char(',')))));
+
+    const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/session/ContentsNoteManagementCoordinator.cpp")));
+    const QString flatNoteBodyPersistenceSource =
+        QStringLiteral("src/app/models/file/note/") + QStringLiteral("WhatSonNoteBodyPersistence.cpp");
+    QVERIFY(!testCMakeSource.contains(flatNoteBodyPersistenceSource));
+}
+
 void WhatSonCppRegressionTests::sourceTree_forbidsSharedFileIoObjectLayer()
 {
     const QDir repositoryRoot(repositoryRootPath());

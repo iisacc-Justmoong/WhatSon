@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
 
 #include <QHash>
 #include <QObject>

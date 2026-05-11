@@ -9,11 +9,26 @@ LV.TextEditor {
     property bool editorReadOnly: false
     property string noteBodyFilePath: ""
     property var viewportFlickable: null
+    property int editorLineMetricsRevision: 0
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
             : 0
+    readonly property real editorViewportHeight: textEditor.viewportFlickable
+            && textEditor.viewportFlickable.height !== undefined
+            ? Math.max(1, Number(textEditor.viewportFlickable.height) || 1)
+            : Math.max(1, Number(textEditor.height) || 1)
+    readonly property real editorViewportContentHeight: textEditor.viewportFlickable
+            && textEditor.viewportFlickable.contentHeight !== undefined
+            ? Math.max(textEditor.editorViewportHeight, Number(textEditor.viewportFlickable.contentHeight) || 0)
+            : Math.max(textEditor.editorViewportHeight, textEditor.editorItem && textEditor.editorItem.contentHeight !== undefined
+                       ? Number(textEditor.editorItem.contentHeight) || 0
+                       : 0)
+    readonly property real editorViewportWidth: textEditor.editorItem
+            && textEditor.editorItem.width !== undefined
+            ? Math.max(1, Number(textEditor.editorItem.width) || 1)
+            : Math.max(1, Number(textEditor.width) || 1)
     readonly property real editorVisualLineHeight: {
         const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
         if (editorSurface
@@ -25,6 +40,114 @@ LV.TextEditor {
                 return Math.max(1, visualContentHeight / visualLineCount);
         }
         return Math.max(1, Number(textEditor.lineHeight) || 1);
+    }
+
+    function numberOrFallback(value, fallbackValue) {
+        const numericValue = Number(value);
+        return Number.isFinite(numericValue) ? numericValue : fallbackValue;
+    }
+
+    function bumpEditorLineMetricsRevision() {
+        textEditor.editorLineMetricsRevision = (textEditor.editorLineMetricsRevision + 1) % 1000000;
+    }
+
+    function buildEditorVisualLineMetrics(requiredCount, fallbackHeight) {
+        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        const safeFallbackHeight = Math.max(1, Number(fallbackHeight) || 1);
+        const safeRequiredCount = Math.max(0, Math.floor(Number(requiredCount) || 0));
+        if (!editorSurface
+                || editorSurface.positionAt === undefined
+                || editorSurface.positionToRectangle === undefined) {
+            const fallbackMetrics = [];
+            for (let fallbackIndex = 0; fallbackIndex < safeRequiredCount; ++fallbackIndex) {
+                fallbackMetrics.push({
+                    y: fallbackIndex * safeFallbackHeight,
+                    height: safeFallbackHeight
+                });
+            }
+            return fallbackMetrics;
+        }
+
+        const editorY = textEditor.numberOrFallback(editorSurface.y, 0);
+        const editorWidth = Math.max(1, textEditor.numberOrFallback(editorSurface.width, 1));
+        const probeX = Math.min(Math.max(0, editorWidth - 1), 1);
+        const availableLineCount = Math.max(0, Math.floor(Number(editorSurface.lineCount) || 0));
+        const scanCount = Math.min(safeRequiredCount, availableLineCount);
+        const metrics = [];
+        let probeY = 0;
+        let previousTop = -1;
+
+        for (let lineIndex = 0; lineIndex < scanCount; ++lineIndex) {
+            const position = editorSurface.positionAt(probeX, Math.max(0, probeY));
+            const rectangle = editorSurface.positionToRectangle(position);
+            if (!rectangle) {
+                const fallbackTop = lineIndex * safeFallbackHeight;
+                metrics.push({
+                    y: editorY + fallbackTop,
+                    height: safeFallbackHeight
+                });
+                previousTop = fallbackTop;
+                probeY = fallbackTop + safeFallbackHeight + 0.5;
+                continue;
+            }
+
+            let top = textEditor.numberOrFallback(rectangle.y, lineIndex * safeFallbackHeight);
+            const rectangleHeight = Math.max(
+                        1,
+                        textEditor.numberOrFallback(rectangle.height, safeFallbackHeight));
+            if (previousTop >= 0 && top <= previousTop)
+                top = previousTop + safeFallbackHeight;
+
+            metrics.push({
+                y: Math.max(0, editorY + top),
+                height: rectangleHeight
+            });
+            previousTop = top;
+            probeY = top + rectangleHeight + 0.5;
+        }
+
+        for (let metricIndex = 0; metricIndex < metrics.length - 1; ++metricIndex)
+            metrics[metricIndex].height = Math.max(1, metrics[metricIndex + 1].y - metrics[metricIndex].y);
+
+        while (metrics.length < safeRequiredCount) {
+            const previousMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+            const nextY = previousMetric
+                    ? previousMetric.y + Math.max(1, previousMetric.height)
+                    : metrics.length * safeFallbackHeight;
+            metrics.push({
+                y: nextY,
+                height: safeFallbackHeight
+            });
+        }
+
+        return metrics;
+    }
+
+    function editorLineMetricsFor(lineIndex) {
+        textEditor.editorLineMetricsRevision;
+        const normalizedIndex = Math.max(0, Math.floor(Number(lineIndex) || 0));
+        const fallbackHeight = Math.max(1, Number(textEditor.editorVisualLineHeight) || 1);
+        const metrics = textEditor.buildEditorVisualLineMetrics(normalizedIndex + 2, fallbackHeight);
+        if (normalizedIndex < metrics.length)
+            return metrics[normalizedIndex];
+
+        return {
+            y: normalizedIndex * fallbackHeight,
+            height: fallbackHeight
+        };
+    }
+
+    function scrollEditorViewportTo(contentY) {
+        const viewport = textEditor.viewportFlickable;
+        if (!viewport || viewport.contentY === undefined)
+            return false;
+
+        const contentHeight = Math.max(0, Number(viewport.contentHeight) || 0);
+        const viewportHeight = Math.max(1, Number(viewport.height) || 1);
+        const maxContentY = Math.max(0, contentHeight - viewportHeight);
+        const requestedContentY = textEditor.numberOrFallback(contentY, viewport.contentY);
+        viewport.contentY = Math.max(0, Math.min(maxContentY, requestedContentY));
+        return true;
     }
 
     function findDescendantByObjectName(root, objectName) {
@@ -93,5 +216,26 @@ LV.TextEditor {
         textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
                     textEditor,
                     "editorViewportFlickable");
+        textEditor.bumpEditorLineMetricsRevision();
+    }
+
+    onHeightChanged: textEditor.bumpEditorLineMetricsRevision()
+    onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
+    onTextChanged: textEditor.bumpEditorLineMetricsRevision()
+
+    Connections {
+        target: textEditor.editorItem
+
+        function onContentHeightChanged() {
+            textEditor.bumpEditorLineMetricsRevision();
+        }
+
+        function onLineCountChanged() {
+            textEditor.bumpEditorLineMetricsRevision();
+        }
+
+        function onWidthChanged() {
+            textEditor.bumpEditorLineMetricsRevision();
+        }
     }
 }

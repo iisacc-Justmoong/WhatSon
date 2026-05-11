@@ -2,7 +2,7 @@
 
 #include "app/models/detailPanel/DetailPanelToolbarItemsFactory.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 
 #include <QSet>
 

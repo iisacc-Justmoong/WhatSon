@@ -1,6 +1,6 @@
 #include "app/models/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 namespace WhatSon::Hierarchy::NoteRecordSupport
 {

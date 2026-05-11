@@ -6,10 +6,10 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/WhatSonHierarchyNoteRecordSupport.hpp"
 #include "app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp"
-#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderBindingRepository.hpp"
 #include "app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 
 #include <QDir>

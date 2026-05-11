@@ -1,7 +1,7 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "app/models/file/note/WhatSonNoteBodyResourceTagGenerator.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
 #include <algorithm>

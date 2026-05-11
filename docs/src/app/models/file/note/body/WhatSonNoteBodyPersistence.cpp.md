@@ -1,0 +1,192 @@
+# `src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp`
+
+## Role
+This implementation owns the reusable note-body normalization and save workflow.
+
+The file now also contains the shared XML-to-plain-text extraction path used by both the local note file store and the library runtime indexer.
+The current contract preserves editor-authored RAW source across save/load turns instead of re-linting that source on every persistence bounce.
+
+## Key Behaviors
+- `normalizeBodyPlainText(...)` normalizes `CRLF` / `CR` into `LF`, converts Qt line/paragraph separator characters
+  into plain `LF`, and converts non-breaking spaces back into ordinary spaces before `.wsnbody` canonicalization.
+- `serializeBodyDocument(...)` is the single write-side serializer. It materializes three editor-source shapes into `.wsnbody`:
+  - plain text with newlines
+  - inline `.wsnbody` style/resource tags
+  - Qt Rich HTML fragments/documents
+- The serializer still reduces those inputs into XML-safe body markup, but it no longer runs a separate structured-tag
+  linter pass that rewrites RAW source simply because a persistence turn happened.
+- When inline proprietary styles remain open across a source newline, the serializer now carries those open style tags
+  forward and reopens them at the start of the next `<paragraph>`. This keeps multi-paragraph formatting alive in a
+  paragraph-based XML document instead of silently truncating it at the first line boundary.
+- During that write-side normalization, visible inline hashtags such as `#label` are promoted into canonical body tags
+  as `<tag>label</tag>`.
+- The same write-side normalization now also auto-wraps detectable web URLs into canonical RAW/body tags:
+  - literal `www.iisacc.com` or `https://example.com` text can serialize as
+    `<weblink href="...">...</weblink>`
+  - markdown link destinations are intentionally skipped so `[label](url)` literals do not get rewritten by accident
+- Semantic passthrough tags that the live note source must keep verbatim now round-trip through the same serializer
+  instead of being escaped into literal text:
+  - `next`
+  - `event`
+  - `title`
+  - `subTitle` / `subtitle`
+  - `eventTitle`
+  - `eventDescription`
+  - `callout`
+  - `agenda`
+  - `task`
+- Standalone `event` wrapper lines now stay direct `<body>` children during serialization, so nested legacy semantic
+  blocks do not reopen as stray blank paragraphs on the next read.
+- `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML through the iiXml document support and treats
+  paragraph-like block elements as explicit text lines.
+- Its plain-text projection hides recognized inline source tags such as `<bold>`, `<italic>`, `<weblink>`, and semantic
+  text wrappers while preserving their visible text. Stored `<tag>label</tag>` nodes project back to `#label`.
+- `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
+  editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
+  Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
+  user keeps editing the hashtag they originally typed instead of raw XML.
+- The same read-side source extractor now strips rendered-editor HTML comment scaffolding such as
+  `<!--whatson-resource-block:...-->` before it projects note source back into editor RAW text.
+  This prevents renderer-owned HTML block markers from leaking into `bodySourceText` and then re-entering the editor
+  through note-open or runtime snapshot paths.
+- Stored `<weblink href="...">label</weblink>` nodes now also survive that read-side projection verbatim instead of
+  being escaped into literal `<weblink>` text.
+- That read-side source projection now stays on the parser/serializer projection only. It no longer runs a second
+  structured-tag linter normalization pass, so note-open or note-switch cannot silently rewrite the editor RAW shape
+  just because the note body was reparsed.
+- If that canonical source projection unexpectedly collapses to an empty string for a non-empty body, the read path now
+  falls back to the parsed plain-text projection from the same `.wsnbody` payload instead of returning a blank editor
+  buffer.
+  This keeps note reopen/load behavior aligned with the saved RAW body text even when the source extractor cannot fully
+  recover a malformed or partially canonicalized document.
+- If a read-side source projection still looks like non-canonical rendered HTML after that comment stripping
+  (`<p>`, `<div>`, `<hr>`, and similar block wrappers), the extractor now treats that payload as suspicious and falls
+  back to the parsed plain-text projection instead of letting HTML block wrappers reach the editor RAW pipeline.
+- The canonical single divider token `</break>` is now preserved end-to-end:
+  - editor/source projection keeps `</break>`
+  - `.wsnbody` body XML stores `<break/>` (valid XML)
+  - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
+- Agenda/task and callout tags are ordinary transparent paired tags. They are preserved inside paragraph RAW source
+  instead of being promoted to direct body-format blocks.
+- Resource/divider source blocks are normalized onto standalone editor lines before save/load projection. Adjacent text
+  is split away from those proprietary body blocks so atomic slots do not remain embedded in ordinary paragraph text on
+  round-trip.
+- The same standalone normalization now also repairs resource lines that were accidentally persisted as visible
+  paragraph text such as `&lt;resource ... /&gt;` or a truncated `&lt;resource ... /`.
+  When one paragraph line decodes to a standalone resource tag, read/write normalization upgrades it back to the
+  canonical `<resource ... />` body block instead of preserving it as escaped prose.
+- `serializeBodyDocument(...)` now writes standalone resource/divider lines directly under `<body>`
+  instead of wrapping them back into `<paragraph>...</paragraph>`.
+- The same standalone normalization now applies to `<resource ... />` tags during read-back too, so a saved resource
+  body slot cannot collapse back onto the previous paragraph line and disappear from the canonical editor source on the
+  next note-open.
+- `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
+  `.wsnhead` and `Tags.wstags` synchronization.
+- The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
+  (`<body>\n  </body>`) no longer rehydrate as a leading blank line in the editor.
+- `htmlProjectionFromBodyDocument(...)` projects canonical editor RAW source lines to HTML-ready lines (`<br/>`
+  joins), mapping inline style aliases to explicit span styling instead of escaping the RAW tags as literal text:
+  - `bold` / `b` / `strong` -> `<strong style="font-weight:900;">`
+  - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
+  - `underline` / `u` -> `<span style="text-decoration: underline;">`
+  - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
+  - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
+  - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
+  - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
+- `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
+  `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
+  line breaks, inline style rendering, and escaped resource text stay aligned with the persisted note body contract.
+- `sourceTextFromEditorDocument(...)` is the inverse editor-session boundary. It detects LVRS/Qt rich-text HTML,
+  extracts its visible text with preserved paragraph and `<br/>` boundaries, and returns normalized canonical source
+  for persistence. Non-rich RAW source is passed through unchanged apart from line-ending normalization.
+- The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
+  - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
+    `.wsnbody` parse/read path regenerates the editor RichText
+  - repeated interior spaces alternate plain spaces and `&nbsp;`, keeping authored spacing without turning every gap
+    into a non-breaking run
+  - tabs are projected as a four-space `&nbsp;` run, matching the editor-side tab-indent contract
+- The same read-side parser now also resolves legacy semantic body tags through the shared semantic-tag registry:
+  - `<next/>` behaves like a line break in plain/rich projections
+  - `<title>`, `<subTitle>`, and `<eventTitle>` render as heading-style text instead of literal XML
+  - `<event>` is treated as a transparent wrapper while its child semantic blocks still materialize into content lines
+- Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
+- The resource-preserving fallback source extractor now reuses the same shared anonymous-namespace whitespace and
+  standalone-block normalization helpers as the canonical parser path, so those normalization rules stay defined in
+  one place inside this translation unit.
+- Rich HTML `<span style=...>` runs are reduced into canonical inline tags before writing. This keeps storage format stable while still accepting LV text editor RichText output.
+- Markdown-presentation spans are matched against `WhatSonNoteMarkdownStyleObject` before the generic CSS heuristics
+  run. This makes heading/blockquote/link/code promotion intentional and lets marker-only spans suppress generic style
+  promotion.
+- Formatting-only whitespace between tags (`>\n    <`) is stripped before Rich HTML / `.wsnbody` source is reduced into
+  inline-tag text, so pretty-printed HTML/XML indentation cannot leak into the note body as real content lines.
+- `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
+- Empty paragraphs are emitted as empty lines instead of being dropped, including leading/trailing empty paragraphs the user intentionally created.
+- Empty paragraphs that follow standalone resource/divider body blocks are likewise projected as empty
+  editor source lines. A saved `<resource ... /><paragraph></paragraph>` sequence therefore reopens as
+  `<resource ... />\n`, giving the structured editor a real cursor line after the atomic block.
+- Empty paragraphs before a standalone block, or between two standalone blocks, are also represented by explicit newline
+  boundaries in the editor source projection. The read path must not decide that an empty tag has no value merely because
+  it contributes no visible characters.
+- Whitespace-only paragraphs are preserved exactly as stored; the persistence layer no longer trims outer whitespace-only lines during read/normalization.
+- Stored `<tag>` nodes contribute a literal leading `#` in plain-text and rich-text projections, so previews and
+  first-line extraction stay aligned with the editor-visible source.
+- This whitespace filter applies only to top-level formatting whitespace around body markup. It must not strip
+  whitespace that belongs to actual paragraph/block content.
+- `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
+  - plain text for indexing/search/list summaries
+  - newline-normalized editor RAW source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
+- The no-op comparison and returned `bodySourceText` now treat the editor-provided RAW text as authoritative instead of
+  round-tripping it back through `sourceTextFromBodyDocument(...)` first.
+- When `persistBodyPlainText(...)` performs a changed-body filesystem write, it now opts in to `modifiedCount`
+  increments. The no-op comparison still returns before the file-store update path, so unchanged editor snapshots do
+  not inflate the counter.
+- Unordered-list display glyph recovery intentionally normalizes back to the canonical source marker `-` instead of
+  preserving `*` / `+` source variants.
+
+## Why This Matters
+Before this change, RichText scaffolding could leak into the logical note body (`<!DOCTYPE HTML ...>` becoming first-line text). Canonicalizing through the `.wsnbody` serializer keeps parser/index behavior stable and preserves formatted editing semantics.
+The same rule now prevents empty-note body indentation from surfacing as a phantom first blank line during note
+creation.
+The hashtag projection rule also keeps note text human-readable after save: storage uses `<tag>`, but the editor and
+text projections still show `#label`.
+The same persistence boundary now also prevents note-open, note-switch, and other non-editor flows from quietly
+rewriting `bodySourceText` RAW just because the body document was read and reparsed.
+
+## Regression Notes
+- Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
+  maintains a dedicated scripted test for it.
+- Changed editor saves must advance `fileStat.modifiedCount`; unchanged snapshots must not inflate it.
+- Body hashtags must survive a full save/load round-trip as visible `#label` text while still persisting as canonical
+  `<tag>` nodes inside `.wsnbody`.
+- A paragraph that starts with Tab-inserted indentation spaces must still display that indentation after a
+  save/load or parse/re-render round-trip; the projection must not collapse the stored spaces back into one HTML gap.
+- A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
+  though the serializer has to split that logical span into paragraph-local reopened canonical tags.
+- A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
+  `<break/>`, and rich-text projection must show a divider line instead of literal tag text.
+- A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and
+  rich-text projection as one active hyperlink instead of escaping back into literal XML.
+- A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled
+  HTML in the read-side projection instead of displaying the RAW tags as text.
+- Typed `<agenda><task>todo</task></agenda>` and `<callout>message</callout>` wrappers must survive save/load inside
+  paragraph RAW source without escaping wrapper tags.
+- Standalone `<resource ... />` or `</break>` source lines must round-trip as direct `<body>` children instead of being
+  rewrapped into `<paragraph>`. Standalone agenda/task and callout lines stay paragraph source lines.
+- A direct `<resource ... />` body child followed by an empty `<paragraph></paragraph>` must project back to editor
+  source with a trailing newline, not to a resource-only source string, so the post-resource caret target is preserved
+  on note reopen.
+- Empty `<paragraph></paragraph>` body children before or between direct resource body children must likewise survive as
+  leading/interior empty editor source lines.
+- A paragraph line that already contains only an escaped resource tag from an earlier bad save must recover to a direct
+  `<resource ... />` body child on the next read/write turn instead of staying escaped forever.
+- A saved legacy semantic body block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or
+  `<next/>` must not degrade into escaped literal text on the next autosave.
+- Legacy notes that already embedded agenda/task or callout markup inside paragraph content must keep that markup as
+  paragraph RAW source on load.
+- Legacy/self-closing/non-canonical structured tags may still be normalized by the serializer/parser projection that
+  the editor explicitly invoked, but passive load/save turns must not introduce an extra RAW rewrite layer on top of
+  that projection.
+- Reopening a note whose saved `.wsnbody` still contains visible paragraph text must not yield an empty editor body
+  solely because canonical inline-tag source extraction returned `""`.
+- A malformed/legacy `.wsnbody` that contains rendered editor HTML comment wrappers must not project those wrappers
+  back into the editor RAW source; the read path should collapse them back to plain editor text before note-open.

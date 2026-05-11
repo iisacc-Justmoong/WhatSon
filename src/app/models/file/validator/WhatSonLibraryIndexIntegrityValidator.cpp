@@ -1,7 +1,7 @@
 #include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/hub/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "app/models/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 

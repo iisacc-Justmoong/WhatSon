@@ -135,8 +135,10 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredWidth: implicitWidth
                 contentY: contentsTextEditor.viewportContentY
+                fallbackLineHeight: contentsTextEditor.editorVisualLineHeight
                 lineCount: contentViewLayout.editorParsedLineCount
-                lineHeight: contentsTextEditor.editorVisualLineHeight
+                lineMetricProvider: contentsTextEditor.editorLineMetricsFor
+                lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
                 parsedLineCount: contentViewLayout.editorParsedLineCount
                 selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
                 selectedNoteId: contentViewLayout.editorActiveNoteId
@@ -163,6 +165,16 @@ Item {
             ContentsView.Minimap {
                 Layout.fillHeight: true
                 Layout.preferredWidth: implicitWidth
+                documentText: contentsTextEditor.editorDocumentText
+                scrollTarget: contentsTextEditor.scrollEditorViewportTo
+                sourceContentHeight: contentsTextEditor.editorViewportContentHeight
+                sourceContentWidth: contentsTextEditor.editorViewportWidth
+                sourceContentY: contentsTextEditor.viewportContentY
+                sourceFontFamily: LV.Theme.fontBody
+                sourceFontLetterSpacing: LV.Theme.textBodyLetterSpacing
+                sourceFontPixelSize: LV.Theme.textBody
+                sourceFontWeight: LV.Theme.textBodyWeight
+                sourceViewportHeight: contentsTextEditor.editorViewportHeight
                 visible: contentViewLayout.minimapVisible
             }
         }

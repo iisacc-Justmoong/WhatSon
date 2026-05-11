@@ -2,7 +2,7 @@
 
 #include "app/models/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
-#include "app/models/file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QHash>
 #include <QString>

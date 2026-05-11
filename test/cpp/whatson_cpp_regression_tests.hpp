@@ -8,14 +8,14 @@
 #include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
 #include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 #define private public
-#include "app/models/file/note/ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
 #undef private
-#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
 #include "app/runtime/startup/WhatSonStartupHubResolver.hpp"
@@ -1168,6 +1168,7 @@ private slots:
     void sourceTree_keepsEditorModelBackendRegistered();
     void sourceTree_keepsContentsQmlUnderViewContents();
     void sourceTree_keepsHierarchyBackendDecomposed();
+    void sourceTree_keepsNoteFileShardClassifiedByResponsibility();
     void sourceTree_forbidsSharedFileIoObjectLayer();
     void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
     void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();

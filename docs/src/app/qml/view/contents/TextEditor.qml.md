@@ -11,9 +11,16 @@
 - `noteBodyFilePath` is the wrapper-owned input for the editor HTML session file prepared by C++.
 - `filePath` is bound to `noteBodyFilePath`, letting LVRS perform file read/sync on the session file directly.
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
-- `editorVisualLineHeight` derives the currently rendered line step from the public LVRS editor item
-  `contentHeight / lineCount`, falling back to `LV.TextEditor.lineHeight` only before the surface has measurable
-  content. The gutter consumes this value instead of the token line height so line-number spacing follows the body text.
+- `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
+  viewport geometry required by the sibling minimap.
+- `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
+  introducing an editor backend object.
+- `editorLineMetricsFor(lineIndex)` finds the peer visual line on the public LVRS `editorItem` using
+  `positionAt(...)` and `positionToRectangle(...)`, then returns the editor-relative `y` and `height` for that line.
+- `editorLineMetricsRevision` bumps when the editor text, width, line count, or rendered content height changes so the
+  sibling gutter can re-evaluate per-line geometry.
+- `editorVisualLineHeight` remains only the fallback line step for times when the LVRS editor item has not exposed a
+  measurable peer line yet.
 - `preferNativeGestures` follows `LV.Theme.mobileTarget`. Desktop must keep LVRS wheel scrolling enabled even while
   the editor has focus; forcing mobile native gestures globally makes note body scrolling appear disabled.
 - The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, and paste forwarding.
@@ -29,9 +36,10 @@
 
 - 기준: contents 내부 QML에서 허용되는 세 뷰 중 텍스트 에디터 담당 파일이다.
 - 선택된 노트가 있으면 `noteBodyFilePath`를 통해 C++이 만든 editor HTML session file을 편집한다.
-- 거터 동기화를 위해 editor viewport의 `contentY`와 실제 렌더 행 높이를 얇게 전달한다. 렌더 행 높이는
-  LVRS editor item의 `contentHeight / lineCount`에서 계산하고, 측정 전에는 `LV.TextEditor.lineHeight`로
-  되돌린다.
+- 거터 동기화를 위해 editor viewport의 `contentY`와 line-index 기반 metric provider를 얇게 전달한다. 각 줄
+  번호는 `editorLineMetricsFor(lineIndex)`를 통해 실제 LVRS editor line의 위치와 높이를 받아 맞춘다.
+- 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
+  제공한다.
 - `preferNativeGestures`는 `LV.Theme.mobileTarget`을 따른다. 데스크톱에서 이를 강제로 켜면 포커스 중
   LVRS wheel scroll 경로가 꺼져 본문 스크롤이 막힌 것처럼 보인다.
 - 이미지 paste 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영하고,

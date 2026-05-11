@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/models/editor/SetTag.h"
-#include "app/models/file/note/WhatSonLocalNoteFileStore.hpp"
+#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
 #include <QObject>
 #include <QString>

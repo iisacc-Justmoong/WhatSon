@@ -3,7 +3,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 struct LibraryNoteRecord
 {

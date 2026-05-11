@@ -1,6 +1,6 @@
 #include "app/models/detailPanel/DetailNoteHeaderSelectionSourceController.hpp"
 
-#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
 
 #include <QRegularExpression>

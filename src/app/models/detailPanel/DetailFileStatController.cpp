@@ -1,6 +1,6 @@
 #include "app/models/detailPanel/DetailFileStatController.hpp"
 
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 
 #include <QVariantMap>
 

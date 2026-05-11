@@ -6,8 +6,8 @@
 #include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
 #include "app/models/hierarchy/library/LibraryNotePreviewText.hpp"
-#include "app/models/file/note/WhatSonBookmarkColorPalette.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 
 #include <QFileInfo>
 #include <QSet>

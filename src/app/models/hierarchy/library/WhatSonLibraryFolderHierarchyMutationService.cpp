@@ -2,9 +2,9 @@
 
 #include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
-#include "app/models/file/note/WhatSonNoteFolderBindingService.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/hub/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderBindingService.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 
 #include <QSet>
 

@@ -4,7 +4,7 @@
 #include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyControllerSupport.hpp"
 
 #include <QDir>

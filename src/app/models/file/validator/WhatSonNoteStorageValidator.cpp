@@ -1,6 +1,6 @@
 #include "app/models/file/validator/WhatSonNoteStorageValidator.hpp"
 
-#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/hub/WhatSonHubNoteMutationSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>

@@ -1,8 +1,8 @@
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 
-#include "app/models/file/note/WhatSonHubNoteMutationSupport.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/hub/WhatSonHubNoteMutationSupport.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
 
 #include <QDateTime>
 #include <QDir>

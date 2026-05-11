@@ -2,10 +2,10 @@
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
-#include "app/models/file/note/WhatSonNoteFolderSemantics.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderStore.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderStore.hpp"
 
 #include <QDebug>
 #include <QDateTime>

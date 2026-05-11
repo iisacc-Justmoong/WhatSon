@@ -3,11 +3,11 @@
 void WhatSonCppRegressionTests::noteHeaderParser_usesIiXmlDocumentTreeForWsnHead()
 {
     const QString parserSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/note/WhatSonNoteHeaderParser.cpp"));
+        QStringLiteral("src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp"));
     const QString iiXmlSupportHeader = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/note/WhatSonIiXmlDocumentSupport.hpp"));
+        QStringLiteral("src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"));
     const QString iiXmlSupportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/note/WhatSonIiXmlDocumentSupport.cpp"));
+        QStringLiteral("src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp"));
 
     QVERIFY(!parserSource.isEmpty());
     QVERIFY(parserSource.contains(QStringLiteral("WhatSonIiXmlDocumentSupport.hpp")));
@@ -100,7 +100,7 @@ void WhatSonCppRegressionTests::noteHeaderParser_usesIiXmlDocumentTreeForWsnHead
 void WhatSonCppRegressionTests::localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead()
 {
     const QString storeSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/note/WhatSonLocalNoteFileStore.cpp"));
+        QStringLiteral("src/app/models/file/note/local/WhatSonLocalNoteFileStore.cpp"));
 
     QVERIFY(!storeSource.isEmpty());
     QVERIFY(storeSource.contains(QStringLiteral("WhatSonIiXmlDocumentSupport.hpp")));

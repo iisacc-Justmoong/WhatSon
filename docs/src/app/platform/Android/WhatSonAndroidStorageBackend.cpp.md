@@ -52,4 +52,4 @@
 ## Primary Callers
 - `src/app/models/onboarding/OnboardingHubController.cpp`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.cpp`
-- `src/app/models/file/note/ContentsNoteManagementCoordinator.cpp`
+- `src/app/models/file/note/session/ContentsNoteManagementCoordinator.cpp`

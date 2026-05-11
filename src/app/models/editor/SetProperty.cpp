@@ -1,6 +1,6 @@
 #include "app/models/editor/SetProperty.h"
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include <QMetaType>
 #include <QLocale>

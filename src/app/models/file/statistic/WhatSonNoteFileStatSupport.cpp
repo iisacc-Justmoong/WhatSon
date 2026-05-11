@@ -1,8 +1,8 @@
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
 
-#include "app/models/file/note/WhatSonNoteBodyPersistence.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderCreator.hpp"
-#include "app/models/file/note/WhatSonNoteHeaderParser.hpp"
+#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
+#include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
 #include <QDirIterator>

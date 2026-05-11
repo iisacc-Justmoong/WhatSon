@@ -6,56 +6,34 @@
 
 ## Scope
 - Mirrored source directory: `src/app/models/file/note`
-- Child directories: 0
-- Child files: 39
+- Child directories: 8
+- Child files: 0 at the source root
 
 ## Child Directories
-- No child directories.
+- `body` - `.wsnbody` persistence, body tag helpers, body-local formatting helpers.
+- `folder` - note-folder binding repository, service, and raw folder block semantics.
+- `header` - `.wsnhead` creation, parsing, storage, and header-local metadata helpers.
+- `hub` - mounted-hub note creation, deletion, folder clearing, and mutation support.
+- `local` - local note package document and file-store API.
+- `package` - note package bootstrap and initial body creation.
+- `session` - content-panel note management orchestration.
+- `support` - note-domain support helpers shared by the package readers.
 
 ## Child Files
-- `WhatSonBookmarkColorPalette.hpp`
-- `ContentsNoteManagementCoordinator.cpp`
-- `ContentsNoteManagementCoordinator.hpp`
-- `WhatSonHubNoteCreationService.cpp`
-- `WhatSonHubNoteCreationService.hpp`
-- `WhatSonHubNoteDeletionService.cpp`
-- `WhatSonHubNoteDeletionService.hpp`
-- `WhatSonHubNoteFolderClearService.cpp`
-- `WhatSonHubNoteFolderClearService.hpp`
-- `WhatSonHubNoteMutationSupport.cpp`
-- `WhatSonHubNoteMutationSupport.hpp`
-- `WhatSonLocalNoteDocument.hpp`
-- `WhatSonLocalNoteFileStore.cpp`
-- `WhatSonLocalNoteFileStore.hpp`
-- `WhatSonNoteBodyCreator.cpp`
-- `WhatSonNoteBodyCreator.hpp`
-- `WhatSonNoteBodyResourceTagGenerator.cpp`
-- `WhatSonNoteBodyResourceTagGenerator.hpp`
-- `WhatSonNoteBodyPersistence.cpp`
-- `WhatSonNoteBodyPersistence.hpp`
-- `WhatSonNoteBodyWebLinkSupport.cpp`
-- `WhatSonNoteBodyWebLinkSupport.hpp`
-- `WhatSonNoteBodySemanticTagSupport.cpp`
-- `WhatSonNoteBodySemanticTagSupport.hpp`
-- `WhatSonNoteCreator.cpp`
-- `WhatSonNoteCreator.hpp`
-- `WhatSonNoteFolderBindingRepository.cpp`
-- `WhatSonNoteFolderBindingRepository.hpp`
-- `WhatSonNoteFolderBindingService.cpp`
-- `WhatSonNoteFolderBindingService.hpp`
-- `WhatSonNoteFolderSemantics.hpp`
-- `WhatSonNoteHeaderCreator.cpp`
-- `WhatSonNoteHeaderCreator.hpp`
-- `WhatSonIiXmlDocumentSupport.cpp`
-- `WhatSonIiXmlDocumentSupport.hpp`
-- `WhatSonNoteHeaderParser.cpp`
-- `WhatSonNoteHeaderParser.hpp`
-- `WhatSonNoteHeaderStore.cpp`
-- `WhatSonNoteHeaderStore.hpp`
+- No C++ source or header files stay directly under `src/app/models/file/note`.
 
 ## Current Focus Areas
 - This `file/note` directory owns the note-package management queue, concrete `.wsnote/.wsnbody` mutation, and
-  follow-up metadata/stat refresh work for note body saves.
+  follow-up metadata/stat refresh work for note body saves. Concrete files are classified into responsibility
+  subdirectories instead of remaining in the shard root.
+- `body` owns body serialization and body-local RAW source helpers.
+- `header` owns `.wsnhead` schema creation, parsing, and storage.
+- `local` owns the concrete `.wsnote` package document and file-store boundary.
+- `hub` owns mounted-hub note mutation services.
+- `folder` owns note-folder binding persistence and semantics.
+- `package` owns note package bootstrap helpers.
+- `session` owns content-panel note management orchestration.
+- `support` owns note-domain support code shared across package readers.
 - `ContentsNoteManagementCoordinator` owns note-management orchestration:
   - direct `.wsnote` persistence serialization
   - lazy selected-note body reads from the resolved `.wsnote` package
@@ -124,6 +102,6 @@
 
 - 대상: ``src/app/models/file/note`` (`docs/src/app/models/file/note/README.md`)
 - 위치: `docs/src/app/models/file/note`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 역할: 이 파일은 note 파일 shard의 책임별 하위 디렉터리 구조, 운영 규칙, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
