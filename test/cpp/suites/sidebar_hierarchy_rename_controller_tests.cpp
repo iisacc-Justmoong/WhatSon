@@ -32,6 +32,92 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
 
+void WhatSonCppRegressionTests::sidebarHierarchyView_preservesEditableJsArrayForLvrsDrag()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+
+    const qsizetype syncIndex = sidebarSource.indexOf(QStringLiteral("function syncDisplayedHierarchyModel(forceRefresh)"));
+    QVERIFY(syncIndex >= 0);
+    const qsizetype preservedModelIndex = sidebarSource.indexOf(
+        QStringLiteral("const preservedModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(projectedModel);"),
+        syncIndex);
+    const qsizetype normalizedModelIndex = sidebarSource.indexOf(
+        QStringLiteral("const nextModel = renameController.normalizeHierarchyModel(preservedModel);"),
+        preservedModelIndex);
+    const qsizetype assignmentIndex = sidebarSource.indexOf(
+        QStringLiteral("sidebarHierarchyView.displayedHierarchyModel = nextModel;"),
+        normalizedModelIndex);
+
+    QVERIFY(preservedModelIndex > syncIndex);
+    QVERIFY(normalizedModelIndex > preservedModelIndex);
+    QVERIFY(assignmentIndex > normalizedModelIndex);
+}
+
+void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+
+    const qsizetype createFunctionIndex = sidebarSource.indexOf(QStringLiteral("function requestCreateFolder(targetIndex, reason)"));
+    QVERIFY(createFunctionIndex >= 0);
+    const qsizetype createCallIndex = sidebarSource.indexOf(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.createFolder();"), createFunctionIndex);
+    const qsizetype createdIndexCaptureIndex = sidebarSource.indexOf(
+        QStringLiteral("const createdFolderIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);"),
+        createCallIndex);
+    const qsizetype deferredRenameIndex = sidebarSource.indexOf(
+        QStringLiteral("renameController.beginRenameHierarchyItemWhenVisible(createdFolderIndex, 8);"),
+        createdIndexCaptureIndex);
+    QVERIFY(createCallIndex > createFunctionIndex);
+    QVERIFY(createdIndexCaptureIndex > createCallIndex);
+    QVERIFY(deferredRenameIndex > createdIndexCaptureIndex);
+
+    const qsizetype waitFunctionIndex = sidebarSource.indexOf(QStringLiteral("function beginRenameHierarchyItemWhenVisible(renameIndex, remainingAttempts)"));
+    QVERIFY(waitFunctionIndex >= 0);
+    const qsizetype readyCheckIndex = sidebarSource.indexOf(QStringLiteral("renameController.renamePresentationReady(normalizedIndex)"), waitFunctionIndex);
+    const qsizetype retryIndex = sidebarSource.indexOf(QStringLiteral("Qt.callLater(function () {\n                renameController.beginRenameHierarchyItemWhenVisible(normalizedIndex, nextAttempts);"), readyCheckIndex);
+    QVERIFY(readyCheckIndex > waitFunctionIndex);
+    QVERIFY(retryIndex > readyCheckIndex);
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemMatchesModelIndex(item, index)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const expectedKey = sidebarHierarchyView.hierarchyModelItemKeyAt(resolvedIndex);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("return sidebarHierarchyView.hierarchyItemKeyForVisualItem(item) === expectedKey;")));
+
+    const qsizetype beginFunctionIndex = sidebarSource.indexOf(QStringLiteral("function beginRenameHierarchyItem(renameIndex)"));
+    QVERIFY(beginFunctionIndex >= 0);
+    const qsizetype editingAssignmentIndex = sidebarSource.indexOf(QStringLiteral("hostView.editingHierarchyIndex = renameIndex;"), beginFunctionIndex);
+    const qsizetype presentationGuardIndex = sidebarSource.indexOf(QStringLiteral("if (!renameController.renamePresentationReady(renameIndex))"), editingAssignmentIndex);
+    const qsizetype labelSeedIndex = sidebarSource.indexOf(QStringLiteral("hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();"), presentationGuardIndex);
+    QVERIFY(editingAssignmentIndex > beginFunctionIndex);
+    QVERIFY(presentationGuardIndex > editingAssignmentIndex);
+    QVERIFY(labelSeedIndex > presentationGuardIndex);
+
+    const qsizetype refreshFunctionIndex = sidebarSource.indexOf(QStringLiteral("function refreshEditingHierarchyPresentation(forceSelectionSync)"));
+    QVERIFY(refreshFunctionIndex >= 0);
+    const qsizetype itemKeyIndex = sidebarSource.indexOf(QStringLiteral("const itemKey = sidebarHierarchyView.hierarchyModelItemKeyAt(editingIndex);"), refreshFunctionIndex);
+    const qsizetype activateByKeyIndex = sidebarSource.indexOf(QStringLiteral("hierarchyTree.activateListItemByKey(itemKey);"), itemKeyIndex);
+    QVERIFY(itemKeyIndex > refreshFunctionIndex);
+    QVERIFY(activateByKeyIndex > itemKeyIndex);
+    const qsizetype resolveFunctionIndex = sidebarSource.indexOf(QStringLiteral("function resolveVisibleHierarchyItem(itemId)"));
+    QVERIFY(resolveFunctionIndex >= 0);
+    const qsizetype activeMatchIndex = sidebarSource.indexOf(
+        QStringLiteral("activeItemId === resolvedIndex && sidebarHierarchyView.hierarchyItemMatchesModelIndex(hierarchyTree.activeListItem, resolvedIndex)"),
+        resolveFunctionIndex);
+    QVERIFY(activeMatchIndex > resolveFunctionIndex);
+    const qsizetype locatorFunctionIndex = sidebarSource.indexOf(QStringLiteral("function hierarchyItemForResolvedIndex(itemId)"));
+    QVERIFY(locatorFunctionIndex >= 0);
+    const qsizetype locatorMatchIndex = sidebarSource.indexOf(QStringLiteral("hostView.hierarchyItemMatchesModelIndex(child, resolvedIndex)"), locatorFunctionIndex);
+    QVERIFY(locatorMatchIndex > locatorFunctionIndex);
+
+    const qsizetype deleteFunctionIndex = sidebarSource.indexOf(QStringLiteral("function requestDeleteFolder(targetIndex, reason)"), createFunctionIndex);
+    QVERIFY(deleteFunctionIndex > createFunctionIndex);
+    const QString createBlock = sidebarSource.mid(createFunctionIndex, deleteFunctionIndex - createFunctionIndex);
+    QVERIFY(!createBlock.contains(QStringLiteral("beginRenameSelectedHierarchyItem()")));
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags()
 {
     const QString sidebarSource = readUtf8SourceFile(
@@ -48,11 +134,12 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInter
 
     const qsizetype dropKeysIndex = sidebarSource.indexOf(QStringLiteral("keys: [\"whatson.library.note\"]"), noteDropSurfaceIndex);
     const qsizetype emptyPayloadGuardIndex = sidebarSource.indexOf(QStringLiteral("if (noteIds.length <= 0)"), noteDropSurfaceIndex);
-    const qsizetype hierarchyMoveIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)"));
+    const qsizetype hierarchyReorderIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"));
 
     QVERIFY(dropKeysIndex > noteDropSurfaceIndex);
     QVERIFY(emptyPayloadGuardIndex > noteDropSurfaceIndex);
-    QVERIFY(hierarchyMoveIndex >= 0);
+    QVERIFY(hierarchyReorderIndex >= 0);
+    QVERIFY(!sidebarSource.contains(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface()
@@ -71,7 +158,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNo
     QVERIFY(hierarchyTreeIndex >= 0);
     const qsizetype editableBindingIndex = sidebarSource.indexOf(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable"), hierarchyTreeIndex);
     const qsizetype movedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"), hierarchyTreeIndex);
-    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)"), movedHandlerIndex);
+    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"), movedHandlerIndex);
     QVERIFY(editableBindingIndex > hierarchyTreeIndex);
     QVERIFY(movedHandlerIndex > editableBindingIndex);
     QVERIFY(reorderCallIndex > movedHandlerIndex);

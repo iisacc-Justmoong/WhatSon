@@ -39,6 +39,9 @@ The implementation now supports two closely related sequences.
 - `importUrlsForEditor(...)` reuses the same import pipeline as `importUrls(...)` but also returns normalized metadata
   maps so the editor can insert canonical self-closing `<resource ... />` tags without reparsing
   `Resources.wsresources`.
+- Editor-facing import methods return those metadata maps only after the `.wsresources/<id>.wsresource` package and
+  `Resources.wsresources` list entry have both been written; note-body insertion must link that package path rather
+  than embed the clipboard image payload directly.
 - Clipboard-image import intentionally does not create a second bespoke packaging path.
   Temporary PNG materialization means package-id generation, `resource.xml` creation, rollback, and later runtime
   reload all stay on the same battle-tested import path as ordinary file drops.
@@ -73,8 +76,8 @@ The implementation now supports two closely related sequences.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
   not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
 - `ContentViewLayout.qml` now uses the clipboard-image editor path directly on paste: it refreshes availability,
-  imports the clipboard image for editor metadata, asks `NoteEditorDocumentSession` to build the RAW resource insertion,
-  and reloads resources after the LVRS document is updated.
+  imports the clipboard image into `.wsresources` for editor metadata, asks `NoteEditorDocumentSession` to build the
+  RAW resource insertion from the returned `.wsresource` path, and reloads resources after the LVRS document is updated.
 
 ## Failure Rule
 

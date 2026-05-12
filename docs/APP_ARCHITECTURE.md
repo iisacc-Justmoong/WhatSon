@@ -57,10 +57,9 @@ Composition-root code now links those modules through `IActiveHierarchyContextSo
 
 Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`, and the hierarchy row baseline still resolves to a `20px` LVRS item height.
 
-Folder tree drag/drop is event-driven: `LV.Hierarchy.onListItemMoved` forwards the source index, target index, target
-depth, and active item key through `HierarchyDragDropBridge.applyHierarchyMove(...)`. Concrete hierarchy controllers
-then persist one subtree move; QML must not rebuild `.wsfolders`/project trees from a full `hierarchyTree.model`
-snapshot during the drag callback.
+Folder tree drag/drop is event-driven: `LV.Hierarchy.onListItemMoved` forwards LVRS' already-reordered
+`hierarchyTree.model` snapshot plus the active item key through `HierarchyDragDropBridge.applyHierarchyReorder(...)`.
+Concrete hierarchy controllers persist that final depth-array; QML must not rebuild `.wsfolders`/project trees itself.
 
 `MobileHierarchyPage.qml` remains part of the adaptive/mobile workspace mount path and forwards editor view-mode
 controller state only into the compact navigation bar combo.

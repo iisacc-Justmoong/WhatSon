@@ -13,8 +13,8 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
-- `editorBottomViewportPaddingRatio` defaults to `0.5`; the wrapper applies that viewport-relative value to the public
-  LVRS editor item's bottom padding so the last line can be scrolled up near the middle of the visible editor.
+- `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
+  LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - `editorLogicalLineHeight` exposes the LVRS text line-height token used by the sibling gutter as its fallback metric.
 - `editorPlainText` reads the public LVRS editor item's plain-text range through `getText(...)`, so the wrapper can
   locate logical editor line starts without depending on RichText HTML markup. CRLF/CR and Qt line/paragraph separator
@@ -58,8 +58,8 @@
   바깥 layout에 전달한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
-- 본문 하단에는 viewport 높이의 50%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
-  화면 중앙 부근까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
+- 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
+  화면 상단 쪽까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
   계산에는 참여하지 않는다.
 - `preferNativeGestures`는 `LV.Theme.mobileTarget`을 따른다. 데스크톱에서 이를 강제로 켜면 포커스 중
   LVRS wheel scroll 경로가 꺼져 본문 스크롤이 막힌 것처럼 보인다.

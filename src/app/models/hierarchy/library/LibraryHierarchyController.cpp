@@ -1742,6 +1742,15 @@ void LibraryHierarchyController::createFolder()
         stagedItems[insertIndex].label = folderLabel;
     }
     finalizeFolderItems(&stagedItems, false);
+    const QString insertedSelectionKey =
+        (insertIndex >= 0 && insertIndex < stagedItems.size())
+            ? hierarchyItemKey(stagedItems.at(insertIndex), insertIndex)
+            : QString();
+    const QString insertedSelectionFolderPath =
+        (insertIndex >= 0 && insertIndex < stagedItems.size())
+            ? normalizeFolderPath(stagedItems.at(insertIndex).folderPath)
+            : QString();
+    const QSet<QString> stagedExpandedKeys = expandedHierarchyItemKeys(stagedItems);
 
     WhatSonFoldersHierarchyStore stagedStore;
     stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
@@ -1759,17 +1768,37 @@ void LibraryHierarchyController::createFolder()
         }
     }
 
-    m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = true;
+    QString reloadError;
+    if (!reloadFolderHierarchyFromFoldersFile(stagedExpandedKeys, &reloadError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.controller"),
+                                  QStringLiteral("createFolder.reloadFallback"),
+                                  QStringLiteral("insertIndex=%1 error=%2").arg(insertIndex).arg(reloadError));
+        m_items = std::move(stagedItems);
+        m_foldersHierarchyLoaded = true;
+        m_createdFolderSequence = nextFolderSequence(m_items);
+    }
+
+    int mirroredInsertIndex = selectedHierarchyIndexForKey(m_items, insertedSelectionKey);
+    if (mirroredInsertIndex < 0 && !insertedSelectionFolderPath.isEmpty())
+    {
+        mirroredInsertIndex = selectedHierarchyIndexForFolderPath(m_items, insertedSelectionFolderPath);
+    }
+    if (mirroredInsertIndex < 0)
+    {
+        mirroredInsertIndex = insertIndex;
+    }
+
     rebuildBucketRanges();
     syncModel();
-    setSelectedIndex(insertIndex);
+    setSelectedIndex(mirroredInsertIndex);
     emit hubFilesystemMutated();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
                               QStringLiteral("createFolder"),
                               QStringLiteral("insertIndex=%1 depth=%2 itemCount=%3")
-                              .arg(insertIndex)
+                              .arg(mirroredInsertIndex)
                               .arg(folderDepth)
                               .arg(m_items.size()));
 }
@@ -3293,6 +3322,15 @@ bool LibraryHierarchyController::commitFolderHierarchyUpdate(
 {
     const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
     const QVector<WhatSonFolderDepthEntry> stagedFolderEntries = folderEntriesFromItems(stagedItems);
+    const QString stagedSelectionKey =
+        (selectedIndex >= 0 && selectedIndex < stagedItems.size())
+            ? hierarchyItemKey(stagedItems.at(selectedIndex), selectedIndex)
+            : QString();
+    const QString stagedSelectionFolderPath =
+        (selectedIndex >= 0 && selectedIndex < stagedItems.size())
+            ? normalizeFolderPath(stagedItems.at(selectedIndex).folderPath)
+            : QString();
+    const QSet<QString> stagedExpandedKeys = expandedHierarchyItemKeys(stagedItems);
 
     WhatSonLibraryFolderHierarchyMutationService mutationService;
     WhatSonLibraryFolderHierarchyMutationService::Request request;
@@ -3314,17 +3352,112 @@ bool LibraryHierarchyController::commitFolderHierarchyUpdate(
         return false;
     }
 
-    m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = !stagedFolderEntries.isEmpty();
-
     if (m_runtimeIndexLoaded)
     {
         setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(result.notes));
     }
 
+    QString reloadError;
+    if (!reloadFolderHierarchyFromFoldersFile(stagedExpandedKeys, &reloadError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.controller"),
+                                  QStringLiteral("commitFolderHierarchyUpdate.reloadFallback"),
+                                  QStringLiteral("error=%1").arg(reloadError));
+        m_items = std::move(stagedItems);
+        m_foldersHierarchyLoaded = !stagedFolderEntries.isEmpty();
+        m_createdFolderSequence = nextFolderSequence(m_items);
+    }
+
+    int mirroredSelectedIndex = selectedHierarchyIndexForKey(m_items, stagedSelectionKey);
+    if (mirroredSelectedIndex < 0 && !stagedSelectionFolderPath.isEmpty())
+    {
+        mirroredSelectedIndex = selectedHierarchyIndexForFolderPath(m_items, stagedSelectionFolderPath);
+    }
+    if (mirroredSelectedIndex < 0)
+    {
+        mirroredSelectedIndex = selectedIndex;
+    }
+
     rebuildBucketRanges();
     syncModel();
-    applySelectedIndex(selectedIndex, true);
+    applySelectedIndex(mirroredSelectedIndex, true);
+    return true;
+}
+
+bool LibraryHierarchyController::reloadFolderHierarchyFromFoldersFile(
+    const QSet<QString>& preservedExpandedKeys,
+    QString* errorMessage)
+{
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+
+    const QString foldersFilePath = m_foldersFilePath.trimmed();
+    if (foldersFilePath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Folders.wsfolders path is empty.");
+        }
+        return false;
+    }
+
+    QString rawText;
+    QString readError;
+    if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(foldersFilePath, &rawText, &readError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = readError;
+        }
+        return false;
+    }
+
+    WhatSonFoldersHierarchyParser foldersParser;
+    WhatSonFoldersHierarchyStore foldersStore;
+    QString parseError;
+    bool folderUuidMigrationRequired = false;
+    if (!foldersParser.parse(rawText, &foldersStore, &parseError, &folderUuidMigrationRequired))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = parseError;
+        }
+        return false;
+    }
+
+    if (folderUuidMigrationRequired)
+    {
+        QString writeError;
+        if (!foldersStore.writeToFile(foldersFilePath, &writeError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+    }
+
+    QVector<LibraryHierarchyItem> mirroredItems = prependInAppLibraryScaffold(
+        buildFolderItems(foldersStore.folderEntries()));
+    finalizeFolderItems(&mirroredItems, true);
+    dropReservedTodayFolderItems(&mirroredItems);
+    restoreExpandedHierarchyItemKeys(&mirroredItems, preservedExpandedKeys);
+
+    m_items = std::move(mirroredItems);
+    m_foldersHierarchyLoaded = !foldersStore.folderEntries().isEmpty();
+    m_createdFolderSequence = nextFolderSequence(m_items);
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.controller"),
+                              QStringLiteral("reloadFolderHierarchyFromFoldersFile"),
+                              QStringLiteral("path=%1 itemCount=%2 foldersLoaded=%3")
+                              .arg(foldersFilePath)
+                              .arg(m_items.size())
+                              .arg(m_foldersHierarchyLoaded ? QStringLiteral("1") : QStringLiteral("0")));
     return true;
 }
 

@@ -14,6 +14,13 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
 - The same entry path now also forces `hostView.syncDisplayedHierarchyModel(true)` so the temporary projection for the
   edited row is applied immediately, instead of waiting for an unrelated hierarchy refresh.
 - The `Qt.callLater(...)` pass refreshes the presentation snapshot again after LVRS finishes any row regeneration.
+- The post-create path uses `beginRenameHierarchyItemWhenVisible(...)`: it captures the controller's new selected index
+  after `createFolder()`, refreshes the displayed model, activates the row by stable key when possible, and retries on
+  later QML turns until the row has non-zero geometry. Inline rename state is not entered while the row is missing, so
+  the input field cannot appear over `All Library` or another stale active row.
+- The row-readiness guard also checks the visual `HierarchyItem` identity against the selected model row's stable key.
+  This prevents a newly inserted blank folder row from hiding its label while the input field is still positioned over a
+  stale system-bucket row.
 
 ## Commit / Cancel Rules
 

@@ -45,15 +45,16 @@ This Controller translates external local file URLs into resource package import
   Imports files and returns per-resource metadata entries (`resourcePath`, `type`, `format`, `bucket`, `assetPath`) so
   the note editor can inject `<resource ... />` links immediately after a drop.
   This compatibility entrypoint now also aborts same-name conflicts unless the caller switches to the policy-aware
-  variant after user confirmation.
+  variant after user confirmation. The returned metadata is produced only after the `.wsresource` package and
+  `Resources.wsresources` registration have succeeded.
 - `importClipboardImage()`, `importClipboardImageForEditor()`
   Clipboard-image variants of the same pipeline. They materialize the clipboard bitmap as a temporary PNG file, then
   reuse the ordinary URL import path so resource package creation, metadata generation, and rollback semantics stay
   identical to drag/drop imports.
   The temporary asset file name is now a random 32-character mixed-case alphanumeric key, so clipboard-originated
   resources do not reuse an ambiguous placeholder name inside the resource store.
-  Editor paste callers use the `ForEditor` variant so the active note can insert the returned resource metadata before
-  the deferred runtime reload.
+  Editor paste callers use the `ForEditor` variant so the active note links the registered `.wsresource` package path
+  before the deferred runtime reload.
 - `importClipboardImageWithConflictPolicy(...)`, `importClipboardImageForEditorWithConflictPolicy(...)`
   Clipboard-image variants of the same explicit conflict-policy flow.
 - `reloadImportedResources()`

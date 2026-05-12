@@ -200,6 +200,7 @@ private:
         QVector<LibraryHierarchyItem> stagedItems,
         int selectedIndex,
         const QHash<QString, QString>& movedFolderPathMap = {});
+    bool reloadFolderHierarchyFromFoldersFile(const QSet<QString>& preservedExpandedKeys, QString* errorMessage);
     void applySelectedIndex(int index, bool forceReapply = false);
     int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();

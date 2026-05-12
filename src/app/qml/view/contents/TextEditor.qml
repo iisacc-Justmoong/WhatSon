@@ -11,7 +11,7 @@ LV.TextEditor {
     property var viewportFlickable: null
     property int editorPlainTextRevision: 0
     property int editorLineMetricsRevision: 0
-    property real editorBottomViewportPaddingRatio: 0.5
+    property real editorBottomViewportPaddingRatio: 0.75
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
     readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)

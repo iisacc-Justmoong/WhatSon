@@ -19,6 +19,10 @@ Implements the active note editor document session.
 6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session converts the current editor document back
    to source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor
    HTML projection, and maps the source cursor back to the rendered editor cursor position.
+7. Clipboard image paste calls `insertImportedResourcesIntoSource(...)`; the session uses the same editor-document to
+   RAW-source boundary, maps the editor selection to RAW positions, inserts generated resource tags that point at the
+   already registered `.wsresource` package paths, refreshes parsed line count, and returns the projected editor HTML
+   plus restored editor cursor position.
 
 ## Guardrails
 
@@ -30,8 +34,9 @@ Implements the active note editor document session.
 - The session computes parsed RAW source line count in C++ so QML gutter code does not read or parse note files. The
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported resource metadata is normalized through `WhatSonNoteBodyResourceTagGenerator` and inserted as standalone
-  RAW resource lines by `insertImportedResourcesIntoSource(...)`; the result also includes an editor HTML projection
-  so QML can refresh the LVRS rich-text surface without reintroducing raw newline rendering.
+  RAW resource lines by `insertImportedResourcesIntoSource(...)`; the method consumes the current LVRS editor document
+  text, not raw `.wsnbody` XML, so QML does not need a legacy paste adapter. The result also includes an editor HTML
+  projection so QML can refresh the LVRS rich-text surface without reintroducing raw newline rendering.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, and selection length; source mutation, same-tag toggle removal, projection, and
   line-count refresh stay here.
@@ -44,8 +49,9 @@ Implements the active note editor document session.
   session file로 투영하고, LVRS 저장 이벤트는 다시 canonical source로 복원해 `.wsnbody` 직렬화 경로로 연결한다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
-- clipboard/drop으로 들어온 resource metadata는 이 세션이 standalone `<resource ... />` source block으로
-  변환한다.
+- clipboard/drop으로 들어온 resource metadata는 이미 등록된 `.wsresource` package path를 담아야 한다. 이 세션은
+  현재 editor document text를 canonical RAW source로 변환한 뒤 그 package path를 standalone `<resource ... />`
+  source block으로 삽입한다. 커서와 selection도 editor 좌표에서 RAW 좌표로 매핑한 뒤 다시 editor 좌표로 돌려준다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 보이는 selection 좌표를 RAW source
   좌표로 변환한 뒤 `SetTag` 결과를 editor HTML로 다시 투영한다. 같은 태그가 정확히 감싼 selection이면
   `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.

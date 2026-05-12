@@ -1217,6 +1217,7 @@ private slots:
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
     void libraryHierarchyController_appliesLvrsMoveEventAsSingleFolderReparent();
+    void libraryHierarchyController_mirrorsFoldersFileAfterHierarchyCommit();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
@@ -1281,6 +1282,7 @@ private slots:
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
+    void resourcesImportController_editorImageImportRegistersPackageBeforeNoteSourceInsertion();
     void resourceClipboardImportSupport_extractsMimeImagePayloads();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
@@ -1293,6 +1295,8 @@ private slots:
     void sidebarHierarchyController_reactsToProviderMappingChanges();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
+    void sidebarHierarchyView_preservesEditableJsArrayForLvrsDrag();
+    void sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename();
     void sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags();
     void sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface();
     void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();

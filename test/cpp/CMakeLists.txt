@@ -34,6 +34,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/content/mobile/MobileHierarchyNavigationCoordinator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/calendar/ISystemCalendarStore.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/calendar/SystemCalendarStore.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/resource/ResourcesImportController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/GetProperty.cpp"

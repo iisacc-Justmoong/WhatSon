@@ -40,7 +40,7 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportContentHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportWidth")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.5")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.75")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorPlainText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorLogicalLineHeight")));

@@ -131,7 +131,11 @@
   허용한다. 이 QML은 `ResourcesImportController.importClipboardImageForEditor()`,
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`,
   `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`, `TextEditor.qml`의 LVRS document 반영 hook만
-  순서대로 호출해야 하며, MIME 판별, resource import, RAW tag 생성, `.wsnbody` persistence 정책을 구현하면 안 된다.
+  순서대로 호출해야 하며, MIME 판별, resource import, editor document에서 RAW source로의 변환, RAW tag 생성,
+  `.wsnbody` persistence 정책을 구현하면 안 된다.
+- clipboard image paste는 먼저 `ResourcesImportController`가 이미지를 `.wsresources/<id>.wsresource` 패키지와
+  `Resources.wsresources` 목록에 등록한 뒤, 그 반환 metadata의 `resourcePath`만 본문 RAW `<resource ... />`
+  태그로 삽입해야 한다. 본문에는 이미지 payload나 asset file path를 직접 넣지 않는다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의

@@ -49,7 +49,7 @@ public:
     Q_INVOKABLE bool clearEditor();
     Q_INVOKABLE bool persistEditorFile(const QString& editorFilePath);
     Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
-        const QString& bodySourceText,
+        const QString& editorDocumentText,
         int cursorPosition,
         int selectionLength,
         const QVariantList& importedEntries);

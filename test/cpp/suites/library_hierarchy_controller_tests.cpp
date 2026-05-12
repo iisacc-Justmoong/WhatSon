@@ -95,3 +95,90 @@ void WhatSonCppRegressionTests::libraryHierarchyController_appliesLvrsMoveEventA
     QCOMPARE(persistedEntries.at(1).depth, 1);
     QCOMPARE(persistedEntries.at(1).uuid, gitUuid);
 }
+
+void WhatSonCppRegressionTests::libraryHierarchyController_mirrorsFoldersFileAfterHierarchyCommit()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    const QString foldersFilePath = QDir(workspaceDir.path()).filePath(QStringLiteral("Folders.wsfolders"));
+
+    const QString gitUuid =
+        QStringLiteral("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    const QString branchUuid =
+        QStringLiteral("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+
+    QVector<WhatSonFolderDepthEntry> entries;
+    entries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("git"),
+        QStringLiteral("git"),
+        0,
+        gitUuid,
+    });
+    entries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("branch"),
+        QStringLiteral("branch"),
+        0,
+        branchUuid,
+    });
+
+    LibraryHierarchyController controller;
+    controller.applyRuntimeSnapshot(
+        QStringLiteral("test.wshub"),
+        {},
+        {},
+        {},
+        entries,
+        foldersFilePath,
+        true);
+
+    const QVariantList initialModel = controller.hierarchyModel();
+    QCOMPARE(initialModel.size(), 5);
+
+    QVariantMap gitNode = initialModel.at(3).toMap();
+    gitNode.insert(QStringLiteral("sourceIndex"), 3);
+    gitNode.insert(QStringLiteral("itemId"), 3);
+    gitNode.insert(QStringLiteral("depth"), 0);
+
+    QVariantMap transientNode;
+    transientNode.insert(QStringLiteral("key"), QStringLiteral("transient-empty-folder-row"));
+    transientNode.insert(QStringLiteral("id"), QStringLiteral("transient-empty-folder-row"));
+    transientNode.insert(QStringLiteral("label"), QString());
+    transientNode.insert(QStringLiteral("sourceIndex"), 99);
+    transientNode.insert(QStringLiteral("itemId"), 99);
+    transientNode.insert(QStringLiteral("depth"), 1);
+    transientNode.insert(QStringLiteral("expanded"), false);
+    transientNode.insert(QStringLiteral("showChevron"), false);
+
+    QVariantMap branchNode = initialModel.at(4).toMap();
+    branchNode.insert(QStringLiteral("sourceIndex"), 4);
+    branchNode.insert(QStringLiteral("itemId"), 4);
+    branchNode.insert(QStringLiteral("depth"), 0);
+
+    QVariantList committedNodes;
+    committedNodes.push_back(gitNode);
+    committedNodes.push_back(transientNode);
+    committedNodes.push_back(branchNode);
+
+    QVERIFY(controller.applyHierarchyNodes(
+        committedNodes,
+        gitNode.value(QStringLiteral("key")).toString()));
+
+    WhatSonFoldersHierarchyParser parser;
+    WhatSonFoldersHierarchyStore store;
+    QString parseError;
+    bool migrationRequired = false;
+    QVERIFY(parser.parse(readUtf8SourceFile(foldersFilePath), &store, &parseError, &migrationRequired));
+    QVERIFY2(parseError.isEmpty(), qPrintable(parseError));
+    QVERIFY(!migrationRequired);
+    const QVector<WhatSonFolderDepthEntry> persistedEntries = store.folderEntries();
+    QCOMPARE(persistedEntries.size(), 2);
+    QCOMPARE(persistedEntries.at(0).label, QStringLiteral("git"));
+    QCOMPARE(persistedEntries.at(1).label, QStringLiteral("branch"));
+
+    const QVariantList mirroredModel = controller.hierarchyModel();
+    QCOMPARE(mirroredModel.size(), 5);
+    QCOMPARE(mirroredModel.at(3).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("git"));
+    QCOMPARE(mirroredModel.at(3).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("git"));
+    QCOMPARE(mirroredModel.at(4).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("branch"));
+    QCOMPARE(mirroredModel.at(4).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("branch"));
+}

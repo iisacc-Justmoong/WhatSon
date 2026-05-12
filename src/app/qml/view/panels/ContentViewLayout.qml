@@ -131,8 +131,8 @@ Item {
 
         const insertion = contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource(
                     contentsTextEditor.editorDocumentText,
-                    contentsTextEditor.cursorPosition,
-                    0,
+                    contentsTextEditor.editorSelectionStart,
+                    contentsTextEditor.editorSelectionLength,
                     importedEntries);
         if (!insertion || !Boolean(insertion.valid))
             return false;

@@ -61,11 +61,13 @@
   descendant subtree and persists the updated folders store before refreshing sidebar state.
 - The library sidebar right-click context menu now reuses those two existing methods through
   `HierarchyInteractionBridge`; no separate library-specific CRUD implementation was added for the menu.
-- `applyHierarchyMove(...)` is the LVRS drag/drop commit path. It resolves the source folder subtree, removes that
-  subtree from the current row vector, clamps the target insertion/depth against the remaining visible tree, finalizes
-  the moved folder paths, and persists the result through the same folder hierarchy commit path used by explicit move
-  helpers. A parent/child drop therefore updates both `.wsfolders` and the live sidebar model without creating an
-  extra sibling copy.
+- `applyHierarchyMove(...)` remains a targeted move helper. The sidebar drag/drop path normally persists the final
+  `LV.Hierarchy.model` snapshot through `applyHierarchyNodes(...)`, while explicit callers can still use the targeted
+  helper to resolve one source subtree and persist it through the same folder hierarchy commit path.
+- After a folder hierarchy mutation has been persisted, the controller reparses `Folders.wsfolders` and rebuilds the
+  live library rows from that file-backed tree. The staged drag/drop vector is only a mutation proposal; the view model
+  mirrors the persisted `.wsfolders` result so store-side normalization, migration, or filtered rows cannot leave a
+  stale sidebar shape.
 - Folder-path normalization now uses the shared escaped-segment semantics from `WhatSonNoteFolderSemantics.hpp`.
   A folder label that literally contains `/` is persisted as one escaped segment (`\/`) and is no longer split into
   fake parent/child hierarchy rows.
@@ -106,3 +108,5 @@
   - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.
   - Dragging one library folder onto another through the LVRS move event must persist exactly one nested subtree entry
     and must not leave a duplicate top-level sibling in the controller model.
+  - After any hierarchy commit, the live library model must be rebuilt from the persisted `Folders.wsfolders` tree,
+    not from transient staged rows that the folder store did not serialize.

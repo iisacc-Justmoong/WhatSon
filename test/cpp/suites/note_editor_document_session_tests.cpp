@@ -218,6 +218,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
 void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
 {
     NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("resource-note"),
+        QStringLiteral("Alpha\nBeta"));
 
     QVariantMap importedResource;
     importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-1"));
@@ -229,7 +232,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
     importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
 
     const QVariantMap result = session.insertImportedResourcesIntoSource(
-        QStringLiteral("Alpha\nBeta"),
+        editorHtml,
         5,
         0,
         QVariantList{importedResource});
@@ -246,10 +249,18 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
         QStringLiteral(
             "Alpha\n<resource type=\"image\" format=\".png\" "
             "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />\nBeta"));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("&lt;resource")));
     const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
     QVERIFY(editorDocumentText.contains(QStringLiteral("Alpha<br/>")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<br/>Beta")));
+    QCOMPARE(session.parsedLineCount(), 3);
+    QCOMPARE(
+        result.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral(
+            "Alpha\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />").size());
     QCOMPARE(
         result.value(QStringLiteral("cursorPosition")).toInt(),
         QStringLiteral(

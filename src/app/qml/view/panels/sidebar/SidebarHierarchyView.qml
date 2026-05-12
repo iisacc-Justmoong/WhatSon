@@ -667,6 +667,34 @@ Rectangle {
             return key;
         return "";
     }
+    function hierarchyModelItemKeyAt(index) {
+        return sidebarHierarchyView.hierarchyModelItemKey(sidebarHierarchyView.hierarchyModelItemAt(index));
+    }
+    function hierarchyItemKeyForVisualItem(item) {
+        if (!item)
+            return "";
+        const resolvedKey = item.resolvedItemKey !== undefined && item.resolvedItemKey !== null ? String(item.resolvedItemKey).trim() : "";
+        if (resolvedKey.length > 0)
+            return resolvedKey;
+        const itemKey = item.itemKey !== undefined && item.itemKey !== null ? String(item.itemKey).trim() : "";
+        if (itemKey.length > 0)
+            return itemKey;
+        return "";
+    }
+    function hierarchyItemMatchesModelIndex(item, index) {
+        const resolvedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (!item || item.__isHierarchyItem !== true || resolvedIndex < 0)
+            return false;
+        const rawItemId = item.itemId !== undefined && item.itemId !== null ? item.itemId : item.resolvedItemId;
+        const itemIndex = sidebarHierarchyView.normalizedInteger(rawItemId, -1);
+        const flatIndex = sidebarHierarchyView.normalizedInteger(item.flatIndex, -1);
+        if (itemIndex !== resolvedIndex && flatIndex !== resolvedIndex)
+            return false;
+        const expectedKey = sidebarHierarchyView.hierarchyModelItemKeyAt(resolvedIndex);
+        if (expectedKey.length <= 0)
+            return true;
+        return sidebarHierarchyView.hierarchyItemKeyForVisualItem(item) === expectedKey;
+    }
     function isFolderContextMenuTargetIndex(index) {
         const item = sidebarHierarchyView.hierarchyModelItemAt(index);
         if (!item)
@@ -726,8 +754,13 @@ Rectangle {
             sidebarHierarchyView.clearEditingHierarchyPresentation();
             return null;
         }
-        if (Boolean(forceSelectionSync) && sidebarHierarchyView.hierarchyModelIndexVisible(editingIndex))
-            hierarchyTree.activateListItemById(editingIndex);
+        if (Boolean(forceSelectionSync) && sidebarHierarchyView.hierarchyModelIndexVisible(editingIndex)) {
+            const itemKey = sidebarHierarchyView.hierarchyModelItemKeyAt(editingIndex);
+            if (itemKey.length > 0 && hierarchyTree.activateListItemByKey !== undefined)
+                hierarchyTree.activateListItemByKey(itemKey);
+            else
+                hierarchyTree.activateListItemById(editingIndex);
+        }
         const item = sidebarHierarchyView.resolveVisibleHierarchyItem(editingIndex);
         if (!item) {
             sidebarHierarchyView.clearEditingHierarchyPresentation();
@@ -798,10 +831,10 @@ Rectangle {
         sidebarHierarchyView.hierarchyInteractionBridge.createFolder();
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.create");
         Qt.callLater(function () {
+            const createdFolderIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);
             sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
-            sidebarHierarchyView.syncSelectedHierarchyItem(true);
-            if (sidebarHierarchyView.canRenameSelectedHierarchyItem())
-                sidebarHierarchyView.beginRenameSelectedHierarchyItem();
+            if (createdFolderIndex >= 0)
+                renameController.beginRenameHierarchyItemWhenVisible(createdFolderIndex, 8);
         });
         return true;
     }
@@ -964,7 +997,7 @@ Rectangle {
         if (resolvedIndex < 0)
             return null;
         const activeItemId = sidebarHierarchyView.normalizedInteger(hierarchyTree.activeListItemId, -1);
-        if (activeItemId === resolvedIndex && hierarchyTree.activeListItem)
+        if (activeItemId === resolvedIndex && sidebarHierarchyView.hierarchyItemMatchesModelIndex(hierarchyTree.activeListItem, resolvedIndex))
             return hierarchyTree.activeListItem;
         return noteDropController.hierarchyItemForResolvedIndex(resolvedIndex);
     }
@@ -1002,7 +1035,8 @@ Rectangle {
             return false;
         sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(sidebarHierarchyView.displayedHierarchyModel);
         const projectedModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyController ? hierarchyController.hierarchyNodes : []);
-        const nextModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(projectedModel);
+        const preservedModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(projectedModel);
+        const nextModel = renameController.normalizeHierarchyModel(preservedModel);
         const nextSignature = sidebarHierarchyView.hierarchyModelSignature(nextModel);
         if (!Boolean(forceRefresh) && nextSignature === sidebarHierarchyView.displayedHierarchyModelSignature) {
             sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(nextModel);
@@ -1305,9 +1339,20 @@ Rectangle {
             const renameIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
             if (!renameController.canRenameIndex(renameIndex))
                 return false;
+            return renameController.beginRenameHierarchyItem(renameIndex);
+        }
+
+        function beginRenameHierarchyItem(renameIndex) {
+            if (!renameController.canRenameIndex(renameIndex))
+                return false;
             hostView.syncSelectedHierarchyItem(false);
             hostView.editingHierarchyIndex = renameIndex;
             hostView.refreshEditingHierarchyPresentation(true);
+            if (!renameController.renamePresentationReady(renameIndex)) {
+                hostView.editingHierarchyIndex = -1;
+                hostView.clearEditingHierarchyPresentation();
+                return false;
+            }
             hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
             hostView.syncDisplayedHierarchyModel(true);
             hostView.requestViewHook("hierarchy.rename.begin");
@@ -1322,6 +1367,27 @@ Rectangle {
             return true;
         }
 
+        function beginRenameHierarchyItemWhenVisible(renameIndex, remainingAttempts) {
+            const normalizedIndex = renameController.normalizedInteger(renameIndex, -1);
+            if (!renameController.canRenameIndex(normalizedIndex))
+                return false;
+            if (hostView.hierarchyController)
+                hostView.hierarchyController.setHierarchySelectedIndex(normalizedIndex);
+            hostView.setSelectedHierarchyIndices([normalizedIndex]);
+            hostView.hierarchySelectionAnchorIndex = normalizedIndex;
+            hostView.syncDisplayedHierarchyModel(true);
+            hostView.syncSelectedHierarchyItem(true);
+            if (renameController.renamePresentationReady(normalizedIndex))
+                return renameController.beginRenameHierarchyItem(normalizedIndex);
+            const nextAttempts = Math.max(0, renameController.normalizedInteger(remainingAttempts, 0) - 1);
+            if (nextAttempts <= 0)
+                return false;
+            Qt.callLater(function () {
+                renameController.beginRenameHierarchyItemWhenVisible(normalizedIndex, nextAttempts);
+            });
+            return true;
+        }
+
         function canRenameIndex(index) {
             const numericIndex = Number(index);
             if (!hostView.renameContractAvailable || !isFinite(numericIndex) || !hierarchyInteractionBridge)
@@ -1331,6 +1397,20 @@ Rectangle {
 
         function canRenameSelectedHierarchyItem() {
             return renameController.canRenameIndex(hostView.selectedFolderIndex);
+        }
+
+        function renamePresentationReady(renameIndex) {
+            const normalizedIndex = renameController.normalizedInteger(renameIndex, -1);
+            if (normalizedIndex < 0)
+                return false;
+            const item = hostView.resolveVisibleHierarchyItem(normalizedIndex);
+            if (!hostView.hierarchyItemMatchesModelIndex(item, normalizedIndex))
+                return false;
+            const presentation = hostView.hierarchyItemPresentation(item, normalizedIndex);
+            return presentation
+                    && renameController.normalizedInteger(presentation.index, -1) === normalizedIndex
+                    && (Number(presentation.width) || 0) > 0
+                    && (Number(presentation.height) || 0) > 0;
         }
 
         function cancelHierarchyRename() {
@@ -1585,8 +1665,7 @@ Rectangle {
                         return matchedDescendant;
                     if (child.__isHierarchyItem !== true)
                         continue;
-                    const rawItemId = child.itemId !== undefined && child.itemId !== null ? child.itemId : child.resolvedItemId;
-                    if (noteDropController.normalizedInteger(rawItemId, -1) === resolvedIndex)
+                    if (hostView.hierarchyItemMatchesModelIndex(child, resolvedIndex))
                         return child;
                 }
                 return null;
@@ -1887,7 +1966,7 @@ Rectangle {
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)
                 return;
-            if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyMove(fromIndex, toIndex, depth, itemKey))
+            if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey))
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
         }

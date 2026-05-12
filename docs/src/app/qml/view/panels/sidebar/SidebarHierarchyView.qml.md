@@ -46,6 +46,9 @@ without changing delegate call sites.
 - The visible hierarchy model is now held in `displayedHierarchyModel`, a view-owned snapshot. The view compares the
   projected hierarchy payload against the previous snapshot and only replaces the rendered model when the actual row
   content changed.
+- LVRS row drag commits use `HierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey)`, matching the
+  30-day-old surface contract: LVRS owns the visible tree reorder and the bridge persists the final depth-array
+  snapshot.
 - The embedded `LV.Hierarchy` now lets the shared `TapHandler` explicitly approve flick takeover, so vertical swipes on
   mobile routes are not trapped by row taps and the underlying LVRS hierarchy scroller can keep its inertial carry.
 - The host now also drives `LV.Hierarchy.listOvershootEnabled`, `listFlickDeceleration`,
@@ -171,6 +174,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   refreshed hierarchy payloads.
   Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore not reset
   existing expanded/collapsed rows.
+- After the C++ expansion overlay returns its `QVariantList`, `syncDisplayedHierarchyModel(...)` normalizes that value
+  back into a JS array before assigning `displayedHierarchyModel`. LVRS editable drag commits rely on an array model so
+  `_applyEditableMove(...)` can mutate the visible snapshot and emit `listItemMoved`.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
 - LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
@@ -239,11 +245,17 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   regenerates items during a rename transaction.
 - Starting, committing, and cancelling inline rename now force a `displayedHierarchyModel` refresh so the temporary
   blank-label projection is entered and exited immediately with the transaction state.
+- Newly created folders do not open inline rename until the selected folder row is present in the live LVRS hierarchy
+  and has a non-zero geometry snapshot. This prevents the input overlay from borrowing the previous active row, such as
+  `All Library`, while LVRS is still rebuilding generated rows.
+- Rename row lookup validates both the LVRS visual row index and stable item key against `standardHierarchyModel`.
+  A stale active item with the same numeric id is not enough to place the input field; the overlay must anchor to the
+  actual generated folder row that is being edited.
 - That rename projection now hides only the visible `label`. Stable row identity fields stay intact so LVRS activation
   continues to target the same hierarchy item instead of surfacing internal fallback identifiers.
-- `resolveVisibleHierarchyItem(...)` prefers the active LVRS row for the selected id and falls back to the shared
-  hierarchy-item locator. This keeps rename placement tied to the selected folder, not whichever generated row happens
-  to be first in the rebuilt tree.
+- `resolveVisibleHierarchyItem(...)` prefers the active LVRS row only when `itemId`/`flatIndex` and `itemKey` match the
+  selected model row, then falls back to the shared hierarchy-item locator with the same identity check. This keeps
+  rename placement tied to the selected folder, not whichever generated row happens to be first in the rebuilt tree.
 - Note-drop preview state is represented by `noteDropHoverIndex`.
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
@@ -251,10 +263,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The note-drop `DropArea` is keyed to the note-list drag key (`whatson.library.note`). It must not accept unkeyed
   hierarchy-item drags, because those need to fall through to LVRS `Hierarchy` so tree reorder can emit
   `listItemMoved`.
-- `LV.Hierarchy.onListItemMoved` now forwards `fromIndex`, `toIndex`, `depth`, and `itemKey` through
-  `HierarchyDragDropBridge.applyHierarchyMove(...)`. The sidebar must not rebuild persistence from
-  `hierarchyTree.model` during the drag callback, because that snapshot can lag LVRS' computed move result and can
-  make a parent/child drop look like a duplicated folder tree.
+- `LV.Hierarchy.onListItemMoved` forwards LVRS' already-reordered `hierarchyTree.model` through
+  `HierarchyDragDropBridge.applyHierarchyReorder(...)`. The sidebar treats the LVRS depth-array snapshot as the
+  view-authoritative reorder result and lets the hierarchy controller persist and reparse the backing tree store.
 - Dropping a note-list item on a concrete folder hierarchy row is a membership mutation: the view resolves the hovered
   row index, forwards the dragged note id array through `HierarchyDragDropBridge.assignNotesToFolder(...)`, and treats a
   successful commit as `hierarchy.noteDrop`.
@@ -312,9 +323,12 @@ This file should be read as a composed view, not as the place where hierarchy bu
   normalized-array return path.
 - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
   LVRS/Qt.
-- Folder tree drag/drop must keep using `applyHierarchyMove(fromIndex, toIndex, depth, itemKey)` from
-  `LV.Hierarchy.onListItemMoved`; reverting to full `hierarchyTree.model` replay can duplicate persisted folder
-  entries and leave the visible top-level rows unchanged.
+- Folder tree drag/drop must keep using `applyHierarchyReorder(hierarchyTree.model, itemKey)` from
+  `LV.Hierarchy.onListItemMoved`; adding a second index-replay path can acknowledge a drag before the final LVRS
+  snapshot has been persisted.
+- `displayedHierarchyModel` must remain a JS array after expansion preservation. Letting the C++ preserved model remain
+  as a raw `QVariantList` can make LVRS treat the surface as editable but fail the release-time source write before
+  `listItemMoved` is emitted.
 - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;
