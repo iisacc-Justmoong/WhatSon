@@ -53,6 +53,11 @@ public:
         int cursorPosition,
         int selectionLength,
         const QVariantList& importedEntries);
+    Q_INVOKABLE QVariantMap insertFormatTagIntoSource(
+        const QString& tagName,
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength);
 
 signals:
     void noteActiveStateChanged();

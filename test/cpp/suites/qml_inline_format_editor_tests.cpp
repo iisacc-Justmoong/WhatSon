@@ -117,6 +117,44 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsNativeSurfaceOnly()
     });
 }
 
+void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor()
+{
+    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
+    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+
+    QVERIFY(!textEditorSource.isEmpty());
+    QVERIFY(!contentViewLayoutSource.isEmpty());
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("insertFormatTagIntoSource")));
+
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorFormatTag(tagName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"bold\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Bold")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"italic\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Italic")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"underline\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Underline")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"strikethrough\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+X\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+X\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"highlight\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+E\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+E\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"break\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+B\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+B\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+Return\"")));
+}
+
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative()
 {
     const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());

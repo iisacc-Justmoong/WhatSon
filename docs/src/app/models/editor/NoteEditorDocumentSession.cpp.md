@@ -15,6 +15,9 @@ Implements the active note editor document session.
 5. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
    HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
    so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
+6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session converts the current editor document back
+   to source, applies `SetTag`, returns a fresh editor HTML projection, and maps the source cursor back to the rendered
+   editor cursor position.
 
 ## Guardrails
 
@@ -28,6 +31,9 @@ Implements the active note editor document session.
 - Imported resource metadata is normalized through `WhatSonNoteBodyResourceTagGenerator` and inserted as standalone
   RAW resource lines by `insertImportedResourcesIntoSource(...)`; the result also includes an editor HTML projection
   so QML can refresh the LVRS rich-text surface without reintroducing raw newline rendering.
+- Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
+  current editor document text, cursor, and selection length; source mutation, projection, and line-count refresh stay
+  here.
 - It must not expose the raw XML body file as the editor file path.
 
 ## 한국어
@@ -39,3 +45,5 @@ Implements the active note editor document session.
   제공하는 rendered line count를 따른다.
 - clipboard/drop으로 들어온 resource metadata는 이 세션이 standalone `<resource ... />` source block으로
   변환한다.
+- 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, `SetTag` 결과를 editor HTML로 다시
+  투영한다.

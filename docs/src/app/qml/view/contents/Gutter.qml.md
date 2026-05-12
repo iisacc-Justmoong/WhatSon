@@ -18,7 +18,8 @@
 - Each line-number delegate calls `lineMetricProvider(index)` and uses the returned editor line `y` and `height`.
   `fallbackLineHeight` is used only when the editor surface has not exposed a measurable peer line yet.
 - The delegate whose index matches `currentLineIndex` draws a blue rounded pill bar on the right side of the gutter as
-  the current cursor-line indicator.
+  the current cursor-line indicator. `currentLineIndex` is expected to come from the sibling editor's rendered cursor
+  rectangle, not from counting raw newline characters in the RichText HTML source.
 - It does not draw a separator between the gutter and editor.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.
 
@@ -31,6 +32,7 @@
 - 동작: 각 줄 번호는 자신의 index를 sibling `TextEditor.qml` metric provider에 넘겨 대응 editor line의 `y`와
   `height`를 받아 배치한다.
 - 동작: `currentLineIndex`와 일치하는 줄 번호의 우측에는 파란색 알약 모양 막대를 그려 현재 cursor line을
-  표시한다.
+  표시한다. 이 값은 sibling editor의 렌더된 cursor rectangle 기준이어야 하며, RichText HTML 문자열의 줄바꿈
+  문자 개수에 의존하지 않는다.
 - 동작: 거터 우측과 에디터 좌측 사이의 분리선은 그리지 않는다.
 - 금지: source snapshot, projection, rendering pipeline, persistence, editor backend wiring을 추가하지 않는다.

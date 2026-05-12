@@ -66,6 +66,25 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorHtmlBreaksAsCa
         QStringLiteral("First line\nSecond line"));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorFormattingTagsFromRichText()
+{
+    const QString editorHtml = QStringLiteral(
+        "Alpha <strong style=\"font-weight:900;\">Beta</strong> "
+        "<span style=\"font-style:italic;\">Gamma</span> "
+        "<span style=\"text-decoration: underline;\">Delta</span> "
+        "<span style=\"text-decoration: line-through;\">Epsilon</span> "
+        "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">Zeta</span>"
+        "<br/>Tail");
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("note"),
+            editorHtml),
+        QStringLiteral(
+            "Alpha <bold>Beta</bold> <italic>Gamma</italic> <underline>Delta</underline> "
+            "<strikethrough>Epsilon</strikethrough> <highlight>Zeta</highlight>\nTail"));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()
 {
     const QString crossedInlineSource = QStringLiteral("<bold>첫 줄\n둘째 줄</bold>");

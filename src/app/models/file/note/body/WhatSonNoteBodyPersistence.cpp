@@ -6,11 +6,17 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
+#include <QBrush>
+#include <QColor>
 #include <QDir>
 #include <QFileInfo>
+#include <QFont>
 #include <QRegularExpression>
 #include <QSet>
+#include <QTextBlock>
+#include <QTextCharFormat>
 #include <QTextDocument>
+#include <QTextFragment>
 
 #include <utility>
 
@@ -678,6 +684,94 @@ namespace
             || folded.contains(QStringLiteral("<a "))
             || folded.contains(QStringLiteral("<hr"));
     }
+
+    QStringList sourceInlineTagsForEditorFormat(const QTextCharFormat& format)
+    {
+        QStringList tags;
+        if (format.fontWeight() >= QFont::Black)
+        {
+            tags.push_back(QStringLiteral("bold"));
+        }
+        if (format.fontItalic())
+        {
+            tags.push_back(QStringLiteral("italic"));
+        }
+        if (format.fontUnderline())
+        {
+            tags.push_back(QStringLiteral("underline"));
+        }
+        if (format.fontStrikeOut())
+        {
+            tags.push_back(QStringLiteral("strikethrough"));
+        }
+
+        const QBrush background = format.background();
+        if (background.style() != Qt::NoBrush
+            && background.color().name(QColor::HexRgb).compare(QStringLiteral("#8a4b00"), Qt::CaseInsensitive) == 0)
+        {
+            tags.push_back(QStringLiteral("highlight"));
+        }
+        return tags;
+    }
+
+    QString wrapSourceTextWithInlineTags(const QString& text, const QStringList& tags)
+    {
+        if (text.isEmpty() || tags.isEmpty())
+        {
+            return text;
+        }
+
+        QString wrapped;
+        for (const QString& tag : tags)
+        {
+            wrapped += QLatin1Char('<') + tag + QLatin1Char('>');
+        }
+        wrapped += text;
+        for (auto tagIt = tags.crbegin(); tagIt != tags.crend(); ++tagIt)
+        {
+            wrapped += QStringLiteral("</") + *tagIt + QLatin1Char('>');
+        }
+        return wrapped;
+    }
+
+    QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
+    {
+        QTextDocument document;
+        document.setHtml(editorDocumentText);
+
+        QStringList sourceLines;
+        for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
+        {
+            QString sourceLine;
+
+            for (QTextBlock::iterator fragmentIt = block.begin(); !fragmentIt.atEnd(); ++fragmentIt)
+            {
+                const QTextFragment fragment = fragmentIt.fragment();
+                if (!fragment.isValid())
+                {
+                    continue;
+                }
+
+                const QString fragmentText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text());
+                if (fragmentText.isEmpty())
+                {
+                    continue;
+                }
+
+                sourceLine += wrapSourceTextWithInlineTags(
+                    fragmentText,
+                    sourceInlineTagsForEditorFormat(fragment.charFormat()));
+            }
+
+            sourceLines.push_back(sourceLine);
+        }
+
+        if (sourceLines.isEmpty())
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.toPlainText());
+        }
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceLines.join(QLatin1Char('\n')));
+    }
 }
 
 namespace WhatSon::NoteBodyPersistence
@@ -799,9 +893,7 @@ namespace WhatSon::NoteBodyPersistence
             return normalizedEditorText;
         }
 
-        QTextDocument document;
-        document.setHtml(normalizedEditorText);
-        return normalizeBodyPlainText(document.toPlainText());
+        return sourceTextFromRichEditorDocument(normalizedEditorText);
     }
 
     QString firstLineFromBodyDocument(const QString& bodyDocumentText)

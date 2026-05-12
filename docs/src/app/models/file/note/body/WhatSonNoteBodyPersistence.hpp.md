@@ -37,7 +37,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   LVRS `TextEditor`; logical source newlines become explicit `<br/>` boundaries so the editor surface cannot collapse
   authored note lines into one rendered paragraph.
 - `sourceTextFromEditorDocument(...)` converts synced LVRS rich-text/HTML document text back into canonical source
-  before `.wsnbody` persistence. Plain RAW source input is passed through with normalized line endings.
+  before `.wsnbody` persistence. Command-generated editor formatting spans recover to canonical inline source tags such
+  as `<bold>`, `<italic>`, and `<highlight>`. Plain RAW source input is passed through with normalized line endings.
 - Standalone `resource` and `break` editor source lines persist as direct `.wsnbody` body-format children. They must
   not be rewrapped as escaped paragraph text once they are recognized as body blocks. Agenda/task and callout source
   lines are paragraph RAW text.

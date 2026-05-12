@@ -119,6 +119,28 @@ Item {
 
         contentViewLayout.pasteClipboardImageIntoEditor();
     }
+    function applyEditorFormatTag(tagName) {
+        if (!contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.noteEditorSession.insertFormatTagIntoSource === undefined)
+            return false;
+
+        const formatResult = contentViewLayout.noteEditorSession.insertFormatTagIntoSource(
+                    tagName,
+                    contentsTextEditor.editorDocumentText,
+                    contentsTextEditor.editorSelectionStart,
+                    contentsTextEditor.editorSelectionLength);
+        if (!formatResult || !Boolean(formatResult.valid))
+            return false;
+
+        const editorDocumentText = formatResult.editorDocumentText !== undefined
+                && formatResult.editorDocumentText !== null
+                ? String(formatResult.editorDocumentText)
+                : String(formatResult.bodySourceText);
+        return contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText,
+                    Number(formatResult.cursorPosition) || 0);
+    }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -187,6 +209,87 @@ Item {
             sequence: StandardKey.Paste
 
             onActivated: contentViewLayout.handleEditorPasteShortcut()
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: StandardKey.Bold
+
+            onActivated: contentViewLayout.applyEditorFormatTag("bold")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: StandardKey.Italic
+
+            onActivated: contentViewLayout.applyEditorFormatTag("italic")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: StandardKey.Underline
+
+            onActivated: contentViewLayout.applyEditorFormatTag("underline")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Ctrl+Shift+X"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("strikethrough")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Meta+Shift+X"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("strikethrough")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Ctrl+Shift+E"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("highlight")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Meta+Shift+E"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("highlight")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Ctrl+Shift+B"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("break")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            sequence: "Meta+Shift+B"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("break")
         }
     }
 }

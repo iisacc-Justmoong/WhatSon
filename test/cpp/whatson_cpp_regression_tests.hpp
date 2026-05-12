@@ -1193,10 +1193,12 @@ private slots:
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
+    void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
+    void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
@@ -1226,6 +1228,7 @@ private slots:
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
+    void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();

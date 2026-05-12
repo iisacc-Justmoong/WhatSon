@@ -1,5 +1,6 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
+#include "app/models/editor/SetTag.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
@@ -56,6 +57,18 @@ namespace
     int clampedPosition(const int position, const int textSize)
     {
         return std::clamp(position, 0, textSize);
+    }
+
+    int editorCursorPositionForSourcePosition(
+        const QString& noteId,
+        const QString& bodySourceText,
+        const int sourceCursorPosition)
+    {
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        const int boundedSourcePosition = clampedPosition(sourceCursorPosition, normalizedSourceText.size());
+        const QString sourcePrefix = normalizedSourceText.left(boundedSourcePosition);
+        return WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(
+            WhatSon::NoteBodyPersistence::serializeBodyDocument(noteId, sourcePrefix)).size();
     }
 
     QVariantMap invalidImportedResourcesInsertionResult(
@@ -367,6 +380,50 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     result.insert(QStringLiteral("insertedText"), insertedText);
     result.insert(QStringLiteral("insertedCount"), resourceTags.size());
     result.insert(QStringLiteral("errorMessage"), QString());
+    return result;
+}
+
+QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
+    const QString& tagName,
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        noteId,
+        editorDocumentText);
+
+    SetTag tagInput;
+    QVariantMap result = tagInput.insertNamedTagIntoSource(
+        tagName,
+        sourceText,
+        cursorPosition,
+        selectionLength);
+
+    const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        resultSourceText);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        setLastError(result.value(QStringLiteral("errorMessage")).toString());
+        return result;
+    }
+
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        editorCursorPositionForSourcePosition(
+            noteId,
+            resultSourceText,
+            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+    setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    setLastError(QString());
     return result;
 }
 

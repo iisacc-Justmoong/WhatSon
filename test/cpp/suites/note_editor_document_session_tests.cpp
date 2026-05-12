@@ -116,6 +116,68 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhen
     QCOMPARE(loadedSpy.count(), 1);
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("format-note"),
+        QStringLiteral("Alpha Beta\nGamma"));
+
+    const auto verifyInlineInsertion =
+        [&session, &editorHtml](const QString& tagName, const QString& expectedSource, const QString& expectedHtml)
+    {
+        const QVariantMap result = session.insertFormatTagIntoSource(
+            tagName,
+            editorHtml,
+            6,
+            4);
+
+        QVERIFY(result.value(QStringLiteral("valid")).toBool());
+        QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+        QCOMPARE(result.value(QStringLiteral("bodySourceText")).toString(), expectedSource);
+        QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(expectedHtml));
+        QCOMPARE(
+            result.value(QStringLiteral("sourceCursorPosition")).toInt(),
+            expectedSource.left(expectedSource.indexOf(QLatin1Char('\n'))).size());
+        QCOMPARE(
+            result.value(QStringLiteral("cursorPosition")).toInt(),
+            QStringLiteral("Alpha Beta").size());
+    };
+
+    verifyInlineInsertion(
+        QStringLiteral("bold"),
+        QStringLiteral("Alpha <bold>Beta</bold>\nGamma"),
+        QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>"));
+    verifyInlineInsertion(
+        QStringLiteral("italic"),
+        QStringLiteral("Alpha <italic>Beta</italic>\nGamma"),
+        QStringLiteral("<span style=\"font-style:italic;\">Beta</span>"));
+    verifyInlineInsertion(
+        QStringLiteral("underline"),
+        QStringLiteral("Alpha <underline>Beta</underline>\nGamma"),
+        QStringLiteral("<span style=\"text-decoration: underline;\">Beta</span>"));
+    verifyInlineInsertion(
+        QStringLiteral("strikethrough"),
+        QStringLiteral("Alpha <strikethrough>Beta</strikethrough>\nGamma"),
+        QStringLiteral("<span style=\"text-decoration: line-through;\">Beta</span>"));
+    verifyInlineInsertion(
+        QStringLiteral("highlight"),
+        QStringLiteral("Alpha <highlight>Beta</highlight>\nGamma"),
+        QStringLiteral("<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">Beta</span>"));
+
+    const QVariantMap breakResult = session.insertFormatTagIntoSource(
+        QStringLiteral("break"),
+        editorHtml,
+        5,
+        0);
+
+    QVERIFY(breakResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        breakResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha\n</break>\n Beta\nGamma"));
+    QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
 {
     NoteEditorDocumentSession session;

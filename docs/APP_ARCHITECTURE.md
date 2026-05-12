@@ -26,6 +26,10 @@ parsed RAW source session file that is serialized back into `.wsnbody` by C++.
 Persisted tag insertion is not a QML parsing concern. `TagInsertionWriter` lives in `src/app/models/editor`,
 delegates tag-source mutation to `SetTag`, and writes the result back through `WhatSonLocalNoteFileStore`.
 
+Live editor formatting uses the active `NoteEditorDocumentSession`. `ContentViewLayout.qml` may dispatch focused
+format shortcuts, but `SetTag` still owns the static tag templates and the session still owns source-to-editor-HTML
+projection before the LVRS `TextEditor` surface is updated.
+
 ## View Behavior Ownership
 QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient
 visual state, focus presentation, and short callback/signal coalescing used to keep an LVRS surface from double-firing.

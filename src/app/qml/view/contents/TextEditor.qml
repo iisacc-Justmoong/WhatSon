@@ -12,6 +12,8 @@ LV.TextEditor {
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.5
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
+    readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
+    readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
@@ -51,9 +53,7 @@ LV.TextEditor {
                 ? Math.max(1, documentText.split("\n").length)
                 : 0;
     }
-    readonly property int editorCursorLineIndex: textEditor.cursorLineIndexFor(
-            textEditor.editorDocumentText,
-            textEditor.cursorPosition)
+    readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForVisualCursor()
     readonly property real editorVisualLineHeight: {
         const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
         if (editorSurface
@@ -72,6 +72,28 @@ LV.TextEditor {
         return Number.isFinite(numericValue) ? numericValue : fallbackValue;
     }
 
+    function normalizedSelectionStart() {
+        if (textEditor.selectionStart !== undefined)
+            return Math.max(0, Math.floor(Number(textEditor.selectionStart) || 0));
+        if (textEditor.selectedText !== undefined) {
+            const selectedLength = String(textEditor.selectedText).length;
+            if (selectedLength > 0)
+                return Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0) - selectedLength);
+        }
+        return Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0));
+    }
+
+    function normalizedSelectionEnd() {
+        if (textEditor.selectionEnd !== undefined)
+            return Math.max(textEditor.normalizedSelectionStart(), Math.floor(Number(textEditor.selectionEnd) || 0));
+        if (textEditor.selectedText !== undefined) {
+            const selectedLength = String(textEditor.selectedText).length;
+            if (selectedLength > 0)
+                return textEditor.normalizedSelectionStart() + selectedLength;
+        }
+        return textEditor.normalizedSelectionStart();
+    }
+
     function bumpEditorLineMetricsRevision() {
         textEditor.editorLineMetricsRevision = (textEditor.editorLineMetricsRevision + 1) % 1000000;
     }
@@ -86,6 +108,40 @@ LV.TextEditor {
                         normalizedText.length,
                         Math.floor(Number(cursorPosition) || 0)));
         return normalizedText.slice(0, safeCursorPosition).split("\n").length - 1;
+    }
+
+    function cursorLineIndexForVisualCursor() {
+        textEditor.cursorPosition;
+        textEditor.editorLineMetricsRevision;
+        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        if (editorSurface
+                && editorSurface.cursorRectangle !== undefined) {
+            const fallbackHeight = Math.max(1, Number(textEditor.editorVisualLineHeight) || 1);
+            const renderedLineCount = Math.max(1, textEditor.editorRenderedLineCount);
+            const metrics = textEditor.buildEditorVisualLineMetrics(renderedLineCount, fallbackHeight);
+            const cursorY = Math.max(
+                        0,
+                        textEditor.numberOrFallback(editorSurface.y, 0)
+                        + textEditor.numberOrFallback(editorSurface.cursorRectangle.y, 0));
+
+            for (let metricIndex = 0; metricIndex < metrics.length; ++metricIndex) {
+                const metric = metrics[metricIndex];
+                const top = Math.max(0, textEditor.numberOrFallback(metric.y, metricIndex * fallbackHeight));
+                const height = Math.max(1, textEditor.numberOrFallback(metric.height, fallbackHeight));
+                const bottom = top + height;
+                if (cursorY >= top && cursorY < bottom)
+                    return metricIndex;
+            }
+
+            if (metrics.length > 0)
+                return cursorY < Math.max(0, textEditor.numberOrFallback(metrics[0].y, 0))
+                        ? 0
+                        : metrics.length - 1;
+        }
+
+        return textEditor.cursorLineIndexFor(
+                    textEditor.editorDocumentText,
+                    textEditor.cursorPosition);
     }
 
     function buildEditorVisualLineMetrics(requiredCount, fallbackHeight) {

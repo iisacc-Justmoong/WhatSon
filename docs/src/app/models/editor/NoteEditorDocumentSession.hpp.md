@@ -16,6 +16,9 @@ Declares the active note editor document session object.
 - Provides `persistEditorFile(path)` for the LVRS `syncFinished` hook.
 - Provides `insertImportedResourcesIntoSource(...)`, which converts imported resource metadata into canonical
   standalone RAW `<resource ... />` source insertion results plus an editor HTML projection for clipboard/drop flows.
+- Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
+  `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and an editor HTML projection for the
+  live LVRS surface.
 
 ## Guardrails
 
@@ -23,6 +26,8 @@ Declares the active note editor document session object.
 - LVRS `TextEditor` is a rich-text surface, so loaded source must be projected to editor HTML with explicit line breaks
   before it reaches `filePath`.
 - `.wsnbody` parsing and serialization stay in C++ note/editor model code, not QML.
+- Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name and current
+  cursor/selection metadata into this session boundary.
 
 ## 한국어
 
@@ -33,3 +38,5 @@ Declares the active note editor document session object.
 - LVRS가 session file 저장을 끝내면 `persistEditorFile(...)`이 다시 `.wsnbody` 저장 경로로 넘긴다.
 - clipboard/drop resource metadata를 노트 source에 넣을 때는 `insertImportedResourcesIntoSource(...)`가
   canonical `<resource ... />` 삽입 결과와 editor HTML projection을 함께 계산한다.
+- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는 `insertFormatTagIntoSource(...)`가 `SetTag`를 통해
+  RAW source와 editor HTML projection을 함께 계산한다.
