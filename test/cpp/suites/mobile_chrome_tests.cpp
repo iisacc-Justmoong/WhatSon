@@ -1,33 +1,8 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/content/mobile/MobileEventSurfaceController.hpp"
 #include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
 #include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
 #include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
-
-#include <initializer_list>
-
-namespace
-{
-    QVariantMap mobileSurfacePoint(const int id, const double x, const double y)
-    {
-        QVariantMap point;
-        point.insert(QStringLiteral("id"), id);
-        point.insert(QStringLiteral("x"), x);
-        point.insert(QStringLiteral("y"), y);
-        return point;
-    }
-
-    QVariantList mobileSurfacePoints(std::initializer_list<QVariantMap> points)
-    {
-        QVariantList result;
-        for (const QVariantMap& point : points)
-        {
-            result.push_back(point);
-        }
-        return result;
-    }
-} // namespace
 
 void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewModeCombo()
 {
@@ -36,8 +11,6 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
         QStringLiteral("src/app/qml/view/mobile/pages/MobileHierarchyPage.qml"));
     const QString mobileScaffoldSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/mobile/MobilePageScaffold.qml"));
-    const QString mobileEventSurfaceSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/mobile/MobileEventSurface.qml"));
     const QString navigationBarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/NavigationBarLayout.qml"));
     const QString statusBarSource = readUtf8SourceFile(
@@ -48,10 +21,12 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(!mobileHierarchyPageSource.isEmpty());
     QVERIFY(!mobileScaffoldSource.isEmpty());
-    QVERIFY(!mobileEventSurfaceSource.isEmpty());
     QVERIFY(!navigationBarSource.isEmpty());
     QVERIFY(!statusBarSource.isEmpty());
     QVERIFY(!internalRegistrarSource.isEmpty());
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/qml/view/mobile/MobileEventSurface.qml")).exists());
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/models/content/mobile/MobileEventSurfaceController.cpp")).exists());
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/models/content/mobile/MobileEventSurfaceController.hpp")).exists());
 
     QVERIFY(mainQmlSource.contains(QStringLiteral("desktopMainLayoutComponent")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("mobileMainLayoutComponent")));
@@ -102,27 +77,7 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
         QStringLiteral("compactSurfaceColor: mobilePageScaffold.controlSurfaceColor")));
     QVERIFY(mobileScaffoldSource.contains(
         QStringLiteral("compactFieldColor: mobilePageScaffold.controlSurfaceColor")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("import QtQuick")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("Item {")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("property color canvasColor: LV.Theme.panelBackground01")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("property bool eventSurfaceEnabled: false")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("property bool runtimeHitTransparent: true")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("enabled: false")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("visible: false")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("MobileEventSurfaceController {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("LV.EventListener {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("MultiPointTouchArea {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("MouseArea {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("TapHandler {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("DragHandler {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("PinchHandler {")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("onPressed:")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("onUpdated:")));
-    QVERIFY(!mobileEventSurfaceSource.contains(QStringLiteral("onReleased:")));
-    QVERIFY(mobileEventSurfaceSource.contains(QStringLiteral("objectName: \"mobileEventSurface\"")));
-    QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileEventSurfaceController")));
+    QVERIFY(!internalRegistrarSource.contains(QStringLiteral("MobileEventSurfaceController")));
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyRouteStateStore")));
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyNavigationCoordinator")));
     QVERIFY(internalRegistrarSource.contains(QStringLiteral("MobileHierarchyBackSwipeCoordinator")));
@@ -136,58 +91,6 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
         QStringLiteral("property color compactSurfaceColor: LV.Theme.panelBackground10")));
     QVERIFY(statusBarSource.contains(
         QStringLiteral("property color compactFieldColor: LV.Theme.panelBackground10")));
-}
-
-void WhatSonCppRegressionTests::mobileEventSurfaceController_classifiesTapScrollAndGestures()
-{
-    MobileEventSurfaceController controller;
-    QSignalSpy touchSpy(&controller, &MobileEventSurfaceController::touchRecognized);
-    QSignalSpy scrollSpy(&controller, &MobileEventSurfaceController::scrollRecognized);
-    QSignalSpy gestureSpy(&controller, &MobileEventSurfaceController::gestureRecognized);
-
-    const int tapSessionId = controller.nextSessionId();
-    const QVariantMap tapBegin = controller.beginTouchSequence(
-        tapSessionId,
-        mobileSurfacePoints({mobileSurfacePoint(0, 20.0, 40.0)}));
-    QCOMPARE(tapBegin.value(QStringLiteral("kind")).toString(), QStringLiteral("pending"));
-
-    const QVariantMap tapEnd = controller.endTouchSequence(
-        tapSessionId,
-        mobileSurfacePoints({mobileSurfacePoint(0, 21.0, 41.0)}),
-        false);
-    QCOMPARE(tapEnd.value(QStringLiteral("kind")).toString(), QStringLiteral("touch"));
-    QCOMPARE(tapEnd.value(QStringLiteral("direction")).toString(), QStringLiteral("none"));
-    QCOMPARE(tapEnd.value(QStringLiteral("fingerCount")).toInt(), 1);
-    QCOMPARE(touchSpy.count(), 1);
-
-    const int scrollSessionId = controller.nextSessionId();
-    controller.beginTouchSequence(
-        scrollSessionId,
-        mobileSurfacePoints({mobileSurfacePoint(0, 100.0, 100.0)}));
-    const QVariantMap scrollUpdate = controller.updateTouchSequence(
-        scrollSessionId,
-        mobileSurfacePoints({mobileSurfacePoint(0, 100.0, 146.0)}));
-    QCOMPARE(scrollUpdate.value(QStringLiteral("kind")).toString(), QStringLiteral("scroll"));
-    QCOMPARE(scrollUpdate.value(QStringLiteral("direction")).toString(), QStringLiteral("down"));
-    QCOMPARE(scrollUpdate.value(QStringLiteral("fingerCount")).toInt(), 1);
-    QCOMPARE(scrollSpy.count(), 1);
-
-    const int gestureSessionId = controller.nextSessionId();
-    controller.beginTouchSequence(
-        gestureSessionId,
-        mobileSurfacePoints({
-            mobileSurfacePoint(0, 20.0, 20.0),
-            mobileSurfacePoint(1, 60.0, 20.0)}));
-    const QVariantMap gestureUpdate = controller.updateTouchSequence(
-        gestureSessionId,
-        mobileSurfacePoints({
-            mobileSurfacePoint(0, 58.0, 22.0),
-            mobileSurfacePoint(1, 98.0, 22.0)}));
-    QCOMPARE(gestureUpdate.value(QStringLiteral("kind")).toString(), QStringLiteral("gesture"));
-    QCOMPARE(gestureUpdate.value(QStringLiteral("direction")).toString(), QStringLiteral("right"));
-    QCOMPARE(gestureUpdate.value(QStringLiteral("fingerCount")).toInt(), 2);
-    QCOMPARE(gestureSpy.count(), 1);
-    QCOMPARE(controller.activeEventKind(), QStringLiteral("gesture"));
 }
 
 void WhatSonCppRegressionTests::mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState()

@@ -1275,7 +1275,6 @@ private slots:
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();
     void qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative();
-    void mobileEventSurfaceController_classifiesTapScrollAndGestures();
     void resourceDetailPanelController_tracksCurrentResourceSelection();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
