@@ -37,7 +37,7 @@
 ## Build Shards
 - `src/app/cmake/resources/CMakeLists.txt`: app icon resources, onboarding illustration resources, Apple bundle icon staging, Android package resource mirroring, and Windows icon RC generation.
 - `src/app/cmake/defaults/CMakeLists.txt`: LVRS project-default wiring and Apple plist / entitlements forwarding.
-- `src/app/cmake/runtime/CMakeLists.txt`: target link libraries, output properties, Apple framework links, LVRS runtime import overlays, and the final `lvrs_configure_qml_app(WhatSon)` call.
+- `src/app/cmake/runtime/CMakeLists.txt`: target link libraries, output properties, Apple framework links, iOS local dynamic-library embedding, LVRS runtime import overlays, and the final `lvrs_configure_qml_app(WhatSon)` call.
 
 ## Helper Surface
 - `whatson_app_register_sources(...)`: validates file existence before attaching sources to `WhatSon`.
@@ -72,6 +72,9 @@
 - iOS app builds require iOS package prefixes for those local libraries. The root export path passes
   `WHATSON_IIXML_IOS_PREFIX`/`WHATSON_IIHTMLBLOCK_IOS_PREFIX` and direct package dirs into the generated Xcode
   configure when available, preventing a host macOS dylib package from being mistaken for an iphoneos dependency.
+- iOS keeps those two local packages as dynamic libraries. The app runtime shard sets bundle-local runpaths and uses
+  Xcode's `Embed Frameworks` phase with code-sign-on-copy so `libiiXml.dylib` and `libiiHtmlBlock.dylib` are copied into
+  `WhatSon.app/Frameworks` instead of relying on absolute `~/.local/.../platforms/ios/lib` paths at device runtime.
 - iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so the app now carries an explicit static QML plugin closure instead of relying on top-level imports alone.
 - That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
 - This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported

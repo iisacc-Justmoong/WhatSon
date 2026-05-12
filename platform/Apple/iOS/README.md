@@ -31,6 +31,10 @@ This directory contains iOS platform-specific bundle configuration.
   `CMAKE_XCODE_ATTRIBUTE_*` signing metadata for the generated project. The default SDK is now `iphoneos`, because the
   current static Qt iOS kit is reliable on device export first; simulator export remains opt-in through
   `WHATSON_IOS_SDK=iphonesimulator`.
+- `src/app/cmake/runtime/CMakeLists.txt` keeps `iiXml` and `iiHtmlBlock` as dynamic iOS libraries. It sets
+  `@executable_path/Frameworks` / `@loader_path/Frameworks` runpaths and asks the Xcode generator to embed
+  `libiiXml.dylib` and `libiiHtmlBlock.dylib` with code-sign-on-copy. The device app therefore resolves those libraries
+  from `WhatSon.app/Frameworks` instead of the developer machine's `~/.local/.../platforms/ios/lib` prefixes.
 - `Info.plist` keeps `UIRequiresFullScreen` enabled because the current iOS target only declares portrait /
   landscape-left / landscape-right orientations.
 - When no startup `.wshub` is available on iOS, app bootstrap still loads `Main.qml` first and keeps onboarding inside
@@ -112,5 +116,6 @@ This directory contains iOS platform-specific bundle configuration.
 - 대상: `iOS` (`platform/Apple/iOS/README.md`)
 - 위치: `platform/Apple/iOS`
 - 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
+- 동적 라이브러리: iOS 기기 빌드는 `iiXml`과 `iiHtmlBlock`을 `WhatSon.app/Frameworks`에 embed하고 복사 시 코드서명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

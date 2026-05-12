@@ -87,6 +87,35 @@ void WhatSonCppRegressionTests::iosXcodeprojExport_routesSimulatorPermissionFall
         QStringLiteral("#if QT_CONFIG(permissions) && !defined(WHATSON_DISABLE_QT_PERMISSION_REQUESTS)")));
 }
 
+void WhatSonCppRegressionTests::iosXcodeprojExport_embedsLocalDynamicLibrariesIntoIosBundle()
+{
+    const QString appRuntimeCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/cmake/runtime/CMakeLists.txt"));
+
+    QVERIFY(!appRuntimeCmakeSource.isEmpty());
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("set(_whatson_ios_local_dynamic_libraries")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("foreach (_whatson_ios_local_dynamic_library_target IN ITEMS iiXml::iiXml iiHtmlBlock::iiHtmlBlock)")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("IMPORTED_LOCATION_RELEASE")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("IMPORTED_LOCATION_NOCONFIG")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("list(APPEND _whatson_ios_local_dynamic_libraries")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("BUILD_WITH_INSTALL_RPATH TRUE")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("BUILD_RPATH \"@executable_path/Frameworks;@loader_path/Frameworks\"")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("INSTALL_RPATH \"@executable_path/Frameworks;@loader_path/Frameworks\"")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS \"@executable_path/Frameworks @loader_path/Frameworks\"")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("XCODE_EMBED_FRAMEWORKS \"${_whatson_ios_local_dynamic_libraries}\"")));
+    QVERIFY(appRuntimeCmakeSource.contains(
+        QStringLiteral("XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE")));
+}
+
 void WhatSonCppRegressionTests::iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists()
 {
     const QString pythonExecutable = QStandardPaths::findExecutable(QStringLiteral("python3"));

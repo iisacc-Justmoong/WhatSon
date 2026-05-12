@@ -1213,6 +1213,7 @@ private slots:
     void appleBundleIconPackaging_usesMacosAppBundleIconResourceContract();
     void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
     void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
+    void iosXcodeprojExport_embedsLocalDynamicLibrariesIntoIosBundle();
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();

@@ -59,6 +59,43 @@ target_link_libraries(WhatSon
         iiHtmlBlock::iiHtmlBlock
 )
 
+if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(_whatson_ios_local_dynamic_libraries)
+    foreach (_whatson_ios_local_dynamic_library_target IN ITEMS iiXml::iiXml iiHtmlBlock::iiHtmlBlock)
+        set(_whatson_ios_local_dynamic_library "")
+        foreach (_whatson_ios_local_dynamic_library_location_property IN ITEMS
+                IMPORTED_LOCATION
+                IMPORTED_LOCATION_RELEASE
+                IMPORTED_LOCATION_RELWITHDEBINFO
+                IMPORTED_LOCATION_DEBUG
+                IMPORTED_LOCATION_NOCONFIG)
+            if (_whatson_ios_local_dynamic_library)
+                break()
+            endif ()
+
+            get_target_property(_whatson_ios_local_dynamic_library
+                    "${_whatson_ios_local_dynamic_library_target}"
+                    "${_whatson_ios_local_dynamic_library_location_property}")
+        endforeach ()
+
+        if (NOT _whatson_ios_local_dynamic_library)
+            message(FATAL_ERROR
+                    "WhatSon iOS dynamic library embedding requires an IMPORTED_LOCATION for "
+                    "${_whatson_ios_local_dynamic_library_target}.")
+        endif ()
+
+        list(APPEND _whatson_ios_local_dynamic_libraries "${_whatson_ios_local_dynamic_library}")
+    endforeach ()
+
+    set_target_properties(WhatSon PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            BUILD_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
+            INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
+            XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks @loader_path/Frameworks"
+            XCODE_EMBED_FRAMEWORKS "${_whatson_ios_local_dynamic_libraries}"
+            XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE)
+endif ()
+
 if (UNIX AND NOT APPLE)
     set_target_properties(WhatSon PROPERTIES
             INSTALL_RPATH "$ORIGIN/../lib")
