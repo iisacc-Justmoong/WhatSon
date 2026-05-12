@@ -21,6 +21,13 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
 - The row-readiness guard also checks the visual `HierarchyItem` identity against the selected model row's stable key.
   This prevents a newly inserted blank folder row from hiding its label while the input field is still positioned over a
   stale system-bucket row.
+- The post-create path keeps selection activation separate from focus. `syncSelectedHierarchyItem(...)` may still align
+  the active LVRS row, but inline rename focus is scheduled through `scheduleHierarchyRenameFieldFocus(...)` and applied
+  directly to the `LV.InputField`. The repeated deferred passes absorb hierarchy row regeneration after creation without
+  sending active focus back to the sidebar root.
+- New-folder rename uses `beginRenameHierarchyItemKeyWhenVisible(...)` when a stable inserted key is available. The key
+  is derived from the before/after hierarchy model diff in the host view, so a stale or briefly reset
+  `hierarchySelectedIndex` cannot place the editor over a system bucket while the newly inserted folder row is elsewhere.
 
 ## Commit / Cancel Rules
 

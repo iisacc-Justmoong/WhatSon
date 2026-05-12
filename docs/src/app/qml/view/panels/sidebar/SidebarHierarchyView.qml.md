@@ -85,6 +85,14 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Folder creation now immediately re-syncs the primary hierarchy selection back from the controller, promotes the created
   row to the active LVRS item, and starts inline rename when the active domain supports renaming. This keeps newly
   created hierarchy items ready for direct user editing instead of leaving focus parked on the parent row.
+- While inline rename is active, selection resynchronization must not force focus back to the sidebar root. The rename
+  controller reapplies focus to the LVRS input field across a few deferred QML turns so a newly created folder can be
+  typed into immediately even if the hierarchy row is regenerated after creation.
+- Post-create inline rename must resolve the inserted row from the model diff, not from the transient selected index.
+  The view captures the hierarchy model before `createFolder()`, refreshes the displayed model after the mutation, finds
+  the newly inserted stable row key, and lets the rename controller retry by that key until the row geometry is ready.
+  This prevents the input overlay from being anchored to protected buckets such as `All Library` while the actual blank
+  folder row is inserted lower in the tree.
 
 ## Multi Selection Contract
 

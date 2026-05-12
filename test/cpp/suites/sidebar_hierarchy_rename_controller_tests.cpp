@@ -65,23 +65,39 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBef
 
     const qsizetype createFunctionIndex = sidebarSource.indexOf(QStringLiteral("function requestCreateFolder(targetIndex, reason)"));
     QVERIFY(createFunctionIndex >= 0);
+    const qsizetype baselineCaptureIndex = sidebarSource.indexOf(
+        QStringLiteral("const createBaselineModel = renameController.normalizeHierarchyModel(sidebarHierarchyView.hierarchyController.hierarchyNodes);"),
+        createFunctionIndex);
     const qsizetype createCallIndex = sidebarSource.indexOf(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.createFolder();"), createFunctionIndex);
-    const qsizetype createdIndexCaptureIndex = sidebarSource.indexOf(
-        QStringLiteral("const createdFolderIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);"),
+    const qsizetype createdKeyCaptureIndex = sidebarSource.indexOf(
+        QStringLiteral("const createdFolderKey = sidebarHierarchyView.insertedHierarchyModelItemKey(createBaselineModel, sidebarHierarchyView.standardHierarchyModel);"),
         createCallIndex);
     const qsizetype deferredRenameIndex = sidebarSource.indexOf(
-        QStringLiteral("renameController.beginRenameHierarchyItemWhenVisible(createdFolderIndex, 8);"),
-        createdIndexCaptureIndex);
+        QStringLiteral("renameController.beginRenameHierarchyItemKeyWhenVisible(createdFolderKey, createdFolderIndex, 8);"),
+        createdKeyCaptureIndex);
+    QVERIFY(baselineCaptureIndex > createFunctionIndex);
     QVERIFY(createCallIndex > createFunctionIndex);
-    QVERIFY(createdIndexCaptureIndex > createCallIndex);
-    QVERIFY(deferredRenameIndex > createdIndexCaptureIndex);
+    QVERIFY(createdKeyCaptureIndex > createCallIndex);
+    QVERIFY(deferredRenameIndex > createdKeyCaptureIndex);
+    QVERIFY(!sidebarSource.contains(QStringLiteral("const createdFolderIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function insertedHierarchyModelItemIndex(beforeModel, afterModel, fallbackIndex)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function insertedHierarchyModelItemKey(beforeModel, afterModel)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyModelIndexForKey(itemKey)")));
 
     const qsizetype waitFunctionIndex = sidebarSource.indexOf(QStringLiteral("function beginRenameHierarchyItemWhenVisible(renameIndex, remainingAttempts)"));
     QVERIFY(waitFunctionIndex >= 0);
     const qsizetype readyCheckIndex = sidebarSource.indexOf(QStringLiteral("renameController.renamePresentationReady(normalizedIndex)"), waitFunctionIndex);
     const qsizetype retryIndex = sidebarSource.indexOf(QStringLiteral("Qt.callLater(function () {\n                renameController.beginRenameHierarchyItemWhenVisible(normalizedIndex, nextAttempts);"), readyCheckIndex);
+    const qsizetype waitFunctionEndIndex = sidebarSource.indexOf(QStringLiteral("function focusHierarchyRenameField(renameIndex)"), waitFunctionIndex);
+    QVERIFY(waitFunctionEndIndex > waitFunctionIndex);
+    const QString waitFunctionBlock = sidebarSource.mid(waitFunctionIndex, waitFunctionEndIndex - waitFunctionIndex);
     QVERIFY(readyCheckIndex > waitFunctionIndex);
     QVERIFY(retryIndex > readyCheckIndex);
+    QVERIFY(waitFunctionBlock.contains(QStringLiteral("hostView.syncSelectedHierarchyItem(false);")));
+    QVERIFY(!waitFunctionBlock.contains(QStringLiteral("hostView.syncSelectedHierarchyItem(true);")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function beginRenameHierarchyItemKeyWhenVisible(itemKey, fallbackIndex, remainingAttempts)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("const resolvedIndex = normalizedKey.length > 0 ? hostView.hierarchyModelIndexForKey(normalizedKey) : -1;")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("renameController.beginRenameHierarchyItemKeyWhenVisible(normalizedKey, normalizedIndex, nextAttempts);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyItemMatchesModelIndex(item, index)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("const expectedKey = sidebarHierarchyView.hierarchyModelItemKeyAt(resolvedIndex);")));
     QVERIFY(sidebarSource.contains(QStringLiteral("return sidebarHierarchyView.hierarchyItemKeyForVisualItem(item) === expectedKey;")));
@@ -91,9 +107,24 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBef
     const qsizetype editingAssignmentIndex = sidebarSource.indexOf(QStringLiteral("hostView.editingHierarchyIndex = renameIndex;"), beginFunctionIndex);
     const qsizetype presentationGuardIndex = sidebarSource.indexOf(QStringLiteral("if (!renameController.renamePresentationReady(renameIndex))"), editingAssignmentIndex);
     const qsizetype labelSeedIndex = sidebarSource.indexOf(QStringLiteral("hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();"), presentationGuardIndex);
+    const qsizetype focusScheduleIndex = sidebarSource.indexOf(QStringLiteral("renameController.scheduleHierarchyRenameFieldFocus(renameIndex, 3);"), labelSeedIndex);
     QVERIFY(editingAssignmentIndex > beginFunctionIndex);
     QVERIFY(presentationGuardIndex > editingAssignmentIndex);
     QVERIFY(labelSeedIndex > presentationGuardIndex);
+    QVERIFY(focusScheduleIndex > labelSeedIndex);
+    QVERIFY(sidebarSource.contains(QStringLiteral("function focusHierarchyRenameField(renameIndex)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyRenameField.forceInputFocus();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("hierarchyRenameField.inputItem.forceActiveFocus();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function scheduleHierarchyRenameFieldFocus(renameIndex, remainingPasses)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("renameController.scheduleHierarchyRenameFieldFocus(renameIndex, nextPasses);")));
+
+    const qsizetype syncSelectedFunctionIndex = sidebarSource.indexOf(QStringLiteral("function syncSelectedHierarchyItem(focusView)"));
+    QVERIFY(syncSelectedFunctionIndex >= 0);
+    const qsizetype syncSelectedEndIndex = sidebarSource.indexOf(QStringLiteral("function updateNoteDropPreviewAtPosition"), syncSelectedFunctionIndex);
+    QVERIFY(syncSelectedEndIndex > syncSelectedFunctionIndex);
+    const QString syncSelectedBlock = sidebarSource.mid(syncSelectedFunctionIndex, syncSelectedEndIndex - syncSelectedFunctionIndex);
+    QVERIFY(syncSelectedBlock.contains(QStringLiteral("if (focusView && !sidebarHierarchyView.renameEditingActive)")));
+    QVERIFY(!syncSelectedBlock.contains(QStringLiteral("if (focusView)\n            sidebarHierarchyView.forceActiveFocus();")));
 
     const qsizetype refreshFunctionIndex = sidebarSource.indexOf(QStringLiteral("function refreshEditingHierarchyPresentation(forceSelectionSync)"));
     QVERIFY(refreshFunctionIndex >= 0);
