@@ -23,8 +23,9 @@ routing and workspace chrome, and forwards only the narrow `NoteEditorDocumentSe
 surface. The editor document binding is the editor HTML session file path that reaches `LV.TextEditor.filePath`;
 `.wsnbody` parse/source projection/serialize remains in C++. Focused editor format shortcuts and the selected-text
 right-click format context menu live in `ContentViewLayout.qml` only as command dispatch and call the C++
-`NoteEditorDocumentSession` format API. Gutter cursor indication follows the LVRS editor's rendered cursor rectangle
-and line metrics, not raw newline counting in the RichText HTML document.
+`NoteEditorDocumentSession` format API. Gutter row count follows `NoteEditorDocumentSession.parsedLineCount`; the QML
+`TextEditor` wrapper only provides rendered start positions for those logical source lines so wrapped continuation rows
+remain unnumbered.
 
 ## Why This Directory Is Important
 If a runtime object exists in C++ but behaves incorrectly in the UI, this directory is usually where the mismatch becomes visible first.
@@ -39,7 +40,7 @@ If a runtime object exists in C++ but behaves incorrectly in the UI, this direct
 - 현재 workspace 인터페이스는 기존 shell을 유지하고, content slot은 `ContentViewLayout.qml`을 통해 선택된
   노트의 editor HTML session file을 LVRS TextEditor에 연결한다. 포맷 단축키와 선택 텍스트 우클릭 컨텍스트
   메뉴는 이 layout의 얇은 command dispatch로만 존재하고 실제 source/projection 처리는 C++ 세션에 맡긴다.
-  거터의 현재 줄 표시는 RichText HTML 문자열의 줄바꿈 문자가 아니라 LVRS editor의 렌더 cursor rectangle과
-  line metric을 따른다.
+  거터 row 개수는 `NoteEditorDocumentSession.parsedLineCount`만 따르고, QML `TextEditor` wrapper는 해당
+  logical source line의 렌더 시작 위치만 제공해 wrap continuation row에는 번호를 만들지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

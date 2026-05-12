@@ -37,8 +37,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
   format-tag source insertions for editor command flows, and persists LVRS sync-finished rich-text edits back through the note body
-  persistence path after converting them to canonical source. The visual gutter row count is provided by the QML
-  `TextEditor` wrapper from the LVRS rendered line count.
+  persistence path after converting them to canonical source. The gutter uses the session's parsed source line count as
+  its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
+  not let the LVRS rendered wrap-line count create additional gutter rows.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -65,6 +66,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
-  format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제 row 개수는 QML `TextEditor`
-  wrapper가 LVRS rendered line count에서 제공한다.
+  format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제
+  row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
+  위치만 제공할 수 있다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

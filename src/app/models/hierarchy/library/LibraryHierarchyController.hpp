@@ -94,6 +94,11 @@ public:
     Q_INVOKABLE bool applyHierarchyNodes(
         const QVariantList& hierarchyNodes,
         const QString& activeItemKey = QString()) override;
+    Q_INVOKABLE bool applyHierarchyMove(
+        int sourceIndex,
+        int targetIndex,
+        int targetDepth,
+        const QString& activeItemKey = QString()) override;
     Q_INVOKABLE bool createEmptyNote() override;
     Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId) override;
     Q_INVOKABLE bool deleteNoteById(const QString& noteId) override;

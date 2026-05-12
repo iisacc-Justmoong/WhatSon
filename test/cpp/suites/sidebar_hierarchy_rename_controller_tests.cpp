@@ -48,11 +48,11 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInter
 
     const qsizetype dropKeysIndex = sidebarSource.indexOf(QStringLiteral("keys: [\"whatson.library.note\"]"), noteDropSurfaceIndex);
     const qsizetype emptyPayloadGuardIndex = sidebarSource.indexOf(QStringLiteral("if (noteIds.length <= 0)"), noteDropSurfaceIndex);
-    const qsizetype hierarchyReorderIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"));
+    const qsizetype hierarchyMoveIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)"));
 
     QVERIFY(dropKeysIndex > noteDropSurfaceIndex);
     QVERIFY(emptyPayloadGuardIndex > noteDropSurfaceIndex);
-    QVERIFY(hierarchyReorderIndex >= 0);
+    QVERIFY(hierarchyMoveIndex >= 0);
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface()
@@ -71,7 +71,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNo
     QVERIFY(hierarchyTreeIndex >= 0);
     const qsizetype editableBindingIndex = sidebarSource.indexOf(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable"), hierarchyTreeIndex);
     const qsizetype movedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"), hierarchyTreeIndex);
-    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"), movedHandlerIndex);
+    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)"), movedHandlerIndex);
     QVERIFY(editableBindingIndex > hierarchyTreeIndex);
     QVERIFY(movedHandlerIndex > editableBindingIndex);
     QVERIFY(reorderCallIndex > movedHandlerIndex);

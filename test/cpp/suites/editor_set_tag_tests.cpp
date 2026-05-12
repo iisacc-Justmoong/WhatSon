@@ -113,6 +113,37 @@ void WhatSonCppRegressionTests::editorSetTag_addsHeaderSubheaderAndResourceTempl
         QStringLiteral("Alpha\n<resource />\nBeta"));
 }
 
+void WhatSonCppRegressionTests::editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent()
+{
+    SetTag input;
+
+    const QVariantMap boldResult = input.insertNamedTagIntoSource(
+        QStringLiteral("bold"),
+        QStringLiteral("Alpha <bold>Beta</bold> Gamma"),
+        QStringLiteral("Alpha <bold>").size(),
+        QStringLiteral("Beta").size());
+    QVERIFY(boldResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        boldResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha Beta Gamma"));
+    QCOMPARE(boldResult.value(QStringLiteral("toggledOff")).toBool(), true);
+    QCOMPARE(
+        boldResult.value(QStringLiteral("cursorPosition")).toInt(),
+        QStringLiteral("Alpha Beta").size());
+    QCOMPARE(boldResult.value(QStringLiteral("selectedText")).toString(), QStringLiteral("Beta"));
+
+    const QVariantMap partialResult = input.insertNamedTagIntoSource(
+        QStringLiteral("bold"),
+        QStringLiteral("Alpha <bold>Beta</bold> Gamma"),
+        QStringLiteral("Alpha <bold>B").size(),
+        QStringLiteral("et").size());
+    QVERIFY(partialResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        partialResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <bold>B<bold>et</bold>a</bold> Gamma"));
+    QCOMPARE(partialResult.value(QStringLiteral("toggledOff")).toBool(), false);
+}
+
 void WhatSonCppRegressionTests::editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument()
 {
     SetTag input;

@@ -22,6 +22,11 @@ The incoming model may be either a C++ `QVariantList` or a QML/JS array variant 
 normalizes both forms before calling the controller. The bridge forwards the caller-provided active item key when
 available and otherwise falls back to the currently selected key.
 
+`applyHierarchyMove(...)` is the preferred path for LVRS hierarchy row drags. It forwards the already-computed
+`fromIndex`, `toIndex`, and target `depth` from `onListItemMoved` to the controller instead of replaying the full QML
+model snapshot. This keeps a folder reparent operation as one subtree mutation and avoids stale or duplicated JS model
+state being serialized back into `.wsfolders` / `ProjectLists.wsproj`.
+
 ## Note-Drop Path
 `canAcceptNoteDrop(...)` and `assignNoteToFolder(...)` both:
 - require `IHierarchyNoteDropCapability`

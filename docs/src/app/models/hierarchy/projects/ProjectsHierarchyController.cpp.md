@@ -31,6 +31,9 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   indexes `Library.wslibrary` so the projects domain has its own note-list projection.
 - `renameItem(...)`, `createFolder()`, `deleteSelectedFolder()`, and reorder/move helpers mutate the
   store-backed folder entries and then rebuild the model.
+- `applyHierarchyMove(...)` handles LVRS `listItemMoved` payloads directly. It translates the visible source index,
+  target index, and target depth into one subtree move, then persists the finalized nested project tree without
+  depending on a full `LV.Hierarchy.model` snapshot from QML.
 - `setItemExpanded(...)` and `setAllItemsExpanded(...)` mutate only in-memory expansion state. They do
   not rewrite `Projects.wsproj`, because fold state is a sidebar presentation concern.
 - `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to

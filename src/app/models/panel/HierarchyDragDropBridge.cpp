@@ -6,6 +6,8 @@
 #include <QJSValue>
 #include <QStringList>
 
+#include <algorithm>
+
 namespace
 {
     QStringList normalizedUniqueNoteIds(const QVariantList& noteIds)
@@ -126,6 +128,25 @@ bool HierarchyDragDropBridge::applyHierarchyReorder(
     }
 
     return reorderCapability->applyHierarchyNodes(normalizedNodes, resolvedActiveItemKey(activeItemKey));
+}
+
+bool HierarchyDragDropBridge::applyHierarchyMove(
+    const int sourceIndex,
+    const int targetIndex,
+    const int targetDepth,
+    const QString& activeItemKey)
+{
+    auto* reorderCapability = qobject_cast<IHierarchyReorderCapability*>(m_hierarchyController);
+    if (reorderCapability == nullptr || !m_reorderContractAvailable || sourceIndex < 0 || targetIndex < 0)
+    {
+        return false;
+    }
+
+    return reorderCapability->applyHierarchyMove(
+        sourceIndex,
+        targetIndex,
+        std::max(0, targetDepth),
+        resolvedActiveItemKey(activeItemKey));
 }
 
 bool HierarchyDragDropBridge::canAcceptNoteDrop(int index, const QString& noteId) const

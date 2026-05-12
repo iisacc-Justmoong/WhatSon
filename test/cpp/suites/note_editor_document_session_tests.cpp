@@ -190,6 +190,18 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         QStringLiteral("<bold><italic>Alpha</italic></bold> Beta Gamma"));
     QCOMPARE(nestedFormatResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha").size());
 
+    const QVariantMap toggledFormatResult = session.insertFormatTagIntoSource(
+        QStringLiteral("bold"),
+        formattedEditorHtml,
+        0,
+        5);
+    QVERIFY(toggledFormatResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        toggledFormatResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha Beta Gamma"));
+    QCOMPARE(toggledFormatResult.value(QStringLiteral("toggledOff")).toBool(), true);
+    QCOMPARE(toggledFormatResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha").size());
+
     const QVariantMap breakResult = session.insertFormatTagIntoSource(
         QStringLiteral("break"),
         editorHtml,

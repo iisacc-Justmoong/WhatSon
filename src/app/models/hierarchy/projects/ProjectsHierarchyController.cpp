@@ -766,6 +766,66 @@ namespace
         finalizeProjectItems(&stagedItems);
         return stagedItems;
     }
+
+    bool resolveFolderMoveOperationFromLvrsMoveEvent(
+        const QVector<ProjectsHierarchyItem>& items,
+        int sourceIndex,
+        int targetIndex,
+        int targetDepth,
+        FolderMoveOperation* outOperation = nullptr)
+    {
+        if (!isEditableFolderItem(items, sourceIndex))
+        {
+            return false;
+        }
+
+        const int sourceEndIndex = subtreeEndIndexExclusive(items, sourceIndex);
+        const int sourceCount = sourceEndIndex - sourceIndex;
+        if (sourceCount <= 0)
+        {
+            return false;
+        }
+
+        QVector<ProjectsHierarchyItem> remainingItems = items;
+        remainingItems.remove(sourceIndex, sourceCount);
+
+        const int firstEditableIndex = firstEditableInsertIndex(items);
+        const int maxInsertIndex = std::max(0, static_cast<int>(remainingItems.size()));
+        int normalizedInsertIndex = std::clamp(targetIndex, 0, maxInsertIndex);
+        normalizedInsertIndex = std::max(normalizedInsertIndex, firstEditableIndex);
+
+        int minDepth = normalizedInsertIndex < remainingItems.size()
+            ? std::max(0, remainingItems.at(normalizedInsertIndex).depth)
+            : 0;
+        int maxDepth = normalizedInsertIndex > 0
+            ? std::max(0, remainingItems.at(normalizedInsertIndex - 1).depth + 1)
+            : 0;
+        if (normalizedInsertIndex <= firstEditableIndex
+            || (normalizedInsertIndex > 0 && isProtectedRootItem(remainingItems.at(normalizedInsertIndex - 1))))
+        {
+            minDepth = 0;
+            maxDepth = 0;
+        }
+        if (maxDepth < minDepth)
+        {
+            maxDepth = minDepth;
+        }
+
+        const int newBaseDepth = std::clamp(std::max(0, targetDepth), minDepth, maxDepth);
+        if (normalizedInsertIndex == sourceIndex && newBaseDepth == items.at(sourceIndex).depth)
+        {
+            return false;
+        }
+
+        if (outOperation != nullptr)
+        {
+            outOperation->sourceEndIndex = sourceEndIndex;
+            outOperation->sourceCount = sourceCount;
+            outOperation->normalizedInsertIndex = normalizedInsertIndex;
+            outOperation->newBaseDepth = newBaseDepth;
+        }
+        return true;
+    }
 }
 
 ProjectsHierarchyController::ProjectsHierarchyController(QObject* parent)
@@ -1390,6 +1450,40 @@ bool ProjectsHierarchyController::applyHierarchyNodes(const QVariantList& hierar
     }
 
     finalizeProjectItems(&stagedItems);
+    return commitHierarchyUpdate(std::move(stagedItems), selectedIndex);
+}
+
+bool ProjectsHierarchyController::applyHierarchyMove(
+    const int sourceIndex,
+    const int targetIndex,
+    const int targetDepth,
+    const QString& activeItemKey)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("applyHierarchyMove.begin"),
+                              QStringLiteral("sourceIndex=%1 targetIndex=%2 targetDepth=%3")
+                              .arg(sourceIndex)
+                              .arg(targetIndex)
+                              .arg(targetDepth));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperationFromLvrsMoveEvent(
+        m_items,
+        sourceIndex,
+        targetIndex,
+        targetDepth,
+        &operation))
+    {
+        return false;
+    }
+
+    QVector<ProjectsHierarchyItem> stagedItems = stageFolderMoveItems(m_items, sourceIndex, operation);
+    int selectedIndex = selectedProjectIndexForKey(stagedItems, activeItemKey);
+    if (selectedIndex < 0)
+    {
+        selectedIndex = operation.normalizedInsertIndex;
+    }
     return commitHierarchyUpdate(std::move(stagedItems), selectedIndex);
 }
 

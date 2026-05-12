@@ -11,28 +11,29 @@
 - It exposes only view inputs: `sourceFilePath`, `selectedNoteId`, `selectedNoteDirectoryPath`, `parsedLineCount`,
   `lineCount`, `fallbackLineHeight`, `lineMetricProvider`, `lineMetricsRevision`, `currentLineIndex`, `contentY`,
   colors, and `showLineNumbers`.
-- The caller is responsible for passing the selected editor session file, the parsed source line count, and the
-  rendered editor line count. `lineCount` is the rendered visual count that controls delegate creation; `parsedLineCount`
-  remains available as session metadata but does not drive the rail length.
+- The caller is responsible for passing the selected editor session file and the parsed source line count. `lineCount`
+  controls delegate creation and must come from canonical note/source lines, not wrapped visual rows.
 - Its width reserves space for at least six line-number digits and grows beyond that when `lineCount` needs more digits.
-- Each line-number delegate calls `lineMetricProvider(index)` and uses the returned editor line `y` and `height`.
-  `fallbackLineHeight` is used only when the editor surface has not exposed a measurable peer line yet.
+- Each line-number delegate calls `lineMetricProvider(index)` to place the number at the rendered start of that logical
+  source line. Wrapped continuation rows do not create delegates and therefore remain unnumbered. `fallbackLineHeight`
+  is used only when the editor surface has not exposed a measurable peer line yet.
 - The delegate whose index matches `currentLineIndex` draws a blue rounded pill bar on the right side of the gutter as
-  the current cursor-line indicator. `currentLineIndex` is expected to come from the sibling editor's rendered cursor
-  rectangle, not from counting raw newline characters in the RichText HTML source.
+  the current cursor-line indicator. `currentLineIndex` is expected to be the sibling editor's logical cursor line.
 - It does not draw a separator between the gutter and editor.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.
 
 ## 한국어
 
 - 기준: contents 내부 QML에서 허용되는 세 뷰 중 거터 담당 파일이다.
-- 동작: 선택 노트의 session file 경로, C++ parsed line count, editor rendered line count를 입력으로 받아 line
-  number rail만 표시한다. 실제 생성 개수는 `lineCount`가 담당하고, 이는 sibling editor surface의 렌더 라인 수다.
+- 동작: 선택 노트의 session file 경로와 C++ parsed line count를 입력으로 받아 line number rail만 표시한다.
+  실제 생성 개수는 `lineCount`가 담당하고, 이는 canonical source line 수다.
+  시각적 wrap 행은 별도 line number를 만들지 않는다.
 - 동작: 거터 폭은 최소 6자리 line number를 표시할 수 있는 폭을 예약하고, 7자리 이상이 필요하면 더 넓어진다.
-- 동작: 각 줄 번호는 자신의 index를 sibling `TextEditor.qml` metric provider에 넘겨 대응 editor line의 `y`와
-  `height`를 받아 배치한다.
+- 동작: 각 줄 번호는 sibling `TextEditor.qml`의 `lineMetricProvider(index)`가 반환한 logical source line 시작
+  위치에 배치된다. paragraph가 wrap되어 여러 시각 행이 되어도 continuation row에는 delegate가 없으므로 번호가
+  찍히지 않는다.
 - 동작: `currentLineIndex`와 일치하는 줄 번호의 우측에는 파란색 알약 모양 막대를 그려 현재 cursor line을
-  표시한다. 이 값은 sibling editor의 렌더된 cursor rectangle 기준이어야 하며, RichText HTML 문자열의 줄바꿈
-  문자 개수에 의존하지 않는다.
+  표시한다. 이 값은 sibling editor의 logical cursor line 기준이어야 하며, paragraph wrap visual row를 별도
+  줄로 세지 않는다.
 - 동작: 거터 우측과 에디터 좌측 사이의 분리선은 그리지 않는다.
 - 금지: source snapshot, projection, rendering pipeline, persistence, editor backend wiring을 추가하지 않는다.

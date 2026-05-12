@@ -839,6 +839,66 @@ namespace
         return stagedItems;
     }
 
+    bool resolveFolderMoveOperationFromLvrsMoveEvent(
+        const QVector<LibraryHierarchyItem>& items,
+        int firstEditableInsertIndex,
+        int sourceIndex,
+        int targetIndex,
+        int targetDepth,
+        FolderMoveOperation* outOperation = nullptr)
+    {
+        if (!isEditableFolderItem(items, sourceIndex))
+        {
+            return false;
+        }
+
+        const int sourceEndIndex = subtreeEndIndexExclusive(items, sourceIndex);
+        const int sourceCount = sourceEndIndex - sourceIndex;
+        if (sourceCount <= 0)
+        {
+            return false;
+        }
+
+        QVector<LibraryHierarchyItem> remainingItems = items;
+        remainingItems.remove(sourceIndex, sourceCount);
+
+        const int maxInsertIndex = std::max(0, static_cast<int>(remainingItems.size()));
+        int normalizedInsertIndex = std::clamp(targetIndex, 0, maxInsertIndex);
+        normalizedInsertIndex = std::max(normalizedInsertIndex, firstEditableInsertIndex);
+
+        int minDepth = normalizedInsertIndex < remainingItems.size()
+            ? std::max(0, remainingItems.at(normalizedInsertIndex).depth)
+            : 0;
+        int maxDepth = normalizedInsertIndex > 0
+            ? std::max(0, remainingItems.at(normalizedInsertIndex - 1).depth + 1)
+            : 0;
+        if (normalizedInsertIndex <= firstEditableInsertIndex
+            || (normalizedInsertIndex > 0 && isProtectedRootItem(remainingItems.at(normalizedInsertIndex - 1))))
+        {
+            minDepth = 0;
+            maxDepth = 0;
+        }
+        if (maxDepth < minDepth)
+        {
+            maxDepth = minDepth;
+        }
+
+        const int newBaseDepth = std::clamp(std::max(0, targetDepth), minDepth, maxDepth);
+        if (normalizedInsertIndex == sourceIndex && newBaseDepth == items.at(sourceIndex).depth)
+        {
+            return false;
+        }
+
+        if (outOperation != nullptr)
+        {
+            outOperation->sourceEndIndex = sourceEndIndex;
+            outOperation->sourceCount = sourceCount;
+            outOperation->normalizedInsertIndex = normalizedInsertIndex;
+            outOperation->newBaseDepth = newBaseDepth;
+        }
+        return true;
+    }
+
     QHash<QString, QString> movedFolderPathMapForOperation(
         const QVector<LibraryHierarchyItem>& originalItems,
         int sourceIndex,
@@ -2260,6 +2320,65 @@ bool LibraryHierarchyController::applyHierarchyNodes(const QVariantList& hierarc
         selectedIndex = selectedHierarchyIndexForKey(stagedItems, normalizedActiveKey);
     }
     return commitFolderHierarchyUpdate(std::move(stagedItems), selectedIndex, movedFolderPathMap);
+}
+
+bool LibraryHierarchyController::applyHierarchyMove(
+    const int sourceIndex,
+    const int targetIndex,
+    const int targetDepth,
+    const QString& activeItemKey)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.controller"),
+                              QStringLiteral("applyHierarchyMove.begin"),
+                              QStringLiteral("sourceIndex=%1 targetIndex=%2 targetDepth=%3")
+                              .arg(sourceIndex)
+                              .arg(targetIndex)
+                              .arg(targetDepth));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperationFromLvrsMoveEvent(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        targetIndex,
+        targetDepth,
+        &operation))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.controller"),
+                                  QStringLiteral("applyHierarchyMove.rejected"),
+                                  QStringLiteral("sourceIndex=%1 targetIndex=%2 targetDepth=%3")
+                                  .arg(sourceIndex)
+                                  .arg(targetIndex)
+                                  .arg(targetDepth));
+        return false;
+    }
+
+    QVector<LibraryHierarchyItem> stagedItems = stageFolderMoveItems(m_items, sourceIndex, operation);
+    const QHash<QString, QString> movedPathMap = movedFolderPathMapForOperation(
+        m_items,
+        sourceIndex,
+        operation,
+        stagedItems);
+    int selectedIndex = selectedHierarchyIndexForKey(stagedItems, activeItemKey);
+    if (selectedIndex < 0)
+    {
+        selectedIndex = operation.normalizedInsertIndex;
+    }
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), selectedIndex, movedPathMap))
+    {
+        return false;
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.controller"),
+                              QStringLiteral("applyHierarchyMove.success"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2")
+                              .arg(selectedIndex)
+                              .arg(m_items.size()));
+    emit hubFilesystemMutated();
+    return true;
 }
 
 bool LibraryHierarchyController::createEmptyNote()

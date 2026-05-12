@@ -36,6 +36,8 @@
   projects rows can share the same projects-owned expansion state as the sidebar footer context menu.
 - Declares inherited capability methods with explicit `override` so the reorder/rename/crud
   contract stays compile-time checked and warning-clean.
+- Declares `applyHierarchyMove(...)` for LVRS drag/drop so nested project folders can be reparented from the
+  `fromIndex/toIndex/depth` event payload without replaying a potentially stale full QML model.
 
 ### Enums
 - None detected during scaffold generation.

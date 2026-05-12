@@ -29,3 +29,6 @@
 - Note-distribution mutations such as folder assignment, note create/delete, folder clear, and one-note metadata
   reload now also re-emit the hierarchy-node surface so sidebar count labels stay synchronized even when the folder
   tree structure itself does not change.
+- Exposes `applyHierarchyMove(...)` from `IHierarchyReorderCapability` so the sidebar can commit an LVRS
+  `fromIndex/toIndex/depth` drag result as a single library-folder subtree reparent without depending on a full QML
+  model replay.

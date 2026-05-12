@@ -32,6 +32,10 @@ public:
 
     Q_INVOKABLE bool applyHierarchyReorder(const QVariant& hierarchyNodes,
                                            const QString& activeItemKey = QString());
+    Q_INVOKABLE bool applyHierarchyMove(int sourceIndex,
+                                        int targetIndex,
+                                        int targetDepth,
+                                        const QString& activeItemKey = QString());
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
     Q_INVOKABLE bool canAcceptNoteDropList(int index, const QVariantList& noteIds) const;
     Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);

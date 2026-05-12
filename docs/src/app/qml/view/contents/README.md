@@ -8,7 +8,7 @@ Only three view files are allowed here: gutter, text editor, and minimap.
 
 ## Current Files
 
-- `Gutter.qml`: visual line-number rail.
+- `Gutter.qml`: logical line-number rail.
 - `TextEditor.qml`: runtime editor surface; its root item is `LV.TextEditor`.
 - `Minimap.qml`: visual minimap rail.
 

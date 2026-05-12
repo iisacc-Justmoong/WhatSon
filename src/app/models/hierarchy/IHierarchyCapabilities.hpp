@@ -53,6 +53,17 @@ public:
 
     virtual bool applyHierarchyNodes(const QVariantList& hierarchyNodes,
                                      const QString& activeItemKey = QString()) = 0;
+    virtual bool applyHierarchyMove(int sourceIndex,
+                                    int targetIndex,
+                                    int targetDepth,
+                                    const QString& activeItemKey = QString())
+    {
+        (void)sourceIndex;
+        (void)targetIndex;
+        (void)targetDepth;
+        (void)activeItemKey;
+        return false;
+    }
     virtual bool supportsHierarchyNodeReorder() const noexcept = 0;
 };
 

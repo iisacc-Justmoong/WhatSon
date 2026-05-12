@@ -28,8 +28,8 @@ delegates tag-source mutation to `SetTag`, and writes the result back through `W
 
 Live editor formatting uses the active `NoteEditorDocumentSession`. `ContentViewLayout.qml` may dispatch focused
 format shortcuts and the selected-text right-click format context menu, but `SetTag` still owns the static tag
-templates and the session still owns RichText plain-selection to RAW source coordinate mapping plus
-source-to-editor-HTML projection before the LVRS `TextEditor` surface is updated.
+templates, including same-tag wrapper toggle removal, and the session still owns RichText plain-selection to RAW source
+coordinate mapping plus source-to-editor-HTML projection before the LVRS `TextEditor` surface is updated.
 
 ## View Behavior Ownership
 QML owns behavior that is local to a rendered view: button dispatch, menu opening/closing, pointer hit-tests, transient
@@ -56,6 +56,11 @@ Composition-root code now links those modules through `IActiveHierarchyContextSo
 `DetailPanelCurrentHierarchyBinder`, keeping sidebar/detail-panel coupling behind an explicit coordinator object.
 
 Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`, and the hierarchy row baseline still resolves to a `20px` LVRS item height.
+
+Folder tree drag/drop is event-driven: `LV.Hierarchy.onListItemMoved` forwards the source index, target index, target
+depth, and active item key through `HierarchyDragDropBridge.applyHierarchyMove(...)`. Concrete hierarchy controllers
+then persist one subtree move; QML must not rebuild `.wsfolders`/project trees from a full `hierarchyTree.model`
+snapshot during the drag callback.
 
 `MobileHierarchyPage.qml` remains part of the adaptive/mobile workspace mount path and forwards editor view-mode
 controller state only into the compact navigation bar combo.

@@ -15,6 +15,8 @@ inserting those templates into editor source text or into a serialized body docu
 - `configureTagName(...)` changes the active tag only when the requested name resolves to a known static template.
 - `insertIntoSource(...)` inserts the active template into editor-facing body source text.
 - `insertNamedTagIntoSource(...)` performs the same mutation without changing the active tag.
+- Paired inline/static wrappers are toggle-aware: when the selected source text is exactly enclosed by the same tag,
+  mutation removes that wrapper and returns `toggledOff: true`.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to
   editor source, apply the static source mutation, and reserialize the document through
   `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.

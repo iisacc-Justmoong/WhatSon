@@ -251,6 +251,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The note-drop `DropArea` is keyed to the note-list drag key (`whatson.library.note`). It must not accept unkeyed
   hierarchy-item drags, because those need to fall through to LVRS `Hierarchy` so tree reorder can emit
   `listItemMoved`.
+- `LV.Hierarchy.onListItemMoved` now forwards `fromIndex`, `toIndex`, `depth`, and `itemKey` through
+  `HierarchyDragDropBridge.applyHierarchyMove(...)`. The sidebar must not rebuild persistence from
+  `hierarchyTree.model` during the drag callback, because that snapshot can lag LVRS' computed move result and can
+  make a parent/child drop look like a duplicated folder tree.
 - Dropping a note-list item on a concrete folder hierarchy row is a membership mutation: the view resolves the hovered
   row index, forwards the dragged note id array through `HierarchyDragDropBridge.assignNotesToFolder(...)`, and treats a
   successful commit as `hierarchy.noteDrop`.
@@ -308,6 +312,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
   normalized-array return path.
 - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
   LVRS/Qt.
+- Folder tree drag/drop must keep using `applyHierarchyMove(fromIndex, toIndex, depth, itemKey)` from
+  `LV.Hierarchy.onListItemMoved`; reverting to full `hierarchyTree.model` replay can duplicate persisted folder
+  entries and leave the visible top-level rows unchanged.
 - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;

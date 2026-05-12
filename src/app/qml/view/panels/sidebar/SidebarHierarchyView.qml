@@ -1887,7 +1887,7 @@ Rectangle {
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)
                 return;
-            if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey))
+            if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyMove(fromIndex, toIndex, depth, itemKey))
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
         }

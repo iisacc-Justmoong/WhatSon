@@ -11,6 +11,9 @@ Implements the `SetTag` editor-domain input object.
   heading-style wrappers such as `header`, `subheader`, and `title`, inline formatting tags such as `bold` and
   `highlight`, canonical body `tag`, the source divider token `break`, and a placeholder `resource` body block.
 - Selection mutation wraps selected source text between the opening and closing tokens.
+- If a non-empty selection is already exactly enclosed by the same paired static tag, applying that tag toggles the
+  format off by removing the surrounding tokens instead of nesting a duplicate wrapper. The result reports this through
+  `toggledOff`.
 - Empty selection mutation places the returned cursor position inside the inserted paired tag, or after the token for
   self-contained source tokens such as `break`.
 - Self-contained document-body tokens such as `break` and `resource` are inserted on a standalone source line so

@@ -274,6 +274,7 @@ namespace
         const int selectionEnd = std::max(anchor, active);
         const int normalizedSelectionLength = selectionEnd - selectionStart;
         const QString selectedText = normalizedSourceText.mid(selectionStart, normalizedSelectionLength);
+        bool toggledOff = false;
 
         QString insertedText;
         QString mutatedSourceText;
@@ -294,14 +295,35 @@ namespace
         }
         else
         {
-            insertedText = bodyTag.openingToken + selectedText + bodyTag.closingToken;
-            mutatedSourceText =
-                normalizedSourceText.left(selectionStart)
-                + insertedText
-                + normalizedSourceText.mid(selectionEnd);
-            nextCursorPosition = selectedText.isEmpty()
-                ? selectionStart + bodyTag.openingToken.size()
-                : selectionStart + insertedText.size();
+            const QString beforeSelection = normalizedSourceText.left(selectionStart);
+            const QString afterSelection = normalizedSourceText.mid(selectionEnd);
+            toggledOff =
+                normalizedSelectionLength > 0
+                && !bodyTag.closingToken.isEmpty()
+                && beforeSelection.endsWith(bodyTag.openingToken)
+                && afterSelection.startsWith(bodyTag.closingToken);
+            if (toggledOff)
+            {
+                insertedText = selectedText;
+                const QString beforeOpeningToken =
+                    beforeSelection.left(beforeSelection.size() - bodyTag.openingToken.size());
+                mutatedSourceText =
+                    beforeOpeningToken
+                    + selectedText
+                    + afterSelection.mid(bodyTag.closingToken.size());
+                nextCursorPosition = beforeOpeningToken.size() + selectedText.size();
+            }
+            else
+            {
+                insertedText = bodyTag.openingToken + selectedText + bodyTag.closingToken;
+                mutatedSourceText =
+                    beforeSelection
+                    + insertedText
+                    + afterSelection;
+                nextCursorPosition = selectedText.isEmpty()
+                    ? selectionStart + bodyTag.openingToken.size()
+                    : selectionStart + insertedText.size();
+            }
         }
 
         QVariantMap result;
@@ -316,6 +338,7 @@ namespace
         result.insert(QStringLiteral("insertedText"), insertedText);
         result.insert(QStringLiteral("openingToken"), bodyTag.openingToken);
         result.insert(QStringLiteral("closingToken"), bodyTag.closingToken);
+        result.insert(QStringLiteral("toggledOff"), toggledOff);
         result.insert(QStringLiteral("errorMessage"), QString());
         return result;
     }

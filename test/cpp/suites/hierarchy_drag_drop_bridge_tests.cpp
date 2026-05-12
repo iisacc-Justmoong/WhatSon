@@ -90,6 +90,13 @@ void WhatSonCppRegressionTests::hierarchyDragDropBridge_appliesReorderFromQmlArr
     QCOMPARE(controller.appliedActiveItemKey(), QStringLiteral("folder:b"));
     QCOMPARE(bridge.selectedItemKey(), QStringLiteral("folder:b"));
 
+    QVERIFY(bridge.applyHierarchyMove(0, 1, 1, QStringLiteral("folder:a")));
+    QCOMPARE(controller.appliedMoveSourceIndex(), 0);
+    QCOMPARE(controller.appliedMoveTargetIndex(), 1);
+    QCOMPARE(controller.appliedMoveTargetDepth(), 1);
+    QCOMPARE(controller.appliedActiveItemKey(), QStringLiteral("folder:a"));
+    QVERIFY(!bridge.applyHierarchyMove(-1, 1, 0, QStringLiteral("folder:a")));
+
     const QJSValue invalidModel = engine.evaluate(QStringLiteral("42"));
     QVERIFY(!invalidModel.isError());
     QVERIFY(!bridge.applyHierarchyReorder(QVariant::fromValue(invalidModel), QStringLiteral("folder:c")));

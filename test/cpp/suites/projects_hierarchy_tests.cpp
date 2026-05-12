@@ -93,6 +93,8 @@ void WhatSonCppRegressionTests::projectsHierarchyController_keepsNestedProjectPo
     QVERIFY(controllerSource.contains(QStringLiteral("availableProjectKeys.insert(projectsHierarchyItemKey")));
     QVERIFY(controllerSource.contains(QStringLiteral("FolderDropPlacement::Child")));
     QVERIFY(controllerSource.contains(QStringLiteral("newBaseDepth = items.at(targetIndex).depth + 1;")));
+    QVERIFY(controllerSource.contains(QStringLiteral("resolveFolderMoveOperationFromLvrsMoveEvent")));
+    QVERIFY(controllerSource.contains(QStringLiteral("ProjectsHierarchyController::applyHierarchyMove")));
     QVERIFY(!controllerSource.contains(QStringLiteral("reason=projects are flat")));
     QVERIFY(supportSource.contains(QStringLiteral("createNestedHierarchyFolder")));
     QVERIFY(!supportSource.contains(QStringLiteral("createFlatHierarchyFolder")));

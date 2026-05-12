@@ -31,6 +31,7 @@
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
+#include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
@@ -366,6 +367,24 @@ public:
         return m_supportsReorder;
     }
 
+    bool applyHierarchyMove(
+        int sourceIndex,
+        int targetIndex,
+        int targetDepth,
+        const QString& activeItemKey = QString()) override
+    {
+        if (!m_supportsReorder || sourceIndex < 0 || targetIndex < 0)
+        {
+            return false;
+        }
+
+        m_appliedMoveSourceIndex = sourceIndex;
+        m_appliedMoveTargetIndex = targetIndex;
+        m_appliedMoveTargetDepth = targetDepth;
+        m_appliedActiveItemKey = activeItemKey.trimmed();
+        return true;
+    }
+
     QVariantList appliedNodes() const
     {
         return m_appliedNodes;
@@ -376,6 +395,21 @@ public:
         return m_appliedActiveItemKey;
     }
 
+    int appliedMoveSourceIndex() const noexcept
+    {
+        return m_appliedMoveSourceIndex;
+    }
+
+    int appliedMoveTargetIndex() const noexcept
+    {
+        return m_appliedMoveTargetIndex;
+    }
+
+    int appliedMoveTargetDepth() const noexcept
+    {
+        return m_appliedMoveTargetDepth;
+    }
+
     void setSupportsReorder(bool supported) noexcept
     {
         m_supportsReorder = supported;
@@ -384,6 +418,9 @@ public:
 private:
     QVariantList m_appliedNodes;
     QString m_appliedActiveItemKey;
+    int m_appliedMoveSourceIndex = -1;
+    int m_appliedMoveTargetIndex = -1;
+    int m_appliedMoveTargetDepth = -1;
     bool m_supportsReorder = true;
 };
 
@@ -1148,6 +1185,7 @@ private slots:
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
     void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
+    void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
     void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
     void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
@@ -1178,6 +1216,7 @@ private slots:
     void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
     void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
+    void libraryHierarchyController_appliesLvrsMoveEventAsSingleFolderReparent();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();

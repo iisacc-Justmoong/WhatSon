@@ -17,6 +17,8 @@ It exposes three ideas to QML.
 - Invokables:
   - `applyHierarchyReorder(...)`, accepting either a C++ `QVariantList` or the JS-array-shaped `var` model handed back
     by QML after LVRS has applied a hierarchy item move.
+  - `applyHierarchyMove(...)`, forwarding the LVRS `listItemMoved` event payload (`fromIndex`, `toIndex`, `depth`,
+    and the active item key) directly to the active reorder-capable controller.
   - `canAcceptNoteDrop(...)`
   - `canAcceptNoteDropList(...)`
   - `assignNoteToFolder(...)`

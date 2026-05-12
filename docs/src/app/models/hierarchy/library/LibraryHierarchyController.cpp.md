@@ -61,6 +61,11 @@
   descendant subtree and persists the updated folders store before refreshing sidebar state.
 - The library sidebar right-click context menu now reuses those two existing methods through
   `HierarchyInteractionBridge`; no separate library-specific CRUD implementation was added for the menu.
+- `applyHierarchyMove(...)` is the LVRS drag/drop commit path. It resolves the source folder subtree, removes that
+  subtree from the current row vector, clamps the target insertion/depth against the remaining visible tree, finalizes
+  the moved folder paths, and persists the result through the same folder hierarchy commit path used by explicit move
+  helpers. A parent/child drop therefore updates both `.wsfolders` and the live sidebar model without creating an
+  extra sibling copy.
 - Folder-path normalization now uses the shared escaped-segment semantics from `WhatSonNoteFolderSemantics.hpp`.
   A folder label that literally contains `/` is persisted as one escaped segment (`\/`) and is no longer split into
   fake parent/child hierarchy rows.
@@ -99,3 +104,5 @@
     provide the selected note's body source to the editor bridge.
   - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.
   - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.
+  - Dragging one library folder onto another through the LVRS move event must persist exactly one nested subtree entry
+    and must not leave a duplicate top-level sibling in the controller model.

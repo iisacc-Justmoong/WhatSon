@@ -34,11 +34,6 @@ Item {
     implicitWidth: LV.Theme.gap12 + gutter.lineNumberDigitCount * LV.Theme.gap8
     objectName: "contentsGutter"
 
-    function numberOrFallback(value, fallbackValue) {
-        const numericValue = Number(value);
-        return Number.isFinite(numericValue) ? numericValue : fallbackValue;
-    }
-
     function fallbackLineMetric(lineIndex) {
         const fallbackHeight = Math.max(1, Number(gutter.fallbackLineHeight) || 1);
         return {
@@ -62,6 +57,11 @@ Item {
             y: Math.max(0, gutter.numberOrFallback(providedMetric.y, fallbackMetric.y)),
             height: Math.max(1, gutter.numberOrFallback(providedMetric.height, fallbackMetric.height))
         };
+    }
+
+    function numberOrFallback(value, fallbackValue) {
+        const numericValue = Number(value);
+        return Number.isFinite(numericValue) ? numericValue : fallbackValue;
     }
 
     Repeater {

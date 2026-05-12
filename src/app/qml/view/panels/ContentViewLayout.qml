@@ -238,9 +238,9 @@ Item {
                 Layout.preferredWidth: implicitWidth
                 contentY: contentsTextEditor.viewportContentY
                 currentLineIndex: contentsTextEditor.editorCursorLineIndex
-                fallbackLineHeight: contentsTextEditor.editorVisualLineHeight
-                lineCount: contentsTextEditor.editorRenderedLineCount
-                lineMetricProvider: contentsTextEditor.editorLineMetricsFor
+                fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight
+                lineCount: contentViewLayout.editorParsedLineCount
+                lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor
                 lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
                 parsedLineCount: contentViewLayout.editorParsedLineCount
                 selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
