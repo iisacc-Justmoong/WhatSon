@@ -40,7 +40,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 ## Current Focus
 
 - Runtime editor QML coverage pins the center editor route to exactly three contents views: `Gutter.qml`,
-  `TextEditor.qml`, and `Minimap.qml`; `TextEditor.qml` is rooted in `LV.TextEditor` with an empty `filePath`.
+  `TextEditor.qml`, and `Minimap.qml`; `TextEditor.qml` is rooted in `LV.TextEditor` with an empty `filePath`. The same
+  coverage locks the mobile editor route to hidden gutter/minimap rails.
 - Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
   editor minimap backends and any extra contents-view QML beyond those three files.
 - Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, while `SetProperty`

@@ -17,6 +17,7 @@ Item {
     property color displayColor: "transparent"
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
+    property bool gutterVisible: true
     property bool isMobilePlatform: false
     property int libraryHierarchyIndex: 0
     property var libraryHierarchyController: null
@@ -235,7 +236,7 @@ Item {
 
             ContentsView.Gutter {
                 Layout.fillHeight: true
-                Layout.preferredWidth: implicitWidth
+                Layout.preferredWidth: visible ? implicitWidth : 0
                 contentY: contentsTextEditor.viewportContentY
                 currentLineIndex: contentsTextEditor.editorCursorLineIndex
                 fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight
@@ -246,6 +247,7 @@ Item {
                 selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
                 selectedNoteId: contentViewLayout.editorActiveNoteId
                 sourceFilePath: contentViewLayout.editorSourceFilePath
+                visible: contentViewLayout.gutterVisible
             }
 
             ContentsView.TextEditor {

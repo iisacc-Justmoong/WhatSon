@@ -769,6 +769,7 @@ Item {
             contentController: mobileHierarchyPage.activeContentController
             displayColor: mobileHierarchyPage.canvasColor
             frameHorizontalInsetOverride: LV.Theme.gapNone
+            gutterVisible: false
             isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined ? Boolean(Window.window.isMobilePlatform) : false
             libraryHierarchyController: noteCreationCoordinator.noteCreationController
             minimapVisible: false

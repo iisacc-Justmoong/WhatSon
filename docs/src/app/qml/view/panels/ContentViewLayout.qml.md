@@ -18,6 +18,9 @@ logical-line placement provider from `TextEditor.qml`. It does not read or parse
 count follows parsed source lines only; the placement provider merely moves those existing delegates to the rendered
 start of each logical line so wrapped continuation rows remain unnumbered.
 
+`gutterVisible` lets route shells suppress the gutter rail without changing the note/session bindings. The mobile
+editor route sets it to `false`, matching the existing `minimapVisible: false` compact policy.
+
 The minimap receives the sibling editor's rich-text document, viewport geometry, font tokens, and a view-local scroll
 hook so it can render a VSCode-style right-side miniature and viewport thumb without owning parser or persistence
 state.
@@ -53,7 +56,8 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
   `syncFinished -> NoteEditorDocumentSession.persistEditorFile(...)` hook.
 - Keep gutter wiring limited to selected-note metadata, parsed source line count, fallback editor logical line height,
-  logical-line placement provider/revision, current logical cursor line index, and viewport offset.
+  logical-line placement provider/revision, current logical cursor line index, viewport offset, and route-level
+  visibility.
 - Keep minimap wiring limited to editor document text, viewport geometry, source font tokens, and the editor viewport
   scroll hook.
 - Keep paste handling limited to command dispatch; resource import, tag construction, and persistence policy stay in
@@ -75,7 +79,8 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 - shell 호환 입력은 받을 수 있고 active note의 editor HTML session file만 `LV.TextEditor.filePath`로 넘긴다.
 - 거터에는 선택 노트 경로, parsed source line count, fallback editor logical line height, logical-line placement
   provider/revision, current logical cursor line index, viewport offset만 전달한다. paragraph wrap으로 생긴 시각
-  행은 거터 줄 번호를 늘리지 않으며, continuation row는 번호 없이 비워 둔다.
+  행은 거터 줄 번호를 늘리지 않으며, continuation row는 번호 없이 비워 둔다. 모바일 editor route는 기존 미니맵
+  숨김 정책과 같이 `gutterVisible`을 꺼서 본문 폭을 확보한다.
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
 - 이미지 paste는 `ResourcesImportController`와 `NoteEditorDocumentSession`의 C++ source/editor HTML 결과를 이어
   붙이는 얇은 command wiring으로 제한한다.

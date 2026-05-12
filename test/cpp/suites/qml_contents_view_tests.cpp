@@ -128,6 +128,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(!textEditorSource.contains(QStringLiteral("saveFile(")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("filePath: \"\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var noteEditorSession: null")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property bool gutterVisible: true")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property string editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int editorParsedLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.editorFilePath")));
@@ -160,6 +161,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("currentLineIndex: contentsTextEditor.editorCursorLineIndex")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Layout.preferredWidth: visible ? implicitWidth : 0")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.gutterVisible")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentText: contentsTextEditor.editorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentY: contentsTextEditor.viewportContentY")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentHeight: contentsTextEditor.editorViewportContentHeight")));

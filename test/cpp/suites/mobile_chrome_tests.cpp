@@ -63,6 +63,8 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
     QVERIFY(!mainQmlSource.contains(QStringLiteral("editorOnlyWorkspaceComponent")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("PanelView.ContentViewLayout {")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("displayColor: mobileHierarchyPage.canvasColor")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("gutterVisible: false")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("minimapVisible: false")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileView.MobilePageScaffold {")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyRouteStateStore")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("MobileHierarchyCanonicalRoutePlanner")));

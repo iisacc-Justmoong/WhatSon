@@ -10,7 +10,8 @@ note list, content slot, and detail panel. The content slot mounts `ContentViewL
 ## Mobile Shell
 The mobile shell remains mounted for adaptive/mobile layouts. Its editor route uses the same `ContentViewLayout.qml`
 surface and forwards the note editor session so the selected note's parsed RAW source is edited while keeping the
-existing route scaffold, hierarchy page, note-list page, and detail page chrome.
+existing route scaffold, hierarchy page, note-list page, and detail page chrome. Mobile editor composition disables the
+gutter and minimap rails so the LVRS `TextEditor` owns the full body width.
 
 ## Root Ownership
 `Main.qml` owns startup routing, onboarding presentation, the restored workspace chrome, and render-quality resize
