@@ -68,6 +68,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLineMetricsFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function buildEditorVisualLineMetrics(requiredCount, fallbackHeight)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function boundedCursorPosition(value)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
@@ -79,7 +81,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function pasteNativeClipboardText")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.cursorPosition = Math.max")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.restoreEditorCursorPosition(nextCursorPosition);")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.paste()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));

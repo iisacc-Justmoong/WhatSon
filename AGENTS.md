@@ -147,7 +147,8 @@
   `WhatSonLocalNoteFileStore`를 통해 `.wsnbody`에 저장한다. QML은 대상 노트와 cursor/selection만 전달한다.
 - live editor formatting은 C++ `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`가 `SetTag`를 사용해
   `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 정적 태그의 RAW source와 editor HTML projection을 함께 계산하고,
-  QML은 그 결과를 현재 `LV.TextEditor` surface에만 반영한다.
+  QML은 그 결과를 현재 `LV.TextEditor` surface에만 반영한다. 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는
+  `ContentViewLayout.qml`의 얇은 command dispatch로만 존재한다.
 
 ### 입력기 권한 (중요)
 
@@ -155,10 +156,11 @@
   note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 parsed RAW source session file 경로를
   따른다.
 - 현재 editor QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를
-  설치하지 않는다. 단 clipboard image paste의 `StandardKey.Paste` command wiring과 `bold`/`italic`/`underline`/
-  `strikethrough`/`highlight`/`break` 정적 포맷 태그 단축키는 위 편집기 Source of Truth 섹션의 제한 안에서 `ContentViewLayout.qml`에만
-  둘 수 있다. 포맷 태그 allow-list, source mutation, editor HTML projection, `.wsnbody` persistence 정책은
-  C++ `SetTag`/`NoteEditorDocumentSession`/persistence 계층에 남긴다.
+  설치하지 않는다. 단 clipboard image paste의 `StandardKey.Paste` command wiring, `bold`/`italic`/`underline`/
+  `strikethrough`/`highlight`/`break` 정적 포맷 태그 단축키, 그리고 선택 텍스트 우클릭 포맷 컨텍스트 메뉴는 위
+  편집기 Source of Truth 섹션의 제한 안에서 `ContentViewLayout.qml`에만 둘 수 있다. 포맷 태그 allow-list,
+  source mutation, editor HTML projection, `.wsnbody` persistence 정책은 C++ `SetTag`/`NoteEditorDocumentSession`/
+  persistence 계층에 남긴다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.

@@ -200,9 +200,11 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The hierarchy row locator walks both normal `children` and `contentItem.children`, because LVRS places generated
   hierarchy rows under the internal `Flickable.contentItem`. Chevron hit-testing, note-drop hit-testing, and resolved
   row lookup must therefore see rows that are not direct visual descendants of the outer `LV.Hierarchy` item.
-- `hierarchyChevronPointerSurface` is a view-layer pointer guard over the hierarchy body. It accepts only left-button
-  presses that hit the resolved chevron slot; all other presses are rejected so row activation, selection, drag, and
-  flick behavior stay owned by `LV.Hierarchy`. Accepted chevron taps still commit through
+- `hierarchyChevronPointerSurface` is a view-layer pointer guard over the hierarchy body. It is disabled while
+  `hierarchyEditable` is true so LVRS row drag handlers own the initial left-button press used for folder
+  reorder/nesting. When it is enabled for non-editable surfaces, it accepts only left-button presses that hit the
+  resolved chevron slot; all other presses are rejected so row activation, selection, and flick behavior stay owned by
+  `LV.Hierarchy`. Accepted chevron taps still commit through
   `SidebarHierarchyInteractionController.requestChevronExpansion(...)`.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit

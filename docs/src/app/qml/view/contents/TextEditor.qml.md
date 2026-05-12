@@ -37,8 +37,8 @@
 - The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, and paste forwarding.
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
-  HTML to `LV.TextEditor.text` with the returned cursor position, then lets LVRS perform its automatic write-through
-  sync.
+  HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
+  then lets LVRS perform its automatic write-through sync.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or
@@ -64,7 +64,8 @@
 - `preferNativeGestures`는 `LV.Theme.mobileTarget`을 따른다. 데스크톱에서 이를 강제로 켜면 포커스 중
   LVRS wheel scroll 경로가 꺼져 본문 스크롤이 막힌 것처럼 보인다.
 - 이미지 paste 또는 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition`
-  API로 반영하고, 이미지가 아닌 paste는 공개 `paste()` API로 되돌린다.
+  API로 반영한다. RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서
+  한 번 더 공개 cursor API로 복원한다. 이미지가 아닌 paste는 공개 `paste()` API로 되돌린다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

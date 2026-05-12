@@ -29,8 +29,14 @@ deferred resources reload.
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, and selection
-metadata, then replace the LVRS document with the C++-projected editor HTML result. Highlight is bound to
-`Meta+Shift+E` / `Ctrl+Shift+E`, and break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`.
+metadata, then replace the LVRS document with the C++-projected editor HTML result. The session maps LVRS RichText
+plain selection offsets back to visible RAW source positions before inserting tags, so existing inline tags before the
+selection do not shift the selected range. Highlight is bound to `Meta+Shift+E` / `Ctrl+Shift+E`, and break is bound to
+`Meta+Shift+B` / `Ctrl+Shift+B`.
+
+The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
+`LV.ContextMenu` only when the sibling editor reports a non-empty selection. Menu entries for `bold`, `italic`,
+`underline`, `strikethrough`, and `highlight` reuse the same `applyEditorFormatTag(...)` dispatch path as shortcuts.
 
 ## Shell Inputs
 The restored shell can still assign legacy layout inputs such as note-list, sidebar, resource-import, and calendar
@@ -50,8 +56,9 @@ compatibility handles and are not used to mount parser, projection, renderer, re
   scroll hook.
 - Keep paste handling limited to command dispatch; resource import, tag construction, and persistence policy stay in
   C++ objects.
-- Keep format shortcut handling limited to command dispatch; static tag allow-lists, source mutation, editor HTML
-  projection, and persistence policy stay in `SetTag`, `NoteEditorDocumentSession`, and note-body persistence.
+- Keep format shortcut and selected-text context-menu handling limited to command dispatch; static tag allow-lists,
+  source mutation, editor HTML projection, and persistence policy stay in `SetTag`, `NoteEditorDocumentSession`, and
+  note-body persistence.
 - Do not mount `LV.CodeEditor`, raw `TextEdit`, RichText overlays, or legacy editor backend objects.
 - Keep the component as a view-only LVRS composition layer.
 
@@ -69,8 +76,10 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
 - 이미지 paste는 `ResourcesImportController`와 `NoteEditorDocumentSession`의 C++ source/editor HTML 결과를 이어
   붙이는 얇은 command wiring으로 제한한다.
-- 포맷 단축키는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의 C++ source/editor HTML 결과를 이어
-  붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`, 브레이크는 `Cmd+Shift+B`를 기준으로
-  하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다.
+- 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
+  C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
+  브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 컨텍스트 메뉴는
+  선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을 같은 dispatch로
+  보낸다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.

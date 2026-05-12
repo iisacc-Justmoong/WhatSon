@@ -1229,6 +1229,7 @@ private slots:
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
+    void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();
@@ -1254,6 +1255,7 @@ private slots:
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
     void sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags();
+    void sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface();
     void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void startupHubResolver_returnsEmptyWithoutPersistedSelection();

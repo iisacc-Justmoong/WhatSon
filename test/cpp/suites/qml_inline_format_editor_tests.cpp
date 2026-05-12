@@ -134,6 +134,9 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.forceEditorFocus();")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"bold\")")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Bold")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"italic\")")));
@@ -153,6 +156,39 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+Return\"")));
+}
+
+void WhatSonCppRegressionTests::qmlContentViewLayout_opensEditorFormatContextMenuForSelection()
+{
+    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
+    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+
+    QVERIFY(!textEditorSource.isEmpty());
+    QVERIFY(!contentViewLayoutSource.isEmpty());
+    QVERIFY(!textEditorSource.contains(QStringLiteral("LV.ContextMenu")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Qt.RightButton")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import QtQuick.Controls as Controls")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool editorFormatContextMenuAvailable")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength > 0")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var editorFormatContextMenuItems")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.bold\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.italic\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.underline\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.strikethrough\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.highlight\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function openEditorFormatContextMenuFromPointer")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function handleEditorFormatContextMenuTrigger(eventName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorFormatContextMenu.openFor")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("TapHandler {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("acceptedButtons: Qt.RightButton")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("enabled: contentViewLayout.editorFormatContextMenuAvailable")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("openEditorFormatContextMenuFromPointer(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor,")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.ContextMenu {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorFormatContextMenu")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("items: contentViewLayout.editorFormatContextMenuItems")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onItemEventTriggered: function (eventName")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.handleEditorFormatContextMenuTrigger(eventName)")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative()

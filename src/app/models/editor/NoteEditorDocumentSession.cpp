@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QVector>
 
 namespace
 {
@@ -59,16 +60,116 @@ namespace
         return std::clamp(position, 0, textSize);
     }
 
+    struct SourceVisibleCharacter final
+    {
+        int sourceStart = 0;
+        int sourceEnd = 0;
+    };
+
+    QVector<SourceVisibleCharacter> visibleCharactersForSourceText(const QString& bodySourceText)
+    {
+        QVector<SourceVisibleCharacter> visibleCharacters;
+        visibleCharacters.reserve(bodySourceText.size());
+
+        int cursor = 0;
+        while (cursor < bodySourceText.size())
+        {
+            if (bodySourceText.at(cursor) == QLatin1Char('<'))
+            {
+                const int tagEnd = bodySourceText.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd > cursor)
+                {
+                    cursor = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int sourceStart = cursor;
+            if (bodySourceText.at(cursor) == QLatin1Char('&'))
+            {
+                const int entityEnd = bodySourceText.indexOf(QLatin1Char(';'), cursor + 1);
+                if (entityEnd > cursor)
+                {
+                    cursor = entityEnd + 1;
+                    visibleCharacters.push_back({sourceStart, cursor});
+                    continue;
+                }
+            }
+
+            ++cursor;
+            visibleCharacters.push_back({sourceStart, cursor});
+        }
+
+        return visibleCharacters;
+    }
+
     int editorCursorPositionForSourcePosition(
-        const QString& noteId,
         const QString& bodySourceText,
         const int sourceCursorPosition)
     {
         const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
         const int boundedSourcePosition = clampedPosition(sourceCursorPosition, normalizedSourceText.size());
-        const QString sourcePrefix = normalizedSourceText.left(boundedSourcePosition);
-        return WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(
-            WhatSon::NoteBodyPersistence::serializeBodyDocument(noteId, sourcePrefix)).size();
+        const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(normalizedSourceText);
+
+        int editorPosition = 0;
+        for (const SourceVisibleCharacter& visibleCharacter : visibleCharacters)
+        {
+            if (visibleCharacter.sourceEnd <= boundedSourcePosition)
+            {
+                ++editorPosition;
+                continue;
+            }
+            if (visibleCharacter.sourceStart < boundedSourcePosition)
+            {
+                ++editorPosition;
+            }
+            break;
+        }
+        return editorPosition;
+    }
+
+    int sourcePositionForEditorSelectionStart(
+        const QString& bodySourceText,
+        const int editorPosition)
+    {
+        const QVector<SourceVisibleCharacter> visibleCharacters =
+            visibleCharactersForSourceText(bodySourceText);
+        if (visibleCharacters.isEmpty())
+        {
+            return 0;
+        }
+
+        const int boundedEditorPosition = clampedPosition(editorPosition, visibleCharacters.size());
+        if (boundedEditorPosition >= visibleCharacters.size())
+        {
+            return bodySourceText.size();
+        }
+
+        return visibleCharacters.at(boundedEditorPosition).sourceStart;
+    }
+
+    int sourcePositionForEditorSelectionEnd(
+        const QString& bodySourceText,
+        const int editorPosition)
+    {
+        const QVector<SourceVisibleCharacter> visibleCharacters =
+            visibleCharactersForSourceText(bodySourceText);
+        if (visibleCharacters.isEmpty())
+        {
+            return 0;
+        }
+
+        const int boundedEditorPosition = clampedPosition(editorPosition, visibleCharacters.size());
+        if (boundedEditorPosition <= 0)
+        {
+            return sourcePositionForEditorSelectionStart(bodySourceText, 0);
+        }
+        if (boundedEditorPosition >= visibleCharacters.size())
+        {
+            return visibleCharacters.constLast().sourceEnd;
+        }
+
+        return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
     }
 
     QVariantMap invalidImportedResourcesInsertionResult(
@@ -395,13 +496,23 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
         noteId,
         editorDocumentText);
+    const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(sourceText);
+    const int editorTextSize = visibleCharacters.size();
+    const int editorAnchor = clampedPosition(cursorPosition, editorTextSize);
+    const int editorActive = clampedPosition(cursorPosition + selectionLength, editorTextSize);
+    const int editorSelectionStart = std::min(editorAnchor, editorActive);
+    const int editorSelectionEnd = std::max(editorAnchor, editorActive);
+    const int sourceSelectionStart = sourcePositionForEditorSelectionStart(sourceText, editorSelectionStart);
+    const int sourceSelectionEnd = editorSelectionStart == editorSelectionEnd
+        ? sourceSelectionStart
+        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionEnd);
 
     SetTag tagInput;
     QVariantMap result = tagInput.insertNamedTagIntoSource(
         tagName,
         sourceText,
-        cursorPosition,
-        selectionLength);
+        sourceSelectionStart,
+        sourceSelectionEnd - sourceSelectionStart);
 
     const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
     const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
@@ -409,6 +520,8 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
         resultSourceText);
     result.insert(QStringLiteral("editorDocumentText"), editorHtml);
     result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+    result.insert(QStringLiteral("editorSelectionStart"), editorSelectionStart);
+    result.insert(QStringLiteral("editorSelectionLength"), editorSelectionEnd - editorSelectionStart);
 
     if (!result.value(QStringLiteral("valid")).toBool())
     {
@@ -419,7 +532,6 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     result.insert(
         QStringLiteral("cursorPosition"),
         editorCursorPositionForSourcePosition(
-            noteId,
             resultSourceText,
             result.value(QStringLiteral("sourceCursorPosition")).toInt()));
     setParsedLineCount(lineCountForEditorSource(resultSourceText));

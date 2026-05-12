@@ -1945,9 +1945,9 @@ Rectangle {
 
         acceptedButtons: Qt.LeftButton
         anchors.fill: hierarchyTree
-        enabled: sidebarHierarchyView.hierarchyInteractionController !== null
+        enabled: !sidebarHierarchyView.hierarchyEditable && sidebarHierarchyView.hierarchyInteractionController !== null
         hoverEnabled: false
-        preventStealing: true
+        preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0
         propagateComposedEvents: true
         z: 1.1
 

@@ -165,6 +165,31 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         QStringLiteral("Alpha <highlight>Beta</highlight>\nGamma"),
         QStringLiteral("<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">Beta</span>"));
 
+    const QString formattedEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("format-note"),
+        QStringLiteral("<bold>Alpha</bold> Beta Gamma"));
+    const QVariantMap offsetMappedResult = session.insertFormatTagIntoSource(
+        QStringLiteral("italic"),
+        formattedEditorHtml,
+        6,
+        4);
+    QVERIFY(offsetMappedResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        offsetMappedResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<bold>Alpha</bold> <italic>Beta</italic> Gamma"));
+    QCOMPARE(offsetMappedResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap nestedFormatResult = session.insertFormatTagIntoSource(
+        QStringLiteral("italic"),
+        formattedEditorHtml,
+        0,
+        5);
+    QVERIFY(nestedFormatResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        nestedFormatResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<bold><italic>Alpha</italic></bold> Beta Gamma"));
+    QCOMPARE(nestedFormatResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha").size());
+
     const QVariantMap breakResult = session.insertFormatTagIntoSource(
         QStringLiteral("break"),
         editorHtml,

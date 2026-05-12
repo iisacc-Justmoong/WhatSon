@@ -55,6 +55,37 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInter
     QVERIFY(hierarchyReorderIndex >= 0);
 }
 
+void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString layoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/HierarchySidebarLayout.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(!layoutSource.isEmpty());
+
+    QVERIFY(layoutSource.contains(QStringLiteral("hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable")));
+
+    const qsizetype hierarchyTreeIndex = sidebarSource.indexOf(QStringLiteral("LV.Hierarchy {"));
+    QVERIFY(hierarchyTreeIndex >= 0);
+    const qsizetype editableBindingIndex = sidebarSource.indexOf(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable"), hierarchyTreeIndex);
+    const qsizetype movedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"), hierarchyTreeIndex);
+    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"), movedHandlerIndex);
+    QVERIFY(editableBindingIndex > hierarchyTreeIndex);
+    QVERIFY(movedHandlerIndex > editableBindingIndex);
+    QVERIFY(reorderCallIndex > movedHandlerIndex);
+
+    const qsizetype chevronSurfaceIndex = sidebarSource.indexOf(QStringLiteral("id: hierarchyChevronPointerSurface"));
+    QVERIFY(chevronSurfaceIndex >= 0);
+    const qsizetype chevronSurfaceEndIndex = sidebarSource.indexOf(QStringLiteral("Item {\n        id: hierarchySelectionOverlayLayer"), chevronSurfaceIndex);
+    QVERIFY(chevronSurfaceEndIndex > chevronSurfaceIndex);
+    const QString chevronSurfaceBlock = sidebarSource.mid(chevronSurfaceIndex, chevronSurfaceEndIndex - chevronSurfaceIndex);
+    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("enabled: !sidebarHierarchyView.hierarchyEditable")));
+    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0")));
+    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress")));
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsDirectlyFromQml()
 {
     const QString sidebarSource = readUtf8SourceFile(

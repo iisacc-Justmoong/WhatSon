@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import LVRS 1.0 as LV
 import "../contents" as ContentsView
@@ -43,6 +44,46 @@ Item {
     readonly property bool editorReadOnly: !contentViewLayout.noteEditorSession
             || contentViewLayout.noteEditorSession.readOnly === undefined
             || Boolean(contentViewLayout.noteEditorSession.readOnly)
+    readonly property bool editorFormatContextMenuAvailable: !contentViewLayout.editorReadOnly
+            && contentsTextEditor
+            && contentsTextEditor.editorSelectionLength > 0
+    readonly property var editorFormatContextMenuItems: [
+        {
+            "label": "Bold",
+            "shortcut": "Cmd+B",
+            "keyVisible": true,
+            "enabled": contentViewLayout.editorFormatContextMenuAvailable,
+            "eventName": "editor.format.bold"
+        },
+        {
+            "label": "Italic",
+            "shortcut": "Cmd+I",
+            "keyVisible": true,
+            "enabled": contentViewLayout.editorFormatContextMenuAvailable,
+            "eventName": "editor.format.italic"
+        },
+        {
+            "label": "Underline",
+            "shortcut": "Cmd+U",
+            "keyVisible": true,
+            "enabled": contentViewLayout.editorFormatContextMenuAvailable,
+            "eventName": "editor.format.underline"
+        },
+        {
+            "label": "Strikethrough",
+            "shortcut": "Cmd+Shift+X",
+            "keyVisible": true,
+            "enabled": contentViewLayout.editorFormatContextMenuAvailable,
+            "eventName": "editor.format.strikethrough"
+        },
+        {
+            "label": "Highlight",
+            "shortcut": "Cmd+Shift+E",
+            "keyVisible": true,
+            "enabled": contentViewLayout.editorFormatContextMenuAvailable,
+            "eventName": "editor.format.highlight"
+        }
+    ]
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -141,6 +182,45 @@ Item {
                     editorDocumentText,
                     Number(formatResult.cursorPosition) || 0);
     }
+    function editorFormatContextMenuPointerTriggerAccepted(triggerKind) {
+        const normalizedTrigger = triggerKind === undefined || triggerKind === null
+                ? ""
+                : String(triggerKind).trim().toLowerCase();
+        return normalizedTrigger === "rightclick"
+                || normalizedTrigger === "right-click"
+                || normalizedTrigger === "contextmenu"
+                || normalizedTrigger === "context-menu";
+    }
+    function openEditorFormatContextMenuFromPointer(referenceItem, localX, localY, triggerKind) {
+        if (!contentViewLayout.editorFormatContextMenuPointerTriggerAccepted(triggerKind)
+                || !contentViewLayout.editorFormatContextMenuAvailable) {
+            if (editorFormatContextMenu.opened)
+                editorFormatContextMenu.close();
+            return false;
+        }
+
+        editorFormatContextMenu.openFor(
+                    referenceItem ? referenceItem : contentViewLayout,
+                    Number(localX) || 0,
+                    Number(localY) || 0);
+        return true;
+    }
+    function handleEditorFormatContextMenuTrigger(eventName) {
+        const normalizedEventName = eventName === undefined || eventName === null
+                ? ""
+                : String(eventName).trim();
+        if (normalizedEventName === "editor.format.bold")
+            return contentViewLayout.applyEditorFormatTag("bold");
+        if (normalizedEventName === "editor.format.italic")
+            return contentViewLayout.applyEditorFormatTag("italic");
+        if (normalizedEventName === "editor.format.underline")
+            return contentViewLayout.applyEditorFormatTag("underline");
+        if (normalizedEventName === "editor.format.strikethrough")
+            return contentViewLayout.applyEditorFormatTag("strikethrough");
+        if (normalizedEventName === "editor.format.highlight")
+            return contentViewLayout.applyEditorFormatTag("highlight");
+        return false;
+    }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -181,6 +261,26 @@ Item {
                     if (contentViewLayout.noteEditorSession
                             && contentViewLayout.noteEditorSession.persistEditorFile !== undefined) {
                         contentViewLayout.noteEditorSession.persistEditorFile(path);
+                    }
+                }
+
+                TapHandler {
+                    id: editorFormatContextMenuTapHandler
+
+                    acceptedButtons: Qt.RightButton
+                    acceptedModifiers: Qt.KeyboardModifierMask
+                    enabled: contentViewLayout.editorFormatContextMenuAvailable
+                    gesturePolicy: TapHandler.DragThreshold
+                    grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+
+                    onTapped: function (eventPoint, button) {
+                        if (button !== Qt.RightButton)
+                            return;
+                        contentViewLayout.openEditorFormatContextMenuFromPointer(
+                                    contentsTextEditor,
+                                    eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
+                                    eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
+                                    "rightClick");
                     }
                 }
             }
@@ -290,6 +390,20 @@ Item {
             sequence: "Meta+Shift+B"
 
             onActivated: contentViewLayout.applyEditorFormatTag("break")
+        }
+
+        LV.ContextMenu {
+            id: editorFormatContextMenu
+
+            autoCloseOnTrigger: true
+            closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+            items: contentViewLayout.editorFormatContextMenuItems
+            modal: false
+            parent: Controls.Overlay.overlay
+
+            onItemEventTriggered: function (eventName, payload, index, item) {
+                contentViewLayout.handleEditorFormatContextMenuTrigger(eventName);
+            }
         }
     }
 }

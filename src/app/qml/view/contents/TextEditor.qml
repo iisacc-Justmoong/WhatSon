@@ -243,6 +243,30 @@ LV.TextEditor {
         return true;
     }
 
+    function boundedCursorPosition(value) {
+        const textLength = textEditor.length !== undefined
+                ? Math.max(0, Math.floor(Number(textEditor.length) || 0))
+                : textEditor.editorDocumentText.length;
+        return Math.max(
+                    0,
+                    Math.min(
+                        textLength,
+                        Math.floor(Number(value) || 0)));
+    }
+
+    function restoreEditorCursorPosition(nextCursorPosition) {
+        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
+        textEditor.forceEditorFocus();
+        textEditor.cursorPosition = targetCursorPosition;
+        textEditor.deselect();
+        Qt.callLater(function () {
+            const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);
+            textEditor.forceEditorFocus();
+            textEditor.cursorPosition = deferredCursorPosition;
+            textEditor.deselect();
+        });
+    }
+
     function findDescendantByObjectName(root, objectName) {
         if (!root)
             return null;
@@ -274,7 +298,7 @@ LV.TextEditor {
         textEditor.text = nextText === undefined || nextText === null
                 ? ""
                 : String(nextText);
-        textEditor.cursorPosition = Math.max(0, Number(nextCursorPosition) || 0);
+        textEditor.restoreEditorCursorPosition(nextCursorPosition);
         return true;
     }
 
