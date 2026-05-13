@@ -21,8 +21,9 @@
   characters are normalized to `\n`.
 - `editorCursorLineIndex` is derived from the plain-text cursor position, giving the sibling gutter the current logical
   cursor line for its indicator.
-- `editorSelectionStart` and `editorSelectionLength` expose normalized public LVRS selection metadata so the outer
-  content layout can dispatch C++ format commands without installing key handlers inside this wrapper.
+- `editorSelectionStart`, `editorSelectionLength`, and `editorSelectedText` expose normalized public LVRS selection
+  metadata so the outer content layout can dispatch C++ format commands without installing key handlers inside this
+  wrapper.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's

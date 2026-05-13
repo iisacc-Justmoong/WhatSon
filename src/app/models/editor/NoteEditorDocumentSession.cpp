@@ -7,6 +7,7 @@
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -65,6 +66,12 @@ namespace
     {
         int sourceStart = 0;
         int sourceEnd = 0;
+    };
+
+    struct EditorSelectionRange final
+    {
+        int editorStart = 0;
+        int editorEnd = 0;
     };
 
     QString sourceTagName(QStringView tagToken)
@@ -168,6 +175,100 @@ namespace
         }
 
         return visibleCharacters;
+    }
+
+    QString visibleTextForSourceText(const QString& bodySourceText)
+    {
+        const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(bodySourceText);
+        QString visibleText;
+        visibleText.reserve(visibleCharacters.size());
+        for (const SourceVisibleCharacter& visibleCharacter : visibleCharacters)
+        {
+            visibleText += bodySourceText.mid(
+                visibleCharacter.sourceStart,
+                visibleCharacter.sourceEnd - visibleCharacter.sourceStart);
+        }
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(visibleText);
+    }
+
+    int closestVisibleTextMatchStart(
+        const QString& visibleText,
+        const QString& selectedText,
+        const int preferredStart)
+    {
+        if (visibleText.isEmpty() || selectedText.isEmpty())
+        {
+            return -1;
+        }
+
+        int bestStart = -1;
+        int bestDistance = std::numeric_limits<int>::max();
+        int searchFrom = 0;
+        while (searchFrom <= visibleText.size())
+        {
+            const int candidateStart = visibleText.indexOf(selectedText, searchFrom);
+            if (candidateStart < 0)
+            {
+                break;
+            }
+
+            const int candidateDistance = candidateStart > preferredStart
+                ? candidateStart - preferredStart
+                : preferredStart - candidateStart;
+            if (candidateDistance < bestDistance)
+            {
+                bestStart = candidateStart;
+                bestDistance = candidateDistance;
+            }
+
+            searchFrom = candidateStart + 1;
+        }
+        return bestStart;
+    }
+
+    EditorSelectionRange resolvedEditorSelectionRange(
+        const QString& bodySourceText,
+        const int cursorPosition,
+        const int selectionLength,
+        const QString& selectedText)
+    {
+        const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(bodySourceText);
+        const int editorTextSize = visibleCharacters.size();
+        const int editorAnchor = clampedPosition(cursorPosition, editorTextSize);
+        const int editorActive = clampedPosition(cursorPosition + selectionLength, editorTextSize);
+        EditorSelectionRange range{
+            std::min(editorAnchor, editorActive),
+            std::max(editorAnchor, editorActive)
+        };
+
+        const QString normalizedSelectedText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(selectedText);
+        if (normalizedSelectedText.isEmpty())
+        {
+            return range;
+        }
+
+        const QString visibleText = visibleTextForSourceText(bodySourceText);
+        const QString currentSelectionText = visibleText.mid(
+            range.editorStart,
+            range.editorEnd - range.editorStart);
+        if (currentSelectionText == normalizedSelectedText)
+        {
+            return range;
+        }
+
+        const int repairedStart = closestVisibleTextMatchStart(
+            visibleText,
+            normalizedSelectedText,
+            range.editorStart);
+        if (repairedStart < 0)
+        {
+            return range;
+        }
+
+        range.editorStart = repairedStart;
+        range.editorEnd = repairedStart + normalizedSelectedText.size();
+        return range;
     }
 
     int editorCursorPositionForSourcePosition(
@@ -581,7 +682,8 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString& tagName,
     const QString& editorDocumentText,
     const int cursorPosition,
-    const int selectionLength)
+    const int selectionLength,
+    const QString& selectedText)
 {
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
@@ -589,16 +691,17 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
         noteId,
         editorDocumentText);
-    const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(sourceText);
-    const int editorTextSize = visibleCharacters.size();
-    const int editorAnchor = clampedPosition(cursorPosition, editorTextSize);
-    const int editorActive = clampedPosition(cursorPosition + selectionLength, editorTextSize);
-    const int editorSelectionStart = std::min(editorAnchor, editorActive);
-    const int editorSelectionEnd = std::max(editorAnchor, editorActive);
-    const int sourceSelectionStart = sourcePositionForEditorSelectionStart(sourceText, editorSelectionStart);
-    const int sourceSelectionEnd = editorSelectionStart == editorSelectionEnd
+    const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
+        sourceText,
+        cursorPosition,
+        selectionLength,
+        selectedText);
+    const int sourceSelectionStart = sourcePositionForEditorSelectionStart(
+        sourceText,
+        editorSelectionRange.editorStart);
+    const int sourceSelectionEnd = editorSelectionRange.editorStart == editorSelectionRange.editorEnd
         ? sourceSelectionStart
-        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionEnd);
+        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionRange.editorEnd);
 
     SetTag tagInput;
     QVariantMap result = tagInput.insertNamedTagIntoSource(
@@ -613,8 +716,10 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
         resultSourceText);
     result.insert(QStringLiteral("editorDocumentText"), editorHtml);
     result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
-    result.insert(QStringLiteral("editorSelectionStart"), editorSelectionStart);
-    result.insert(QStringLiteral("editorSelectionLength"), editorSelectionEnd - editorSelectionStart);
+    result.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+    result.insert(
+        QStringLiteral("editorSelectionLength"),
+        editorSelectionRange.editorEnd - editorSelectionRange.editorStart);
 
     if (!result.value(QStringLiteral("valid")).toBool())
     {

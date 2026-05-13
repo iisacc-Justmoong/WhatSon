@@ -171,7 +171,8 @@ Item {
                     tagName,
                     contentsTextEditor.editorDocumentText,
                     contentsTextEditor.editorSelectionStart,
-                    contentsTextEditor.editorSelectionLength);
+                    contentsTextEditor.editorSelectionLength,
+                    contentsTextEditor.editorSelectedText);
         if (!formatResult || !Boolean(formatResult.valid))
             return false;
 

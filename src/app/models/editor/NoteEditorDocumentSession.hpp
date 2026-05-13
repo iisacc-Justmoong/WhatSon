@@ -57,7 +57,8 @@ public:
         const QString& tagName,
         const QString& editorDocumentText,
         int cursorPosition,
-        int selectionLength);
+        int selectionLength,
+        const QString& selectedText = QString());
 
 signals:
     void noteActiveStateChanged();

@@ -13,6 +13,8 @@ LV.TextEditor {
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
+    readonly property string editorSelectedText: textEditor.normalizedEditorPlainText(
+            textEditor.selectedText !== undefined ? String(textEditor.selectedText) : "")
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
     readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
     readonly property real viewportContentY: textEditor.viewportFlickable

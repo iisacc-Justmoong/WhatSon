@@ -215,6 +215,32 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection()
+{
+    NoteEditorDocumentSession session;
+    const QString selectedParagraph =
+        QStringLiteral("병렬 에이전트 운용에서 가장 실용적인 최소 세트는 다음이다.");
+    const QString bodySource = selectedParagraph + QStringLiteral("\n\ngit checkout main");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("format-note"),
+        bodySource);
+
+    const QVariantMap result = session.insertFormatTagIntoSource(
+        QStringLiteral("highlight"),
+        editorHtml,
+        QStringLiteral("병렬 에이전").size(),
+        selectedParagraph.size(),
+        selectedParagraph);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<highlight>병렬 에이전트 운용에서 가장 실용적인 최소 세트는 다음이다.</highlight>\n\ngit checkout main"));
+    QCOMPARE(result.value(QStringLiteral("selectionStart")).toInt(), 0);
+    QCOMPARE(result.value(QStringLiteral("selectionLength")).toInt(), selectedParagraph.size());
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("git </highlight>")));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
 {
     NoteEditorDocumentSession session;

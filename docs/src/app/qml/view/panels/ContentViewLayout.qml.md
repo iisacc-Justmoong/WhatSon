@@ -32,11 +32,12 @@ deferred resources reload.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
-`NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, and selection
-metadata, then replace the LVRS document with the C++-projected editor HTML result. The session maps LVRS RichText
-plain selection offsets back to visible RAW source positions before inserting tags, so existing inline tags before the
-selection do not shift the selected range. Applying the same paired format to the exact text already enclosed by that
-format toggles it off in `SetTag`; QML does not special-case this. Highlight is bound to `Meta+Shift+E` /
+`NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, selection
+metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. The
+session maps LVRS RichText plain selection offsets back to visible RAW source positions before inserting tags, so
+existing inline tags before the selection do not shift the selected range. The selected text is also passed as a repair
+anchor when a RichText interaction reports a drifted offset. Applying the same paired format to the exact text already
+enclosed by that format toggles it off in `SetTag`; QML does not special-case this. Highlight is bound to `Meta+Shift+E` /
 `Ctrl+Shift+E`, and break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`.
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an

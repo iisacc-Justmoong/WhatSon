@@ -18,8 +18,9 @@ Declares the active note editor document session object.
   canonical RAW source, maps the editor cursor/selection to source coordinates, and turns imported resource metadata
   into standalone RAW `<resource ... />` insertion results plus an editor HTML projection for clipboard/drop flows.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
-  `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and an editor HTML projection for the
-  live LVRS surface.
+  `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
+  an editor HTML projection for the live LVRS surface. QML also passes `selectedText` so the session can repair a
+  drifted RichText selection offset before mutating RAW source.
 
 ## Guardrails
 
@@ -27,8 +28,8 @@ Declares the active note editor document session object.
 - LVRS `TextEditor` is a rich-text surface, so loaded source must be projected to editor HTML with explicit line breaks
   before it reaches `filePath`.
 - `.wsnbody` parsing and serialization stay in C++ note/editor model code, not QML.
-- Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name and current
-  cursor/selection metadata into this session boundary.
+- Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name, current
+  cursor/selection metadata, and selected visible text into this session boundary.
 
 ## 한국어
 
@@ -40,5 +41,6 @@ Declares the active note editor document session object.
 - clipboard/drop resource metadata를 노트 source에 넣을 때는 `insertImportedResourcesIntoSource(...)`가 현재
   editor document text를 canonical RAW source로 되돌리고, editor cursor/selection을 RAW source 좌표로 매핑한 뒤
   canonical `<resource ... />` 삽입 결과와 editor HTML projection을 함께 계산한다.
-- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는 `insertFormatTagIntoSource(...)`가 `SetTag`를 통해
-  RAW source와 editor HTML projection을 함께 계산한다.
+- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
+  `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
+  LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW visible 범위를 다시 찾는다.

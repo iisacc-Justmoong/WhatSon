@@ -137,6 +137,7 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(!contentViewLayoutSource.isEmpty());
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorSelectedText")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("insertFormatTagIntoSource")));
 
@@ -144,6 +145,7 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectedText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));

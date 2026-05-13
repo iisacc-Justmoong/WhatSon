@@ -38,8 +38,9 @@ Implements the active note editor document session.
   text, not raw `.wsnbody` XML, so QML does not need a legacy paste adapter. The result also includes an editor HTML
   projection so QML can refresh the LVRS rich-text surface without reintroducing raw newline rendering.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
-  current editor document text, cursor, and selection length; source mutation, same-tag toggle removal, projection, and
-  line-count refresh stay here.
+  current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
+  removal, projection, and line-count refresh stay here. If the RichText selection offset has drifted, the session
+  compares that selected text with the visible source span and repairs the source range before calling `SetTag`.
 - It must not expose the raw XML body file as the editor file path.
 
 ## 한국어
@@ -53,5 +54,6 @@ Implements the active note editor document session.
   현재 editor document text를 canonical RAW source로 변환한 뒤 그 package path를 standalone `<resource ... />`
   source block으로 삽입한다. 커서와 selection도 editor 좌표에서 RAW 좌표로 매핑한 뒤 다시 editor 좌표로 돌려준다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 보이는 selection 좌표를 RAW source
-  좌표로 변환한 뒤 `SetTag` 결과를 editor HTML로 다시 투영한다. 같은 태그가 정확히 감싼 selection이면
-  `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
+  좌표로 변환한 뒤 `SetTag` 결과를 editor HTML로 다시 투영한다. 좌표가 selected text와 맞지 않으면 실제
+  visible source에서 selected text 위치를 다시 찾아 paragraph 밖으로 wrapper가 새는 것을 막는다. 같은 태그가
+  정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
