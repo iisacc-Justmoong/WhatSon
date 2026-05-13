@@ -14,5 +14,7 @@ Implements resource taxonomy mapping for clipboard import candidates.
 ## 한국어
 
 - clipboard 후보의 MIME type과 파일 확장자를 resource format/type/bucket으로 정규화한다.
-- 앱이 지원하는 리소스 목록과 같은 taxonomy를 사용하므로 clipboard 이미지, 문서, 텍스트/HTML, 오디오/음악,
+- 앱이 지원하는 리소스 목록과 같은 taxonomy를 사용하므로 clipboard 이미지, 문서, 텍스트/HTML, 오디오,
   비디오, 3D 모델, 압축 파일 등이 파일 import와 같은 분류로 들어간다.
+- `.mp3`, `.m4a`, `.flac` 같은 음악 파일 확장자도 별도 `music` type으로 나누지 않고 canonical
+  `audio`/`Audio`로 정규화한다.

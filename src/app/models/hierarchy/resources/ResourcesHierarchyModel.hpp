@@ -43,7 +43,7 @@ inline QString resourcesHierarchyIconName(const ResourcesHierarchyItem& item)
         {
             return QStringLiteral("cwmPermissionView");
         }
-        if (item.type == QStringLiteral("music") || item.type == QStringLiteral("audio"))
+        if (item.type == QStringLiteral("audio"))
         {
             return QStringLiteral("audioToAudio");
         }

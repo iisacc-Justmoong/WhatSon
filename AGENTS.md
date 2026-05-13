@@ -102,8 +102,11 @@
   Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
 - `InAppClipboard`는 `src/app/models/clipboard`에서 단일 in-app clipboard resource state와 file/url 기반
   import orchestration, conflict/persistence 처리를 소유한다. 이 clipboard resource state는 이미지 전용이
-  아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML, 오디오/음악, 비디오, 3D 모델, 압축 파일 같은
+  아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML, 오디오, 비디오, 3D 모델, 압축 파일 같은
   비이미지 payload도 받을 수 있어야 한다. `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.
+- resource taxonomy에서 음악 파일과 일반 오디오 파일은 canonical type/bucket을 `audio`/`Audio`로 합친다.
+  과거 `music`/`Music` metadata는 legacy alias로만 읽고, 앱 내부 record와 resources hierarchy에는 `audio`만
+  남겨야 한다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
 

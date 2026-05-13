@@ -117,7 +117,7 @@ namespace
             return QStringLiteral("video");
         }
 
-        if ((typeKey == QStringLiteral("audio") || typeKey == QStringLiteral("music")) && !sourceUrl.isEmpty())
+        if (typeKey == QStringLiteral("audio") && !sourceUrl.isEmpty())
         {
             return QStringLiteral("audio");
         }

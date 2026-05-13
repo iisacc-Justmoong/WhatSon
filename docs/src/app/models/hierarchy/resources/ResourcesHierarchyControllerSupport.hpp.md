@@ -58,13 +58,14 @@ format list is visible even when `resourcePaths` is empty.
 - `Document`
 - `3D Model`
 - `Web page`
-- `Music`
 - `Audio`
 - `ZIP`
 - `Other`
 
 These type rows are expandable (`kind="type"`) and each expands into format children (`kind="format"`),
 so the sidebar keeps the legacy `type parent -> format children` interaction from the old hierarchy UI.
+Music file extensions such as `.mp3`, `.m4a`, and `.flac` are part of the canonical `Audio` type row. Legacy
+`music`/`Music` package metadata is normalized into `audio`/`Audio` before hierarchy rows are built.
 
 ## Equality Contract
 

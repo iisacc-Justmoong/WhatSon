@@ -89,6 +89,97 @@ void WhatSonCppRegressionTests::resourcesHierarchyController_collapsesMultiDotIm
         QStringLiteral(".png"));
 }
 
+void WhatSonCppRegressionTests::resourcesHierarchyController_mergesLegacyMusicResourcesIntoAudio()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    const QString legacyPackageDirectoryPath =
+        QDir(temporaryDirectory.path()).filePath(QStringLiteral("legacy-song.wsresource"));
+    const QString audioPackageDirectoryPath =
+        QDir(temporaryDirectory.path()).filePath(QStringLiteral("field-recording.wsresource"));
+    QVERIFY(QDir().mkpath(legacyPackageDirectoryPath));
+    QVERIFY(QDir().mkpath(audioPackageDirectoryPath));
+
+    QFile legacyAsset(QDir(legacyPackageDirectoryPath).filePath(QStringLiteral("legacy-song.mp3")));
+    QVERIFY(legacyAsset.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(legacyAsset.write(QByteArrayLiteral("legacy music bytes")) >= 0);
+    legacyAsset.close();
+
+    QFile audioAsset(QDir(audioPackageDirectoryPath).filePath(QStringLiteral("field-recording.wav")));
+    QVERIFY(audioAsset.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(audioAsset.write(QByteArrayLiteral("audio bytes")) >= 0);
+    audioAsset.close();
+
+    QFile legacyMetadataFile(WhatSon::Resources::metadataFilePathForPackage(legacyPackageDirectoryPath));
+    QVERIFY(legacyMetadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    const QString legacyMetadataXml = QStringLiteral(
+        "<?xml version=\"1.0\"?>\n"
+        "<wsresource version=\"1\" schema=\"whatson.resource.package\" "
+        "id=\"legacy-song\" resourcePath=\"Demo.wsresources/legacy-song.wsresource\" "
+        "bucket=\"Music\" type=\"music\" format=\".mp3\">\n"
+        "    <asset path=\"legacy-song.mp3\"/>\n"
+        "</wsresource>\n");
+    QVERIFY(legacyMetadataFile.write(legacyMetadataXml.toUtf8()) >= 0);
+    legacyMetadataFile.close();
+
+    QFile audioMetadataFile(WhatSon::Resources::metadataFilePathForPackage(audioPackageDirectoryPath));
+    QVERIFY(audioMetadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    const QString audioMetadataXml = QStringLiteral(
+        "<?xml version=\"1.0\"?>\n"
+        "<wsresource version=\"1\" schema=\"whatson.resource.package\" "
+        "id=\"field-recording\" resourcePath=\"Demo.wsresources/field-recording.wsresource\" "
+        "bucket=\"Audio\" type=\"audio\" format=\".wav\">\n"
+        "    <asset path=\"field-recording.wav\"/>\n"
+        "</wsresource>\n");
+    QVERIFY(audioMetadataFile.write(audioMetadataXml.toUtf8()) >= 0);
+    audioMetadataFile.close();
+
+    ResourcesHierarchyController controller;
+    controller.applyRuntimeSnapshot(
+        {legacyPackageDirectoryPath, audioPackageDirectoryPath},
+        temporaryDirectory.path(),
+        true);
+
+    bool foundAudioType = false;
+    bool foundMusicType = false;
+    bool foundMp3FormatUnderAudio = false;
+    bool foundWavFormatUnderAudio = false;
+    const QVariantList depthItems = controller.depthItems();
+    for (const QVariant& depthItemValue : depthItems)
+    {
+        const QVariantMap depthItem = depthItemValue.toMap();
+        const QString kind = depthItem.value(QStringLiteral("kind")).toString();
+        const QString type = depthItem.value(QStringLiteral("type")).toString();
+        const QString label = depthItem.value(QStringLiteral("label")).toString();
+        if (kind == QStringLiteral("type") && type == QStringLiteral("audio"))
+        {
+            foundAudioType = true;
+            QCOMPARE(label, QStringLiteral("Audio"));
+            QCOMPARE(depthItem.value(QStringLiteral("count")).toInt(), 2);
+        }
+        if (kind == QStringLiteral("type") && type == QStringLiteral("music"))
+        {
+            foundMusicType = true;
+        }
+        if (kind == QStringLiteral("format") && type == QStringLiteral("audio") && label == QStringLiteral(".mp3"))
+        {
+            foundMp3FormatUnderAudio = true;
+            QCOMPARE(depthItem.value(QStringLiteral("count")).toInt(), 1);
+        }
+        if (kind == QStringLiteral("format") && type == QStringLiteral("audio") && label == QStringLiteral(".wav"))
+        {
+            foundWavFormatUnderAudio = true;
+            QCOMPARE(depthItem.value(QStringLiteral("count")).toInt(), 1);
+        }
+    }
+
+    QVERIFY(foundAudioType);
+    QVERIFY(!foundMusicType);
+    QVERIFY(foundMp3FormatUnderAudio);
+    QVERIFY(foundWavFormatUnderAudio);
+}
+
 void WhatSonCppRegressionTests::resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge()
 {
     ResourcesHierarchyController resourcesController;

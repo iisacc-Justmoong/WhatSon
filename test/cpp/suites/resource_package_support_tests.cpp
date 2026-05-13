@@ -122,3 +122,67 @@ void WhatSonCppRegressionTests::resourcePackageSupport_normalizesTerminalFormatF
     QCOMPARE(loadedMetadata.type, QStringLiteral("image"));
     QCOMPARE(loadedMetadata.bucket, QStringLiteral("Image"));
 }
+
+void WhatSonCppRegressionTests::resourcePackageSupport_normalizesMusicAliasToAudioTaxonomy()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    const QString mp3AssetPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("voice-memo.mp3"));
+    QFile mp3Asset(mp3AssetPath);
+    QVERIFY(mp3Asset.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(mp3Asset.write(QByteArrayLiteral("fake mp3 bytes")) >= 0);
+    mp3Asset.close();
+
+    const WhatSon::Resources::ResourcePackageMetadata inferredMetadata =
+        WhatSon::Resources::buildMetadataForAssetFile(
+            mp3AssetPath,
+            QStringLiteral("voice-memo"),
+            QStringLiteral("Demo.wsresources/voice-memo.wsresource"));
+    QCOMPARE(inferredMetadata.format, QStringLiteral(".mp3"));
+    QCOMPARE(inferredMetadata.type, QStringLiteral("audio"));
+    QCOMPARE(inferredMetadata.bucket, QStringLiteral("Audio"));
+
+    WhatSon::Resources::ResourcePackageMetadata legacyMetadata;
+    legacyMetadata.resourceId = QStringLiteral("legacy-song");
+    legacyMetadata.resourcePath = QStringLiteral("Demo.wsresources/legacy-song.wsresource");
+    legacyMetadata.assetPath = QStringLiteral("legacy-song.mp3");
+    legacyMetadata.format = QStringLiteral(".mp3");
+    legacyMetadata.type = QStringLiteral("music");
+    legacyMetadata.bucket = QStringLiteral("Music");
+
+    const QString metadataXml = WhatSon::Resources::createResourcePackageMetadataXml(legacyMetadata);
+    QVERIFY(!metadataXml.contains(QStringLiteral("type=\"music\"")));
+    QVERIFY(!metadataXml.contains(QStringLiteral("bucket=\"Music\"")));
+    QVERIFY(metadataXml.contains(QStringLiteral("type=\"audio\"")));
+    QVERIFY(metadataXml.contains(QStringLiteral("bucket=\"Audio\"")));
+
+    const QString packageDirectoryPath =
+        QDir(temporaryDirectory.path()).filePath(QStringLiteral("legacy-song.wsresource"));
+    QVERIFY(QDir().mkpath(packageDirectoryPath));
+    QVERIFY(QFile::copy(mp3AssetPath, QDir(packageDirectoryPath).filePath(QStringLiteral("legacy-song.mp3"))));
+
+    QFile metadataFile(WhatSon::Resources::metadataFilePathForPackage(packageDirectoryPath));
+    QVERIFY(metadataFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    const QString legacyMetadataXml = QStringLiteral(
+        "<?xml version=\"1.0\"?>\n"
+        "<wsresource version=\"1\" schema=\"whatson.resource.package\" "
+        "id=\"legacy-song\" resourcePath=\"Demo.wsresources/legacy-song.wsresource\" "
+        "bucket=\"Music\" type=\"music\" format=\".mp3\">\n"
+        "    <asset path=\"legacy-song.mp3\"/>\n"
+        "</wsresource>\n");
+    QVERIFY(metadataFile.write(legacyMetadataXml.toUtf8()) >= 0);
+    metadataFile.close();
+
+    WhatSon::Resources::ResourcePackageMetadata loadedMetadata;
+    QString loadError;
+    QVERIFY2(
+        WhatSon::Resources::loadResourcePackageMetadata(
+            packageDirectoryPath,
+            &loadedMetadata,
+            &loadError),
+        qPrintable(loadError));
+    QCOMPARE(loadedMetadata.format, QStringLiteral(".mp3"));
+    QCOMPARE(loadedMetadata.type, QStringLiteral("audio"));
+    QCOMPARE(loadedMetadata.bucket, QStringLiteral("Audio"));
+}

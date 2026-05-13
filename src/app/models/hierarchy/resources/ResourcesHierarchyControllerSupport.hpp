@@ -183,7 +183,6 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             || typeKey == QStringLiteral("document")
             || typeKey == QStringLiteral("model")
             || typeKey == QStringLiteral("link")
-            || typeKey == QStringLiteral("music")
             || typeKey == QStringLiteral("audio")
             || typeKey == QStringLiteral("archive"))
         {
@@ -215,10 +214,6 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         {
             return QStringLiteral("Web page");
         }
-        if (normalizedTypeKey == QStringLiteral("music"))
-        {
-            return QStringLiteral("Music");
-        }
         if (normalizedTypeKey == QStringLiteral("audio"))
         {
             return QStringLiteral("Audio");
@@ -239,7 +234,6 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             QStringLiteral("document"),
             QStringLiteral("model"),
             QStringLiteral("link"),
-            QStringLiteral("music"),
             QStringLiteral("audio"),
             QStringLiteral("archive"),
             QStringLiteral("other")
@@ -314,7 +308,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 QStringLiteral(".url")
             };
         }
-        if (normalizedTypeKey == QStringLiteral("music"))
+        if (normalizedTypeKey == QStringLiteral("audio"))
         {
             return {
                 QStringLiteral(".mp3"),
@@ -322,12 +316,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 QStringLiteral(".m4a"),
                 QStringLiteral(".flac"),
                 QStringLiteral(".alac"),
-                QStringLiteral(".aiff")
-            };
-        }
-        if (normalizedTypeKey == QStringLiteral("audio"))
-        {
-            return {
+                QStringLiteral(".aiff"),
                 QStringLiteral(".wav"),
                 QStringLiteral(".ogg"),
                 QStringLiteral(".opus"),

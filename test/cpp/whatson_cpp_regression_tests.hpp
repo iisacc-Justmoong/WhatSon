@@ -1285,9 +1285,11 @@ private slots:
     void resourceDetailPanelController_tracksCurrentResourceSelection();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
+    void resourcePackageSupport_normalizesMusicAliasToAudioTaxonomy();
     void noteFolderSemantics_normalizeDescriptorsAndXml();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
+    void resourcesHierarchyController_mergesLegacyMusicResourcesIntoAudio();
     void resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge();
     void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();

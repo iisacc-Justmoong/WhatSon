@@ -139,7 +139,7 @@ namespace WhatSon::Resources
         {
             return QStringLiteral("archive");
         }
-        if (value == QStringLiteral("sound"))
+        if (value == QStringLiteral("music") || value == QStringLiteral("sound"))
         {
             return QStringLiteral("audio");
         }
@@ -198,15 +198,13 @@ namespace WhatSon::Resources
             QStringLiteral(".webloc"),
             QStringLiteral(".url")
         };
-        static const QSet<QString> kMusicFormats = {
+        static const QSet<QString> kAudioFormats = {
             QStringLiteral(".mp3"),
             QStringLiteral(".aac"),
             QStringLiteral(".m4a"),
             QStringLiteral(".flac"),
             QStringLiteral(".alac"),
-            QStringLiteral(".aiff")
-        };
-        static const QSet<QString> kAudioFormats = {
+            QStringLiteral(".aiff"),
             QStringLiteral(".wav"),
             QStringLiteral(".ogg"),
             QStringLiteral(".opus"),
@@ -257,10 +255,6 @@ namespace WhatSon::Resources
         {
             return QStringLiteral("link");
         }
-        if (matches(kMusicFormats))
-        {
-            return QStringLiteral("music");
-        }
         if (matches(kAudioFormats))
         {
             return QStringLiteral("audio");
@@ -297,11 +291,9 @@ namespace WhatSon::Resources
         {
             return QStringLiteral("Web page");
         }
-        if (folded == QStringLiteral("music"))
-        {
-            return QStringLiteral("Music");
-        }
-        if (folded == QStringLiteral("audio") || folded == QStringLiteral("sound"))
+        if (folded == QStringLiteral("audio")
+            || folded == QStringLiteral("music")
+            || folded == QStringLiteral("sound"))
         {
             return QStringLiteral("Audio");
         }
@@ -339,10 +331,6 @@ namespace WhatSon::Resources
         if (normalizedTypeValue == QStringLiteral("link"))
         {
             return QStringLiteral("Web page");
-        }
-        if (normalizedTypeValue == QStringLiteral("music"))
-        {
-            return QStringLiteral("Music");
         }
         if (normalizedTypeValue == QStringLiteral("audio"))
         {
@@ -398,10 +386,6 @@ namespace WhatSon::Resources
         if (normalizedBucketValue == QStringLiteral("Web page"))
         {
             return QStringLiteral("link");
-        }
-        if (normalizedBucketValue == QStringLiteral("Music"))
-        {
-            return QStringLiteral("music");
         }
         if (normalizedBucketValue == QStringLiteral("Audio"))
         {

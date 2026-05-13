@@ -14,8 +14,8 @@ void WhatSonCppRegressionTests::inAppClipboard_matchesMimeAndFileTypesToResource
 
     QVERIFY(clipboard.setResourceFileType(QString(), QStringLiteral("audio/mpeg")));
     QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".mp3"));
-    QCOMPARE(clipboard.resourceType(), QStringLiteral("music"));
-    QCOMPARE(clipboard.resourceBucket(), QStringLiteral("Music"));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("audio"));
+    QCOMPARE(clipboard.resourceBucket(), QStringLiteral("Audio"));
     QVERIFY(clipboard.resourceFileName().endsWith(QStringLiteral(".mp3")));
 
     QMimeData mimeData;
