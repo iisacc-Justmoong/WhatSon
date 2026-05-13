@@ -711,9 +711,11 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
         : m_activeNoteId.trimmed();
-    const QString sourceText = bodySourceTextForEditorDocument(
-        noteId,
-        editorDocumentText);
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
     const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
         sourceText,
         cursorPosition,

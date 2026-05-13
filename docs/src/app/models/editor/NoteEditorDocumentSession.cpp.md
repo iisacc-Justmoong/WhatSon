@@ -16,10 +16,9 @@ Implements the active note editor document session.
 5. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
    HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
    so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
-6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source
-   when the editor projection still has the same logical visible text, maps the rendered selection to RAW
-   visible-character positions, applies `SetTag`, returns a fresh editor HTML projection, and maps the source cursor
-   back to the rendered editor cursor position.
+6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
+   maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
+   projection, and maps the source cursor back to the rendered editor cursor position.
 7. Clipboard image paste calls `insertImportedResourcesIntoSource(...)`; the session uses the same editor-document to
    RAW-source boundary, maps the editor selection to RAW positions, inserts generated resource tags that point at the
    already registered `.wsresource` package paths, refreshes parsed line count, and returns the projected editor HTML
@@ -40,11 +39,11 @@ Implements the active note editor document session.
   projection so QML can refresh the LVRS rich-text surface without reintroducing raw newline rendering.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
-  removal, projection, and line-count refresh stay here. The session prefers the active `.wsnbody` RAW source over a
-  lossy editor projection whenever both have the same logical visible text. Source-level rendered break tags such as
-  `<next />` and `<br>` count as one logical newline while selection is mapped. If the RichText selection offset has
-  drifted, the session compares that selected text with the visible source span and repairs the source range before
-  calling `SetTag`.
+  removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
+  format mutation basis so a lossy RichText projection cannot drop blank source rows before selection mapping.
+  Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
+  mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
+  span and repairs the source range before calling `SetTag`.
 - It must not expose the raw XML body file as the editor file path.
 
 ## 한국어
@@ -57,9 +56,9 @@ Implements the active note editor document session.
 - clipboard/drop으로 들어온 resource metadata는 이미 등록된 `.wsresource` package path를 담아야 한다. 이 세션은
   현재 editor document text를 canonical RAW source로 변환한 뒤 그 package path를 standalone `<resource ... />`
   source block으로 삽입한다. 커서와 selection도 editor 좌표에서 RAW 좌표로 매핑한 뒤 다시 editor 좌표로 돌려준다.
-- 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, editor projection의 logical visible
-  text가 로드된 `.wsnbody` RAW source와 같으면 `.wsnbody` source를 기준으로 mutation한다. 그 다음 보이는
-  selection 좌표를 RAW source 좌표로 변환하고 `SetTag` 결과를 editor HTML로 다시 투영한다. `<next />`와 `<br>`
-  같은 source-level rendered break는 selection 논리 좌표에서 newline 1글자로 센다. 좌표가 selected text와 맞지
-  않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph 밖으로 wrapper가 새는 것을 막는다.
+- 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
+  mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
+  row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline
+  1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
+  밖으로 wrapper가 새는 것을 막는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.

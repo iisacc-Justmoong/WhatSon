@@ -1238,6 +1238,7 @@ private slots:
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
     void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();
+    void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();

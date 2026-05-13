@@ -294,6 +294,54 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mapsLogicalSelectionAg
     QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("B<highlight>eta ")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("blank-line-selection-note"),
+        QStringLiteral("Intro\n\n여러 에이전트를 실제로 동시에 실행하려면 단순 브랜치보다 다음 형태가 더 안정하다.\n\ngit checkout main"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("blank-line-selection-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QCOMPARE(session.activeNoteId(), QStringLiteral("blank-line-selection-note"));
+    QVERIFY(session.hasActiveNote());
+    QCOMPARE(session.parsedLineCount(), 5);
+
+    const QString selectedLine =
+        QStringLiteral("여러 에이전트를 실제로 동시에 실행하려면 단순 브랜치보다 다음 형태가 더 안정하다.");
+    const QString collapsedEditorHtml = QStringLiteral(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" "
+        "\"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        "<html><head><meta name=\"qrichtext\" content=\"1\" /></head>"
+        "<body><p>Intro</p><p>%1</p><p>git checkout main</p></body></html>").arg(selectedLine);
+    const QVariantMap result = session.insertFormatTagIntoSource(
+        QStringLiteral("underline"),
+        collapsedEditorHtml,
+        QStringLiteral("Intro\n\n").size(),
+        selectedLine.size());
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(result.value(QStringLiteral("selectionStart")).toInt(), QStringLiteral("Intro\n\n").size());
+    QCOMPARE(result.value(QStringLiteral("selectionLength")).toInt(), selectedLine.size());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Intro\n\n<underline>여러 에이전트를 실제로 동시에 실행하려면 단순 브랜치보다 다음 형태가 더 안정하다.</underline>\n\ngit checkout main"));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("여러 <underline>에이전트")));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("git </underline>")));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags()
 {
     QTemporaryDir workspaceDir;

@@ -38,8 +38,10 @@ shortcuts read the sibling editor's live selection at command time, while the se
 into the remembered right-click snapshot. The session maps LVRS RichText plain selection offsets back to visible RAW
 source positions before inserting tags, so
 existing inline tags before the selection do not shift the selected range. The selected text is also passed as a repair
-anchor when a RichText interaction reports a drifted offset. Applying the same paired format to the exact text already
-enclosed by that format toggles it off in `SetTag`; QML does not special-case this. Highlight is bound to `Meta+Shift+E` /
+anchor when a RichText interaction reports a drifted offset. The C++ session uses the loaded `.wsnbody` RAW source as
+the format mutation basis, so a lossy editor RichText projection cannot remove blank source rows before selection is
+mapped. Applying the same paired format to the exact text already enclosed by that format toggles it off in `SetTag`;
+QML does not special-case this. Highlight is bound to `Meta+Shift+E` /
 `Ctrl+Shift+E`, and break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`.
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
@@ -95,6 +97,8 @@ compatibility handles and are not used to mount parser, projection, renderer, re
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
   브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령
   시점의 live selection을 사용하고, 컨텍스트 메뉴만 우클릭 interaction 전에 저장한 snapshot을 명시적으로 사용한다.
+  실제 포맷 mutation은 C++ 세션이 로드된 `.wsnbody` RAW source를 기준으로 수행하므로, editor RichText projection이
+  빈 source row를 손실해도 보이는 selection이 하단 문자열로 밀리지 않아야 한다.
   컨텍스트 메뉴는 선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을
   같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
   처리한다.

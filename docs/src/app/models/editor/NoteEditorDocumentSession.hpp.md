@@ -20,9 +20,8 @@ Declares the active note editor document session object.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
-  preferred mutation basis when the editor projection has the same logical visible text, and maps rendered break tags
-  such as `<next />`/`<br>` as one logical newline. QML also passes `selectedText` so the session can repair a drifted
-  RichText selection offset before mutating RAW source.
+  format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
+  `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source.
 
 ## Guardrails
 
@@ -47,6 +46,6 @@ Declares the active note editor document session object.
   canonical `<resource ... />` 삽입 결과와 editor HTML projection을 함께 계산한다.
 - `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
-  editor HTML projection과 로드된 `.wsnbody` RAW source의 logical visible text가 같으면 `.wsnbody` source가
-  mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리 좌표에서 newline 1글자로
-  취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW visible 범위를 다시 찾는다.
+  로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
+  좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
+  visible 범위를 다시 찾는다.
