@@ -157,6 +157,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("reloadImportedResources")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertion.editorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Paste")));
+    QVERIFY(contentViewLayoutSource.contains(
+        QStringLiteral("onActivatedAmbiguously: contentViewLayout.handleEditorPasteShortcut()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorCommandShortcutEnabled()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.focused")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorItem.activeFocus")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("enabled: contentViewLayout.editorCommandShortcutEnabled()")));
+    QVERIFY(!contentViewLayoutSource.contains(
+        QStringLiteral("enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly")));
     const int clipboardImportIndex = contentViewLayoutSource.indexOf(QStringLiteral("importClipboardImageForEditor()"));
     const int sourceInsertionIndex = contentViewLayoutSource.indexOf(QStringLiteral("insertImportedResourcesIntoSource("));
     const int editorReplacementIndex = contentViewLayoutSource.indexOf(QStringLiteral("replaceEditorDocumentText("));

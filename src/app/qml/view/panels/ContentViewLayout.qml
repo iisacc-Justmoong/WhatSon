@@ -126,6 +126,21 @@ Item {
             return Math.max(0, Number(value.count) || 0);
         return 0;
     }
+    function editorCommandShortcutEnabled() {
+        if (contentViewLayout.editorReadOnly || !contentsTextEditor)
+            return false;
+        if (contentsTextEditor.activeFocus)
+            return true;
+        if (contentsTextEditor.focused !== undefined && Boolean(contentsTextEditor.focused))
+            return true;
+
+        const editorItem = contentsTextEditor.editorItem !== undefined
+                ? contentsTextEditor.editorItem
+                : null;
+        return !!(editorItem
+                  && editorItem.activeFocus !== undefined
+                  && Boolean(editorItem.activeFocus));
+    }
     function pasteClipboardImageIntoEditor() {
         if (!contentViewLayout.resourcesImportController
                 || !contentViewLayout.noteEditorSession
@@ -374,16 +389,17 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Paste
 
             onActivated: contentViewLayout.handleEditorPasteShortcut()
+            onActivatedAmbiguously: contentViewLayout.handleEditorPasteShortcut()
         }
 
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Bold
 
             onActivated: contentViewLayout.applyEditorFormatTag("bold")
@@ -392,7 +408,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Italic
 
             onActivated: contentViewLayout.applyEditorFormatTag("italic")
@@ -401,7 +417,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Underline
 
             onActivated: contentViewLayout.applyEditorFormatTag("underline")
@@ -410,7 +426,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Ctrl+Shift+X"
 
             onActivated: contentViewLayout.applyEditorFormatTag("strikethrough")
@@ -419,7 +435,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Meta+Shift+X"
 
             onActivated: contentViewLayout.applyEditorFormatTag("strikethrough")
@@ -428,7 +444,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Ctrl+Shift+E"
 
             onActivated: contentViewLayout.applyEditorFormatTag("highlight")
@@ -437,7 +453,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Meta+Shift+E"
 
             onActivated: contentViewLayout.applyEditorFormatTag("highlight")
@@ -446,7 +462,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Ctrl+Shift+B"
 
             onActivated: contentViewLayout.applyEditorFormatTag("break")
@@ -455,7 +471,7 @@ Item {
         Shortcut {
             autoRepeat: false
             context: Qt.WindowShortcut
-            enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: "Meta+Shift+B"
 
             onActivated: contentViewLayout.applyEditorFormatTag("break")

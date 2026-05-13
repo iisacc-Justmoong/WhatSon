@@ -117,6 +117,24 @@ void WhatSonCppRegressionTests::resourceClipboardImportSupport_extractsMimeImage
         &extractedPlatformImage));
     QCOMPARE(extractedPlatformImage.size(), sourceImage.size());
 
+    QMimeData genericQtImageMimeData;
+    genericQtImageMimeData.setData(QStringLiteral("application/x-qt-image"), encodedPng);
+
+    QImage extractedGenericImage;
+    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
+        &genericQtImageMimeData,
+        &extractedGenericImage));
+    QCOMPARE(extractedGenericImage.size(), sourceImage.size());
+
+    QMimeData macScreenshotMimeData;
+    macScreenshotMimeData.setData(QStringLiteral("com.apple.tiff"), encodedPng);
+
+    QImage extractedMacScreenshotImage;
+    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
+        &macScreenshotMimeData,
+        &extractedMacScreenshotImage));
+    QCOMPARE(extractedMacScreenshotImage.size(), sourceImage.size());
+
     QMimeData imageObjectMimeData;
     imageObjectMimeData.setImageData(sourceImage);
 

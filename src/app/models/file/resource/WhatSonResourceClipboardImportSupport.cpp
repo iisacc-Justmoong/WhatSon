@@ -17,12 +17,14 @@ namespace
     {
         const QString normalizedFormat = mimeFormat.trimmed().toCaseFolded();
         return normalizedFormat.startsWith(QStringLiteral("image/"))
+            || normalizedFormat.contains(QStringLiteral("image"))
             || normalizedFormat.contains(QStringLiteral("png"))
             || normalizedFormat.contains(QStringLiteral("jpeg"))
             || normalizedFormat.contains(QStringLiteral("jpg"))
             || normalizedFormat.contains(QStringLiteral("gif"))
             || normalizedFormat.contains(QStringLiteral("bmp"))
             || normalizedFormat.contains(QStringLiteral("webp"))
+            || normalizedFormat.contains(QStringLiteral("tif"))
             || normalizedFormat.contains(QStringLiteral("tiff"))
             || normalizedFormat.contains(QStringLiteral("heic"))
             || normalizedFormat.contains(QStringLiteral("heif"));

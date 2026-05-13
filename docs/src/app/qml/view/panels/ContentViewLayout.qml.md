@@ -34,6 +34,11 @@ Clipboard image paste is handled as a narrow command flow: refresh clipboard ima
 `ResourcesImportController.importClipboardImageForEditor()`, ask `NoteEditorDocumentSession` to compute the canonical
 RAW resource insertion and editor HTML projection, replace the LVRS document with that C++ result, then run the
 deferred resources reload.
+The paste and editor-format shortcuts are enabled by the LVRS editor command focus, which checks the wrapper focus, the
+LVRS `focused` state, and the inner `editorItem.activeFocus` surface. This keeps `Cmd+V` routed through the resource
+import path even when the native `TextEdit` inside `LV.TextEditor` owns focus.
+The paste shortcut also routes `activatedAmbiguously` to the same command handler because the native editor surface can
+hold a matching paste shortcut; image paste must still reach `ResourcesImportController` before any native text fallback.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
@@ -103,7 +108,10 @@ compatibility handles and are not used to mount parser, projection, renderer, re
   숨김 정책과 같이 `gutterVisible`을 꺼서 본문 폭을 확보한다.
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
 - 이미지 paste는 `ResourcesImportController`와 `NoteEditorDocumentSession`의 C++ source/editor HTML 결과를 이어
-  붙이는 얇은 command wiring으로 제한한다.
+  붙이는 얇은 command wiring으로 제한한다. 단축키 활성 조건은 LVRS wrapper와 내부 `editorItem.activeFocus`를 함께
+  보아, 실제 native editor surface가 포커스를 가진 상태에서도 `Cmd+V`가 resource import 경로로 들어와야 한다.
+  native editor surface가 같은 paste shortcut을 가진 경우의 ambiguous activation도 같은 command handler로 보내,
+  이미지 clipboard가 native text paste fallback으로 빠지기 전에 `ResourcesImportController`까지 도달하게 한다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
   브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령

@@ -61,8 +61,8 @@ The implementation now supports two closely related sequences.
   Copying an image in another app and immediately switching back to WhatSon therefore no longer depends on a stale
   cached `clipboardImageAvailable` flag before `Cmd+V` can import the image into the note.
 - Clipboard image extraction now also accepts browser/platform variants that do not arrive as a plain `image/*` MIME:
-  image-like platform MIME names such as `public.png` / `public.tiff`, plus `text/html` or plain-text `data:image/...`
-  payloads now feed the same temporary-PNG import path.
+  image-like platform MIME names such as `public.png` / `public.tiff` / `com.apple.tiff`, generic Qt image MIME names,
+  plus `text/html` or plain-text `data:image/...` payloads now feed the same temporary-PNG import path.
   Copying an image from a browser page therefore still resolves as a binary image import even when the clipboard uses
   HTML/data-URL transport instead of `hasImage()`.
 - Clipboard image extraction now also falls back from `QMimeData` inspection to direct `QClipboard::image()` /
