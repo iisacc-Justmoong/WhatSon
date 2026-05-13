@@ -679,7 +679,6 @@ LV.ApplicationWindow {
                     noteEditorSession: applicationWindow.rootNoteEditorSession
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
-                    resourcesImportController: applicationWindow.rootResourcesImportController
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
                     sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
@@ -743,7 +742,6 @@ LV.ApplicationWindow {
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
-            resourcesImportController: applicationWindow.rootResourcesImportController
             windowInteractions: windowInteractions
             agendaOverlayVisible: applicationWindow.agendaOverlayVisible
             agendaController: applicationWindow.rootAgendaController

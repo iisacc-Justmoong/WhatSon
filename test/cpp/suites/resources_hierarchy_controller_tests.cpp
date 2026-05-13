@@ -88,3 +88,65 @@ void WhatSonCppRegressionTests::resourcesHierarchyController_collapsesMultiDotIm
         controller.noteListModel()->data(imageIndex, ResourcesListModel::FormatRole).toString(),
         QStringLiteral(".png"));
 }
+
+void WhatSonCppRegressionTests::resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge()
+{
+    ResourcesHierarchyController resourcesController;
+    resourcesController.setResourcePaths({
+        QStringLiteral("assets/Cover.png"),
+        QStringLiteral("assets/Clip.mov")
+    });
+
+    int imageIndex = -1;
+    QVariantMap imageNode;
+    const QVariantList initialItems = resourcesController.depthItems();
+    for (int i = 0; i < initialItems.size(); ++i)
+    {
+        const QVariantMap item = initialItems.at(i).toMap();
+        if (item.value(QStringLiteral("kind")).toString() == QStringLiteral("type")
+            && item.value(QStringLiteral("type")).toString() == QStringLiteral("image"))
+        {
+            imageIndex = i;
+            imageNode = item;
+            break;
+        }
+    }
+
+    QVERIFY(imageIndex >= 0);
+    QVERIFY(imageNode.value(QStringLiteral("showChevron")).toBool());
+    QVERIFY(!imageNode.value(QStringLiteral("expanded")).toBool());
+
+    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
+    HierarchyInteractionBridge bridge;
+    SidebarHierarchyInteractionController interactionController;
+    bridge.setHierarchyController(&resourcesController);
+    interactionController.setHierarchyInteractionBridge(&bridge);
+    interactionController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources));
+
+    const QString imageExpansionKey = interactionController.itemExpansionKey(imageNode, imageIndex);
+    QCOMPARE(
+        imageExpansionKey,
+        QStringLiteral("hierarchy:%1:type:image")
+            .arg(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Resources)));
+
+    interactionController.captureExpansionState(resourcesController.depthItems());
+    QVERIFY(interactionController.armExpansionKey(imageExpansionKey));
+    const QVariantMap expandedResult =
+        interactionController.requestChevronExpansion(imageIndex, imageExpansionKey, false, imageExpansionKey);
+
+    QVERIFY(expandedResult.value(QStringLiteral("committed")).toBool());
+    QVERIFY(resourcesController.depthItems().at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+    QVERIFY(interactionController.expansionStateForKey(imageExpansionKey, false));
+
+    const QVariantMap expandedNode = resourcesController.depthItems().at(imageIndex).toMap();
+    QVERIFY(interactionController.armExpansionKey(imageExpansionKey));
+    const QVariantMap collapsedResult =
+        interactionController.requestChevronExpansion(imageIndex, imageExpansionKey, true, imageExpansionKey);
+
+    QVERIFY(collapsedResult.value(QStringLiteral("committed")).toBool());
+    QVERIFY(!resourcesController.depthItems().at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+    QVERIFY(!interactionController.expansionStateForKey(imageExpansionKey, true));
+    QCOMPARE(
+        expandedNode.value(QStringLiteral("key")).toString(),
+        imageNode.value(QStringLiteral("key")).toString());
+}

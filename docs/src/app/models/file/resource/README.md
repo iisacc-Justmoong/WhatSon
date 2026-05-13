@@ -15,10 +15,6 @@
 ## Child Files
 - `ResourcesImportController.cpp`
 - `ResourcesImportController.hpp`
-- `WhatSonClipboardResourceImportFileNamePolicy.cpp`
-- `WhatSonClipboardResourceImportFileNamePolicy.hpp`
-- `WhatSonResourceClipboardImportSupport.cpp`
-- `WhatSonResourceClipboardImportSupport.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

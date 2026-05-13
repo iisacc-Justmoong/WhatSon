@@ -2,9 +2,6 @@
 
 #include "app/models/file/resource/ResourcesImportController.hpp"
 
-#include <QBuffer>
-#include <QMimeData>
-
 namespace
 {
     QString readUtf8FileForResourceImportControllerTest(const QString& path)
@@ -28,7 +25,7 @@ void WhatSonCppRegressionTests::resourcesImportController_wiresAnnotationBitmapG
     QVERIFY(importControllerSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
 }
 
-void WhatSonCppRegressionTests::resourcesImportController_editorImageImportRegistersPackageBeforeNoteSourceInsertion()
+void WhatSonCppRegressionTests::resourcesImportController_editorImportReturnsPackageMetadataWithoutClipboardPipeline()
 {
     QTemporaryDir workspaceDirectory;
     QVERIFY(workspaceDirectory.isValid());
@@ -77,70 +74,12 @@ void WhatSonCppRegressionTests::resourcesImportController_editorImageImportRegis
     const QString resourcesListText = readUtf8FileForResourceImportControllerTest(resourcesFilePath);
     QVERIFY(resourcesListText.contains(resourcePath));
 
-    NoteEditorDocumentSession session;
-    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
-        QStringLiteral("clipboard-note"),
-        QStringLiteral("Capture\nReady"));
-    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
-        editorHtml,
-        QStringLiteral("Capture").size(),
-        0,
-        importedEntries);
-
-    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
-    const QString bodySourceText = insertion.value(QStringLiteral("bodySourceText")).toString();
-    QVERIFY(bodySourceText.contains(
-        QStringLiteral("path=\"%1\"").arg(resourcePath)));
-    QVERIFY(bodySourceText.contains(
-        QStringLiteral("id=\"%1\"").arg(resourceId)));
-    QVERIFY(!bodySourceText.contains(QStringLiteral("<img")));
-    QVERIFY(!bodySourceText.contains(assetPath));
-    QCOMPARE(session.parsedLineCount(), 3);
-}
-
-void WhatSonCppRegressionTests::resourceClipboardImportSupport_extractsMimeImagePayloads()
-{
-    QImage sourceImage(QSize(9, 5), QImage::Format_ARGB32_Premultiplied);
-    sourceImage.fill(qRgba(25, 90, 170, 255));
-
-    QByteArray encodedPng;
-    QBuffer buffer(&encodedPng);
-    QVERIFY(buffer.open(QIODevice::WriteOnly));
-    QVERIFY(sourceImage.save(&buffer, "PNG"));
-
-    QMimeData platformMimeData;
-    platformMimeData.setData(QStringLiteral("public.png"), encodedPng);
-
-    QImage extractedPlatformImage;
-    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
-        &platformMimeData,
-        &extractedPlatformImage));
-    QCOMPARE(extractedPlatformImage.size(), sourceImage.size());
-
-    QMimeData genericQtImageMimeData;
-    genericQtImageMimeData.setData(QStringLiteral("application/x-qt-image"), encodedPng);
-
-    QImage extractedGenericImage;
-    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
-        &genericQtImageMimeData,
-        &extractedGenericImage));
-    QCOMPARE(extractedGenericImage.size(), sourceImage.size());
-
-    QMimeData macScreenshotMimeData;
-    macScreenshotMimeData.setData(QStringLiteral("com.apple.tiff"), encodedPng);
-
-    QImage extractedMacScreenshotImage;
-    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
-        &macScreenshotMimeData,
-        &extractedMacScreenshotImage));
-    QCOMPARE(extractedMacScreenshotImage.size(), sourceImage.size());
-
-    QMimeData imageObjectMimeData;
-    imageObjectMimeData.setImageData(sourceImage);
-
-    QImage extractedObjectImage;
-    QVERIFY(WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(
-        &imageObjectMimeData,
-        &extractedObjectImage));
-    QCOMPARE(extractedObjectImage.size(), sourceImage.size());
+    const QString controllerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp"));
+    const QString controllerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp"));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("importClipboardImage")));
+    QVERIFY(!controllerHeader.contains(QStringLiteral("clipboardImageAvailable")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("ClipboardImportSupport")));
+    QVERIFY(!controllerSource.contains(QStringLiteral("importClipboardImageInternal")));
 }

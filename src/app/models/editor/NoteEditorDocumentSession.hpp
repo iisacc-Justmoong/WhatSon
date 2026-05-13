@@ -48,11 +48,6 @@ public:
         const QString& noteDirectoryPath);
     Q_INVOKABLE bool clearEditor();
     Q_INVOKABLE bool persistEditorFile(const QString& editorFilePath);
-    Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
-        const QString& editorDocumentText,
-        int cursorPosition,
-        int selectionLength,
-        const QVariantList& importedEntries);
     Q_INVOKABLE QVariantMap insertFormatTagIntoSource(
         const QString& tagName,
         const QString& editorDocumentText,

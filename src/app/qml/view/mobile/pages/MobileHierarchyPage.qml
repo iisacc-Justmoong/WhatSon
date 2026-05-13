@@ -60,7 +60,6 @@ Item {
     readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
     readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("mobile.MobileHierarchyPage") : null
-    property var resourcesImportController: null
     required property var sidebarHierarchyController
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
@@ -776,7 +775,6 @@ Item {
             noteActiveState: mobileHierarchyPage.noteActiveState
             noteEditorSession: mobileHierarchyPage.noteEditorSession
             noteListModel: mobileHierarchyPage.activeNoteListModel
-            resourcesImportController: mobileHierarchyPage.resourcesImportController
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
             agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
             agendaController: mobileHierarchyPage.agendaController

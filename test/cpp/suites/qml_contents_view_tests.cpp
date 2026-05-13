@@ -148,31 +148,21 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int editorParsedLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.editorFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.parsedLineCount")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("importClipboardImageForEditor")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertImportedResourcesIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("replaceEditorDocumentText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("refreshClipboardImageAvailabilitySnapshot")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("reloadImportedResources")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertion.editorDocumentText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Paste")));
-    QVERIFY(contentViewLayoutSource.contains(
-        QStringLiteral("onActivatedAmbiguously: contentViewLayout.handleEditorPasteShortcut()")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("importClipboardImageForEditor")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("insertImportedResourcesIntoSource")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("refreshClipboardImageAvailabilitySnapshot")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Paste")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("handleEditorPasteShortcut")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("pasteClipboardImageIntoEditor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorCommandShortcutEnabled()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.focused")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorItem.activeFocus")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("enabled: contentViewLayout.editorCommandShortcutEnabled()")));
     QVERIFY(!contentViewLayoutSource.contains(
         QStringLiteral("enabled: contentsTextEditor.activeFocus && !contentViewLayout.editorReadOnly")));
-    const int clipboardImportIndex = contentViewLayoutSource.indexOf(QStringLiteral("importClipboardImageForEditor()"));
-    const int sourceInsertionIndex = contentViewLayoutSource.indexOf(QStringLiteral("insertImportedResourcesIntoSource("));
-    const int editorReplacementIndex = contentViewLayoutSource.indexOf(QStringLiteral("replaceEditorDocumentText("));
-    const int runtimeReloadIndex = contentViewLayoutSource.indexOf(QStringLiteral("reloadImportedResources()"));
-    QVERIFY(clipboardImportIndex >= 0);
-    QVERIFY(sourceInsertionIndex > clipboardImportIndex);
-    QVERIFY(editorReplacementIndex > sourceInsertionIndex);
-    QVERIFY(runtimeReloadIndex > editorReplacementIndex);
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceFilePath: contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteId: contentViewLayout.editorActiveNoteId")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath")));

@@ -198,6 +198,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `SidebarHierarchyInteractionController.handleExpansionSignal(...)`, which commits through
   `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state or when
   this is the first expansion signal seen for that stable row key.
+  After a successful commit, the view forces `syncDisplayedHierarchyModel(true)` and emits
+  `requestViewHook("hierarchy.chevron.toggle")` so read-only hierarchy domains such as Resources receive the preserved
+  expansion overlay before another model refresh can repaint the old collapsed state.
   A separate pointer arm remains only as an activation-suppression/fallback path for platforms that do not deliver the
   LVRS expansion callback from the chevron `MouseArea`.
 - `SidebarHierarchyInteractionController.captureExpansionState(...)` seeds only missing keys. A fresh controller/model
@@ -213,7 +216,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
   otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold
   and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible row hides
-  or reveals its descendants immediately.
+  or reveals its descendants immediately. The same successful fallback commit forces
+  `syncDisplayedHierarchyModel(true)` and emits `requestViewHook("hierarchy.chevron.toggle")`.
 - The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
   slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
   arm aligned with the actual `HierarchyItem` chevron slot instead of an approximate row-width calculation.

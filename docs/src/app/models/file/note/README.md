@@ -66,9 +66,8 @@
   - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
 - Body-save normalization now also preserves proprietary inline formatting across paragraph boundaries by reopening any
   still-active style tags at the next serialized `<paragraph>`.
-- RAW resource import now also shares one static note-body tag generator:
-  drag/drop and clipboard-image insertion both normalize imported metadata through
-  `WhatSonNoteBodyResourceTagGenerator.*` before mutating `.wsnbody`.
+- RAW resource import uses one static note-body tag generator:
+  imported resource metadata is normalized through `WhatSonNoteBodyResourceTagGenerator.*` before mutating `.wsnbody`.
 - Automated C++ regression coverage now lives in `test/cpp/suites/*.cpp`, locking canonical resource-tag generation
   through `WhatSonNoteBodyResourceTagGenerator` and raw-folder-block inspection through `WhatSonNoteFolderSemantics`.
 - `.wsnbody` semantic tag classification is owned by `WhatSonNoteBodySemanticTagSupport.*` so the note-body save path

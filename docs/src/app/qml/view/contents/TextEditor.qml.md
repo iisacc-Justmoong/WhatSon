@@ -80,9 +80,9 @@
   별도로 포커스한다.
 - 이 wrapper에는 local `TapHandler`를 두지 않는다. 원래 pointer stream은 LVRS viewport flick 경로와 native
   editor surface가 그대로 받을 수 있고, WhatSon은 분류된 global touch 좌표만 커서 위치 계산에 사용한다.
-- 이미지 paste 또는 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition`
-  API로 반영한다. RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서
-  한 번 더 공개 cursor API로 복원한다. 이미지가 아닌 paste는 공개 `paste()` API로 되돌린다.
+- 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영한다.
+  RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
+  cursor API로 복원한다. 일반 paste는 공개 `paste()` API를 사용한다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

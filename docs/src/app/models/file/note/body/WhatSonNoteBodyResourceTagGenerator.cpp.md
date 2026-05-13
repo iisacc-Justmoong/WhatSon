@@ -7,5 +7,5 @@ Owns the static C++ normalization rules for note-body resource tag generation.
 - Prefers `resourcePath`-style package references and normalizes them through
   `WhatSon::Resources::normalizePath(...)`.
 - Normalizes type/format through the same resource metadata helpers that back `.wsresource` packages.
-- Emits canonical self-closing RAW tags with XML-escaped quoted attributes so drag/drop and clipboard import share one
+- Emits canonical self-closing RAW tags with XML-escaped quoted attributes so imported resource metadata uses one
   serialization rule.

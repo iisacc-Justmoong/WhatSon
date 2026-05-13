@@ -15,13 +15,6 @@ This Controller translates external local file URLs into resource package import
   The current import target hub. Import is rejected while this path is empty.
 - `busy`
   Indicates that import is in progress. Deferred editor-owned runtime reloads run after import completes.
-- `clipboardImageAvailable`
-  Reflects whether the system clipboard currently exposes an importable image payload. Editor paste shortcuts can bind
-  to this flag so image paste is intercepted only when the clipboard actually contains image data.
-- `refreshClipboardImageAvailabilitySnapshot()`
-  Forces one immediate clipboard rescan and returns the current image-availability decision. Paste handlers use this
-  when the app regains focus after the user copied an image in another process and QML needs a fresh answer on the
-  shortcut turn itself.
 - `lastError`
   Stores the last failure message.
 
@@ -30,7 +23,7 @@ This Controller translates external local file URLs into resource package import
 - `canImportUrls(...)`
   Returns whether a file-picker-style URL list can be imported into the current hub. The input may
   be flat or nested (for example picker payloads wrapped inside one `QVariant` entry).
-- `inspectImportConflictForUrls(...)`, `inspectClipboardImageImportConflict()`
+- `inspectImportConflictForUrls(...)`
   Return the first same-name import conflict against the current `*.wsresources` store as a small map
   (`conflict`, `sourceFileName`, `existingResourcePath`, `existingResourceId`, ...).
   Visual callers use that payload to open an `LV.Alert` before they decide whether the import should overwrite the
@@ -47,16 +40,6 @@ This Controller translates external local file URLs into resource package import
   This compatibility entrypoint now also aborts same-name conflicts unless the caller switches to the policy-aware
   variant after user confirmation. The returned metadata is produced only after the `.wsresource` package and
   `Resources.wsresources` registration have succeeded.
-- `importClipboardImage()`, `importClipboardImageForEditor()`
-  Clipboard-image variants of the same pipeline. They materialize the clipboard bitmap as a temporary PNG file, then
-  reuse the ordinary URL import path so resource package creation, metadata generation, and rollback semantics stay
-  identical to drag/drop imports.
-  The temporary asset file name is now a random 32-character mixed-case alphanumeric key, so clipboard-originated
-  resources do not reuse an ambiguous placeholder name inside the resource store.
-  Editor paste callers use the `ForEditor` variant so the active note links the registered `.wsresource` package path
-  before the deferred runtime reload.
-- `importClipboardImageWithConflictPolicy(...)`, `importClipboardImageForEditorWithConflictPolicy(...)`
-  Clipboard-image variants of the same explicit conflict-policy flow.
 - `reloadImportedResources()`
   Runs the deferred resources runtime reload for editor-drop callers after they finish `<resource ... />` insertion and
   same-note persistence.
@@ -77,8 +60,6 @@ Each input file is written into the current hub `*.wsresources` store with these
 - If a same-name conflict exists and the caller selects `KeepBoth`, fall back to the numbered `resourceId` path.
 - Create a flat `resourceId.wsresource` directory.
 - Copy the source file name unchanged for ordinary local-file imports.
-- Clipboard-image imports first synthesize a random 32-character mixed-case alphanumeric `.png` file name, then copy
-  that generated name into the package.
 - Generate `annotation.png` as an empty bitmap overlay canvas inside the package.
   - bitmap image imports mirror the source pixel size with a transparent PNG
   - non-bitmap imports fall back to a minimal transparent bitmap placeholder

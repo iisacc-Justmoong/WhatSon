@@ -374,9 +374,8 @@ WhatSon is an LVRS-based Qt Quick application.
   `<resource type="..." format="..." path="...">` calls into the live note source, and rebuild the in-editor
   resource-card overlay from the current presentation snapshot so the dropped asset appears immediately instead of
   waiting for a later filesystem reread.
-- Clipboard image MIME/data-url extraction now lives in
-  `src/app/models/file/resource/WhatSonResourceClipboardImportSupport.*`; `ResourcesImportController` remains the import
-  orchestration owner for conflict detection, package persistence, note-source injection, and reload callbacks.
+- The legacy clipboard image paste path has been removed. `ResourcesImportController` remains the file/url import
+  orchestration owner for conflict detection, package persistence, editor-return metadata, and reload callbacks.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
@@ -549,8 +548,8 @@ The automated regression suite lives under `test/`, with the maintained build en
 - `whatson_regression` combines the build gate and the runtime C++ regression suite for the standard repository
   verification pass.
 - Source-tree regression coverage also locks the single-responsibility controller split for hierarchy note-record
-  helpers, resource clipboard-image extraction, and editor selection-contract resolution, so those responsibilities do
-  not drift back into their orchestration controllers.
+  helpers, resource import orchestration, and editor selection-contract resolution, so those responsibilities do not
+  drift back into their orchestration controllers.
 
 ```bash
 cmake -S . -B build
@@ -1062,6 +1061,9 @@ for hub/note hierarchy payloads.
 - The sidebar fallback now hit-tests the actual LVRS `hierarchyItemChevron` slot, and the C++ expansion policy commits
   the first LVRS expansion callback for a stable row key so direct `HierarchyItem` chevron clicks persist even when the
   sidebar-level pointer arm does not receive the tap first.
+- Successful direct and fallback chevron commits force `syncDisplayedHierarchyModel(true)` and emit
+  `requestViewHook("hierarchy.chevron.toggle")`, so read-only domains such as the Resources taxonomy repaint from the
+  preserved expansion state immediately after a click.
 - `SidebarHierarchyView.qml` also mounts a transparent chevron-only pointer surface over the hierarchy body. It accepts
   only left-button presses inside the resolved LVRS chevron slot and rejects every other coordinate, so the QML view can
   guarantee fold/unfold clicks without turning the whole hierarchy into a virtual overlay.

@@ -123,6 +123,47 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_keepsFoote
 
 void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy()
 {
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    QVERIFY(!sidebarSource.isEmpty());
+
+    const qsizetype directHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemExpanded:"));
+    QVERIFY(directHandlerIndex >= 0);
+    const qsizetype directHandlerEndIndex =
+        sidebarSource.indexOf(QStringLiteral("onListItemMoved:"), directHandlerIndex);
+    QVERIFY(directHandlerEndIndex > directHandlerIndex);
+    const qsizetype directCommittedIndex =
+        sidebarSource.indexOf(QStringLiteral("if (result && result.committed)"), directHandlerIndex);
+    QVERIFY(directCommittedIndex > directHandlerIndex && directCommittedIndex < directHandlerEndIndex);
+    const QString directHandlerBlock =
+        sidebarSource.mid(directCommittedIndex, directHandlerEndIndex - directCommittedIndex);
+    const qsizetype directSyncIndex =
+        directHandlerBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncDisplayedHierarchyModel(true);"));
+    QVERIFY(directSyncIndex >= 0);
+    const qsizetype directHookIndex =
+        directHandlerBlock.indexOf(
+            QStringLiteral("sidebarHierarchyView.requestViewHook(\"hierarchy.chevron.toggle\");"));
+    QVERIFY(directHookIndex >= 0);
+
+    const qsizetype fallbackFunctionIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionAtPosition"));
+    QVERIFY(fallbackFunctionIndex >= 0);
+    const qsizetype fallbackFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyControllerReload"), fallbackFunctionIndex);
+    QVERIFY(fallbackFunctionEndIndex > fallbackFunctionIndex);
+    const qsizetype fallbackCommittedIndex =
+        sidebarSource.indexOf(QStringLiteral("if (result && result.committed)"), fallbackFunctionIndex);
+    QVERIFY(fallbackCommittedIndex > fallbackFunctionIndex && fallbackCommittedIndex < fallbackFunctionEndIndex);
+    const QString fallbackFunctionBlock =
+        sidebarSource.mid(fallbackCommittedIndex, fallbackFunctionEndIndex - fallbackCommittedIndex);
+    const qsizetype fallbackSyncIndex =
+        fallbackFunctionBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncDisplayedHierarchyModel(true);"));
+    QVERIFY(fallbackSyncIndex >= 0);
+    const qsizetype fallbackHookIndex =
+        fallbackFunctionBlock.indexOf(
+            QStringLiteral("sidebarHierarchyView.requestViewHook(\"hierarchy.chevron.toggle\");"));
+    QVERIFY(fallbackHookIndex >= 0);
+
     SidebarHierarchyInteractionController controller;
     FakeSidebarHierarchyInteractionBridge bridge;
     controller.setHierarchyInteractionBridge(&bridge);

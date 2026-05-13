@@ -96,7 +96,6 @@ Item {
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
-    property var resourcesImportController: null
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -117,15 +116,6 @@ Item {
             contentViewLayout.panelController.requestControllerHook(hookReason);
         contentViewLayout.viewHookRequested();
     }
-    function listLikeCount(value) {
-        if (value === undefined || value === null)
-            return 0;
-        if (value.length !== undefined)
-            return Math.max(0, Number(value.length) || 0);
-        if (value.count !== undefined)
-            return Math.max(0, Number(value.count) || 0);
-        return 0;
-    }
     function editorCommandShortcutEnabled() {
         if (contentViewLayout.editorReadOnly || !contentsTextEditor)
             return false;
@@ -140,49 +130,6 @@ Item {
         return !!(editorItem
                   && editorItem.activeFocus !== undefined
                   && Boolean(editorItem.activeFocus));
-    }
-    function pasteClipboardImageIntoEditor() {
-        if (!contentViewLayout.resourcesImportController
-                || !contentViewLayout.noteEditorSession
-                || contentViewLayout.editorReadOnly
-                || contentViewLayout.resourcesImportController.importClipboardImageForEditor === undefined
-                || contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource === undefined)
-            return false;
-
-        const importedEntries = contentViewLayout.resourcesImportController.importClipboardImageForEditor();
-        if (contentViewLayout.listLikeCount(importedEntries) <= 0)
-            return false;
-
-        const insertion = contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource(
-                    contentsTextEditor.editorDocumentText,
-                    contentsTextEditor.editorSelectionStart,
-                    contentsTextEditor.editorSelectionLength,
-                    importedEntries);
-        if (!insertion || !Boolean(insertion.valid))
-            return false;
-
-        const editorDocumentText = insertion.editorDocumentText !== undefined
-                && insertion.editorDocumentText !== null
-                ? String(insertion.editorDocumentText)
-                : String(insertion.bodySourceText);
-        if (!contentsTextEditor.replaceEditorDocumentText(
-                    editorDocumentText,
-                    Number(insertion.cursorPosition) || 0))
-            return false;
-
-        if (contentViewLayout.resourcesImportController.reloadImportedResources !== undefined)
-            return Boolean(contentViewLayout.resourcesImportController.reloadImportedResources());
-        return true;
-    }
-    function handleEditorPasteShortcut() {
-        if (!contentViewLayout.resourcesImportController
-                || contentViewLayout.resourcesImportController.refreshClipboardImageAvailabilitySnapshot === undefined
-                || !contentViewLayout.resourcesImportController.refreshClipboardImageAvailabilitySnapshot()) {
-            contentsTextEditor.pasteNativeClipboardText();
-            return;
-        }
-
-        contentViewLayout.pasteClipboardImageIntoEditor();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -384,16 +331,6 @@ Item {
                 sourceViewportHeight: contentsTextEditor.editorViewportHeight
                 visible: contentViewLayout.minimapVisible
             }
-        }
-
-        Shortcut {
-            autoRepeat: false
-            context: Qt.WindowShortcut
-            enabled: contentViewLayout.editorCommandShortcutEnabled()
-            sequence: StandardKey.Paste
-
-            onActivated: contentViewLayout.handleEditorPasteShortcut()
-            onActivatedAmbiguously: contentViewLayout.handleEditorPasteShortcut()
         }
 
         Shortcut {

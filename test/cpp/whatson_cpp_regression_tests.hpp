@@ -5,8 +5,6 @@
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 #define private public
 #include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
 #undef private
@@ -1172,7 +1170,6 @@ private slots:
     void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
-    void clipboardImportFileNamePolicy_generatesRandom32CharacterAlphaNumericPngNames();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void debugTrace_summarizesLargeTextFromPreviewOnly();
@@ -1240,7 +1237,6 @@ private slots:
     void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
-    void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
@@ -1286,9 +1282,9 @@ private slots:
     void noteFolderSemantics_normalizeDescriptorsAndXml();
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
+    void resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge();
     void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
-    void resourcesImportController_editorImageImportRegistersPackageBeforeNoteSourceInsertion();
-    void resourceClipboardImportSupport_extractsMimeImagePayloads();
+    void resourcesImportController_editorImportReturnsPackageMetadataWithoutClipboardPipeline();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();

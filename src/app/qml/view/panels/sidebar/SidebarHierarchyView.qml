@@ -994,6 +994,8 @@ Rectangle {
         if (result && result.committed) {
             if (target.item.expanded !== undefined)
                 target.item.expanded = nextExpanded;
+            sidebarHierarchyView.syncDisplayedHierarchyModel(true);
+            sidebarHierarchyView.requestViewHook("hierarchy.chevron.toggle");
             sidebarHierarchyView.scheduleSelectedHierarchySync(false);
         }
         return Boolean(result && result.committed);
@@ -2046,8 +2048,11 @@ Rectangle {
             const result = sidebarHierarchyView.hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded);
             if (result && result.rollbackRequired && item && item.expanded !== undefined)
                 item.expanded = Boolean(result.rollbackExpanded);
-            if (result && result.committed)
+            if (result && result.committed) {
+                sidebarHierarchyView.syncDisplayedHierarchyModel(true);
+                sidebarHierarchyView.requestViewHook("hierarchy.chevron.toggle");
                 sidebarHierarchyView.scheduleSelectedHierarchySync(false);
+            }
         }
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)

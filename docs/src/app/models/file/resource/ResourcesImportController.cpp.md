@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-The implementation now supports two closely related sequences.
+The implementation supports these related sequences.
 
 1. Common import path:
    Filter the input URL list, copy each file into a `.wsresource` package, and rewrite `Resources.wsresources`.
@@ -12,10 +12,7 @@ The implementation now supports two closely related sequences.
 3. Editor drop path (`importUrlsForEditor(...)`):
    Return normalized imported-entry metadata first, let the editor insert canonical `<resource ... />` RAW source into
    `.wsnbody`, and only then call `reloadImportedResources()` from QML.
-4. Clipboard-image path (`importClipboardImage(...)` / `importClipboardImageForEditor(...)`):
-   Read the current clipboard image, serialize it as a temporary PNG whose asset file name is a random 32-character
-   mixed-case alphanumeric key, and then hand that local file back into the same import pipeline used by drag/drop.
-5. Conflict-inspection path (`inspectImportConflictForUrls(...)` / `inspectClipboardImageImportConflict()`):
+4. Conflict-inspection path (`inspectImportConflictForUrls(...)`):
    Resolve the current hub/resources root, compare the incoming source file name against existing package asset names,
    and return the first duplicate so QML can ask the user what to do before the import mutates storage.
 
@@ -41,10 +38,7 @@ The implementation now supports two closely related sequences.
   `Resources.wsresources`.
 - Editor-facing import methods return those metadata maps only after the `.wsresources/<id>.wsresource` package and
   `Resources.wsresources` list entry have both been written; note-body insertion must link that package path rather
-  than embed the clipboard image payload directly.
-- Clipboard-image import intentionally does not create a second bespoke packaging path.
-  Temporary PNG materialization means package-id generation, `resource.xml` creation, rollback, and later runtime
-  reload all stay on the same battle-tested import path as ordinary file drops.
+  than embed incoming asset payloads directly.
 - The same shared import path now also owns annotation-canvas generation, so overwrite/rollback and fresh package
   creation cannot diverge on whether `annotation.png` exists.
 - That editor-return path intentionally defers the runtime reload callback until the view finishes RAW note mutation.
@@ -54,30 +48,10 @@ The implementation now supports two closely related sequences.
   `QVariantList` that wraps a file-dialog URL list), then flattens them into unique local files.
 - The editor drag/drop path also consumes native `drop.urls` payloads plus `text/uri-list` fallback lines, so Finder,
   Explorer, and other host file managers stay on the same rollback-safe import pipeline as menu/file-picker imports.
-- Clipboard availability is tracked as a live property by listening to `QClipboard::dataChanged()`, so the editor can
-  enable image-paste interception only while the clipboard still contains image data.
-- The Controller now also refreshes that clipboard-image snapshot when the app returns to the foreground and when QML
-  explicitly calls `refreshClipboardImageAvailabilitySnapshot()`.
-  Copying an image in another app and immediately switching back to WhatSon therefore no longer depends on a stale
-  cached `clipboardImageAvailable` flag before `Cmd+V` can import the image into the note.
-- Clipboard image extraction now also accepts browser/platform variants that do not arrive as a plain `image/*` MIME:
-  image-like platform MIME names such as `public.png` / `public.tiff` / `com.apple.tiff`, generic Qt image MIME names,
-  plus `text/html` or plain-text `data:image/...` payloads now feed the same temporary-PNG import path.
-  Copying an image from a browser page therefore still resolves as a binary image import even when the clipboard uses
-  HTML/data-URL transport instead of `hasImage()`.
-- Clipboard image extraction now also falls back from `QMimeData` inspection to direct `QClipboard::image()` /
-  `QClipboard::pixmap()` reads.
-  Native macOS screenshot captures that materialize as a pasteboard image object rather than an image-advertising MIME
-  payload therefore still enable `clipboardImageAvailable` and import correctly through `Cmd+V`.
-- Clipboard image import now allocates a random 32-character mixed-case alphanumeric `*.png` asset name before the
-  package copy runs.
-  Clipboard-originated resources therefore no longer depend on an ambiguous host file name and avoid accidental
-  same-name duplicate alerts that were caused by the old fixed `clipboard-image.png` placeholder.
 - QML callers should still treat the `QVariantList` return from `importUrlsForEditor(...)` as a Qt list-like value,
   not only as a strict JS `Array`, because post-import body insertion may otherwise skip valid imported entries.
-- `ContentViewLayout.qml` now uses the clipboard-image editor path directly on paste: it refreshes availability,
-  imports the clipboard image into `.wsresources` for editor metadata, asks `NoteEditorDocumentSession` to build the
-  RAW resource insertion from the returned `.wsresource` path, and reloads resources after the LVRS document is updated.
+- The former clipboard-image paste path has been removed from this Controller. New image-paste work must define a new
+  C++ clipboard import contract instead of depending on the deleted paste invokables.
 
 ## Failure Rule
 
@@ -95,4 +69,3 @@ signal.
 - Desktop/mobile editor drop surfaces, which import the files and then inject `<resource ...>` source tags into the
   current note before requesting the deferred resources runtime reload.
 - The compatibility wrappers that keep older drag/drop-style callers on the same code path.
-- The note editor paste shortcut, which imports clipboard screenshots/images and links them into the active note.

@@ -1,19 +1,14 @@
 #include "app/models/file/resource/ResourcesImportController.hpp"
 
-#include "app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"
-#include "app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 
-#include <QClipboard>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QGuiApplication>
-#include <QImage>
 #include <QHash>
 #include <QMetaType>
 #include <QRegularExpression>
@@ -21,7 +16,6 @@
 #include <QSequentialIterable>
 #include <QSet>
 #include <QUuid>
-#include <QTemporaryDir>
 #include <QUrl>
 #include <QVariantMap>
 
@@ -314,45 +308,6 @@ namespace
         }
 
         return true;
-    }
-
-    QString uniqueClipboardImportAssetFileName(
-        const QString& resourcesDirectoryPath,
-        QString* errorMessage = nullptr)
-    {
-        QList<ExistingResourcePackageEntry> existingEntries;
-        if (!loadExistingResourcePackageEntries(resourcesDirectoryPath, &existingEntries, errorMessage))
-        {
-            return {};
-        }
-
-        QSet<QString> existingAssetFileNames;
-        existingAssetFileNames.reserve(existingEntries.size());
-        for (const ExistingResourcePackageEntry& entry : std::as_const(existingEntries))
-        {
-            const QString assetFileName = entry.assetFileName.trimmed().toCaseFolded();
-            if (!assetFileName.isEmpty())
-            {
-                existingAssetFileNames.insert(assetFileName);
-            }
-        }
-
-        constexpr int kMaxAttempts = 256;
-        for (int attempt = 0; attempt < kMaxAttempts; ++attempt)
-        {
-            const QString candidateFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
-            if (!existingAssetFileNames.contains(candidateFileName.toCaseFolded()))
-            {
-                return candidateFileName;
-            }
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral(
-                "Failed to allocate a unique clipboard import asset name after repeated attempts.");
-        }
-        return {};
     }
 
     bool findFirstImportConflict(
@@ -892,23 +847,6 @@ ResourcesImportController::ResourcesImportController(QObject* parent)
     : QObject(parent)
 {
     WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
-    connect(
-        qApp,
-        &QGuiApplication::applicationStateChanged,
-        this,
-        [this](Qt::ApplicationState)
-        {
-            refreshClipboardImageAvailability();
-        });
-    if (QClipboard* clipboard = QGuiApplication::clipboard())
-    {
-        connect(
-            clipboard,
-            &QClipboard::dataChanged,
-            this,
-            &ResourcesImportController::refreshClipboardImageAvailability);
-    }
-    refreshClipboardImageAvailability();
 }
 
 QString ResourcesImportController::currentHubPath() const
@@ -938,11 +876,6 @@ void ResourcesImportController::setCurrentHubPath(QString hubPath)
 bool ResourcesImportController::busy() const noexcept
 {
     return m_busy;
-}
-
-bool ResourcesImportController::clipboardImageAvailable() const noexcept
-{
-    return m_clipboardImageAvailable;
 }
 
 QString ResourcesImportController::lastError() const
@@ -1012,59 +945,6 @@ QVariantMap ResourcesImportController::inspectImportConflictForUrls(const QVaria
     return importConflictMap(descriptor);
 }
 
-QVariantMap ResourcesImportController::inspectClipboardImageImportConflict() const
-{
-    if (m_busy || m_currentHubPath.trimmed().isEmpty())
-    {
-        return emptyImportConflictMap();
-    }
-
-    if (!WhatSon::Resources::ClipboardImportSupport::clipboardContainsImportableImage())
-    {
-        return emptyImportConflictMap();
-    }
-
-    QString resolveError;
-    QStringList existingResourcePaths;
-    const QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
-    if (contentsDirectoryPath.isEmpty())
-    {
-        return emptyImportConflictMap();
-    }
-
-    const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
-    if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
-    {
-        return emptyImportConflictMap();
-    }
-
-    const QString resourcesDirectoryPath =
-        resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
-    if (resourcesDirectoryPath.isEmpty())
-    {
-        return emptyImportConflictMap();
-    }
-
-    const QString clipboardImportFileName = uniqueClipboardImportAssetFileName(resourcesDirectoryPath, &resolveError);
-    if (clipboardImportFileName.isEmpty())
-    {
-        return emptyImportConflictMap();
-    }
-
-    ImportConflictDescriptor descriptor;
-    if (!findFirstImportConflict(
-        QStringList{clipboardImportFileName},
-        QStringList{clipboardImportFileName},
-        resourcesDirectoryPath,
-        &descriptor,
-        &resolveError))
-    {
-        return emptyImportConflictMap();
-    }
-
-    return importConflictMap(descriptor);
-}
-
 bool ResourcesImportController::importUrls(const QVariantList& urls)
 {
     return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort);
@@ -1095,42 +975,6 @@ QVariantList ResourcesImportController::importUrlsForEditorWithConflictPolicy(
         return {};
     }
     return importedEntries;
-}
-
-bool ResourcesImportController::importClipboardImage()
-{
-    return importClipboardImageInternal(nullptr, true, ConflictPolicyAbort);
-}
-
-bool ResourcesImportController::importClipboardImageWithConflictPolicy(const int conflictPolicy)
-{
-    return importClipboardImageInternal(nullptr, true, conflictPolicy);
-}
-
-QVariantList ResourcesImportController::importClipboardImageForEditor()
-{
-    QVariantList importedEntries;
-    if (!importClipboardImageInternal(&importedEntries, false, ConflictPolicyAbort))
-    {
-        return {};
-    }
-    return importedEntries;
-}
-
-QVariantList ResourcesImportController::importClipboardImageForEditorWithConflictPolicy(const int conflictPolicy)
-{
-    QVariantList importedEntries;
-    if (!importClipboardImageInternal(&importedEntries, false, conflictPolicy))
-    {
-        return {};
-    }
-    return importedEntries;
-}
-
-bool ResourcesImportController::refreshClipboardImageAvailabilitySnapshot()
-{
-    refreshClipboardImageAvailability();
-    return m_clipboardImageAvailable;
 }
 
 bool ResourcesImportController::importUrlsInternal(
@@ -1477,81 +1321,6 @@ bool ResourcesImportController::importUrlsInternal(
     return true;
 }
 
-bool ResourcesImportController::importClipboardImageInternal(
-    QVariantList* importedEntries,
-    const bool reloadRuntime,
-    const int conflictPolicy)
-{
-    const QClipboard* clipboard = QGuiApplication::clipboard();
-    if (clipboard == nullptr)
-    {
-        const QString errorMessage = QStringLiteral("Clipboard service is unavailable.");
-        setLastError(errorMessage);
-        emit operationFailed(errorMessage);
-        return false;
-    }
-
-    QImage clipboardImage;
-    if (!WhatSon::Resources::ClipboardImportSupport::extractClipboardImage(clipboard, &clipboardImage)
-        || clipboardImage.isNull())
-    {
-        const QString errorMessage = QStringLiteral("Clipboard does not contain an importable image.");
-        setLastError(errorMessage);
-        emit operationFailed(errorMessage);
-        refreshClipboardImageAvailability();
-        return false;
-    }
-
-    QTemporaryDir temporaryDirectory;
-    if (!temporaryDirectory.isValid())
-    {
-        const QString errorMessage = QStringLiteral("Failed to create a temporary directory for clipboard import.");
-        setLastError(errorMessage);
-        emit operationFailed(errorMessage);
-        return false;
-    }
-
-    QString clipboardImportFileName = WhatSon::Resources::generateClipboardImportAssetFileName();
-    if (!m_currentHubPath.trimmed().isEmpty())
-    {
-        QString resolveError;
-        QStringList existingResourcePaths;
-        const QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
-        if (!contentsDirectoryPath.isEmpty())
-        {
-            const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
-            if (loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
-            {
-                const QString resourcesDirectoryPath =
-                    resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
-                if (!resourcesDirectoryPath.isEmpty())
-                {
-                    const QString uniqueFileName =
-                        uniqueClipboardImportAssetFileName(resourcesDirectoryPath, &resolveError);
-                    if (!uniqueFileName.isEmpty())
-                    {
-                        clipboardImportFileName = uniqueFileName;
-                    }
-                }
-            }
-        }
-    }
-
-    const QString temporaryImagePath = temporaryDirectory.filePath(clipboardImportFileName);
-    if (!clipboardImage.save(temporaryImagePath, "PNG"))
-    {
-        const QString errorMessage = QStringLiteral("Failed to write the clipboard image into a temporary PNG file.");
-        setLastError(errorMessage);
-        emit operationFailed(errorMessage);
-        return false;
-    }
-
-    const QVariantList temporaryUrls = {QUrl::fromLocalFile(temporaryImagePath)};
-    const bool imported = importUrlsInternal(temporaryUrls, importedEntries, reloadRuntime, conflictPolicy);
-    refreshClipboardImageAvailability();
-    return imported;
-}
-
 bool ResourcesImportController::importDroppedUrls(const QVariantList& urls)
 {
     return importUrlsWithConflictPolicy(urls, ConflictPolicyAbort);
@@ -1614,18 +1383,6 @@ void ResourcesImportController::setBusy(const bool busy)
 
     m_busy = busy;
     emit busyChanged();
-}
-
-void ResourcesImportController::refreshClipboardImageAvailability()
-{
-    const bool nextValue = WhatSon::Resources::ClipboardImportSupport::clipboardContainsImportableImage();
-    if (m_clipboardImageAvailable == nextValue)
-    {
-        return;
-    }
-
-    m_clipboardImageAvailable = nextValue;
-    emit clipboardImageAvailableChanged();
 }
 
 void ResourcesImportController::setLastError(QString errorMessage)

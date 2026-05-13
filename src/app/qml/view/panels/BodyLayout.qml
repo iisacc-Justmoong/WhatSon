@@ -49,7 +49,6 @@ Item {
     }
     property var panelControllerRegistry: null
     readonly property var panelController: hStack.panelControllerRegistry ? hStack.panelControllerRegistry.panelController("BodyLayout") : null
-    property var resourcesImportController: null
     property color rightPanelColor: "transparent"
     property int rightPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
@@ -263,7 +262,6 @@ Item {
                 noteEditorSession: hStack.noteEditorSession
                 noteListModel: hStack.activeNoteListModel
                 panelControllerRegistry: null
-                resourcesImportController: hStack.resourcesImportController
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarController: hStack.dayCalendarController
