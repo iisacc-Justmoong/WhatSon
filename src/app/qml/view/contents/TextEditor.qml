@@ -13,10 +13,10 @@ LV.TextEditor {
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
-    readonly property string editorSelectedText: textEditor.normalizedEditorPlainText(
-            textEditor.selectedText !== undefined ? String(textEditor.selectedText) : "")
-    readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
-    readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
+    readonly property var editorSelectionRange: textEditor.normalizedSelectionRange()
+    readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
+    readonly property int editorSelectionStart: textEditor.editorSelectionRange.start
+    readonly property int editorSelectionLength: textEditor.editorSelectionRange.length
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
@@ -50,11 +50,20 @@ LV.TextEditor {
         return Number.isFinite(numericValue) ? numericValue : fallbackValue;
     }
 
+    function editorSurfaceObject() {
+        return textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+    }
+
+    function rawSelectedText() {
+        return textEditor.selectedText !== undefined ? String(textEditor.selectedText) : "";
+    }
+
     function normalizedSelectionStart() {
         if (textEditor.selectionStart !== undefined)
             return Math.max(0, Math.floor(Number(textEditor.selectionStart) || 0));
-        if (textEditor.selectedText !== undefined) {
-            const selectedLength = String(textEditor.selectedText).length;
+        const selectedText = textEditor.rawSelectedText();
+        if (selectedText.length > 0) {
+            const selectedLength = selectedText.length;
             if (selectedLength > 0)
                 return Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0) - selectedLength);
         }
@@ -62,14 +71,47 @@ LV.TextEditor {
     }
 
     function normalizedSelectionEnd() {
-        if (textEditor.selectionEnd !== undefined)
-            return Math.max(textEditor.normalizedSelectionStart(), Math.floor(Number(textEditor.selectionEnd) || 0));
-        if (textEditor.selectedText !== undefined) {
-            const selectedLength = String(textEditor.selectedText).length;
-            if (selectedLength > 0)
-                return textEditor.normalizedSelectionStart() + selectedLength;
+        return textEditor.editorSelectionRange.end;
+    }
+
+    function normalizedSelectionRange() {
+        const selectionStart = textEditor.normalizedSelectionStart();
+        let selectionEnd = selectionStart;
+        if (textEditor.selectionEnd !== undefined) {
+            selectionEnd = Math.floor(Number(textEditor.selectionEnd) || 0);
+        } else {
+            const selectedText = textEditor.rawSelectedText();
+            if (selectedText.length > 0)
+                selectionEnd = selectionStart + selectedText.length;
         }
-        return textEditor.normalizedSelectionStart();
+
+        const boundedEnd = Math.max(selectionStart, selectionEnd);
+        return {
+            "end": boundedEnd,
+            "length": Math.max(0, boundedEnd - selectionStart),
+            "start": selectionStart
+        };
+    }
+
+    function editorSurfaceText(selectionStart, selectionEnd) {
+        const editorSurface = textEditor.editorSurfaceObject();
+        if (selectionEnd <= selectionStart
+                || !editorSurface
+                || editorSurface.getText === undefined)
+            return "";
+        return textEditor.normalizedEditorPlainText(
+                    editorSurface.getText(selectionStart, selectionEnd));
+    }
+
+    function editorSelectedTextForCurrentSelection() {
+        const selectionRange = textEditor.editorSelectionRange;
+        const selectedSurfaceText = textEditor.editorSurfaceText(
+                    selectionRange.start,
+                    selectionRange.end);
+        if (selectedSurfaceText.length > 0)
+            return selectedSurfaceText;
+
+        return textEditor.normalizedEditorPlainText(textEditor.rawSelectedText());
     }
 
     function bumpEditorPlainTextRevision() {
@@ -99,7 +141,7 @@ LV.TextEditor {
     }
 
     function editorSurfacePlainText() {
-        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        const editorSurface = textEditor.editorSurfaceObject();
         if (editorSurface
                 && editorSurface.getText !== undefined
                 && editorSurface.length !== undefined) {
@@ -143,7 +185,7 @@ LV.TextEditor {
             y: normalizedIndex * fallbackHeight,
             height: fallbackHeight
         };
-        const editorSurface = textEditor.editorItem !== undefined ? textEditor.editorItem : null;
+        const editorSurface = textEditor.editorSurfaceObject();
         if (!editorSurface || editorSurface.positionToRectangle === undefined)
             return fallbackMetric;
 
@@ -254,7 +296,7 @@ LV.TextEditor {
     insetHorizontal: LV.Theme.gapNone
     insetVertical: LV.Theme.gapNone
     objectName: "contentsTextEditor"
-    preferNativeGestures: LV.Theme.mobileTarget
+    preferNativeGestures: false
     readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0
     showScrollBar: false
     textColor: LV.Theme.bodyColor

@@ -95,7 +95,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.restoreEditorCursorPosition(nextCursorPosition);")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.paste()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
     QVERIFY(minimapSource.contains(QStringLiteral("property string documentText: \"\"")));
     QVERIFY(minimapSource.contains(QStringLiteral("property real sourceContentY: 0")));
     QVERIFY(minimapSource.contains(QStringLiteral("property real sourceContentHeight")));
