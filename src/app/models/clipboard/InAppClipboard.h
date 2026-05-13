@@ -72,6 +72,15 @@ public:
     bool captureResourceFromClipboard(const QClipboard* clipboard);
     bool captureResourceFromMimeData(const QMimeData* mimeData);
     Q_INVOKABLE bool setResourceFileType(const QString& fileName, const QString& mimeType = QString());
+    Q_INVOKABLE bool setResourceLocalFile(const QString& localFilePath, const QString& mimeType = QString());
+    Q_INVOKABLE bool setResourceBytes(
+        const QByteArray& bytes,
+        const QString& fileName,
+        const QString& mimeType);
+    Q_INVOKABLE bool setResourceText(
+        const QString& text,
+        const QString& fileName = QStringLiteral("clipboard-resource.txt"),
+        const QString& mimeType = QStringLiteral("text/plain"));
     bool setImageResource(const QImage& image, const QString& mimeType = QStringLiteral("image/png"));
     bool setResourceImport(WhatSon::Clipboard::ClipboardResourceImport resourceImport);
     Q_INVOKABLE void clear();

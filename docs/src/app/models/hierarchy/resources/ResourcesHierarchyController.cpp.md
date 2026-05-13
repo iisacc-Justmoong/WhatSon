@@ -24,6 +24,10 @@ The hierarchy keeps the legacy interaction contract:
 Even when the input path list is empty, the controller still publishes the type parents with their
 default format catalog, so the resources sidebar is never a flat type-only list.
 
+`setItemExpanded(...)` delegates shared chevron validation/state flipping to `IHierarchyController`, then republishes the
+runtime taxonomy through `syncModel()`. The resources taxonomy remains read-only for CRUD, but visible type rows can still
+fold or unfold their format children.
+
 ## Right-Panel List Contract
 
 This controller now owns a dedicated `ResourcesListModel` projection for the shared right panel.

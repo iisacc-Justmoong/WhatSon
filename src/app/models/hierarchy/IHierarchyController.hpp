@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantList>
+#include <QVector>
 
 class IHierarchyController : public QObject
 {
@@ -95,5 +96,63 @@ protected:
         QObject::connect(this, SIGNAL(hierarchyModelChanged()), this, SIGNAL(hierarchyNodesChanged()));
         QObject::connect(this, SIGNAL(itemCountChanged()), this, SIGNAL(hierarchyItemCountChanged()));
         QObject::connect(this, SIGNAL(loadStateChanged()), this, SIGNAL(hierarchyLoadStateChanged()));
+    }
+
+    template <typename Item, typename CommitChange>
+    bool setHierarchyItemExpanded(QVector<Item>* items, int index, bool expanded, CommitChange commitChange)
+    {
+        if (items == nullptr || index < 0 || index >= items->size())
+        {
+            return false;
+        }
+
+        if (!items->at(index).showChevron)
+        {
+            return false;
+        }
+
+        if (items->at(index).expanded == expanded)
+        {
+            return true;
+        }
+
+        (*items)[index].expanded = expanded;
+        commitChange(index, expanded);
+        return true;
+    }
+
+    template <typename Item, typename CommitChange>
+    bool setAllHierarchyItemsExpanded(QVector<Item>* items, bool expanded, CommitChange commitChange)
+    {
+        if (items == nullptr)
+        {
+            return false;
+        }
+
+        bool hasExpandableItems = false;
+        bool changed = false;
+        for (Item& item : *items)
+        {
+            if (!item.showChevron)
+            {
+                continue;
+            }
+
+            hasExpandableItems = true;
+            if (item.expanded == expanded)
+            {
+                continue;
+            }
+
+            item.expanded = expanded;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            commitChange();
+        }
+
+        return hasExpandableItems || items->isEmpty();
     }
 };

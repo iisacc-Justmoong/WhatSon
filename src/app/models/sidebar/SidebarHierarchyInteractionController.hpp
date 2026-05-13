@@ -41,6 +41,11 @@ public:
     Q_INVOKABLE bool requestBulkExpansion(const QVariant& modelValue, bool expanded);
 
     Q_INVOKABLE QVariantMap handleExpansionSignal(const QVariant& item, int resolvedIndex, bool expanded);
+    Q_INVOKABLE QString armExpansionForItem(const QVariant& item, int resolvedIndex);
+    Q_INVOKABLE QVariantMap requestChevronExpansionForItem(
+        const QVariant& item,
+        int resolvedIndex,
+        const QString& expectedKey);
     Q_INVOKABLE QVariantMap requestChevronExpansion(
         int resolvedIndex,
         const QString& expansionKey,

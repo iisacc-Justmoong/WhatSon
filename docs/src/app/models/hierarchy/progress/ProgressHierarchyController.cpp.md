@@ -65,7 +65,8 @@ materializing the matching note list from `.wsnhead` metadata.
 - Rename, create, and delete remain disabled because progress rows are product-defined support
   buckets rather than user-editable folders.
 - The first four rows still expose chevrons so the controller can preserve Figma-aligned expansion
-  state even though no child nodes are materialized yet.
+  state even though no child nodes are materialized yet. `setItemExpanded(...)` delegates the shared row validation/state
+  flip to `IHierarchyController` before syncing this projection.
 
 ## Regression Checks
 

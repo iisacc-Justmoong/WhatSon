@@ -469,11 +469,6 @@ Rectangle {
     function hierarchyItemForResolvedIndex(itemId) {
         return noteDropController.hierarchyItemForResolvedIndex(itemId);
     }
-    function hierarchyItemExpansionKey(item, fallbackIndex) {
-        if (!sidebarHierarchyView.hierarchyInteractionController)
-            return "";
-        return sidebarHierarchyView.hierarchyInteractionController.itemExpansionKey(item, fallbackIndex);
-    }
     function hierarchyModelIndexVisible(index) {
         const targetIndex = sidebarHierarchyView.normalizedInteger(index, -1);
         const nodes = sidebarHierarchyView.standardHierarchyModel;
@@ -552,12 +547,13 @@ Rectangle {
         const targetX = Number(x) || 0;
         const targetY = Number(y) || 0;
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(targetX, targetY);
-        if (!target || !target.key || !target.key.length)
+        if (!target || !target.item || target.index < 0)
             return false;
         sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(modifiers !== undefined ? modifiers : Qt.NoModifier);
-        if (!sidebarHierarchyView.hierarchyInteractionController.armExpansionKey(target.key))
+        const pressKey = sidebarHierarchyView.hierarchyInteractionController.armExpansionForItem(target.item, target.index);
+        if (!pressKey.length)
             return false;
-        sidebarHierarchyView.hierarchyChevronPointerPressKey = target.key;
+        sidebarHierarchyView.hierarchyChevronPointerPressKey = pressKey;
         sidebarHierarchyView.hierarchyChevronPointerPressX = targetX;
         sidebarHierarchyView.hierarchyChevronPointerPressY = targetY;
         return true;
@@ -572,7 +568,8 @@ Rectangle {
         const deltaY = targetY - sidebarHierarchyView.hierarchyChevronPointerPressY;
         const tapDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         const releaseTarget = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(targetX, targetY);
-        const releaseKey = releaseTarget && releaseTarget.key !== undefined ? String(releaseTarget.key) : "";
+        const releaseKey = releaseTarget && releaseTarget.item && releaseTarget.index >= 0 && sidebarHierarchyView.hierarchyInteractionController
+                ? sidebarHierarchyView.hierarchyInteractionController.itemExpansionKey(releaseTarget.item, releaseTarget.index) : "";
         const committed = tapDistance <= sidebarHierarchyView.hierarchyChevronPointerTapThreshold
                 && releaseKey === pressedKey
                 && sidebarHierarchyView.requestHierarchyChevronExpansionAtPosition(targetX, targetY, pressedKey);
@@ -596,11 +593,9 @@ Rectangle {
             if (!sidebarHierarchyView.hierarchyItemChevronContainsPoint(item, targetX, targetY))
                 return null;
             const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, item.itemId, item.flatIndex);
-            const key = sidebarHierarchyView.hierarchyItemExpansionKey(item, resolvedIndex);
             return ({
                     "index": resolvedIndex,
-                    "item": item,
-                    "key": key
+                    "item": item
                 });
         }
         return null;
@@ -984,11 +979,11 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionController)
             return false;
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
-        if (!target || !target.item || target.index < 0 || !target.key || !target.key.length)
+        if (!target || !target.item || target.index < 0)
             return false;
         const currentExpanded = Boolean(target.item.expanded);
         const nextExpanded = !currentExpanded;
-        const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansion(target.index, target.key, currentExpanded, expectedKey);
+        const result = sidebarHierarchyView.hierarchyInteractionController.requestChevronExpansionForItem(target.item, target.index, expectedKey);
         if (result && result.rollbackRequired && target.item.expanded !== undefined)
             target.item.expanded = Boolean(result.rollbackExpanded);
         if (result && result.committed) {
@@ -1033,9 +1028,9 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionController)
             return false;
         const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);
-        if (!target || !target.key || !target.key.length)
+        if (!target || !target.item || target.index < 0)
             return false;
-        return sidebarHierarchyView.hierarchyInteractionController.armExpansionKey(target.key);
+        return sidebarHierarchyView.hierarchyInteractionController.armExpansionForItem(target.item, target.index).length > 0;
     }
     function resolveHierarchyActivationIndex(item, itemId, index) {
         const resolvedModelItemId = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.itemId) : -1;

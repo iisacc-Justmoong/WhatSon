@@ -52,8 +52,9 @@
   These rows are app-owned system buckets, not hub-authored folder rows. Constructor setup, load-failure recovery,
   empty depth input, and empty-folder runtime snapshots must keep those three fixed rows visible before reporting an
   unchanged hierarchy source.
-- `setItemExpanded(...)` accepts any row that advertises `showChevron`, including accent root folders. Protected-root
-  policy remains a rename/delete guard; it must not block a visible chevron from folding or unfolding its descendants.
+- `setItemExpanded(...)` delegates the shared row validation/state flip to `IHierarchyController`'s protected expansion
+  helper and then updates `LibraryHierarchyModel`. Protected-root policy remains a rename/delete guard; it must not
+  block a visible chevron from folding or unfolding its descendants.
 - General selection writes still normalize a negative or invalid selected index to the first visible row before the
   controller republishes state. This keeps the library note-list filter aligned with the row the sidebar already renders
   as active.

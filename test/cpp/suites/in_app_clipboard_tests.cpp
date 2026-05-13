@@ -30,3 +30,36 @@ void WhatSonCppRegressionTests::inAppClipboard_matchesMimeAndFileTypesToResource
     QVERIFY(!clipboard.hasResource());
     QVERIFY(clipboard.resourceType().isEmpty());
 }
+
+void WhatSonCppRegressionTests::inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData()
+{
+    InAppClipboard clipboard;
+
+    QVERIFY(clipboard.setResourceBytes(
+        QByteArrayLiteral("%PDF-1.7\nclipboard document"),
+        QStringLiteral("clipboard-document.pdf"),
+        QStringLiteral("application/pdf")));
+    QVERIFY(clipboard.hasResource());
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".pdf"));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));
+    QCOMPARE(clipboard.resourceBucket(), QStringLiteral("Document"));
+    QCOMPARE(clipboard.resourceImport().payloadBytes, QByteArrayLiteral("%PDF-1.7\nclipboard document"));
+    QVERIFY(!clipboard.resourceEntry().value(QStringLiteral("hasImage")).toBool());
+    QVERIFY(clipboard.resourceEntry().value(QStringLiteral("hasPayloadBytes")).toBool());
+
+    QMimeData plainTextMimeData;
+    plainTextMimeData.setText(QStringLiteral("Plain clipboard text"));
+    QVERIFY(clipboard.captureResourceFromMimeData(&plainTextMimeData));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".txt"));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));
+    QCOMPARE(clipboard.resourceImport().payloadBytes, QByteArrayLiteral("Plain clipboard text"));
+
+    QMimeData htmlMimeData;
+    htmlMimeData.setHtml(QStringLiteral("<p>Clipboard <strong>HTML</strong></p>"));
+    QVERIFY(clipboard.captureResourceFromMimeData(&htmlMimeData));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".html"));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("link"));
+    QCOMPARE(
+        clipboard.resourceImport().payloadBytes,
+        QByteArrayLiteral("<p>Clipboard <strong>HTML</strong></p>"));
+}

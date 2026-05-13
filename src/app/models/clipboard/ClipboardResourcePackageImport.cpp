@@ -24,7 +24,7 @@
 
 namespace
 {
-    constexpr auto kScope = "resources.import";
+    constexpr auto kScope = "clipboard.import";
 
     enum class ImportConflictPolicyValue
     {

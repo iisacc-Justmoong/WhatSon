@@ -553,8 +553,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(progressControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
     QVERIFY(progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
 
-    const QString inAppClipboardImportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"));
+    const QString clipboardPackageImportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
@@ -580,16 +580,20 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp"))));
     QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"))));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("ClipboardImportSupport::")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("importClipboardImage")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("refreshClipboardImageAvailability")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("bool extractClipboardImage(")));
-    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("ResourcesImportController")));
-    QVERIFY(inAppClipboardImportSource.contains(QStringLiteral("InAppClipboard::importClipboardResourceForEditor")));
-    QVERIFY(inAppClipboardImportSource.contains(QStringLiteral("InAppClipboard::importUrlsForEditor")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("ClipboardImportSupport::")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("importClipboardImage")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("refreshClipboardImageAvailability")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("bool extractClipboardImage(")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("ResourcesImportController")));
+    QVERIFY(!clipboardPackageImportSource.contains(QStringLiteral("resources.import")));
+    QVERIFY(clipboardPackageImportSource.contains(QStringLiteral("clipboard.import")));
+    QVERIFY(clipboardPackageImportSource.contains(QStringLiteral("InAppClipboard::importClipboardResourceForEditor")));
+    QVERIFY(clipboardPackageImportSource.contains(QStringLiteral("InAppClipboard::importUrlsForEditor")));
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/file)")));
@@ -607,7 +611,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         "src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp")));
     QVERIFY(!testCMakeSource.contains(legacyResourceImportSourceDirectory));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));

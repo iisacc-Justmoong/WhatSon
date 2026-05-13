@@ -1678,31 +1678,21 @@ bool LibraryHierarchyController::renameItem(int index, const QString& displayNam
 
 bool LibraryHierarchyController::setItemExpanded(int index, bool expanded)
 {
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    if (!m_items.at(index).showChevron)
-    {
-        return false;
-    }
-
-    if (m_items.at(index).expanded == expanded)
-    {
-        return true;
-    }
-
-    m_items[index].expanded = expanded;
-    m_itemModel.setItemExpanded(index, expanded);
-    emit hierarchyModelChanged();
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.controller"),
-                              QStringLiteral("setItemExpanded"),
-                              QStringLiteral("index=%1 expanded=%2")
-                              .arg(index)
-                              .arg(expanded ? QStringLiteral("true") : QStringLiteral("false")));
-    return true;
+    return setHierarchyItemExpanded(
+        &m_items,
+        index,
+        expanded,
+        [this](int changedIndex, bool changedExpanded)
+        {
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.controller"),
+                                      QStringLiteral("setItemExpanded"),
+                                      QStringLiteral("index=%1 expanded=%2")
+                                      .arg(changedIndex)
+                                      .arg(changedExpanded ? QStringLiteral("true") : QStringLiteral("false")));
+        });
 }
 
 bool LibraryHierarchyController::renameEnabled() const noexcept

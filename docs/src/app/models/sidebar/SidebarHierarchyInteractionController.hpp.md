@@ -11,8 +11,9 @@ registration layer derives an internal `QQmlElement<T>` wrapper from it.
   type and Qt wraps creatable types with `QQmlElement<T>`.
 - `hierarchyInteractionBridge` binds the controller to the existing hierarchy CRUD/expansion bridge.
 - `activeHierarchyIndex` scopes preserved expansion keys by active sidebar domain.
-- `captureExpansionState(...)`, `modelWithPreservedExpansion(...)`, `handleExpansionSignal(...)`, and
-  `requestChevronExpansion(...)` keep row expansion state and mutation routing out of QML.
+- `captureExpansionState(...)`, `modelWithPreservedExpansion(...)`, `handleExpansionSignal(...)`,
+  `armExpansionForItem(...)`, `requestChevronExpansionForItem(...)`, and `requestChevronExpansion(...)` keep row
+  expansion state, stable-key derivation, and mutation routing out of QML.
 - `beginActivationAttempt(...)`, `activationAttemptCurrent(...)`, and `shouldSuppressActivation(...)` let the view defer
   activation safely after chevron interaction without owning the suppression policy itself.
 

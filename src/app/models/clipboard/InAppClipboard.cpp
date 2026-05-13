@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QClipboard>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QMimeData>
@@ -14,9 +15,53 @@
 
 namespace
 {
+    QString normalizedMimeFormat(QString value)
+    {
+        value = value.trimmed().toCaseFolded();
+        const int parameterIndex = value.indexOf(QLatin1Char(';'));
+        if (parameterIndex >= 0)
+        {
+            value = value.left(parameterIndex).trimmed();
+        }
+        return value;
+    }
+
     bool mimeFormatLooksLikeSupportedResource(const QString& mimeFormat)
     {
         return !WhatSon::Clipboard::formatFromMimeType(mimeFormat).trimmed().isEmpty();
+    }
+
+    QByteArray payloadForMimeFormat(const QMimeData* mimeData, const QString& mimeFormat)
+    {
+        if (mimeData == nullptr)
+        {
+            return {};
+        }
+
+        QByteArray payload = mimeData->data(mimeFormat);
+        if (!payload.isEmpty())
+        {
+            return payload;
+        }
+
+        const QString normalized = normalizedMimeFormat(mimeFormat);
+        if ((normalized == QStringLiteral("text/plain")
+             || normalized == QStringLiteral("public.plain-text")
+             || normalized == QStringLiteral("text/markdown")
+             || normalized == QStringLiteral("text/csv"))
+            && mimeData->hasText())
+        {
+            return mimeData->text().toUtf8();
+        }
+
+        if ((normalized == QStringLiteral("text/html")
+             || normalized == QStringLiteral("public.html"))
+            && mimeData->hasHtml())
+        {
+            return mimeData->html().toUtf8();
+        }
+
+        return {};
     }
 
     QString firstClipboardImageDataUrl(const QMimeData* mimeData)
@@ -214,7 +259,10 @@ bool InAppClipboard::captureResourceFromMimeData(const QMimeData* mimeData)
     {
         if (url.isValid() && url.isLocalFile())
         {
-            return setResourceImport(WhatSon::Clipboard::resourceImportForLocalFile(url.toLocalFile()));
+            if (setResourceLocalFile(url.toLocalFile()))
+            {
+                return true;
+            }
         }
     }
 
@@ -226,7 +274,7 @@ bool InAppClipboard::captureResourceFromMimeData(const QMimeData* mimeData)
             continue;
         }
 
-        const QByteArray payload = mimeData->data(mimeFormat);
+        const QByteArray payload = payloadForMimeFormat(mimeData, mimeFormat);
         QImage image;
         if (payload.isEmpty() || image.loadFromData(payload))
         {
@@ -273,6 +321,50 @@ bool InAppClipboard::setResourceFileType(const QString& fileName, const QString&
     WhatSon::Clipboard::ClipboardResourceImport resourceImport =
         WhatSon::Clipboard::resourceImportForFileType(fileName, mimeType);
     return setResourceImport(std::move(resourceImport));
+}
+
+bool InAppClipboard::setResourceLocalFile(const QString& localFilePath, const QString& mimeType)
+{
+    const QString trimmedLocalFilePath = localFilePath.trimmed();
+    if (trimmedLocalFilePath.isEmpty() || !QFileInfo(trimmedLocalFilePath).isFile())
+    {
+        clear();
+        return false;
+    }
+
+    WhatSon::Clipboard::ClipboardResourceImport resourceImport =
+        WhatSon::Clipboard::resourceImportForLocalFile(trimmedLocalFilePath, mimeType);
+    return setResourceImport(std::move(resourceImport));
+}
+
+bool InAppClipboard::setResourceBytes(
+    const QByteArray& bytes,
+    const QString& fileName,
+    const QString& mimeType)
+{
+    if (bytes.isEmpty())
+    {
+        clear();
+        return false;
+    }
+
+    WhatSon::Clipboard::ClipboardResourceImport resourceImport =
+        WhatSon::Clipboard::resourceImportForBytes(bytes, fileName, mimeType);
+    return setResourceImport(std::move(resourceImport));
+}
+
+bool InAppClipboard::setResourceText(
+    const QString& text,
+    const QString& fileName,
+    const QString& mimeType)
+{
+    if (text.isEmpty())
+    {
+        clear();
+        return false;
+    }
+
+    return setResourceBytes(text.toUtf8(), fileName, mimeType);
 }
 
 bool InAppClipboard::setImageResource(const QImage& image, const QString& mimeType)

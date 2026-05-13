@@ -33,8 +33,9 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   store-backed folder entries and then rebuild the model.
 - `applyHierarchyMove(...)` remains available for explicit targeted project-folder moves. The sidebar's ordinary LVRS
   drag/drop commit persists the final `LV.Hierarchy.model` snapshot through full-node replay.
-- `setItemExpanded(...)` and `setAllItemsExpanded(...)` mutate only in-memory expansion state. They do
-  not rewrite `Projects.wsproj`, because fold state is a sidebar presentation concern.
+- `setItemExpanded(...)` and `setAllItemsExpanded(...)` delegate shared chevron validation/state flips to
+  `IHierarchyController`'s protected helpers, then sync only the in-memory model. They do not rewrite
+  `Projects.wsproj`, because fold state is a sidebar presentation concern.
 - `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to
   sidebar rows.
 

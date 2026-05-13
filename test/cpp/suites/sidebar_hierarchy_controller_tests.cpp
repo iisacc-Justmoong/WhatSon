@@ -2,6 +2,55 @@
 
 namespace
 {
+    struct ParentExpansionProbeItem
+    {
+        bool expanded = false;
+        bool showChevron = false;
+    };
+
+    class ParentExpansionProbeController final : public FakeHierarchyController,
+                                                 public IHierarchyExpansionCapability
+    {
+    public:
+        ParentExpansionProbeController()
+            : FakeHierarchyController(QStringLiteral("probe"))
+        {
+        }
+
+        bool setItemExpanded(int index, bool expanded) override
+        {
+            return setHierarchyItemExpanded(
+                &items,
+                index,
+                expanded,
+                [this](int changedIndex, bool changedExpanded)
+                {
+                    lastSingleIndex = changedIndex;
+                    lastSingleExpanded = changedExpanded;
+                    ++singleCommitCount;
+                    emit hierarchyModelChanged();
+                });
+        }
+
+        bool setAllItemsExpanded(bool expanded)
+        {
+            return setAllHierarchyItemsExpanded(
+                &items,
+                expanded,
+                [this]()
+                {
+                    ++bulkCommitCount;
+                    emit hierarchyModelChanged();
+                });
+        }
+
+        QVector<ParentExpansionProbeItem> items;
+        int singleCommitCount = 0;
+        int bulkCommitCount = 0;
+        int lastSingleIndex = -1;
+        bool lastSingleExpanded = false;
+    };
+
     class ArchitecturePolicyUnlockScope final
     {
     public:
@@ -119,6 +168,81 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_keepsFoote
     QVERIFY(!sidebarSource.contains(QStringLiteral("function onFooterDeleteRequested()")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function onFooterOptionsRequested()")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("function onSelectedHierarchySyncRequested(focusView)")));
+}
+
+void WhatSonCppRegressionTests::hierarchyController_parentExpansionPolicyMutatesOnlyChevronRows()
+{
+    ParentExpansionProbeController controller;
+    controller.items = QVector<ParentExpansionProbeItem>{
+        {false, false},
+        {false, true},
+        {true, true},
+    };
+
+    QVERIFY(!controller.setItemExpanded(-1, true));
+    QVERIFY(!controller.setItemExpanded(0, true));
+    QVERIFY(!controller.items.at(0).expanded);
+    QCOMPARE(controller.singleCommitCount, 0);
+
+    QVERIFY(controller.setItemExpanded(1, false));
+    QCOMPARE(controller.singleCommitCount, 0);
+
+    QVERIFY(controller.setItemExpanded(1, true));
+    QVERIFY(controller.items.at(1).expanded);
+    QCOMPARE(controller.singleCommitCount, 1);
+    QCOMPARE(controller.lastSingleIndex, 1);
+    QVERIFY(controller.lastSingleExpanded);
+
+    QVERIFY(controller.setAllItemsExpanded(false));
+    QVERIFY(!controller.items.at(0).expanded);
+    QVERIFY(!controller.items.at(1).expanded);
+    QVERIFY(!controller.items.at(2).expanded);
+    QCOMPARE(controller.bulkCommitCount, 1);
+
+    QVERIFY(controller.setAllItemsExpanded(false));
+    QCOMPARE(controller.bulkCommitCount, 1);
+}
+
+void WhatSonCppRegressionTests::hierarchyControllers_delegateChevronExpansionToParentPolicy()
+{
+    const QString parentHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/hierarchy/IHierarchyController.hpp"));
+    const QString sidebarHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/sidebar/SidebarHierarchyInteractionController.hpp"));
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(parentHeader.contains(QStringLiteral("setHierarchyItemExpanded")));
+    QVERIFY(parentHeader.contains(QStringLiteral("setAllHierarchyItemsExpanded")));
+    QVERIFY(sidebarHeader.contains(QStringLiteral("armExpansionForItem")));
+    QVERIFY(sidebarHeader.contains(QStringLiteral("requestChevronExpansionForItem")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function hierarchyItemExpansionKey(item, fallbackIndex)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("armExpansionForItem(target.item, target.index)")));
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("requestChevronExpansionForItem(target.item, target.index, expectedKey)")));
+
+    const QStringList controllerSourcePaths{
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/tags/TagsHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/resources/ResourcesHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/progress/ProgressHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/event/EventHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/preset/PresetHierarchyController.cpp"),
+    };
+
+    for (const QString& path : controllerSourcePaths)
+    {
+        const QString source = readUtf8SourceFile(path);
+        QVERIFY2(
+            source.contains(QStringLiteral("setHierarchyItemExpanded(\n        &m_items,")),
+            qPrintable(QStringLiteral("%1 must delegate single-row chevron expansion to IHierarchyController").arg(path)));
+    }
+
+    const QString projectsSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"));
+    QVERIFY(projectsSource.contains(QStringLiteral("setAllHierarchyItemsExpanded(\n        &m_items,")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy()

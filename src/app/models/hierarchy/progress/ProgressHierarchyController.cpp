@@ -421,24 +421,14 @@ bool ProgressHierarchyController::renameItem(int index, const QString& displayNa
 
 bool ProgressHierarchyController::setItemExpanded(int index, bool expanded)
 {
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    if (!m_items.at(index).showChevron)
-    {
-        return false;
-    }
-
-    if (m_items.at(index).expanded == expanded)
-    {
-        return true;
-    }
-
-    m_items[index].expanded = expanded;
-    syncModel();
-    return true;
+    return setHierarchyItemExpanded(
+        &m_items,
+        index,
+        expanded,
+        [this](int, bool)
+        {
+            syncModel();
+        });
 }
 
 void ProgressHierarchyController::createFolder()

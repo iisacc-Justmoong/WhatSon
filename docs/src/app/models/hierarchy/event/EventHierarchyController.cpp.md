@@ -30,7 +30,8 @@ state.
 
 ## Expansion Handling
 
-- `setItemExpanded(...)` updates the stored row state for valid expandable rows.
+- `setItemExpanded(...)` delegates shared chevron validation/state flipping to `IHierarchyController`, then syncs the
+  event model when a valid expandable row changes.
 - `expandedEventItemKeys(...)` captures the currently open rows before rebuild.
 - `restoreExpandedEventItemKeys(...)` reapplies those openings after `buildBucketItems(...)`.
 

@@ -1191,47 +1191,25 @@ bool ProjectsHierarchyController::renameItem(int index, const QString& displayNa
 
 bool ProjectsHierarchyController::setItemExpanded(int index, bool expanded)
 {
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    if (!m_items.at(index).showChevron)
-    {
-        return false;
-    }
-
-    if (m_items.at(index).expanded == expanded)
-    {
-        return true;
-    }
-
-    m_items[index].expanded = expanded;
-    syncModel();
-    return true;
+    return setHierarchyItemExpanded(
+        &m_items,
+        index,
+        expanded,
+        [this](int, bool)
+        {
+            syncModel();
+        });
 }
 
 bool ProjectsHierarchyController::setAllItemsExpanded(bool expanded)
 {
-    bool changed = false;
-    for (ProjectsHierarchyItem& item : m_items)
-    {
-        if (!item.showChevron || item.expanded == expanded)
+    return setAllHierarchyItemsExpanded(
+        &m_items,
+        expanded,
+        [this]()
         {
-            continue;
-        }
-
-        item.expanded = expanded;
-        changed = true;
-    }
-
-    if (!changed)
-    {
-        return true;
-    }
-
-    syncModel();
-    return true;
+            syncModel();
+        });
 }
 
 void ProjectsHierarchyController::createFolder()

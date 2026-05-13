@@ -1172,6 +1172,7 @@ private slots:
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy();
+    void inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void debugTrace_summarizesLargeTextFromPreviewOnly();
@@ -1289,11 +1290,14 @@ private slots:
     void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();
     void inAppClipboard_importsClipboardImageThroughManager();
+    void inAppClipboard_importsNonImageClipboardPayloadThroughManager();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();
     void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
     void sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy();
+    void hierarchyController_parentExpansionPolicyMutatesOnlyChevronRows();
+    void hierarchyControllers_delegateChevronExpansionToParentPolicy();
     void sidebarHierarchyInteractionController_commitsExpansionStateThroughCppPolicy();
     void hierarchyInteractionBridge_bindsRuntimeControllerAfterArchitectureLock();
     void hierarchyInteractionBridge_rebindsActiveRuntimeControllerAfterArchitectureLock();

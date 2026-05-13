@@ -17,14 +17,15 @@ namespace
 
 void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation()
 {
-    const QString importControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"));
+    const QString packageImportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"));
 
-    QVERIFY(!importControllerSource.isEmpty());
-    QVERIFY(importControllerSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
-    QVERIFY(importControllerSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
+    QVERIFY(!packageImportSource.isEmpty());
+    QVERIFY(packageImportSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
+    QVERIFY(packageImportSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp")).exists());
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")).exists());
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePackages()
@@ -79,7 +80,7 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     const QString clipboardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboard.h"));
     const QString clipboardSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"));
+        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importClipboardResourceForEditor")));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importUrlsForEditor")));
     QVERIFY(!clipboardHeader.contains(QStringLiteral("importClipboardImage")));
@@ -124,6 +125,53 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImageThroughManag
     QVERIFY(QFileInfo(packageDirectoryPath).isDir());
     QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(
         importedResource.value(QStringLiteral("assetPath")).toString())).isFile());
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadThroughManager()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardDocumentHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QByteArray pdfBytes = QByteArrayLiteral("%PDF-1.7\nclipboard document");
+    InAppClipboard clipboard;
+    QVERIFY(clipboard.setResourceBytes(
+        pdfBytes,
+        QStringLiteral("clipboard-document.pdf"),
+        QStringLiteral("application/pdf")));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".pdf"));
+    clipboard.setCurrentHubPath(hubPath);
+
+    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("document"));
+    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".pdf"));
+    QCOMPARE(importedResource.value(QStringLiteral("bucket")).toString(), QStringLiteral("Document"));
+    QVERIFY(importedResource.value(QStringLiteral("resourcePath")).toString().endsWith(QStringLiteral(".wsresource")));
+    QVERIFY(importedResource.value(QStringLiteral("assetPath")).toString().endsWith(QStringLiteral(".pdf")));
+    QVERIFY(!clipboard.hasResource());
+
+    const QString packageDirectoryPath =
+        QDir(hubPath).filePath(importedResource.value(QStringLiteral("resourcePath")).toString());
+    const QString assetPath = QDir(packageDirectoryPath).filePath(
+        importedResource.value(QStringLiteral("assetPath")).toString());
+    QFile assetFile(assetPath);
+    QVERIFY(assetFile.open(QIODevice::ReadOnly));
+    QCOMPARE(assetFile.readAll(), pdfBytes);
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));

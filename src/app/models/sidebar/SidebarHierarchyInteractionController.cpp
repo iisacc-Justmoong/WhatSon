@@ -244,6 +244,22 @@ QVariantMap SidebarHierarchyInteractionController::handleExpansionSignal(
     return commitExpansionChange(resolvedIndex, expansionKey, expanded, previousExpanded);
 }
 
+QString SidebarHierarchyInteractionController::armExpansionForItem(const QVariant& item, int resolvedIndex)
+{
+    const QString expansionKey = itemExpansionKey(item, resolvedIndex);
+    return armExpansionKey(expansionKey) ? expansionKey : QString();
+}
+
+QVariantMap SidebarHierarchyInteractionController::requestChevronExpansionForItem(
+    const QVariant& item,
+    int resolvedIndex,
+    const QString& expectedKey)
+{
+    const QString expansionKey = itemExpansionKey(item, resolvedIndex);
+    const bool currentExpanded = itemProperty(item, QStringLiteral("expanded")).toBool();
+    return requestChevronExpansion(resolvedIndex, expansionKey, currentExpanded, expectedKey);
+}
+
 QVariantMap SidebarHierarchyInteractionController::requestChevronExpansion(
     int resolvedIndex,
     const QString& expansionKey,

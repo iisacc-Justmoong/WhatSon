@@ -186,17 +186,14 @@ bool EventHierarchyController::renameItem(int index, const QString& displayName)
 
 bool EventHierarchyController::setItemExpanded(int index, bool expanded)
 {
-    bool changed = false;
-    if (!WhatSon::Hierarchy::NamedStringSupport::setItemExpanded(&m_items, index, expanded, &changed))
-    {
-        return false;
-    }
-
-    if (changed)
-    {
-        syncModel();
-    }
-    return true;
+    return setHierarchyItemExpanded(
+        &m_items,
+        index,
+        expanded,
+        [this](int, bool)
+        {
+            syncModel();
+        });
 }
 
 void EventHierarchyController::createFolder()

@@ -374,7 +374,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `<resource type="..." format="..." path="...">` calls.
 - Clipboard/file resource import now runs through `src/app/models/clipboard/InAppClipboard`. The deleted
   `ResourcesImportController` boundary is replaced by the in-app clipboard object for conflict detection, package
-  persistence, editor-return metadata, and reload callbacks.
+  persistence, editor-return metadata, and reload callbacks. The in-app clipboard accepts one supported resource
+  payload at a time, including non-image documents, text/HTML, audio/music, video, 3D model, and archive candidates
+  when their file name or MIME type maps to the resource taxonomy.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
@@ -1014,8 +1016,9 @@ for hub/note hierarchy payloads.
   `TagsHierarchyViewModel` expose active hierarchy `+/-` footer behavior. Bookmarks, resources, progress, event,
   and preset keep those actions disabled because their rows are runtime/view-model projections.
 - Expansion-state protection policy: `SidebarHierarchyView.qml` must only push user-touched expansion changes back into
-  a hierarchy view-model through a targeted `setItemExpanded(...)` hook. Bulk hierarchy rewrites are not allowed for
-  create-folder flows because they mutate untouched rows and destabilize the rendered LVRS tree.
+  a hierarchy controller through the targeted `SidebarHierarchyInteractionController` / `HierarchyInteractionBridge`
+  path. Concrete hierarchy controllers must delegate the shared right-chevron validation and state flip to the protected
+  `IHierarchyController` helpers before running their own model sync or persistence follow-up.
 - Library accent root folders remain protected from rename/delete, but a visible right-side chevron still maps to
   `LibraryHierarchyController::setItemExpanded(...)`; expansion capability follows `showChevron`, not CRUD protection.
 - QML-created hierarchy interaction adapters (`HierarchyInteractionBridge`, `HierarchyDragDropBridge`, and
@@ -1054,9 +1057,10 @@ for hub/note hierarchy payloads.
 - Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded` without re-activating the row, and
   sidebar delegates follow `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not
   reserve row space.
-- The chevron fallback path now writes a successful C++ bridge commit back into the live `HierarchyItem.expanded`
-  property, and bookmark bucket rows implement the shared expansion capability so their right-side chevrons no longer
-  roll back immediately.
+- The chevron fallback path now derives stable row keys and current expansion state inside
+  `SidebarHierarchyInteractionController`, writes a successful C++ bridge commit back into the live
+  `HierarchyItem.expanded` property, and bookmark bucket rows implement the shared expansion capability so their
+  right-side chevrons no longer roll back immediately.
 - The sidebar fallback now hit-tests the actual LVRS `hierarchyItemChevron` slot, and the C++ expansion policy commits
   the first LVRS expansion callback for a stable row key so direct `HierarchyItem` chevron clicks persist even when the
   sidebar-level pointer arm does not receive the tap first.

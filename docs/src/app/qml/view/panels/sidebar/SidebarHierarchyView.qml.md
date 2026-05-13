@@ -214,9 +214,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   It then starts a short activation-block timer.
 - The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
   LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
-  otherwise `SidebarHierarchyInteractionController.requestChevronExpansion(...)` performs the single-row fold/unfold
-  and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible row hides
-  or reveals its descendants immediately. The same successful fallback commit forces
+  otherwise `SidebarHierarchyInteractionController.requestChevronExpansionForItem(...)` performs the single-row
+  fold/unfold and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible
+  row hides or reveals its descendants immediately. The same successful fallback commit forces
   `syncDisplayedHierarchyModel(true)` and emits `requestViewHook("hierarchy.chevron.toggle")`.
 - The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
   slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
@@ -229,7 +229,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   reorder/nesting. When it is enabled for non-editable surfaces, it accepts only left-button presses that hit the
   resolved chevron slot; all other presses are rejected so row activation, selection, and flick behavior stay owned by
   `LV.Hierarchy`. Accepted chevron taps still commit through
-  `SidebarHierarchyInteractionController.requestChevronExpansion(...)`.
+  `SidebarHierarchyInteractionController.requestChevronExpansionForItem(...)`.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.

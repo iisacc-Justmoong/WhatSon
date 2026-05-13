@@ -68,9 +68,13 @@
 - 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
 - 런타임 계층 Controller wiring에는 flat/shared hierarchy model abstraction을 금지한다.
 - model/support 코드는 `src/app/models/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
+- 하이어라키 row의 우측 chevron expand/collapse 공통 검증과 state flip은 `IHierarchyController`의 protected
+  helper(`setHierarchyItemExpanded(...)`, `setAllHierarchyItemsExpanded(...)`)를 부모 계약으로 사용한다. 각 도메인
+  Controller는 이 부모 helper를 호출한 뒤 자기 model sync/persistence 후처리만 수행해야 한다.
 - Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,
-  반복되는 depth item parsing/serialization/selection/expansion support는
-  `src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다.
+  반복되는 depth item parsing/serialization/selection support는
+  `src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다. chevron expansion은
+  위 `IHierarchyController` 부모 helper 경로를 따른다.
 - Projects 계층은 Library 계층처럼 child project를 허용하는 nested depth tree다. `ProjectsHierarchyController`와
   `ProjectLists.wsproj` parser/store/creator는 depth, child drop, subtree delete/reorder를 보존해야 하며 flat-only
   project list 정책으로 되돌리면 안 된다.
@@ -97,8 +101,9 @@
 - note record lookup, persisted body-state 반영, note directory/body-source 조회처럼 여러 note-backed hierarchy
   Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
 - `InAppClipboard`는 `src/app/models/clipboard`에서 단일 in-app clipboard resource state와 file/url 기반
-  import orchestration, conflict/persistence 처리를 소유한다. `ResourcesImportController`는 삭제된 경계이며
-  되살리지 않는다.
+  import orchestration, conflict/persistence 처리를 소유한다. 이 clipboard resource state는 이미지 전용이
+  아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML, 오디오/음악, 비디오, 3D 모델, 압축 파일 같은
+  비이미지 payload도 받을 수 있어야 한다. `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.
 
 ### Model Layer, QML 의 역할 분담 (중요)
 

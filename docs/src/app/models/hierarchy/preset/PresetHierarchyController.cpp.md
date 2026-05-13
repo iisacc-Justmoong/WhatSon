@@ -28,7 +28,8 @@ This stops note-save related runtime refreshes from collapsing the preset sideba
 
 ## Expansion Ownership
 
-- `setItemExpanded(...)` mutates the stored row state for valid expandable items.
+- `setItemExpanded(...)` delegates shared chevron validation/state flipping to `IHierarchyController`, then syncs the
+  preset model when a valid expandable row changes.
 - Expansion is serialized only in memory; it is intentionally treated as user session state rather
   than as part of `Preset.wspreset`.
 

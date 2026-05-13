@@ -1,8 +1,8 @@
-# `src/app/models/clipboard/InAppClipboardResourceImport.cpp`
+# `src/app/models/clipboard/ClipboardResourcePackageImport.cpp`
 
 ## Responsibility
 
-Implements resource package persistence for `InAppClipboard`.
+Implements the resource package import shard for `InAppClipboard`.
 
 ## Flow
 
@@ -22,5 +22,6 @@ Implements resource package persistence for `InAppClipboard`.
 
 ## 한국어
 
-- 이 구현은 `InAppClipboard`의 file URL import와 clipboard resource paste를 같은 패키지 생성 경로로 처리한다.
+- 이 구현 파일은 별도 clipboard 객체가 아니라 `InAppClipboard`의 `.wsresource` 패키지 import 구현 shard다.
+- `InAppClipboard`의 file URL import와 clipboard resource paste를 같은 패키지 생성 경로로 처리한다.
 - clipboard 이미지도 먼저 `.wsresources/<id>.wsresource`에 등록되고, 본문에는 `<resource ...>` 참조만 삽입된다.

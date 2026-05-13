@@ -7,6 +7,9 @@
   leaking identical row ids between hierarchy domains.
 - Single-row and bulk expansion requests go through the bound `HierarchyInteractionBridge` by meta-object call, then
   roll back the preserved state if the bridge rejects the mutation.
+- `armExpansionForItem(...)` and `requestChevronExpansionForItem(...)` are the preferred right-chevron entrypoints for
+  QML. They derive the stable expansion key and current `expanded` value inside C++, leaving the view to provide only the
+  hit-tested item and resolved model index.
 - After a successful expansion commit, the controller returns only the commit result. It does not emit footer action
   signals or selected-row sync signals; `SidebarHierarchyView.qml` schedules the next-turn
   `syncSelectedHierarchyItem(false)` call with `Qt.callLater(...)`.
