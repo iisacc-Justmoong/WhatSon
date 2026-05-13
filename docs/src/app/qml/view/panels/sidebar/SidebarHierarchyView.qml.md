@@ -93,6 +93,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   the newly inserted stable row key, and lets the rename controller retry by that key until the row geometry is ready.
   This prevents the input overlay from being anchored to protected buckets such as `All Library` while the actual blank
   folder row is inserted lower in the tree.
+- When the controller reports `selectedFolderIndex < 0`, the sidebar clears the LVRS active hierarchy item, active id,
+  and active key in addition to the inline-edit presentation. This keeps a deleted focused folder from visually handing
+  focus to the last visible row.
 
 ## Multi Selection Contract
 
@@ -171,7 +174,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
     clicked folder, so the library controller creates the new folder as that folder's child.
     After creation, the sidebar promotes the new row to the active selection and begins inline rename.
   - `Delete Folder`, which forwards to the existing `HierarchyInteractionBridge.deleteSelectedFolder()` path after
-    selecting the clicked folder.
+    selecting the clicked folder. The controller clears hierarchy focus after the deletion instead of selecting the next
+    or last remaining row.
 - No new backend/service object is introduced for this behavior; the sidebar only reuses the existing selection bridge,
   CRUD bridge, and menu popup.
 
@@ -251,16 +255,15 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Inline rename geometry is no longer derived only from the live LVRS row object. The view now keeps an
   `editingHierarchyPresentation` snapshot so the overlay stays attached to the selected row even if `LV.Hierarchy`
   regenerates items during a rename transaction.
-- Starting, committing, and cancelling inline rename now force a `displayedHierarchyModel` refresh so the temporary
-  blank-label projection is entered and exited immediately with the transaction state.
+- Starting inline rename does not force a `displayedHierarchyModel` rebuild. The overlay uses the captured row
+  presentation directly, while commit and cancel still refresh the displayed model after the transaction state is
+  cleared.
 - Newly created folders do not open inline rename until the selected folder row is present in the live LVRS hierarchy
   and has a non-zero geometry snapshot. This prevents the input overlay from borrowing the previous active row, such as
   `All Library`, while LVRS is still rebuilding generated rows.
 - Rename row lookup validates both the LVRS visual row index and stable item key against `standardHierarchyModel`.
   A stale active item with the same numeric id is not enough to place the input field; the overlay must anchor to the
   actual generated folder row that is being edited.
-- That rename projection now hides only the visible `label`. Stable row identity fields stay intact so LVRS activation
-  continues to target the same hierarchy item instead of surfacing internal fallback identifiers.
 - `resolveVisibleHierarchyItem(...)` prefers the active LVRS row only when `itemId`/`flatIndex` and `itemKey` match the
   selected model row, then falls back to the shared hierarchy-item locator with the same identity check. This keeps
   rename placement tied to the selected folder, not whichever generated row happens to be first in the rebuilt tree.

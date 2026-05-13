@@ -11,8 +11,6 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
 - Before showing the editor, it calls `hostView.syncSelectedHierarchyItem(false)` and
   `hostView.refreshEditingHierarchyPresentation(true)` so the overlay is anchored to the selected LVRS row instead of
   a stale topmost generated item.
-- The same entry path now also forces `hostView.syncDisplayedHierarchyModel(true)` so the temporary projection for the
-  edited row is applied immediately, instead of waiting for an unrelated hierarchy refresh.
 - The `Qt.callLater(...)` pass refreshes the presentation snapshot again after LVRS finishes any row regeneration.
 - The post-create path uses `beginRenameHierarchyItemWhenVisible(...)`: it captures the controller's new selected index
   after `createFolder()`, refreshes the displayed model, activates the row by stable key when possible, and retries on
@@ -34,8 +32,8 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
 - `commitHierarchyRename()` delegates the actual rename to `hierarchyInteractionBridge.renameItem(...)`.
 - Both commit and cancel clear the cached row presentation through `hostView.clearEditingHierarchyPresentation()` before
   resynchronizing LVRS selection.
-- Both commit and cancel also force `hostView.syncDisplayedHierarchyModel(true)` after the rename state is cleared, so a
-  blanked edit-row projection cannot survive after the transaction ends.
+- Both commit and cancel also force `hostView.syncDisplayedHierarchyModel(true)` after the rename state is cleared, so
+  the rendered hierarchy row reflects the final controller state immediately after the transaction ends.
 
 ## Label Handling
 
@@ -43,10 +41,8 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
   of naively splitting the rendered label on `/`.
 - Literal-slash folder names such as `Marketing/Sales` therefore stay one rename target when the persisted hierarchy
   path is `Marketing\\/Sales`; the inline editor no longer collapses them to only `Sales`.
-- `projectedHierarchyModel(...)` temporarily blanks the edited row label so the underlying text does not bleed through
-  the inline input overlay.
-- The projection must preserve stable row identity fields such as `key` and `itemKey`; blanking those fields allows
-  LVRS fallback identifiers to leak into the visible row after subsequent interactions.
+- Starting inline rename does not rebuild `displayedHierarchyModel` just to hide the edited label. The input overlay
+  uses the captured row presentation directly, which keeps newly created folder geometry stable while focus is applied.
 
 ## Tests
 

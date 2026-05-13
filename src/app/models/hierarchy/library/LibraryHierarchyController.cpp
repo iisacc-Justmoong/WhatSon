@@ -1197,6 +1197,33 @@ void LibraryHierarchyController::applySelectedIndex(int index, bool forceReapply
     emit selectedIndexChanged();
 }
 
+void LibraryHierarchyController::clearSelectedIndex(bool forceReapply)
+{
+    if (m_selectedIndex == -1)
+    {
+        if (!forceReapply)
+        {
+            return;
+        }
+
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.controller"),
+                                  QStringLiteral("reapplyClearedSelectedIndex"),
+                                  QStringLiteral("value=-1"));
+        refreshNoteListForSelection();
+        emit selectedIndexChanged();
+        return;
+    }
+
+    m_selectedIndex = -1;
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.controller"),
+                              QStringLiteral("clearSelectedIndex"),
+                              QStringLiteral("value=-1"));
+    refreshNoteListForSelection();
+    emit selectedIndexChanged();
+}
+
 void LibraryHierarchyController::setDepthItems(const QVariantList& depthItems)
 {
     WhatSon::Debug::traceSelf(this,
@@ -1840,10 +1867,7 @@ void LibraryHierarchyController::deleteSelectedFolder()
     QVector<LibraryHierarchyItem> stagedItems = m_items;
     stagedItems.remove(startIndex, removeCount);
     finalizeFolderItems(&stagedItems, false);
-    const int nextSelectedIndex = stagedItems.isEmpty()
-                                      ? -1
-                                      : std::min(startIndex, static_cast<int>(stagedItems.size() - 1));
-    if (!commitFolderHierarchyUpdate(std::move(stagedItems), nextSelectedIndex, {}))
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), -1, {}, true))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.controller"),
@@ -3318,7 +3342,8 @@ bool LibraryHierarchyController::loadIndexedStateFromWshub(const QString& wshubP
 bool LibraryHierarchyController::commitFolderHierarchyUpdate(
     QVector<LibraryHierarchyItem> stagedItems,
     int selectedIndex,
-    const QHash<QString, QString>& movedFolderPathMap)
+    const QHash<QString, QString>& movedFolderPathMap,
+    bool preserveClearedSelection)
 {
     const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
     const QVector<WhatSonFolderDepthEntry> stagedFolderEntries = folderEntriesFromItems(stagedItems);
@@ -3381,7 +3406,14 @@ bool LibraryHierarchyController::commitFolderHierarchyUpdate(
 
     rebuildBucketRanges();
     syncModel();
-    applySelectedIndex(mirroredSelectedIndex, true);
+    if (preserveClearedSelection && selectedIndex < 0)
+    {
+        clearSelectedIndex(true);
+    }
+    else
+    {
+        applySelectedIndex(mirroredSelectedIndex, true);
+    }
     return true;
 }
 

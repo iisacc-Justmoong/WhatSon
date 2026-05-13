@@ -54,11 +54,13 @@
   unchanged hierarchy source.
 - `setItemExpanded(...)` accepts any row that advertises `showChevron`, including accent root folders. Protected-root
   policy remains a rename/delete guard; it must not block a visible chevron from folding or unfolding its descendants.
-- When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
-  before the controller republishes state. This keeps the library note-list filter aligned with the row the sidebar
-  already renders as active.
+- General selection writes still normalize a negative or invalid selected index to the first visible row before the
+  controller republishes state. This keeps the library note-list filter aligned with the row the sidebar already renders
+  as active.
 - `deleteSelectedFolder()` remains the authoritative delete path. It removes the selected folder together with its
-  descendant subtree and persists the updated folders store before refreshing sidebar state.
+  descendant subtree and persists the updated folders store before refreshing sidebar state. Deleting the focused folder
+  is the explicit exception to selection normalization: the controller leaves `selectedIndex == -1` so no surviving
+  hierarchy row inherits focus just because it is adjacent or last.
 - The library sidebar right-click context menu now reuses those two existing methods through
   `HierarchyInteractionBridge`; no separate library-specific CRUD implementation was added for the menu.
 - `applyHierarchyMove(...)` remains a targeted move helper. The sidebar drag/drop path normally persists the final

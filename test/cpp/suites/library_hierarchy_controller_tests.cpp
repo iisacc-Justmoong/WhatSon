@@ -182,3 +182,47 @@ void WhatSonCppRegressionTests::libraryHierarchyController_mirrorsFoldersFileAft
     QCOMPARE(mirroredModel.at(4).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("branch"));
     QCOMPARE(mirroredModel.at(4).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("branch"));
 }
+
+void WhatSonCppRegressionTests::libraryHierarchyController_clearsSelectionAfterDeletingFocusedFolder()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    const QString foldersFilePath = QDir(workspaceDir.path()).filePath(QStringLiteral("Folders.wsfolders"));
+
+    QVector<WhatSonFolderDepthEntry> entries;
+    entries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("git"),
+        QStringLiteral("git"),
+        0,
+        QStringLiteral("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+    });
+    entries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("branch"),
+        QStringLiteral("branch"),
+        0,
+        QStringLiteral("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"),
+    });
+
+    LibraryHierarchyController controller;
+    QSignalSpy filesystemMutatedSpy(&controller, &LibraryHierarchyController::hubFilesystemMutated);
+    controller.applyRuntimeSnapshot(
+        QStringLiteral("test.wshub"),
+        {},
+        {},
+        {},
+        entries,
+        foldersFilePath,
+        true);
+
+    QCOMPARE(controller.hierarchyModel().size(), 5);
+    controller.setSelectedIndex(4);
+    QCOMPARE(controller.selectedIndex(), 4);
+
+    controller.deleteSelectedFolder();
+
+    QCOMPARE(filesystemMutatedSpy.count(), 1);
+    QCOMPARE(controller.selectedIndex(), -1);
+    const QVariantList remainingModel = controller.hierarchyModel();
+    QCOMPARE(remainingModel.size(), 4);
+    QCOMPARE(remainingModel.at(3).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("git"));
+}

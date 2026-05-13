@@ -1219,6 +1219,7 @@ private slots:
     void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
     void libraryHierarchyController_appliesLvrsMoveEventAsSingleFolderReparent();
     void libraryHierarchyController_mirrorsFoldersFileAfterHierarchyCommit();
+    void libraryHierarchyController_clearsSelectionAfterDeletingFocusedFolder();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();

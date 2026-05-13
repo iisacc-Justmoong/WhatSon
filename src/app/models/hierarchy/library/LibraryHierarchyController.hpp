@@ -199,9 +199,11 @@ private:
     bool commitFolderHierarchyUpdate(
         QVector<LibraryHierarchyItem> stagedItems,
         int selectedIndex,
-        const QHash<QString, QString>& movedFolderPathMap = {});
+        const QHash<QString, QString>& movedFolderPathMap = {},
+        bool preserveClearedSelection = false);
     bool reloadFolderHierarchyFromFoldersFile(const QSet<QString>& preservedExpandedKeys, QString* errorMessage);
     void applySelectedIndex(int index, bool forceReapply = false);
+    void clearSelectedIndex(bool forceReapply = false);
     int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();
     void refreshNoteListForSelection();

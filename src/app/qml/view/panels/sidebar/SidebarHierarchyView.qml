@@ -354,6 +354,11 @@ Rectangle {
                 "y": 0
             });
     }
+    function clearActiveHierarchyFocus() {
+        hierarchyTree.activeListItem = null;
+        hierarchyTree.activeListItemId = -1;
+        hierarchyTree.activeListItemKey = "";
+    }
     function clearHierarchyPointerSelectionModifiers() {
         hierarchySelectionController.clearHierarchyPointerSelectionModifiers();
     }
@@ -796,9 +801,6 @@ Rectangle {
     function noteIdsFromDragPayload(drag) {
         return noteDropController.noteIdsFromDragPayload(drag);
     }
-    function projectedHierarchyModel(modelValue) {
-        return renameController.projectedHierarchyModel(modelValue);
-    }
     function refreshEditingHierarchyPresentation(forceSelectionSync) {
         const editingIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.editingHierarchyIndex, -1);
         if (editingIndex < 0) {
@@ -1091,8 +1093,7 @@ Rectangle {
         if (!sidebarHierarchyView.hierarchyInteractionController)
             return false;
         sidebarHierarchyView.hierarchyInteractionController.captureExpansionState(sidebarHierarchyView.displayedHierarchyModel);
-        const projectedModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyController ? hierarchyController.hierarchyNodes : []);
-        const preservedModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(projectedModel);
+        const preservedModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(hierarchyController ? hierarchyController.hierarchyNodes : []);
         const nextModel = renameController.normalizeHierarchyModel(preservedModel);
         const nextSignature = sidebarHierarchyView.hierarchyModelSignature(nextModel);
         if (!Boolean(forceRefresh) && nextSignature === sidebarHierarchyView.displayedHierarchyModelSignature) {
@@ -1113,6 +1114,7 @@ Rectangle {
     function syncSelectedHierarchyItem(focusView) {
         if (selectedFolderIndex < 0) {
             sidebarHierarchyView.clearEditingHierarchyPresentation();
+            sidebarHierarchyView.clearActiveHierarchyFocus();
             sidebarHierarchyView.invalidateHierarchySelectionVisuals();
             return;
         }
@@ -1411,7 +1413,6 @@ Rectangle {
                 return false;
             }
             hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
-            hostView.syncDisplayedHierarchyModel(true);
             hostView.requestViewHook("hierarchy.rename.begin");
             renameController.scheduleHierarchyRenameFieldFocus(renameIndex, 3);
             return true;
@@ -1531,15 +1532,6 @@ Rectangle {
             return true;
         }
 
-        function cloneHierarchyItem(sourceItem) {
-            const clone = {};
-            if (!sourceItem)
-                return clone;
-            for (const key in sourceItem)
-                clone[key] = sourceItem[key];
-            return clone;
-        }
-
         function commitHierarchyRename() {
             if (!hostView.renameEditingActive)
                 return false;
@@ -1622,20 +1614,6 @@ Rectangle {
             if (modelValue.length !== undefined)
                 return Array.from(modelValue);
             return [];
-        }
-
-        function projectedHierarchyModel(modelValue) {
-            const normalizedModel = renameController.normalizeHierarchyModel(modelValue);
-            if (!hostView.renameEditingActive)
-                return normalizedModel;
-            const editingIndex = renameController.normalizedInteger(hostView.editingHierarchyIndex, -1);
-            if (editingIndex < 0 || editingIndex >= normalizedModel.length)
-                return normalizedModel;
-            const projectedModel = normalizedModel.slice();
-            const projectedItem = renameController.cloneHierarchyItem(projectedModel[editingIndex]);
-            projectedItem.label = " ";
-            projectedModel[editingIndex] = projectedItem;
-            return projectedModel;
         }
 
         function selectedHierarchyItemLabel() {
