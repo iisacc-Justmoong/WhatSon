@@ -241,6 +241,97 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_usesSelectedTextToRepa
     QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("git </highlight>")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("logical-selection-note"),
+        QStringLiteral("Alpha Beta Gamma"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+        bodyPath,
+        QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<!DOCTYPE WHATSONNOTE>\n"
+            "<contents id=\"logical-selection-note\">\n"
+            "  <body>\n"
+            "    <paragraph>Alpha <next />Beta Gamma</paragraph>\n"
+            "  </body>\n"
+            "</contents>\n")));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("logical-selection-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("logical-selection-note"),
+        QStringLiteral("Alpha <next />Beta Gamma"));
+    const QVariantMap result = session.insertFormatTagIntoSource(
+        QStringLiteral("highlight"),
+        editorHtml,
+        QStringLiteral("Alpha \n").size(),
+        QStringLiteral("Beta").size(),
+        QStringLiteral("Beta"));
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <next /><highlight>Beta</highlight> Gamma"));
+    QCOMPARE(result.value(QStringLiteral("selectionStart")).toInt(), QStringLiteral("Alpha <next />").size());
+    QCOMPARE(result.value(QStringLiteral("selectionLength")).toInt(), QStringLiteral("Beta").size());
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("B<highlight>eta ")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("active-source-note"),
+        QStringLiteral("<bold>Alpha</bold> Beta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("active-source-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString projectionWithoutRawTags = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("active-source-note"),
+        QStringLiteral("Alpha Beta"));
+    const QVariantMap result = session.insertFormatTagIntoSource(
+        QStringLiteral("highlight"),
+        projectionWithoutRawTags,
+        0,
+        QStringLiteral("Alpha").size(),
+        QStringLiteral("Alpha"));
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<bold><highlight>Alpha</highlight></bold> Beta"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
 {
     NoteEditorDocumentSession session;

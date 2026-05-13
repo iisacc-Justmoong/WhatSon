@@ -9,8 +9,8 @@ seeds the temporary label, commits the bridge call, and unwinds focus/cancellati
 
 - `beginRenameSelectedHierarchyItem()` resolves the selected hierarchy index from `hostView.selectedFolderIndex`.
 - Before showing the editor, it calls `hostView.syncSelectedHierarchyItem(false)` and
-  `hostView.refreshEditingHierarchyPresentation(true)` so the overlay is anchored to the selected LVRS row instead of
-  a stale topmost generated item.
+  `hostView.refreshEditingHierarchyPresentation(true)` so the overlay is anchored through the visible item locator
+  instead of a stale topmost generated item.
 - The `Qt.callLater(...)` pass refreshes the presentation snapshot again after LVRS finishes any row regeneration.
 - The post-create path uses `beginRenameHierarchyItemWhenVisible(...)`: it captures the controller's new selected index
   after `createFolder()`, refreshes the displayed model, activates the row by stable key when possible, and retries on

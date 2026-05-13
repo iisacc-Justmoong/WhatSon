@@ -141,11 +141,19 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("insertFormatTagIntoSource")));
 
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorFormatTag(tagName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorFormatTag(tagName, allowSelectionSnapshot)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectedText")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var editorFormatSelectionSnapshot")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function rememberEditorFormatSelectionSnapshot()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorFormatSelectionForCommand(allowSelectionSnapshot)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.editorFormatSelectionForCommand(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Boolean(allowSelectionSnapshot));")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("if (Boolean(allowSelectionSnapshot)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectionStart")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectedText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));
@@ -169,6 +177,7 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+Return\"")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("onActivated: contentViewLayout.applyEditorFormatTag(\"highlight\", true)")));
 }
 
 void WhatSonCppRegressionTests::qmlContentViewLayout_opensEditorFormatContextMenuForSelection()
@@ -191,10 +200,15 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_opensEditorFormatContextMen
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.highlight\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function openEditorFormatContextMenuFromPointer")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function handleEditorFormatContextMenuTrigger(eventName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("return contentViewLayout.applyEditorFormatTag(\"highlight\", true);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorFormatContextMenu.openFor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("TapHandler {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("acceptedButtons: Qt.RightButton")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("enabled: contentViewLayout.editorFormatContextMenuAvailable")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("captureEditorFormatSelectionSnapshot")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("openEditorFormatContextMenuFromPointer(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor,")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.ContextMenu {")));
@@ -202,6 +216,8 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_opensEditorFormatContextMen
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("items: contentViewLayout.editorFormatContextMenuItems")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onItemEventTriggered: function (eventName")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.handleEditorFormatContextMenuTrigger(eventName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onClosed:")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.clearEditorFormatSelectionSnapshot();")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative()

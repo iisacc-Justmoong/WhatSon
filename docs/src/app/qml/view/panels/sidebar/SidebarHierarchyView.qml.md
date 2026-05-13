@@ -96,6 +96,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - When the controller reports `selectedFolderIndex < 0`, the sidebar clears the LVRS active hierarchy item, active id,
   and active key in addition to the inline-edit presentation. This keeps a deleted focused folder from visually handing
   focus to the last visible row.
+- The delete path applies that no-selection sync immediately after `deleteSelectedFolder()` and schedules another pass
+  for the next QML turns, because LVRS can regenerate hierarchy rows after the controller has already cleared selection.
 
 ## Multi Selection Contract
 
@@ -175,7 +177,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
     After creation, the sidebar promotes the new row to the active selection and begins inline rename.
   - `Delete Folder`, which forwards to the existing `HierarchyInteractionBridge.deleteSelectedFolder()` path after
     selecting the clicked folder. The controller clears hierarchy focus after the deletion instead of selecting the next
-    or last remaining row.
+    or last remaining row, and the sidebar reapplies that cleared focus after the LVRS row refresh turn.
 - No new backend/service object is introduced for this behavior; the sidebar only reuses the existing selection bridge,
   CRUD bridge, and menu popup.
 
@@ -264,9 +266,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Rename row lookup validates both the LVRS visual row index and stable item key against `standardHierarchyModel`.
   A stale active item with the same numeric id is not enough to place the input field; the overlay must anchor to the
   actual generated folder row that is being edited.
-- `resolveVisibleHierarchyItem(...)` prefers the active LVRS row only when `itemId`/`flatIndex` and `itemKey` match the
-  selected model row, then falls back to the shared hierarchy-item locator with the same identity check. This keeps
-  rename placement tied to the selected folder, not whichever generated row happens to be first in the rebuilt tree.
+- `resolveVisibleHierarchyItem(...)` routes rename placement through the shared hierarchy-item locator and its identity
+  check instead of trusting the transient LVRS active row reference. This keeps rename placement tied to the selected
+  folder, not whichever generated row happens to be first in the rebuilt tree.
 - Note-drop preview state is represented by `noteDropHoverIndex`.
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one

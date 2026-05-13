@@ -142,10 +142,11 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBef
     QVERIFY(activateByKeyIndex > itemKeyIndex);
     const qsizetype resolveFunctionIndex = sidebarSource.indexOf(QStringLiteral("function resolveVisibleHierarchyItem(itemId)"));
     QVERIFY(resolveFunctionIndex >= 0);
-    const qsizetype activeMatchIndex = sidebarSource.indexOf(
-        QStringLiteral("activeItemId === resolvedIndex && sidebarHierarchyView.hierarchyItemMatchesModelIndex(hierarchyTree.activeListItem, resolvedIndex)"),
-        resolveFunctionIndex);
-    QVERIFY(activeMatchIndex > resolveFunctionIndex);
+    const qsizetype resolveFunctionEndIndex = sidebarSource.indexOf(QStringLiteral("function scheduleBookmarkPaletteVisualRefresh()"), resolveFunctionIndex);
+    QVERIFY(resolveFunctionEndIndex > resolveFunctionIndex);
+    const QString resolveFunctionBlock = sidebarSource.mid(resolveFunctionIndex, resolveFunctionEndIndex - resolveFunctionIndex);
+    QVERIFY(!resolveFunctionBlock.contains(QStringLiteral("hierarchyTree.activeListItem")));
+    QVERIFY(!resolveFunctionBlock.contains(QStringLiteral("activeListItemId")));
     const qsizetype locatorFunctionIndex = sidebarSource.indexOf(QStringLiteral("function hierarchyItemForResolvedIndex(itemId)"));
     QVERIFY(locatorFunctionIndex >= 0);
     const qsizetype locatorMatchIndex = sidebarSource.indexOf(QStringLiteral("hostView.hierarchyItemMatchesModelIndex(child, resolvedIndex)"), locatorFunctionIndex);
@@ -155,6 +156,19 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBef
     QVERIFY(deleteFunctionIndex > createFunctionIndex);
     const QString createBlock = sidebarSource.mid(createFunctionIndex, deleteFunctionIndex - createFunctionIndex);
     QVERIFY(!createBlock.contains(QStringLiteral("beginRenameSelectedHierarchyItem()")));
+
+    const qsizetype footerFunctionIndex = sidebarSource.indexOf(QStringLiteral("function requestHierarchyFooterAction(action)"), deleteFunctionIndex);
+    QVERIFY(footerFunctionIndex > deleteFunctionIndex);
+    const QString deleteBlock = sidebarSource.mid(deleteFunctionIndex, footerFunctionIndex - deleteFunctionIndex);
+    const qsizetype deleteBridgeIndex = deleteBlock.indexOf(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.deleteSelectedFolder();"));
+    QVERIFY(deleteBridgeIndex >= 0);
+    const qsizetype selectionSyncIndex = deleteBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();"), deleteBridgeIndex);
+    const qsizetype immediateFocusSyncIndex = deleteBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncSelectedHierarchyItem(false);"), deleteBridgeIndex);
+    const qsizetype deferredFocusSyncIndex = deleteBlock.indexOf(QStringLiteral("sidebarHierarchyView.scheduleSelectedHierarchySync(false);"), deleteBridgeIndex);
+    QVERIFY(selectionSyncIndex > deleteBridgeIndex);
+    QVERIFY(immediateFocusSyncIndex > selectionSyncIndex);
+    QVERIFY(deferredFocusSyncIndex > immediateFocusSyncIndex);
+    QVERIFY(!deleteBlock.contains(QStringLiteral("syncSelectedHierarchyItem(true)")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags()

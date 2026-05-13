@@ -85,6 +85,14 @@ Item {
             "eventName": "editor.format.highlight"
         }
     ]
+    property var editorFormatSelectionSnapshot: ({
+            "documentText": "",
+            "selectionLength": 0,
+            "selectionStart": 0,
+            "selectedText": "",
+            "valid": false
+        })
+    property bool editorFormatContextMenuPointerActive: false
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -161,18 +169,20 @@ Item {
 
         contentViewLayout.pasteClipboardImageIntoEditor();
     }
-    function applyEditorFormatTag(tagName) {
+    function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
                 || contentViewLayout.editorReadOnly
                 || contentViewLayout.noteEditorSession.insertFormatTagIntoSource === undefined)
             return false;
 
+        const selectionState = contentViewLayout.editorFormatSelectionForCommand(
+                    Boolean(allowSelectionSnapshot));
         const formatResult = contentViewLayout.noteEditorSession.insertFormatTagIntoSource(
                     tagName,
-                    contentsTextEditor.editorDocumentText,
-                    contentsTextEditor.editorSelectionStart,
-                    contentsTextEditor.editorSelectionLength,
-                    contentsTextEditor.editorSelectedText);
+                    selectionState.documentText,
+                    selectionState.selectionStart,
+                    selectionState.selectionLength,
+                    selectionState.selectedText);
         if (!formatResult || !Boolean(formatResult.valid))
             return false;
 
@@ -180,9 +190,46 @@ Item {
                 && formatResult.editorDocumentText !== null
                 ? String(formatResult.editorDocumentText)
                 : String(formatResult.bodySourceText);
-        return contentsTextEditor.replaceEditorDocumentText(
+        const replaced = contentsTextEditor.replaceEditorDocumentText(
                     editorDocumentText,
                     Number(formatResult.cursorPosition) || 0);
+        if (replaced)
+            contentViewLayout.clearEditorFormatSelectionSnapshot();
+        return replaced;
+    }
+    function rememberEditorFormatSelectionSnapshot() {
+        if (contentViewLayout.editorFormatContextMenuPointerActive || editorFormatContextMenu.opened)
+            return false;
+        const selectionState = contentViewLayout.liveEditorFormatSelectionState();
+        if (selectionState.valid)
+            contentViewLayout.editorFormatSelectionSnapshot = selectionState;
+        return selectionState.valid;
+    }
+    function clearEditorFormatSelectionSnapshot() {
+        contentViewLayout.editorFormatSelectionSnapshot = ({
+                "documentText": "",
+                "selectionLength": 0,
+                "selectionStart": 0,
+                "selectedText": "",
+                "valid": false
+            });
+    }
+    function editorFormatSelectionForCommand(allowSelectionSnapshot) {
+        if (Boolean(allowSelectionSnapshot)
+                && contentViewLayout.editorFormatSelectionSnapshot
+                && Boolean(contentViewLayout.editorFormatSelectionSnapshot.valid))
+            return contentViewLayout.editorFormatSelectionSnapshot;
+        return contentViewLayout.liveEditorFormatSelectionState();
+    }
+    function liveEditorFormatSelectionState() {
+        const selectionLength = Math.max(0, Math.floor(Number(contentsTextEditor.editorSelectionLength) || 0));
+        return {
+            "documentText": contentsTextEditor.editorDocumentText,
+            "selectionLength": selectionLength,
+            "selectionStart": Math.max(0, Math.floor(Number(contentsTextEditor.editorSelectionStart) || 0)),
+            "selectedText": contentsTextEditor.editorSelectedText,
+            "valid": selectionLength > 0
+        };
     }
     function editorFormatContextMenuPointerTriggerAccepted(triggerKind) {
         const normalizedTrigger = triggerKind === undefined || triggerKind === null
@@ -198,9 +245,13 @@ Item {
                 || !contentViewLayout.editorFormatContextMenuAvailable) {
             if (editorFormatContextMenu.opened)
                 editorFormatContextMenu.close();
+            contentViewLayout.editorFormatContextMenuPointerActive = false;
             return false;
         }
 
+        if (!contentViewLayout.editorFormatSelectionSnapshot
+                || !Boolean(contentViewLayout.editorFormatSelectionSnapshot.valid))
+            contentViewLayout.rememberEditorFormatSelectionSnapshot();
         editorFormatContextMenu.openFor(
                     referenceItem ? referenceItem : contentViewLayout,
                     Number(localX) || 0,
@@ -212,15 +263,15 @@ Item {
                 ? ""
                 : String(eventName).trim();
         if (normalizedEventName === "editor.format.bold")
-            return contentViewLayout.applyEditorFormatTag("bold");
+            return contentViewLayout.applyEditorFormatTag("bold", true);
         if (normalizedEventName === "editor.format.italic")
-            return contentViewLayout.applyEditorFormatTag("italic");
+            return contentViewLayout.applyEditorFormatTag("italic", true);
         if (normalizedEventName === "editor.format.underline")
-            return contentViewLayout.applyEditorFormatTag("underline");
+            return contentViewLayout.applyEditorFormatTag("underline", true);
         if (normalizedEventName === "editor.format.strikethrough")
-            return contentViewLayout.applyEditorFormatTag("strikethrough");
+            return contentViewLayout.applyEditorFormatTag("strikethrough", true);
         if (normalizedEventName === "editor.format.highlight")
-            return contentViewLayout.applyEditorFormatTag("highlight");
+            return contentViewLayout.applyEditorFormatTag("highlight", true);
         return false;
     }
 
@@ -266,6 +317,10 @@ Item {
                         contentViewLayout.noteEditorSession.persistEditorFile(path);
                     }
                 }
+                onEditorDocumentTextChanged: contentViewLayout.clearEditorFormatSelectionSnapshot()
+                onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
 
                 TapHandler {
                     id: editorFormatContextMenuTapHandler
@@ -275,6 +330,17 @@ Item {
                     enabled: contentViewLayout.editorFormatContextMenuAvailable
                     gesturePolicy: TapHandler.DragThreshold
                     grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+
+                    onPressedChanged: {
+                        if (pressed) {
+                            contentViewLayout.editorFormatContextMenuPointerActive = true;
+                        } else {
+                            Qt.callLater(function () {
+                                if (!editorFormatContextMenu.opened)
+                                    contentViewLayout.editorFormatContextMenuPointerActive = false;
+                            });
+                        }
+                    }
 
                     onTapped: function (eventPoint, button) {
                         if (button !== Qt.RightButton)
@@ -406,6 +472,10 @@ Item {
 
             onItemEventTriggered: function (eventName, payload, index, item) {
                 contentViewLayout.handleEditorFormatContextMenuTrigger(eventName);
+            }
+            onClosed: {
+                contentViewLayout.editorFormatContextMenuPointerActive = false;
+                contentViewLayout.clearEditorFormatSelectionSnapshot();
             }
         }
     }

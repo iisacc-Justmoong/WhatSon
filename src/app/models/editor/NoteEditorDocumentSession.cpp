@@ -66,6 +66,7 @@ namespace
     {
         int sourceStart = 0;
         int sourceEnd = 0;
+        QString logicalText;
     };
 
     struct EditorSelectionRange final
@@ -132,7 +133,6 @@ namespace
             || SemanticTags::isWebLinkTagName(tagName)
             || SemanticTags::isHashtagTagName(tagName)
             || SemanticTags::isTransparentContainerTagName(tagName)
-            || SemanticTags::isRenderedLineBreakTagName(tagName)
             || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();
     }
 
@@ -150,6 +150,13 @@ namespace
                 if (tagEnd > cursor)
                 {
                     const QStringView tagToken(bodySourceText.constData() + cursor, tagEnd - cursor + 1);
+                    const QString tagName = sourceTagName(tagToken);
+                    if (WhatSon::NoteBodySemanticTagSupport::isRenderedLineBreakTagName(tagName))
+                    {
+                        visibleCharacters.push_back({cursor, tagEnd + 1, QStringLiteral("\n")});
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
                     if (isInvisibleEditorSourceTag(tagToken))
                     {
                         cursor = tagEnd + 1;
@@ -165,13 +172,21 @@ namespace
                 if (entityEnd > cursor)
                 {
                     cursor = entityEnd + 1;
-                    visibleCharacters.push_back({sourceStart, cursor});
+                    visibleCharacters.push_back({
+                        sourceStart,
+                        cursor,
+                        bodySourceText.mid(sourceStart, cursor - sourceStart)
+                    });
                     continue;
                 }
             }
 
             ++cursor;
-            visibleCharacters.push_back({sourceStart, cursor});
+            visibleCharacters.push_back({
+                sourceStart,
+                cursor,
+                bodySourceText.mid(sourceStart, cursor - sourceStart)
+            });
         }
 
         return visibleCharacters;
@@ -184,9 +199,7 @@ namespace
         visibleText.reserve(visibleCharacters.size());
         for (const SourceVisibleCharacter& visibleCharacter : visibleCharacters)
         {
-            visibleText += bodySourceText.mid(
-                visibleCharacter.sourceStart,
-                visibleCharacter.sourceEnd - visibleCharacter.sourceStart);
+            visibleText += visibleCharacter.logicalText;
         }
         return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(visibleText);
     }
@@ -508,6 +521,7 @@ bool NoteEditorDocumentSession::openNoteForEditing(
     setReadOnly(true);
     setLoading(true);
     setLastError(QString());
+    m_activeBodySourceText.clear();
 
     m_pendingLoadNoteId = normalizedNoteId;
     m_pendingLoadNoteDirectoryPath = normalizedNoteDirectoryPath;
@@ -530,6 +544,7 @@ bool NoteEditorDocumentSession::clearEditor()
     m_pendingLoadSequence = 0;
     m_pendingLoadNoteId.clear();
     m_pendingLoadNoteDirectoryPath.clear();
+    m_activeBodySourceText.clear();
     setActiveNoteContext(QString(), QString());
     setParsedLineCount(0);
     setLoading(false);
@@ -580,6 +595,10 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         setLastError(error);
         emit editorSourcePersistFinished(contextIterator->noteId, false, error);
     }
+    else
+    {
+        m_activeBodySourceText = sourceText;
+    }
     return enqueued;
 }
 
@@ -592,7 +611,7 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
         : m_activeNoteId.trimmed();
-    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+    const QString sourceText = bodySourceTextForEditorDocument(
         noteId,
         editorDocumentText);
     const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(sourceText);
@@ -657,6 +676,10 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     const int sourceCursorPosition = beforeSelection.size() + prefix.size() + insertedBlock.size();
 
     setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
+    if (hasActiveNote())
+    {
+        m_activeBodySourceText = mutatedSourceText;
+    }
     setLastError(QString());
 
     QVariantMap result;
@@ -688,7 +711,7 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
         : m_activeNoteId.trimmed();
-    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+    const QString sourceText = bodySourceTextForEditorDocument(
         noteId,
         editorDocumentText);
     const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
@@ -733,6 +756,10 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
             resultSourceText,
             result.value(QStringLiteral("sourceCursorPosition")).toInt()));
     setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    if (hasActiveNote())
+    {
+        m_activeBodySourceText = resultSourceText;
+    }
     setLastError(QString());
     return result;
 }
@@ -780,6 +807,7 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
         switchToBlankEditorFile();
         setActiveNoteContext(QString(), QString());
         setParsedLineCount(0);
+        m_activeBodySourceText.clear();
         setReadOnly(true);
         setLastError(errorMessage.trimmed().isEmpty()
                          ? QStringLiteral("Failed to load note body text.")
@@ -789,13 +817,15 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
 
     const QString sessionFilePath = editorFilePathForNote(loadedNoteId, loadedNoteDirectoryPath);
     QString writeError;
+    const QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
     const QString editorDocumentText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         loadedNoteId,
-        text);
+        bodySourceText);
     if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
     {
         switchToBlankEditorFile();
         setActiveNoteContext(QString(), QString());
+        m_activeBodySourceText.clear();
         setReadOnly(true);
         setLastError(writeError);
         return;
@@ -805,7 +835,8 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
         sessionFilePath,
         {loadedNoteId, loadedNoteDirectoryPath});
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
-    setParsedLineCount(lineCountForEditorSource(text));
+    m_activeBodySourceText = bodySourceText;
+    setParsedLineCount(lineCountForEditorSource(bodySourceText));
     setLastError(QString());
     setReadOnly(false);
     setEditorFilePath(sessionFilePath);
@@ -955,6 +986,24 @@ bool NoteEditorDocumentSession::readEditorSourceFile(
         *outText = QString::fromUtf8(file.readAll());
     }
     return true;
+}
+
+QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
+    const QString& noteId,
+    const QString& editorDocumentText) const
+{
+    const QString editorSourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        noteId,
+        editorDocumentText);
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    if (hasActiveNote()
+        && !activeSourceText.isEmpty()
+        && visibleTextForSourceText(activeSourceText) == visibleTextForSourceText(editorSourceText))
+    {
+        return activeSourceText;
+    }
+    return editorSourceText;
 }
 
 void NoteEditorDocumentSession::setEditorFilePath(const QString& editorFilePath)

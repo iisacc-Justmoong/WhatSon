@@ -117,6 +117,9 @@ private:
         const QString& filePath,
         QString* outText,
         QString* errorMessage = nullptr) const;
+    QString bodySourceTextForEditorDocument(
+        const QString& noteId,
+        const QString& editorDocumentText) const;
 
     void setEditorFilePath(const QString& editorFilePath);
     void setActiveNoteContext(
@@ -137,6 +140,7 @@ private:
     QString m_activeNoteDirectoryPath;
     QString m_pendingLoadNoteId;
     QString m_pendingLoadNoteDirectoryPath;
+    QString m_activeBodySourceText;
     quint64 m_pendingLoadSequence = 0;
     int m_parsedLineCount = 0;
     bool m_loading = false;

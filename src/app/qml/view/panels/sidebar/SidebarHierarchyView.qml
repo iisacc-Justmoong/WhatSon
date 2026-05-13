@@ -911,6 +911,11 @@ Rectangle {
         if (!sidebarHierarchyView.deleteFolderEnabled)
             return false;
         sidebarHierarchyView.hierarchyInteractionBridge.deleteSelectedFolder();
+        sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
+        sidebarHierarchyView.syncSelectedHierarchyItem(false);
+        Qt.callLater(function () {
+            sidebarHierarchyView.scheduleSelectedHierarchySync(false);
+        });
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.delete");
         return true;
     }
@@ -1055,9 +1060,6 @@ Rectangle {
         const resolvedIndex = sidebarHierarchyView.normalizedInteger(itemId, -1);
         if (resolvedIndex < 0)
             return null;
-        const activeItemId = sidebarHierarchyView.normalizedInteger(hierarchyTree.activeListItemId, -1);
-        if (activeItemId === resolvedIndex && sidebarHierarchyView.hierarchyItemMatchesModelIndex(hierarchyTree.activeListItem, resolvedIndex))
-            return hierarchyTree.activeListItem;
         return noteDropController.hierarchyItemForResolvedIndex(resolvedIndex);
     }
     function scheduleBookmarkPaletteVisualRefresh() {

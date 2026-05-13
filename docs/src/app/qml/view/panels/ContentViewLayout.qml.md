@@ -33,8 +33,10 @@ deferred resources reload.
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, selection
-metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. The
-session maps LVRS RichText plain selection offsets back to visible RAW source positions before inserting tags, so
+metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. Keyboard
+shortcuts read the sibling editor's live selection at command time, while the selected-text context menu explicitly opts
+into the remembered right-click snapshot. The session maps LVRS RichText plain selection offsets back to visible RAW
+source positions before inserting tags, so
 existing inline tags before the selection do not shift the selected range. The selected text is also passed as a repair
 anchor when a RichText interaction reports a drifted offset. Applying the same paired format to the exact text already
 enclosed by that format toggles it off in `SetTag`; QML does not special-case this. Highlight is bound to `Meta+Shift+E` /
@@ -42,7 +44,11 @@ enclosed by that format toggles it off in `SetTag`; QML does not special-case th
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
 `LV.ContextMenu` only when the sibling editor reports a non-empty selection. Menu entries for `bold`, `italic`,
-`underline`, `strikethrough`, and `highlight` reuse the same `applyEditorFormatTag(...)` dispatch path as shortcuts.
+`underline`, `strikethrough`, and `highlight` reuse the same `applyEditorFormatTag(...)` dispatch path as shortcuts but
+pass the snapshot opt-in flag because menu execution happens after the pointer interaction. The layout remembers the live
+selection before the context-click begins. The right-button press only guards that
+snapshot from being overwritten by native context-click selection drift, and menu item execution uses the remembered
+snapshot instead of the shifted live metadata.
 
 ## Shell Inputs
 The restored shell can still assign legacy layout inputs such as note-list, sidebar, resource-import, and calendar
@@ -53,7 +59,7 @@ compatibility handles and are not used to mount parser, projection, renderer, re
 `editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
 ## Guardrails
-- Do not add parser, projection, rendering, snapshot, resource editor, calendar, or editor view-mode wiring here.
+- Do not add parser, projection, rendering, document snapshot, resource editor, calendar, or editor view-mode wiring here.
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
   `syncFinished -> NoteEditorDocumentSession.persistEditorFile(...)` hook.
 - Keep gutter wiring limited to selected-note metadata, parsed source line count, fallback editor logical line height,
@@ -87,8 +93,10 @@ compatibility handles and are not used to mount parser, projection, renderer, re
   붙이는 얇은 command wiring으로 제한한다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
-  브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 컨텍스트 메뉴는
-  선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을 같은 dispatch로
-  보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로 처리한다.
+  브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령
+  시점의 live selection을 사용하고, 컨텍스트 메뉴만 우클릭 interaction 전에 저장한 snapshot을 명시적으로 사용한다.
+  컨텍스트 메뉴는 선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을
+  같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
+  처리한다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
