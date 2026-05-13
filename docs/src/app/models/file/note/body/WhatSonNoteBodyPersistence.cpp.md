@@ -100,6 +100,11 @@ The current contract preserves editor-authored RAW source across save/load turns
   extracts its visible text with preserved paragraph and `<br/>` boundaries, recovers command-generated inline format
   spans as canonical source tags, and returns normalized canonical source for persistence. Non-rich RAW source is passed
   through unchanged apart from line-ending normalization.
+- The same inverse editor-session boundary recognizes note-session resource frame markers of the form
+  `<!--whatson-resource-source:...-->...<!--/whatson-resource-source-->`, decodes the embedded canonical
+  `<resource ... />` source tag, and removes renderer padding rows around that atomic frame before persistence.
+  This lets the editor display a rich resource frame while the `.wsnbody` source continues to store only the canonical
+  resource reference.
 - The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
   - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
     `.wsnbody` parse/read path regenerates the editor RichText

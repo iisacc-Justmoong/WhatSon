@@ -4,20 +4,29 @@
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
+#include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <utility>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QImageReader>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QUrl>
 #include <QVector>
 
 namespace
 {
+    namespace IiXml = WhatSon::IiXmlDocumentSupport;
+
     QString normalizePath(const QString& path)
     {
         const QString trimmed = path.trimmed();
@@ -154,6 +163,12 @@ namespace
                     if (WhatSon::NoteBodySemanticTagSupport::isRenderedLineBreakTagName(tagName))
                     {
                         visibleCharacters.push_back({cursor, tagEnd + 1, QStringLiteral("\n")});
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                    if (QString::compare(tagName, QStringLiteral("resource"), Qt::CaseInsensitive) == 0)
+                    {
+                        visibleCharacters.push_back({cursor, tagEnd + 1, QString(QChar::ObjectReplacementCharacter)});
                         cursor = tagEnd + 1;
                         continue;
                     }
@@ -351,6 +366,503 @@ namespace
         }
 
         return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
+    }
+
+    bool isStandaloneResourceSourceLine(const QString& line)
+    {
+        static const QRegularExpression resourcePattern(
+            QStringLiteral(R"(^\s*<\s*resource\b[^>]*?/?>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return resourcePattern.match(line).hasMatch();
+    }
+
+    QString canonicalResourceSourceLine(QString line)
+    {
+        line = line.trimmed();
+        if (!isStandaloneResourceSourceLine(line))
+        {
+            return {};
+        }
+        if (!line.endsWith(QStringLiteral("/>")))
+        {
+            line.chop(1);
+            line = line.trimmed() + QStringLiteral(" />");
+        }
+        return line;
+    }
+
+    QString htmlAttribute(QString value)
+    {
+        return value.toHtmlEscaped();
+    }
+
+    QString renderedResourceSourceMarker(const QString& resourceTag)
+    {
+        return QString::fromLatin1(resourceTag.toUtf8().toHex());
+    }
+
+    QString hubRootPathForNoteDirectory(const QString& noteDirectoryPath)
+    {
+        QFileInfo currentInfo(normalizePath(noteDirectoryPath));
+        if (!currentInfo.exists())
+        {
+            return {};
+        }
+
+        QDir current = currentInfo.isDir() ? QDir(currentInfo.absoluteFilePath()) : QDir(currentInfo.absolutePath());
+        while (!current.path().isEmpty())
+        {
+            const QFileInfo directoryInfo(current.absolutePath());
+            if (directoryInfo.isDir()
+                && directoryInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+            {
+                return normalizePath(directoryInfo.absoluteFilePath());
+            }
+            if (!current.cdUp())
+            {
+                break;
+            }
+        }
+        return {};
+    }
+
+    QVariantMap resourceDescriptorFromSourceTag(const QString& resourceTag)
+    {
+        const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
+        if (canonicalTag.isEmpty())
+        {
+            return {};
+        }
+
+        const QString parseableDocument = QStringLiteral("<contents><body>%1</body></contents>").arg(canonicalTag);
+        const iiXml::Parser::TagDocumentResult parsedDocument = IiXml::parseDocument(parseableDocument);
+        if (parsedDocument.Status != iiXml::Parser::TagTreeParseStatus::Parsed
+            || !parsedDocument.Document.has_value())
+        {
+            return {};
+        }
+
+        const iiXml::Parser::TagDocument& document = parsedDocument.Document.value();
+        const iiXml::Parser::TagNode* resourceNode =
+            IiXml::findFirstDescendant(document.Nodes, QStringLiteral("resource"));
+        if (resourceNode == nullptr)
+        {
+            return {};
+        }
+
+        QString resourcePath = WhatSon::Resources::normalizePath(
+            IiXml::attributeValue(
+                document,
+                resourceNode,
+                QStringList{
+                    QStringLiteral("resourcePath"),
+                    QStringLiteral("path"),
+                    QStringLiteral("src"),
+                    QStringLiteral("href"),
+                    QStringLiteral("url")
+                }));
+        QString format = WhatSon::Resources::normalizeFormat(
+            IiXml::attributeValue(
+                document,
+                resourceNode,
+                QStringList{
+                    QStringLiteral("format"),
+                    QStringLiteral("resourceFormat"),
+                    QStringLiteral("ext"),
+                    QStringLiteral("extension")
+                }));
+        if (format.isEmpty())
+        {
+            format = WhatSon::Resources::normalizeFormat(
+                WhatSon::Resources::formatFromAssetFilePath(resourcePath));
+        }
+
+        const QString type = WhatSon::Resources::normalizedTypeFromBucketAndFormat(
+            IiXml::attributeValue(
+                document,
+                resourceNode,
+                QStringList{
+                    QStringLiteral("type"),
+                    QStringLiteral("resourceType"),
+                    QStringLiteral("mime"),
+                    QStringLiteral("kind")
+                }),
+            IiXml::attributeValue(document, resourceNode, QStringLiteral("bucket")),
+            format);
+
+        QVariantMap descriptor;
+        descriptor.insert(QStringLiteral("resourcePath"), resourcePath);
+        descriptor.insert(QStringLiteral("id"), IiXml::attributeValue(document, resourceNode, QStringLiteral("id")));
+        descriptor.insert(QStringLiteral("type"), type.isEmpty() ? QStringLiteral("other") : type);
+        descriptor.insert(QStringLiteral("format"), format.isEmpty() ? QStringLiteral(".bin") : format);
+        return descriptor;
+    }
+
+    bool descriptorIsImageResource(const QVariantMap& descriptor)
+    {
+        const QString type = WhatSon::Resources::normalizedType(descriptor.value(QStringLiteral("type")).toString());
+        const QString format = WhatSon::Resources::normalizeFormat(
+            descriptor.value(QStringLiteral("format")).toString()).toCaseFolded();
+        return type == QStringLiteral("image")
+            || WhatSon::Resources::inferTypeFromFormat(format) == QStringLiteral("image");
+    }
+
+    QSize boundedImageDisplaySize(const QString& imagePath)
+    {
+        QSize sourceSize;
+        QImageReader reader(imagePath);
+        reader.setAutoTransform(true);
+        if (reader.size().isValid() && !reader.size().isEmpty())
+        {
+            sourceSize = reader.size();
+        }
+        if (!sourceSize.isValid() || sourceSize.isEmpty())
+        {
+            sourceSize = QSize(338, 220);
+        }
+
+        constexpr int kMaxWidth = 480;
+        constexpr int kMaxHeight = 360;
+        const double scale = std::min(
+            1.0,
+            std::min(
+                static_cast<double>(kMaxWidth) / std::max(1, sourceSize.width()),
+                static_cast<double>(kMaxHeight) / std::max(1, sourceSize.height())));
+        return QSize(
+            std::max(1, static_cast<int>(std::lround(sourceSize.width() * scale))),
+            std::max(1, static_cast<int>(std::lround(sourceSize.height() * scale))));
+    }
+
+    QString resolvedResourceAssetPath(const QVariantMap& descriptor, const QString& noteDirectoryPath)
+    {
+        const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
+        if (resourcePath.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList basePaths = WhatSon::Resources::resourceReferenceBasePathsForContext(
+            noteDirectoryPath,
+            QString(),
+            hubRootPathForNoteDirectory(noteDirectoryPath));
+        return WhatSon::Resources::resolveAssetLocationFromReference(resourcePath, std::move(basePaths));
+    }
+
+    QString resourceFrameHtml(const QString& resourceTag, const QString& noteDirectoryPath)
+    {
+        const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
+        if (canonicalTag.isEmpty())
+        {
+            return WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), resourceTag);
+        }
+
+        const QVariantMap descriptor = resourceDescriptorFromSourceTag(canonicalTag);
+        const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
+        const QString resourceId = descriptor.value(QStringLiteral("id")).toString().trimmed();
+        const QString type = descriptor.value(QStringLiteral("type")).toString().trimmed();
+        const QString format = descriptor.value(QStringLiteral("format")).toString().trimmed();
+        const QString label = !resourceId.isEmpty()
+            ? resourceId
+            : QFileInfo(resourcePath).completeBaseName().trimmed();
+        const QString resolvedAssetPath = resolvedResourceAssetPath(descriptor, noteDirectoryPath);
+        const bool imageResource = descriptorIsImageResource(descriptor)
+            && QFileInfo(resolvedAssetPath).isFile();
+
+        const QString marker = renderedResourceSourceMarker(canonicalTag);
+        QString mediaHtml;
+        if (imageResource)
+        {
+            const QSize displaySize = boundedImageDisplaySize(resolvedAssetPath);
+            mediaHtml = QStringLiteral(
+                            "<img src=\"%1\" width=\"%2\" height=\"%3\" style=\"vertical-align:top;\" />")
+                            .arg(
+                                htmlAttribute(QUrl::fromLocalFile(resolvedAssetPath).toString()),
+                                QString::number(displaySize.width()),
+                                QString::number(displaySize.height()));
+        }
+        else
+        {
+            mediaHtml = QStringLiteral(
+                            "<span style=\"font-size:13px;color:#AEB4B7;\">%1</span>")
+                            .arg(htmlAttribute(resourcePath.isEmpty() ? QStringLiteral("Resource") : resourcePath));
+        }
+
+        return QStringLiteral(
+                   "<!--whatson-resource-source:%1-->"
+                   "<p class=\"whatson-resource-frame\" style=\"margin-top:0px;margin-bottom:0px;line-height:1;\">"
+                   "<table border=\"1\" cellspacing=\"0\" cellpadding=\"6\" style=\"border-color:#2C2E2F;\">"
+                   "<tr><td bgcolor=\"#151819\">"
+                   "<span style=\"font-size:12px;font-weight:700;color:#DDE3E6;\">%2</span>"
+                   "<span style=\"font-size:12px;color:#7C858A;\"> %3 %4</span>"
+                   "</td></tr>"
+                   "<tr><td bgcolor=\"#0B0D0E\" align=\"center\">%5</td></tr>"
+                   "<tr><td bgcolor=\"#151819\">"
+                   "<span style=\"font-size:11px;color:#7C858A;\">%6</span>"
+                   "</td></tr>"
+                   "</table>"
+                   "</p>"
+                   "<!--/whatson-resource-source-->")
+            .arg(
+                marker,
+                htmlAttribute(label.isEmpty() ? QStringLiteral("Resource") : label),
+                htmlAttribute(type),
+                htmlAttribute(format),
+                mediaHtml,
+                htmlAttribute(resourcePath));
+    }
+
+    QString editorHtmlFromBodySourceForNoteContext(
+        const QString& noteId,
+        const QString& bodySourceText,
+        const QString& noteDirectoryPath)
+    {
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        const QStringList sourceLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList htmlLines;
+        htmlLines.reserve(sourceLines.size());
+        QStringList pendingSourceLines;
+        pendingSourceLines.reserve(sourceLines.size());
+
+        const auto flushPendingSourceLines = [&]()
+        {
+            if (pendingSourceLines.isEmpty())
+            {
+                return;
+            }
+            htmlLines.push_back(
+                WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+                    noteId,
+                    pendingSourceLines.join(QLatin1Char('\n'))));
+            pendingSourceLines.clear();
+        };
+
+        for (const QString& sourceLine : sourceLines)
+        {
+            const QString resourceLine = canonicalResourceSourceLine(sourceLine);
+            if (resourceLine.isEmpty())
+            {
+                pendingSourceLines.push_back(sourceLine);
+                continue;
+            }
+
+            flushPendingSourceLines();
+            htmlLines.push_back(resourceFrameHtml(resourceLine, noteDirectoryPath));
+        }
+        flushPendingSourceLines();
+        return htmlLines.join(QStringLiteral("<br/>"));
+    }
+
+    struct ActiveResourceSourceLine final
+    {
+        QString sourceTag;
+        bool hasBlankBefore = false;
+        bool hasBlankAfter = false;
+    };
+
+    QVector<ActiveResourceSourceLine> activeResourceSourceLines(const QString& activeBodySourceText)
+    {
+        const QStringList activeLines =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(activeBodySourceText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QVector<ActiveResourceSourceLine> resourceLines;
+        resourceLines.reserve(activeLines.size());
+        for (int index = 0; index < activeLines.size(); ++index)
+        {
+            const QString resourceLine = canonicalResourceSourceLine(activeLines.at(index));
+            if (resourceLine.isEmpty())
+            {
+                continue;
+            }
+
+            resourceLines.push_back({
+                resourceLine,
+                index > 0 && activeLines.at(index - 1).trimmed().isEmpty(),
+                index + 1 < activeLines.size() && activeLines.at(index + 1).trimmed().isEmpty()
+            });
+        }
+        return resourceLines;
+    }
+
+    bool lineContainsRichTextObjectReplacement(const QString& line)
+    {
+        return line.contains(QChar::ObjectReplacementCharacter);
+    }
+
+    bool lineMatchesRenderedResourceFrameText(
+        const QString& line,
+        const QString& resourceTag)
+    {
+        const QVariantMap descriptor = resourceDescriptorFromSourceTag(resourceTag);
+        const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
+        const QString resourceId = descriptor.value(QStringLiteral("id")).toString().trimmed();
+        const QString type = descriptor.value(QStringLiteral("type")).toString().trimmed();
+        const QString format = descriptor.value(QStringLiteral("format")).toString().trimmed();
+        const QString label = !resourceId.isEmpty()
+            ? resourceId
+            : QFileInfo(resourcePath).completeBaseName().trimmed();
+        const QString trimmedLine = line.trimmed().simplified();
+        if (trimmedLine.isEmpty())
+        {
+            return false;
+        }
+
+        QStringList frameTextLines;
+        if (!label.isEmpty())
+        {
+            frameTextLines.push_back(label);
+        }
+        if (!type.isEmpty() || !format.isEmpty())
+        {
+            frameTextLines.push_back(QStringLiteral("%1 %2").arg(type, format).trimmed().simplified());
+        }
+        if (!label.isEmpty() && (!type.isEmpty() || !format.isEmpty()))
+        {
+            frameTextLines.push_back(QStringLiteral("%1 %2 %3").arg(label, type, format).trimmed().simplified());
+        }
+        if (!resourcePath.isEmpty())
+        {
+            frameTextLines.push_back(resourcePath);
+        }
+
+        for (const QString& frameTextLine : frameTextLines)
+        {
+            if (!frameTextLine.trimmed().isEmpty()
+                && QString::compare(trimmedLine, frameTextLine.trimmed().simplified(), Qt::CaseInsensitive) == 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    QString compactRestoredResourcePadding(
+        const QStringList& restoredLines,
+        const QVector<ActiveResourceSourceLine>& resourceLines)
+    {
+        if (resourceLines.isEmpty())
+        {
+            return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(restoredLines.join(QLatin1Char('\n')));
+        }
+
+        QStringList compactedLines;
+        compactedLines.reserve(restoredLines.size());
+        int resourceIndex = 0;
+        for (int index = 0; index < restoredLines.size(); ++index)
+        {
+            const QString resourceLine = canonicalResourceSourceLine(restoredLines.at(index));
+            if (!resourceLine.isEmpty()
+                && resourceIndex < resourceLines.size()
+                && resourceLine == resourceLines.at(resourceIndex).sourceTag)
+            {
+                const ActiveResourceSourceLine& activeResourceLine = resourceLines.at(resourceIndex);
+                if (!activeResourceLine.hasBlankBefore)
+                {
+                    while (!compactedLines.isEmpty() && compactedLines.constLast().trimmed().isEmpty())
+                    {
+                        compactedLines.removeLast();
+                    }
+                }
+
+                compactedLines.push_back(activeResourceLine.sourceTag);
+                if (!activeResourceLine.hasBlankAfter)
+                {
+                    while (index + 1 < restoredLines.size()
+                           && restoredLines.at(index + 1).trimmed().isEmpty())
+                    {
+                        ++index;
+                    }
+                }
+                ++resourceIndex;
+                continue;
+            }
+
+            compactedLines.push_back(restoredLines.at(index));
+        }
+
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(compactedLines.join(QLatin1Char('\n')));
+    }
+
+    QString restoreResourceObjectPlaceholdersFromActiveSource(
+        const QString& editorSourceText,
+        const QString& activeBodySourceText)
+    {
+        const QVector<ActiveResourceSourceLine> resourceLines =
+            activeResourceSourceLines(activeBodySourceText);
+        if (resourceLines.isEmpty()
+            || !editorSourceText.contains(QChar::ObjectReplacementCharacter))
+        {
+            return editorSourceText;
+        }
+
+        const QStringList editorLines =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(editorSourceText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList restoredLines;
+        restoredLines.reserve(editorLines.size());
+
+        int resourceIndex = 0;
+        int frameTextAfterResourceIndex = -1;
+        bool skipNextPaddingLineAfterResource = false;
+        for (int index = 0; index < editorLines.size(); ++index)
+        {
+            const QString& editorLine = editorLines.at(index);
+            const bool lineIsBlank = editorLine.trimmed().isEmpty();
+            if (frameTextAfterResourceIndex >= 0
+                && frameTextAfterResourceIndex < resourceLines.size()
+                && lineMatchesRenderedResourceFrameText(
+                    editorLine,
+                    resourceLines.at(frameTextAfterResourceIndex).sourceTag))
+            {
+                continue;
+            }
+            if (!lineIsBlank)
+            {
+                frameTextAfterResourceIndex = -1;
+            }
+
+            if (skipNextPaddingLineAfterResource && lineIsBlank)
+            {
+                skipNextPaddingLineAfterResource = false;
+                continue;
+            }
+            skipNextPaddingLineAfterResource = false;
+
+            const bool nextLineIsResourceObject =
+                index + 1 < editorLines.size()
+                && lineContainsRichTextObjectReplacement(editorLines.at(index + 1));
+            if (lineIsBlank
+                && nextLineIsResourceObject
+                && resourceIndex < resourceLines.size()
+                && !resourceLines.at(resourceIndex).hasBlankBefore)
+            {
+                continue;
+            }
+
+            if (!lineIsBlank
+                && nextLineIsResourceObject
+                && resourceIndex < resourceLines.size()
+                && lineMatchesRenderedResourceFrameText(
+                    editorLine,
+                    resourceLines.at(resourceIndex).sourceTag))
+            {
+                continue;
+            }
+
+            if (lineContainsRichTextObjectReplacement(editorLine)
+                && resourceIndex < resourceLines.size())
+            {
+                const ActiveResourceSourceLine& resourceLine = resourceLines.at(resourceIndex);
+                restoredLines.push_back(resourceLine.sourceTag);
+                skipNextPaddingLineAfterResource = !resourceLine.hasBlankAfter;
+                frameTextAfterResourceIndex = resourceIndex;
+                ++resourceIndex;
+                continue;
+            }
+
+            restoredLines.push_back(editorLine);
+        }
+
+        return compactRestoredResourcePadding(restoredLines, resourceLines);
     }
 
     QVariantMap invalidImportedResourcesInsertionResult(
@@ -580,9 +1092,17 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         return false;
     }
 
-    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+    QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
         contextIterator->noteId,
         editorDocumentText);
+    const QString activeSourceTextForContext =
+        contextIterator->noteId == m_activeNoteId
+        && contextIterator->noteDirectoryPath == m_activeNoteDirectoryPath
+            ? m_activeBodySourceText
+            : QString();
+    sourceText = restoreResourceObjectPlaceholdersFromActiveSource(
+        sourceText,
+        activeSourceTextForContext);
     setParsedLineCount(lineCountForEditorSource(sourceText));
 
     emit editorSourcePersistRequested(contextIterator->noteId, normalizedEditorFilePath);
@@ -673,9 +1193,10 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
         : QString();
     const QString insertedText = prefix + insertedBlock + suffix;
     const QString mutatedSourceText = beforeSelection + insertedText + afterSelection;
-    const QString projectedEditorDocumentText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+    const QString projectedEditorDocumentText = editorHtmlFromBodySourceForNoteContext(
         noteId,
-        mutatedSourceText);
+        mutatedSourceText,
+        m_activeNoteDirectoryPath);
     const int sourceCursorPosition = beforeSelection.size() + prefix.size() + insertedBlock.size();
 
     setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
@@ -739,9 +1260,10 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
         sourceSelectionEnd - sourceSelectionStart);
 
     const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
-    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
         noteId,
-        resultSourceText);
+        resultSourceText,
+        m_activeNoteDirectoryPath);
     result.insert(QStringLiteral("editorDocumentText"), editorHtml);
     result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
     result.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
@@ -823,9 +1345,10 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
     const QString sessionFilePath = editorFilePathForNote(loadedNoteId, loadedNoteDirectoryPath);
     QString writeError;
     const QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
-    const QString editorDocumentText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+    const QString editorDocumentText = editorHtmlFromBodySourceForNoteContext(
         loadedNoteId,
-        bodySourceText);
+        bodySourceText,
+        loadedNoteDirectoryPath);
     if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
     {
         switchToBlankEditorFile();

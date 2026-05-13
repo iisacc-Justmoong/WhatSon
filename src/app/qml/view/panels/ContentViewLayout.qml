@@ -389,7 +389,7 @@ Item {
 
         Shortcut {
             autoRepeat: false
-            context: Qt.WindowShortcut
+            context: Qt.ApplicationShortcut
             enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Paste
 

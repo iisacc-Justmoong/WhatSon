@@ -1241,6 +1241,7 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
+    void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
@@ -1249,6 +1250,7 @@ private slots:
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
+    void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();

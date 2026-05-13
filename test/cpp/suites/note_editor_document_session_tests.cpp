@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QTextDocument>
+
 namespace
 {
     QString readUtf8FileForNoteEditorSessionTest(const QString& path)
@@ -59,7 +61,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAn
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<?xml")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<contents")));
     QVERIFY(mountedEditorSource.contains(QStringLiteral("Visible line<br/>")));
-    QVERIFY(mountedEditorSource.contains(QStringLiteral("&lt;resource path=&quot;asset.png&quot; /&gt;")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-source")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("&lt;resource path=&quot;asset.png&quot; /&gt;")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("Visible line\n<resource")));
 
     const QString editedSource = QStringLiteral("Changed line\nInserted line\n<resource path=\"asset.png\" />");
@@ -418,7 +422,98 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
     QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("&lt;resource")));
     const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
     QVERIFY(editorDocumentText.contains(QStringLiteral("Alpha<br/>")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<br/>Beta")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("resource-note"),
+            editorDocumentText),
+        result.value(QStringLiteral("bodySourceText")).toString());
     QCOMPARE(session.parsedLineCount(), 3);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardFrameHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-frame-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QImage clipboardImage(QSize(16, 10), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(18, 110, 190, 255));
+
+    InAppClipboard clipboard;
+    QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
+    clipboard.setCurrentHubPath(hubPath);
+    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-frame-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString editorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap result = session.insertImportedResourcesIntoSource(
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    const QString bodySourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+
+    QVERIFY(bodySourceText.contains(QStringLiteral("<resource type=\"image\" format=\".png\"")));
+    QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"16\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"10\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("clipboard-frame-note"),
+            editorDocumentText),
+        bodySourceText);
+
+    QTextDocument richTextDocument;
+    richTextDocument.setHtml(editorDocumentText);
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(session.editorFilePath(), richTextDocument.toHtml()));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QVERIFY(session.persistEditorFile(session.editorFilePath()));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QVERIFY(persistedBodyDocument.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        bodySourceText);
 }

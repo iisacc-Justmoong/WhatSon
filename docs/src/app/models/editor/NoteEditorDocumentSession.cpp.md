@@ -20,7 +20,8 @@ Implements the active note editor document session.
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
 7. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboard` has persisted
-   the resource package. The session inserts RAW resource calls and returns the corresponding editor HTML projection.
+   the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
+   standalone resource source line as a resource frame.
 
 ## Guardrails
 
@@ -33,6 +34,15 @@ Implements the active note editor document session.
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported-resource insertion consumes metadata returned by `InAppClipboard`; it must not inspect MIME data or create
   resource packages itself.
+- Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
+  `whatson-resource-frame` HTML and wraps that frame in `whatson-resource-source` markers so the persistence boundary
+  can recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub
+  context render as `<img src="file://...">`; unresolved or non-image resources still render as a visible resource
+  frame with the stored resource reference.
+- When Qt serializes the rich editor document and strips those HTML markers, image frames remain as rich-text object
+  replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
+  resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
+  round-trips.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
@@ -51,7 +61,11 @@ Implements the active note editor document session.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
 - clipboard resource paste는 `InAppClipboard`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
   `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 본문 RAW source에 `<resource ... />` 참조를
-  삽입하고 editor HTML projection을 반환한다.
+  삽입하고 editor HTML projection을 반환한다. standalone resource source line은 editor HTML에서
+  `whatson-resource-frame`으로 렌더링되고, 이미지 package asset을 active note/hub 기준으로 찾을 수 있으면
+  `file://` 이미지로 표시된다. 저장 시에는 `whatson-resource-source` marker가 다시 canonical `<resource ... />`
+  source tag로 복구된다. Qt RichText 직렬화가 marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical
+  source의 resource line을 기준으로 이미지 object placeholder를 다시 `<resource ... />`로 복원한다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
   mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline

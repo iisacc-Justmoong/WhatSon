@@ -160,6 +160,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertImportedResourcesIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("refreshClipboardResourceAvailabilitySnapshot")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Paste")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("context: Qt.ApplicationShortcut")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("handleEditorPasteShortcut")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("pasteClipboardResourceIntoEditor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorCommandShortcutEnabled()")));

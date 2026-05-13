@@ -6,6 +6,7 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
+#include <QByteArray>
 #include <QBrush>
 #include <QColor>
 #include <QDir>
@@ -17,6 +18,7 @@
 #include <QTextCharFormat>
 #include <QTextDocument>
 #include <QTextFragment>
+#include <QVector>
 
 #include <utility>
 
@@ -644,6 +646,142 @@ namespace
         return trimmedLine;
     }
 
+    struct RenderedResourceSourceToken final
+    {
+        QString token;
+        QString sourceTag;
+    };
+
+    QVector<RenderedResourceSourceToken> replaceRenderedResourceBlocksWithSourceTokens(QString* editorHtml)
+    {
+        QVector<RenderedResourceSourceToken> tokens;
+        if (editorHtml == nullptr || editorHtml->isEmpty())
+        {
+            return tokens;
+        }
+
+        static const QRegularExpression markerPattern(
+            QStringLiteral(
+                R"(<!--whatson-resource-source:([0-9a-fA-F]+)-->([\s\S]*?)<!--\/whatson-resource-source-->)"));
+
+        QString rewrittenHtml;
+        rewrittenHtml.reserve(editorHtml->size());
+
+        int lastOffset = 0;
+        QRegularExpressionMatchIterator matchIterator = markerPattern.globalMatch(*editorHtml);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            rewrittenHtml += editorHtml->mid(lastOffset, match.capturedStart(0) - lastOffset);
+
+            const QString sourceTag = canonicalResourceLine(
+                QString::fromUtf8(QByteArray::fromHex(match.captured(1).toLatin1())).trimmed());
+            if (sourceTag.isEmpty())
+            {
+                rewrittenHtml += match.captured(0);
+            }
+            else
+            {
+                const QString token = QStringLiteral("__WHATSON_RESOURCE_SOURCE_TOKEN_%1__").arg(tokens.size());
+                tokens.push_back({token, sourceTag});
+                rewrittenHtml += QStringLiteral("<p>%1</p>").arg(token);
+            }
+
+            lastOffset = match.capturedEnd(0);
+        }
+
+        rewrittenHtml += editorHtml->mid(lastOffset);
+        *editorHtml = rewrittenHtml;
+        return tokens;
+    }
+
+    QString restoreRenderedResourceSourceTokens(QString text, const QVector<RenderedResourceSourceToken>& tokens)
+    {
+        for (const RenderedResourceSourceToken& token : tokens)
+        {
+            text.replace(token.token, token.sourceTag);
+        }
+        return text;
+    }
+
+    bool isRenderedResourceSourceLine(const QString& line, const QVector<RenderedResourceSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        for (const RenderedResourceSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceTag)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    QString compactRenderedResourceSourceLine(QString line, const QVector<RenderedResourceSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        for (const RenderedResourceSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceTag)
+            {
+                return token.sourceTag;
+            }
+        }
+        return line;
+    }
+
+    QStringList removeRenderedResourceFramePaddingLines(
+        const QStringList& sourceLines,
+        const QVector<RenderedResourceSourceToken>& tokens)
+    {
+        if (tokens.isEmpty())
+        {
+            return sourceLines;
+        }
+
+        QStringList compacted;
+        compacted.reserve(sourceLines.size());
+        for (int index = 0; index < sourceLines.size(); ++index)
+        {
+            const QString& line = sourceLines.at(index);
+            if (line.trimmed().isEmpty())
+            {
+                const bool previousIsRenderedResource =
+                    index > 0 && isRenderedResourceSourceLine(sourceLines.at(index - 1), tokens);
+                const bool nextIsRenderedResource =
+                    index + 1 < sourceLines.size() && isRenderedResourceSourceLine(sourceLines.at(index + 1), tokens);
+                if (previousIsRenderedResource || nextIsRenderedResource)
+                {
+                    continue;
+                }
+            }
+            compacted.push_back(line);
+        }
+        return compacted;
+    }
+
+    QString removeRenderedResourceFramePaddingText(
+        QString sourceText,
+        const QVector<RenderedResourceSourceToken>& tokens)
+    {
+        for (const RenderedResourceSourceToken& token : tokens)
+        {
+            while (sourceText.contains(QStringLiteral("\n\n") + token.sourceTag))
+            {
+                sourceText.replace(
+                    QStringLiteral("\n\n") + token.sourceTag,
+                    QLatin1Char('\n') + token.sourceTag);
+            }
+            while (sourceText.contains(token.sourceTag + QStringLiteral("\n\n")))
+            {
+                sourceText.replace(
+                    token.sourceTag + QStringLiteral("\n\n"),
+                    token.sourceTag + QLatin1Char('\n'));
+            }
+        }
+        return sourceText;
+    }
+
     bool isStandaloneBreakLine(const QString& trimmedLine)
     {
         static const QRegularExpression breakPattern(
@@ -736,8 +874,12 @@ namespace
 
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
+        QString normalizedEditorDocumentText = editorDocumentText;
+        const QVector<RenderedResourceSourceToken> renderedResourceTokens =
+            replaceRenderedResourceBlocksWithSourceTokens(&normalizedEditorDocumentText);
+
         QTextDocument document;
-        document.setHtml(editorDocumentText);
+        document.setHtml(normalizedEditorDocumentText);
 
         QStringList sourceLines;
         for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
@@ -752,7 +894,9 @@ namespace
                     continue;
                 }
 
-                const QString fragmentText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text());
+                const QString fragmentText = restoreRenderedResourceSourceTokens(
+                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                    renderedResourceTokens);
                 if (fragmentText.isEmpty())
                 {
                     continue;
@@ -763,14 +907,17 @@ namespace
                     sourceInlineTagsForEditorFormat(fragment.charFormat()));
             }
 
-            sourceLines.push_back(sourceLine);
+            sourceLines.push_back(compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens));
         }
 
         if (sourceLines.isEmpty())
         {
             return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.toPlainText());
         }
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceLines.join(QLatin1Char('\n')));
+        return removeRenderedResourceFramePaddingText(
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+                removeRenderedResourceFramePaddingLines(sourceLines, renderedResourceTokens).join(QLatin1Char('\n'))),
+            renderedResourceTokens);
     }
 }
 
