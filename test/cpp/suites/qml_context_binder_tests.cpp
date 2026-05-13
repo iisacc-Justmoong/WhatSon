@@ -38,7 +38,7 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(mainCppSource.contains(QStringLiteral("const lvrs::QmlContextBindResult workspaceContextBindResult")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteActiveStateTracker noteActiveState;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteEditorDocumentSession noteEditorSession;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("InAppClipboard inAppClipboard;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("InAppClipboardManager inAppClipboard;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteEditorSession.setNoteActiveState(&noteActiveState);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteActiveState = &noteActiveState;")));

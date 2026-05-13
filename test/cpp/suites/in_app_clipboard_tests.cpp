@@ -2,9 +2,46 @@
 
 #include <QMimeData>
 
+void WhatSonCppRegressionTests::inAppClipboardStore_ownsResourceSnapshotState()
+{
+    const QString managerHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardManager.h"));
+    const QString managerSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
+    const QString storeHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardStore.h"));
+    const QString storeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardStore.cpp"));
+
+    QVERIFY(managerHeader.contains(QStringLiteral("InAppClipboardStore m_store;")));
+    QVERIFY(!managerHeader.contains(QStringLiteral("ClipboardResourceImport m_resourceImport;")));
+    QVERIFY(storeHeader.contains(QStringLiteral("ClipboardResourceImport m_resourceImport;")));
+    QVERIFY(managerSource.contains(QStringLiteral("return m_store.setResourceImport(std::move(resourceImport));")));
+    QVERIFY(managerSource.contains(QStringLiteral("connect(&m_store, &InAppClipboardStore::resourceChanged")));
+    QVERIFY(storeSource.contains(QStringLiteral("InAppClipboardStore::setResourceImport")));
+    QVERIFY(storeSource.contains(QStringLiteral("emit resourceChanged();")));
+
+    InAppClipboardStore store;
+    QSignalSpy resourceChangedSpy(&store, &InAppClipboardStore::resourceChanged);
+    QVERIFY(store.setResourceImport(WhatSon::Clipboard::resourceImportForBytes(
+        QByteArrayLiteral("clipboard document"),
+        QStringLiteral("clipboard-document.txt"),
+        QStringLiteral("text/plain"))));
+    QCOMPARE(resourceChangedSpy.count(), 1);
+    QVERIFY(store.hasResource());
+    QCOMPARE(store.resourceFileName(), QStringLiteral("clipboard-document.txt"));
+    QCOMPARE(store.resourceType(), QStringLiteral("document"));
+    QCOMPARE(store.resourceImport().payloadBytes, QByteArrayLiteral("clipboard document"));
+
+    const WhatSon::Clipboard::ClipboardResourceImport takenResource = store.takeResourceImport();
+    QCOMPARE(takenResource.payloadBytes, QByteArrayLiteral("clipboard document"));
+    QVERIFY(!store.hasResource());
+    QCOMPARE(resourceChangedSpy.count(), 2);
+}
+
 void WhatSonCppRegressionTests::inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy()
 {
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
 
     QVERIFY(clipboard.setResourceFileType(QStringLiteral("diagram.GLTF"), QStringLiteral("model/gltf+json")));
     QVERIFY(clipboard.hasResource());
@@ -33,7 +70,7 @@ void WhatSonCppRegressionTests::inAppClipboard_matchesMimeAndFileTypesToResource
 
 void WhatSonCppRegressionTests::inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData()
 {
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
 
     QVERIFY(clipboard.setResourceBytes(
         QByteArrayLiteral("%PDF-1.7\nclipboard document"),

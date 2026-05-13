@@ -9,7 +9,7 @@ Declares the lightweight value object used to describe one importable clipboard 
 - Stores the source file name, optional local file path, MIME type, normalized resource format, type, bucket, and
   optional in-memory payload.
 - Provides helpers to build imports from file names, local files, images, raw bytes, and text-backed payloads supplied
-  through `InAppClipboard`.
+  through `InAppClipboardManager`.
 - Uses the resource package taxonomy so clipboard images, PDFs, text/HTML documents, audio files, 3D models, archives,
   and other supported formats resolve to the same type/bucket labels as imported files.
 

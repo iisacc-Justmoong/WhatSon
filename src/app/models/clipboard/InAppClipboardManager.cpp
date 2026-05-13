@@ -1,4 +1,4 @@
-#include "app/models/clipboard/InAppClipboard.h"
+#include "app/models/clipboard/InAppClipboardManager.h"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
@@ -175,66 +175,65 @@ namespace
     }
 } // namespace
 
-InAppClipboard::InAppClipboard(QObject* parent)
+InAppClipboardManager::InAppClipboardManager(QObject* parent)
     : QObject(parent)
 {
+    connect(&m_store, &InAppClipboardStore::resourceChanged, this, &InAppClipboardManager::resourceChanged);
 }
 
-InAppClipboard::~InAppClipboard() = default;
+InAppClipboardManager::~InAppClipboardManager() = default;
 
-bool InAppClipboard::hasResource() const noexcept
+bool InAppClipboardManager::hasResource() const noexcept
 {
-    return m_resourceImport.valid();
+    return m_store.hasResource();
 }
 
-QString InAppClipboard::resourceFileName() const
+QString InAppClipboardManager::resourceFileName() const
 {
-    return m_resourceImport.fileName.trimmed();
+    return m_store.resourceFileName();
 }
 
-QString InAppClipboard::resourceFormat() const
+QString InAppClipboardManager::resourceFormat() const
 {
-    return m_resourceImport.format.trimmed();
+    return m_store.resourceFormat();
 }
 
-QString InAppClipboard::resourceType() const
+QString InAppClipboardManager::resourceType() const
 {
-    return m_resourceImport.type.trimmed();
+    return m_store.resourceType();
 }
 
-QString InAppClipboard::resourceBucket() const
+QString InAppClipboardManager::resourceBucket() const
 {
-    return m_resourceImport.bucket.trimmed();
+    return m_store.resourceBucket();
 }
 
-QString InAppClipboard::resourceMimeType() const
+QString InAppClipboardManager::resourceMimeType() const
 {
-    return m_resourceImport.mimeType.trimmed();
+    return m_store.resourceMimeType();
 }
 
-QVariantMap InAppClipboard::resourceEntry() const
+QVariantMap InAppClipboardManager::resourceEntry() const
 {
-    return m_resourceImport.toVariantMap();
+    return m_store.resourceEntry();
 }
 
-const WhatSon::Clipboard::ClipboardResourceImport& InAppClipboard::resourceImport() const noexcept
+const WhatSon::Clipboard::ClipboardResourceImport& InAppClipboardManager::resourceImport() const noexcept
 {
-    return m_resourceImport;
+    return m_store.resourceImport();
 }
 
-WhatSon::Clipboard::ClipboardResourceImport InAppClipboard::takeResourceImport()
+WhatSon::Clipboard::ClipboardResourceImport InAppClipboardManager::takeResourceImport()
 {
-    WhatSon::Clipboard::ClipboardResourceImport resourceImport = m_resourceImport;
-    clear();
-    return resourceImport;
+    return m_store.takeResourceImport();
 }
 
-bool InAppClipboard::captureSystemClipboardResource()
+bool InAppClipboardManager::captureSystemClipboardResource()
 {
     return captureResourceFromClipboard(QGuiApplication::clipboard());
 }
 
-bool InAppClipboard::captureResourceFromClipboard(const QClipboard* clipboard)
+bool InAppClipboardManager::captureResourceFromClipboard(const QClipboard* clipboard)
 {
     if (clipboard == nullptr)
     {
@@ -263,7 +262,7 @@ bool InAppClipboard::captureResourceFromClipboard(const QClipboard* clipboard)
     return false;
 }
 
-bool InAppClipboard::captureResourceFromMimeData(const QMimeData* mimeData)
+bool InAppClipboardManager::captureResourceFromMimeData(const QMimeData* mimeData)
 {
     if (mimeData == nullptr)
     {
@@ -333,14 +332,14 @@ bool InAppClipboard::captureResourceFromMimeData(const QMimeData* mimeData)
     return false;
 }
 
-bool InAppClipboard::setResourceFileType(const QString& fileName, const QString& mimeType)
+bool InAppClipboardManager::setResourceFileType(const QString& fileName, const QString& mimeType)
 {
     WhatSon::Clipboard::ClipboardResourceImport resourceImport =
         WhatSon::Clipboard::resourceImportForFileType(fileName, mimeType);
     return setResourceImport(std::move(resourceImport));
 }
 
-bool InAppClipboard::setResourceLocalFile(const QString& localFilePath, const QString& mimeType)
+bool InAppClipboardManager::setResourceLocalFile(const QString& localFilePath, const QString& mimeType)
 {
     const QString trimmedLocalFilePath = localFilePath.trimmed();
     if (trimmedLocalFilePath.isEmpty() || !QFileInfo(trimmedLocalFilePath).isFile())
@@ -354,7 +353,7 @@ bool InAppClipboard::setResourceLocalFile(const QString& localFilePath, const QS
     return setResourceImport(std::move(resourceImport));
 }
 
-bool InAppClipboard::setResourceBytes(
+bool InAppClipboardManager::setResourceBytes(
     const QByteArray& bytes,
     const QString& fileName,
     const QString& mimeType)
@@ -370,7 +369,7 @@ bool InAppClipboard::setResourceBytes(
     return setResourceImport(std::move(resourceImport));
 }
 
-bool InAppClipboard::setResourceText(
+bool InAppClipboardManager::setResourceText(
     const QString& text,
     const QString& fileName,
     const QString& mimeType)
@@ -384,7 +383,7 @@ bool InAppClipboard::setResourceText(
     return setResourceBytes(text.toUtf8(), fileName, mimeType);
 }
 
-bool InAppClipboard::setImageResource(const QImage& image, const QString& mimeType)
+bool InAppClipboardManager::setImageResource(const QImage& image, const QString& mimeType)
 {
     if (image.isNull())
     {
@@ -395,30 +394,14 @@ bool InAppClipboard::setImageResource(const QImage& image, const QString& mimeTy
     return setResourceImport(WhatSon::Clipboard::resourceImportForImage(image, mimeType));
 }
 
-bool InAppClipboard::setResourceImport(WhatSon::Clipboard::ClipboardResourceImport resourceImport)
+bool InAppClipboardManager::setResourceImport(WhatSon::Clipboard::ClipboardResourceImport resourceImport)
 {
-    if (!resourceImport.valid())
-    {
-        clear();
-        return false;
-    }
-
-    m_resourceImport = std::move(resourceImport);
-    emit resourceChanged();
-    return true;
+    return m_store.setResourceImport(std::move(resourceImport));
 }
 
-void InAppClipboard::clear()
+void InAppClipboardManager::clear()
 {
-    if (!m_resourceImport.valid()
-        && m_resourceImport.fileName.trimmed().isEmpty()
-        && m_resourceImport.mimeType.trimmed().isEmpty())
-    {
-        return;
-    }
-
-    m_resourceImport = {};
-    emit resourceChanged();
+    m_store.clear();
 }
 
 namespace
@@ -467,9 +450,9 @@ namespace
     {
         switch (conflictPolicy)
         {
-        case InAppClipboard::ConflictPolicyOverwrite:
+        case InAppClipboardManager::ConflictPolicyOverwrite:
             return ImportConflictPolicyValue::Overwrite;
-        case InAppClipboard::ConflictPolicyKeepBoth:
+        case InAppClipboardManager::ConflictPolicyKeepBoth:
             return ImportConflictPolicyValue::KeepBoth;
         default:
             return ImportConflictPolicyValue::Abort;
@@ -1347,12 +1330,12 @@ namespace
 
 }
 
-QString InAppClipboard::currentHubPath() const
+QString InAppClipboardManager::currentHubPath() const
 {
     return m_currentHubPath;
 }
 
-void InAppClipboard::setCurrentHubPath(QString hubPath)
+void InAppClipboardManager::setCurrentHubPath(QString hubPath)
 {
     hubPath = hubPath.trimmed().isEmpty()
                   ? QString()
@@ -1371,22 +1354,22 @@ void InAppClipboard::setCurrentHubPath(QString hubPath)
     emit currentHubPathChanged();
 }
 
-bool InAppClipboard::busy() const noexcept
+bool InAppClipboardManager::busy() const noexcept
 {
     return m_busy;
 }
 
-QString InAppClipboard::lastError() const
+QString InAppClipboardManager::lastError() const
 {
     return m_lastError;
 }
 
-void InAppClipboard::setReloadResourcesCallback(std::function<bool(const QString&, QString*)> callback)
+void InAppClipboardManager::setReloadResourcesCallback(std::function<bool(const QString&, QString*)> callback)
 {
     m_reloadResourcesCallback = std::move(callback);
 }
 
-bool InAppClipboard::canImportUrls(const QVariantList& urls) const
+bool InAppClipboardManager::canImportUrls(const QVariantList& urls) const
 {
     if (m_busy || m_currentHubPath.trimmed().isEmpty())
     {
@@ -1396,12 +1379,12 @@ bool InAppClipboard::canImportUrls(const QVariantList& urls) const
     return !extractDroppedLocalFiles(urls).isEmpty();
 }
 
-bool InAppClipboard::canImportDroppedUrls(const QVariantList& urls) const
+bool InAppClipboardManager::canImportDroppedUrls(const QVariantList& urls) const
 {
     return canImportUrls(urls);
 }
 
-QVariantMap InAppClipboard::inspectImportConflictForUrls(const QVariantList& urls) const
+QVariantMap InAppClipboardManager::inspectImportConflictForUrls(const QVariantList& urls) const
 {
     if (m_busy || m_currentHubPath.trimmed().isEmpty())
     {
@@ -1443,17 +1426,17 @@ QVariantMap InAppClipboard::inspectImportConflictForUrls(const QVariantList& url
     return importConflictMap(descriptor);
 }
 
-bool InAppClipboard::importUrls(const QVariantList& urls)
+bool InAppClipboardManager::importUrls(const QVariantList& urls)
 {
     return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort);
 }
 
-bool InAppClipboard::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
+bool InAppClipboardManager::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
 {
     return importUrlsInternal(urls, nullptr, true, conflictPolicy);
 }
 
-QVariantList InAppClipboard::importUrlsForEditor(const QVariantList& urls)
+QVariantList InAppClipboardManager::importUrlsForEditor(const QVariantList& urls)
 {
     QVariantList importedEntries;
     if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort))
@@ -1463,7 +1446,7 @@ QVariantList InAppClipboard::importUrlsForEditor(const QVariantList& urls)
     return importedEntries;
 }
 
-QVariantList InAppClipboard::importUrlsForEditorWithConflictPolicy(
+QVariantList InAppClipboardManager::importUrlsForEditorWithConflictPolicy(
     const QVariantList& urls,
     const int conflictPolicy)
 {
@@ -1475,14 +1458,14 @@ QVariantList InAppClipboard::importUrlsForEditorWithConflictPolicy(
     return importedEntries;
 }
 
-bool InAppClipboard::refreshClipboardResourceAvailabilitySnapshot()
+bool InAppClipboardManager::refreshClipboardResourceAvailabilitySnapshot()
 {
     const bool available = hasResource() || captureSystemClipboardResource();
     emit resourceChanged();
     return available;
 }
 
-QVariantList InAppClipboard::importClipboardResourceForEditor()
+QVariantList InAppClipboardManager::importClipboardResourceForEditor()
 {
     QVariantList importedEntries;
     if (!importClipboardResourceInternal(&importedEntries, false, ConflictPolicyAbort))
@@ -1492,7 +1475,7 @@ QVariantList InAppClipboard::importClipboardResourceForEditor()
     return importedEntries;
 }
 
-QVariantList InAppClipboard::importClipboardResourceForEditorWithConflictPolicy(const int conflictPolicy)
+QVariantList InAppClipboardManager::importClipboardResourceForEditorWithConflictPolicy(const int conflictPolicy)
 {
     QVariantList importedEntries;
     if (!importClipboardResourceInternal(&importedEntries, false, conflictPolicy))
@@ -1502,7 +1485,7 @@ QVariantList InAppClipboard::importClipboardResourceForEditorWithConflictPolicy(
     return importedEntries;
 }
 
-bool InAppClipboard::importClipboardResourceInternal(
+bool InAppClipboardManager::importClipboardResourceInternal(
     QVariantList* importedEntries,
     const bool reloadRuntime,
     const int conflictPolicy)
@@ -1543,7 +1526,7 @@ bool InAppClipboard::importClipboardResourceInternal(
     return imported;
 }
 
-bool InAppClipboard::importUrlsInternal(
+bool InAppClipboardManager::importUrlsInternal(
     const QVariantList& urls,
     QVariantList* importedEntries,
     const bool reloadRuntime,
@@ -1887,12 +1870,12 @@ bool InAppClipboard::importUrlsInternal(
     return true;
 }
 
-bool InAppClipboard::importDroppedUrls(const QVariantList& urls)
+bool InAppClipboardManager::importDroppedUrls(const QVariantList& urls)
 {
     return importUrlsWithConflictPolicy(urls, ConflictPolicyAbort);
 }
 
-bool InAppClipboard::reloadImportedResources()
+bool InAppClipboardManager::reloadImportedResources()
 {
     if (!m_reloadResourcesCallback)
     {
@@ -1940,7 +1923,7 @@ bool InAppClipboard::reloadImportedResources()
     return true;
 }
 
-void InAppClipboard::setBusy(const bool busy)
+void InAppClipboardManager::setBusy(const bool busy)
 {
     if (m_busy == busy)
     {
@@ -1951,7 +1934,7 @@ void InAppClipboard::setBusy(const bool busy)
     emit busyChanged();
 }
 
-void InAppClipboard::setLastError(QString errorMessage)
+void InAppClipboardManager::setLastError(QString errorMessage)
 {
     errorMessage = errorMessage.trimmed();
     if (m_lastError == errorMessage)

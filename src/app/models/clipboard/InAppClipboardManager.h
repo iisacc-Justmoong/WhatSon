@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/models/clipboard/ClipboardResourceImport.h"
+#include "app/models/clipboard/InAppClipboardStore.h"
 
 #include <QObject>
 #include <QString>
@@ -12,7 +13,7 @@
 class QClipboard;
 class QMimeData;
 
-class InAppClipboard final : public QObject
+class InAppClipboardManager final : public QObject
 {
     Q_OBJECT
 
@@ -35,8 +36,8 @@ public:
     };
     Q_ENUM(ImportConflictPolicy)
 
-    explicit InAppClipboard(QObject* parent = nullptr);
-    ~InAppClipboard() override;
+    explicit InAppClipboardManager(QObject* parent = nullptr);
+    ~InAppClipboardManager() override;
 
     QString currentHubPath() const;
     void setCurrentHubPath(QString hubPath);
@@ -114,7 +115,7 @@ private:
     void setLastError(QString errorMessage);
 
     QString m_currentHubPath;
-    WhatSon::Clipboard::ClipboardResourceImport m_resourceImport;
+    InAppClipboardStore m_store;
     bool m_busy = false;
     QString m_lastError;
     std::function<bool(const QString&, QString*)> m_reloadResourcesCallback;

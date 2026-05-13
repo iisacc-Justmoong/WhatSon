@@ -1,4 +1,4 @@
-# `src/app/models/clipboard/InAppClipboard.h`
+# `src/app/models/clipboard/InAppClipboardManager.h`
 
 ## Responsibility
 
@@ -6,18 +6,16 @@ Declares the QObject exposed to QML as `inAppClipboard`.
 
 ## Contract
 
-- Holds one clipboard resource snapshot.
 - Captures supported system clipboard payloads through `captureSystemClipboardResource()`.
 - Accepts app-internal non-image resources through `setResourceLocalFile(...)`, `setResourceBytes(...)`, and
   `setResourceText(...)`.
 - Exposes URL/file import and clipboard-resource paste invokables:
   `importUrlsWithConflictPolicy(...)`, `importUrlsForEditor(...)`,
   `refreshClipboardResourceAvailabilitySnapshot()`, and `importClipboardResourceForEditor()`.
-- `importClipboardResourceForEditor()` returns normalized resource metadata only after the payload has been persisted
-  into a `.wsresource` package. The note editor consumes that metadata to insert a canonical `<resource ... />` source
-  reference; it does not paste clipboard bytes directly into the note body.
 - Keeps current hub path, busy state, last error, conflict policy, import completion signal, and resource reload
   callback in C++.
+- Owns an `InAppClipboardStore` member for the current resource snapshot instead of storing
+  `ClipboardResourceImport` directly.
 
 ## 한국어
 

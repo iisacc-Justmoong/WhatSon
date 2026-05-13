@@ -12,19 +12,24 @@ macOS file import.
   to the same resource taxonomy used by `.wsresources` packages.
   Music file extensions are normalized into the canonical `audio` / `Audio` taxonomy instead of a separate `music`
   resource type.
-- `InAppClipboard.*`
-  Stores one in-app clipboard resource at a time, captures supported system clipboard payloads, accepts app-internal
-  local files/bytes/text, persists local files or materialized clipboard payloads into
+- `InAppClipboardManager.*`
+  Captures supported system clipboard payloads, accepts app-internal local files/bytes/text, persists local files or
+  materialized clipboard payloads into
   `.wsresources/<id>.wsresource`, updates `Resources.wsresources`, handles duplicate import policy, returns editor
   insertion metadata, and exposes the QML context object named `inAppClipboard`.
+- `InAppClipboardStore.*`
+  Stores one in-app clipboard resource snapshot at a time and emits `resourceChanged()` when the manager updates or
+  clears that snapshot.
 
 ## Guardrails
 
-- Do not reintroduce `ResourcesImportController`; import orchestration is part of `InAppClipboard`.
+- Do not reintroduce `ResourcesImportController`; import orchestration is part of `InAppClipboardManager`.
 - QML may call the narrow invokables, but MIME inspection, package creation, conflict handling, and reload callbacks
   stay in C++.
+- `InAppClipboardManager` must not own a raw `ClipboardResourceImport` member; single-resource state belongs to
+  `InAppClipboardStore`.
 - Do not split package import into a separate `ClipboardResourcePackageImport` object or source shard; the package
-  pipeline is part of `InAppClipboard`.
+  pipeline is part of `InAppClipboardManager`.
 - Editor paste must first persist a `.wsresource` package, then pass only returned metadata to
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
 
@@ -37,9 +42,9 @@ macOS file import.
 
 - 이 shard는 앱 내부 clipboard 리소스 상태와 resource import bridge를 소유한다.
 - 한 번에 여러 clipboard 항목을 저장하지 않고, 현재 붙여넣을 수 있는 단일 리소스의 file type과 resource taxonomy
-  mapping 및 payload만 유지한다.
+  mapping 및 payload는 `InAppClipboardStore`에 유지한다.
 - 이미지만이 아니라 문서, 링크 HTML/text, 오디오, 비디오, 3D 모델, 압축 파일 같은 지원 resource taxonomy
   항목도 앱 내부 clipboard로 받을 수 있다.
 - 음악 파일 확장자도 별도 `music` type이 아니라 canonical `audio`/`Audio` taxonomy로 들어간다.
 - QML은 `inAppClipboard` context object의 좁은 invokable만 호출하며, 실제 MIME 판별, 패키지 생성, 충돌 처리,
-  `.wsresources` 갱신은 C++에서 수행한다.
+  `.wsresources` 갱신은 `InAppClipboardManager`에서 수행한다.

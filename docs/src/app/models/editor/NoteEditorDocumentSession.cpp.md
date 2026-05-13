@@ -19,7 +19,7 @@ Implements the active note editor document session.
 6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
-7. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboard` has persisted
+7. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
 
@@ -32,7 +32,7 @@ Implements the active note editor document session.
   by a redundant body reload.
 - The session computes parsed RAW source line count in C++ so QML gutter code does not read or parse note files. The
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
-- Imported-resource insertion consumes metadata returned by `InAppClipboard`; it must not inspect MIME data or create
+- Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create
   resource packages itself.
 - Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
   `whatson-resource-frame` HTML and wraps that frame in `whatson-resource-source` markers so the persistence boundary
@@ -59,7 +59,7 @@ Implements the active note editor document session.
   session file로 투영하고, LVRS 저장 이벤트는 다시 canonical source로 복원해 `.wsnbody` 직렬화 경로로 연결한다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
-- clipboard resource paste는 `InAppClipboard`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
+- clipboard resource paste는 `InAppClipboardManager`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
   `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 본문 RAW source에 `<resource ... />` 참조를
   삽입하고 editor HTML projection을 반환한다. standalone resource source line은 editor HTML에서
   `whatson-resource-frame`으로 렌더링되고, 이미지 package asset을 active note/hub 기준으로 찾을 수 있으면

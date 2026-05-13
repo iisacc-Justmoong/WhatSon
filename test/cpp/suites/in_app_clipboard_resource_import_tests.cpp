@@ -1,6 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include "app/models/clipboard/InAppClipboard.h"
+#include "app/models/clipboard/InAppClipboardManager.h"
 
 namespace
 {
@@ -18,7 +18,7 @@ namespace
 void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation()
 {
     const QString clipboardSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp"));
+        QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
 
     QVERIFY(!clipboardSource.isEmpty());
     QVERIFY(clipboardSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
@@ -46,7 +46,7 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     const QString capturedImagePath = QDir(workspaceDirectory.path()).filePath(QStringLiteral("capture.png"));
     QVERIFY(sourceImage.save(capturedImagePath, "PNG"));
 
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
     clipboard.setCurrentHubPath(hubPath);
 
     const QVariantList importedEntries =
@@ -79,9 +79,9 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     QVERIFY(resourcesListText.contains(resourcePath));
 
     const QString clipboardHeader = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboard.h"));
+        QStringLiteral("src/app/models/clipboard/InAppClipboardManager.h"));
     const QString clipboardSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp"));
+        QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importClipboardResourceForEditor")));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importUrlsForEditor")));
     QVERIFY(!clipboardHeader.contains(QStringLiteral("importClipboardImage")));
@@ -105,7 +105,7 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImageThroughManag
     QImage clipboardImage(QSize(9, 6), QImage::Format_ARGB32_Premultiplied);
     clipboardImage.fill(qRgba(210, 45, 120, 255));
 
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
     QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
     QCOMPARE(clipboard.resourceType(), QStringLiteral("image"));
     QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".png"));
@@ -147,7 +147,7 @@ void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadTh
     QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
 
     const QByteArray pdfBytes = QByteArrayLiteral("%PDF-1.7\nclipboard document");
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
     QVERIFY(clipboard.setResourceBytes(
         pdfBytes,
         QStringLiteral("clipboard-document.pdf"),

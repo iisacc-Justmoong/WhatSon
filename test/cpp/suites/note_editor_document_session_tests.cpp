@@ -461,7 +461,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QImage clipboardImage(QSize(16, 10), QImage::Format_ARGB32_Premultiplied);
     clipboardImage.fill(qRgba(18, 110, 190, 255));
 
-    InAppClipboard clipboard;
+    InAppClipboardManager clipboard;
     QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
     clipboard.setCurrentHubPath(hubPath);
     const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();

@@ -2,7 +2,8 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
-#include "app/models/clipboard/InAppClipboard.h"
+#include "app/models/clipboard/InAppClipboardManager.h"
+#include "app/models/clipboard/InAppClipboardStore.h"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -1171,6 +1172,7 @@ private slots:
     void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
+    void inAppClipboardStore_ownsResourceSnapshotState();
     void inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy();
     void inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();

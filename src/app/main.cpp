@@ -1,6 +1,6 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
-#include "app/models/clipboard/InAppClipboard.h"
+#include "app/models/clipboard/InAppClipboardManager.h"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
     BookmarksHierarchyController bookmarksHierarchyController;
     TagsHierarchyController tagsHierarchyController;
     ResourcesHierarchyController resourcesHierarchyController;
-    InAppClipboard inAppClipboard;
+    InAppClipboardManager inAppClipboard;
     ProgressHierarchyController progressHierarchyController;
     EventHierarchyController eventHierarchyController;
     PresetHierarchyController presetHierarchyController;
