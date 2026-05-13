@@ -36,6 +36,14 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("LV.EventListener {")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"pressEnded\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"holdStarted\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorPressEnded(eventData)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorHoldStarted(eventData)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorFromGesture(eventData)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
     QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportHeight")));
@@ -138,12 +146,8 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(!contentViewLayoutSource.isEmpty());
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property var editorSelectionRange")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorSelectedText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorSelectedTextForCurrentSelection()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function normalizedSelectionRange()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function editorSurfaceText(selectionStart, selectionEnd)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("const selectionRange = textEditor.editorSelectionRange;")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(selectionStart, selectionEnd)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("insertFormatTagIntoSource")));
@@ -233,6 +237,18 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndO
 
     QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("enabled: LV.Theme.mobileTarget && !textEditor.readOnly")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("includeUiHit: true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"pressEnded\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"holdStarted\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("eventData.finalInteractionKind")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("finalInteractionKind !== \"tap\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("maximumFingerCount > 1")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("eventData.scrollActive || eventData.dragActive")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("item.mapFromGlobal")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
     verifyNoTokens(textEditorSource, {
         QStringLiteral("Keys.onPressed"),
         QStringLiteral("Keys.onReleased"),

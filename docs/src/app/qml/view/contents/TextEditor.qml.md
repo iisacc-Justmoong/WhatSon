@@ -23,9 +23,9 @@
   cursor line for its indicator.
 - `editorSelectionStart`, `editorSelectionLength`, and `editorSelectedText` expose normalized public LVRS selection
   metadata so the outer content layout can dispatch C++ format commands without installing key handlers inside this
-  wrapper. Selection range normalization is kept in `normalizedSelectionRange()` and exposed as `editorSelectionRange`;
-  `editorSelectedText` is read from the live editor surface through `editorSurfaceText(selectionStart, selectionEnd)`
-  before falling back to `selectedText`, keeping the visible selected text available as the C++ RAW-source repair anchor.
+  wrapper. `editorSelectedText` is read from the live editor surface with
+  `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
+  available as the C++ RAW-source repair anchor.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's
@@ -37,6 +37,11 @@
 - `preferNativeGestures` stays `false` for the WhatSon note body wrapper. The LVRS viewport flick path must remain
   interactive even while the editor has focus, so finger movement on mobile can scroll the note instead of always being
   treated as cursor/text interaction.
+- `autoFocusOnPress` stays disabled only on `LV.Theme.mobileTarget`; mobile touch begin no longer focuses the editor.
+  The wrapper listens to LVRS `EventListener` gesture classification instead: `pressEnded` focuses only when
+  `finalInteractionKind` is `tap`, and `holdStarted` focuses for a deliberate long press before release.
+- The wrapper does not install a local `TapHandler`. The original pointer stream remains available to the LVRS viewport
+  flick path and native editor surface, while cursor placement is applied from the classified global touch coordinates.
 - The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, and paste forwarding.
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
@@ -58,11 +63,10 @@
   line count나 QML plain-text line count는 거터 row count가 아니다.
 - 현재 cursor line indicator를 위해 plain-text cursor position으로 계산한 logical `editorCursorLineIndex`를
   거터에 전달한다. 긴 paragraph가 시각적으로 wrap되어도 같은 logical line number와 indicator를 유지한다.
-- 포맷 단축키 dispatch를 위해 공개 selection 상태를 정규화한 `editorSelectionRange`, `editorSelectionStart`,
-  `editorSelectionLength`, `editorSelectedText`를 바깥 layout에 전달한다. selection range 계산은
-  `normalizedSelectionRange()`에 모으고, `editorSelectedText`는 우선 live editor surface를 읽는
-  `editorSurfaceText(selectionStart, selectionEnd)`를 통해 보이는 선택 문자열과 C++ RAW-source repair anchor가
-  어긋나지 않게 한다.
+- 포맷 단축키 dispatch를 위해 공개 selection 상태를 정규화한 `editorSelectionStart`, `editorSelectionLength`,
+  `editorSelectedText`를 바깥 layout에 전달한다. `editorSelectedText`는 우선 live editor surface의
+  `getText(selectionStart, selectionEnd)`로 읽어 보이는 선택 문자열과 C++ RAW-source repair anchor가 어긋나지
+  않게 한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
 - 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
@@ -70,6 +74,12 @@
   계산에는 참여하지 않는다.
 - `preferNativeGestures`는 WhatSon 노트 본문 wrapper에서 `false`로 고정한다. 포커스 중에도 LVRS viewport
   flick 경로가 살아 있어야 모바일 손가락 이동이 항상 커서 조작으로 소비되지 않고 본문 스크롤로 승격된다.
+- `autoFocusOnPress`는 `LV.Theme.mobileTarget`에서만 꺼진다. 모바일 에디터는 touch begin 시점에 곧바로
+  포커스를 잡지 않는다. 대신 LVRS `EventListener`의 gesture 분류를 사용해 `pressEnded`의
+  `finalInteractionKind`가 `tap`일 때만 release 뒤 커서를 배치하고, 의도적인 롱 프레스는 `holdStarted`에서
+  별도로 포커스한다.
+- 이 wrapper에는 local `TapHandler`를 두지 않는다. 원래 pointer stream은 LVRS viewport flick 경로와 native
+  editor surface가 그대로 받을 수 있고, WhatSon은 분류된 global touch 좌표만 커서 위치 계산에 사용한다.
 - 이미지 paste 또는 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition`
   API로 반영한다. RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서
   한 번 더 공개 cursor API로 복원한다. 이미지가 아닌 paste는 공개 `paste()` API로 되돌린다.
