@@ -17,15 +17,16 @@ namespace
 
 void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation()
 {
-    const QString packageImportSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"));
+    const QString clipboardSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp"));
 
-    QVERIFY(!packageImportSource.isEmpty());
-    QVERIFY(packageImportSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
-    QVERIFY(packageImportSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
+    QVERIFY(!clipboardSource.isEmpty());
+    QVERIFY(clipboardSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
+    QVERIFY(clipboardSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")).exists());
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")).exists());
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePackages()
@@ -80,10 +81,11 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     const QString clipboardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboard.h"));
     const QString clipboardSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp"));
+        QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp"));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importClipboardResourceForEditor")));
     QVERIFY(clipboardHeader.contains(QStringLiteral("importUrlsForEditor")));
     QVERIFY(!clipboardHeader.contains(QStringLiteral("importClipboardImage")));
+    QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")).exists());
     QVERIFY(!clipboardSource.contains(QStringLiteral("ClipboardImportSupport")));
     QVERIFY(!clipboardSource.contains(QStringLiteral("importClipboardImageInternal")));
 }

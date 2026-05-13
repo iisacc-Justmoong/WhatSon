@@ -14,16 +14,17 @@ macOS file import.
   resource type.
 - `InAppClipboard.*`
   Stores one in-app clipboard resource at a time, captures supported system clipboard payloads, accepts app-internal
-  local files/bytes/text, and exposes the QML context object named `inAppClipboard`.
-- `ClipboardResourcePackageImport.cpp`
-  Persists local files or materialized clipboard payloads into `.wsresources/<id>.wsresource`, updates
-  `Resources.wsresources`, handles duplicate import policy, and returns editor insertion metadata.
+  local files/bytes/text, persists local files or materialized clipboard payloads into
+  `.wsresources/<id>.wsresource`, updates `Resources.wsresources`, handles duplicate import policy, returns editor
+  insertion metadata, and exposes the QML context object named `inAppClipboard`.
 
 ## Guardrails
 
 - Do not reintroduce `ResourcesImportController`; import orchestration is part of `InAppClipboard`.
 - QML may call the narrow invokables, but MIME inspection, package creation, conflict handling, and reload callbacks
   stay in C++.
+- Do not split package import into a separate `ClipboardResourcePackageImport` object or source shard; the package
+  pipeline is part of `InAppClipboard`.
 - Editor paste must first persist a `.wsresource` package, then pass only returned metadata to
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
 
