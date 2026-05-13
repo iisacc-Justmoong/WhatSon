@@ -2,6 +2,7 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/clipboard/InAppClipboard.h"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -1170,6 +1171,7 @@ private slots:
     void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
+    void inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy();
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void debugTrace_summarizesLargeTextFromPreviewOnly();
@@ -1237,6 +1239,7 @@ private slots:
     void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
+    void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
@@ -1283,8 +1286,9 @@ private slots:
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge();
-    void resourcesImportController_wiresAnnotationBitmapGenerationIntoPackageCreation();
-    void resourcesImportController_editorImportReturnsPackageMetadataWithoutClipboardPipeline();
+    void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
+    void inAppClipboard_importsUrlsForEditorAsResourcePackages();
+    void inAppClipboard_importsClipboardImageThroughManager();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();

@@ -58,7 +58,8 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("mobileHierarchyPage.noteActiveState.activeNoteListModel")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var editorViewModeController: null")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("noteActiveState: mobileHierarchyPage.noteActiveState")));
-    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("resourcesImportController: mobileHierarchyPage.resourcesImportController")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var inAppClipboard: null")));
+    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("inAppClipboard: mobileHierarchyPage.inAppClipboard")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController")));
     QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("activeNoteListModelResolver")));
     QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("NoteListModelContractBridge {")));

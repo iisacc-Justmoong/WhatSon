@@ -1,4 +1,4 @@
-#include "app/models/file/resource/ResourcesImportController.hpp"
+#include "app/models/clipboard/InAppClipboard.h"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -15,6 +15,7 @@
 #include <QSaveFile>
 #include <QSequentialIterable>
 #include <QSet>
+#include <QTemporaryDir>
 #include <QUuid>
 #include <QUrl>
 #include <QVariantMap>
@@ -67,9 +68,9 @@ namespace
     {
         switch (conflictPolicy)
         {
-        case ResourcesImportController::ConflictPolicyOverwrite:
+        case InAppClipboard::ConflictPolicyOverwrite:
             return ImportConflictPolicyValue::Overwrite;
-        case ResourcesImportController::ConflictPolicyKeepBoth:
+        case InAppClipboard::ConflictPolicyKeepBoth:
             return ImportConflictPolicyValue::KeepBoth;
         default:
             return ImportConflictPolicyValue::Abort;
@@ -841,20 +842,118 @@ namespace
         return entry;
     }
 
+    QString imageSaveFormatForResourceFormat(const QString& format)
+    {
+        const QString normalizedFormat = WhatSon::Resources::normalizeFormat(format).toCaseFolded();
+        if (normalizedFormat == QStringLiteral(".jpg") || normalizedFormat == QStringLiteral(".jpeg"))
+        {
+            return QStringLiteral("JPG");
+        }
+        if (normalizedFormat == QStringLiteral(".tif") || normalizedFormat == QStringLiteral(".tiff"))
+        {
+            return QStringLiteral("TIFF");
+        }
+        if (normalizedFormat == QStringLiteral(".bmp"))
+        {
+            return QStringLiteral("BMP");
+        }
+        if (normalizedFormat == QStringLiteral(".webp"))
+        {
+            return QStringLiteral("WEBP");
+        }
+        return QStringLiteral("PNG");
+    }
+
+    bool materializeClipboardResourceImport(
+        const WhatSon::Clipboard::ClipboardResourceImport& resourceImport,
+        QTemporaryDir* temporaryDirectory,
+        QString* outLocalFilePath,
+        QString* errorMessage = nullptr)
+    {
+        if (outLocalFilePath == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("outLocalFilePath must not be null.");
+            }
+            return false;
+        }
+
+        *outLocalFilePath = QString();
+        if (resourceImport.hasLocalFile())
+        {
+            const QString localFilePath = WhatSon::HubPath::normalizeAbsolutePath(resourceImport.localFilePath);
+            if (!QFileInfo(localFilePath).isFile())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Clipboard resource file does not exist: %1").arg(localFilePath);
+                }
+                return false;
+            }
+            *outLocalFilePath = localFilePath;
+            return true;
+        }
+
+        if (!resourceImport.hasMemoryPayload())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Clipboard does not contain importable resource content.");
+            }
+            return false;
+        }
+
+        if (temporaryDirectory == nullptr || !temporaryDirectory->isValid())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to create temporary clipboard resource storage.");
+            }
+            return false;
+        }
+
+        const QString fileName = resourceImport.fileName.trimmed().isEmpty()
+            ? WhatSon::Clipboard::defaultClipboardResourceFileName(resourceImport.format)
+            : QFileInfo(resourceImport.fileName).fileName();
+        const QString localFilePath = QDir(temporaryDirectory->path()).filePath(fileName);
+        if (!resourceImport.payloadBytes.isEmpty())
+        {
+            QFile file(localFilePath);
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)
+                || file.write(resourceImport.payloadBytes) != resourceImport.payloadBytes.size())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Failed to write clipboard resource payload: %1").arg(localFilePath);
+                }
+                return false;
+            }
+            *outLocalFilePath = localFilePath;
+            return true;
+        }
+
+        if (!resourceImport.image.save(localFilePath, qPrintable(imageSaveFormatForResourceFormat(resourceImport.format))))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write clipboard image resource: %1").arg(localFilePath);
+            }
+            return false;
+        }
+
+        *outLocalFilePath = localFilePath;
+        return true;
+    }
+
 }
 
-ResourcesImportController::ResourcesImportController(QObject* parent)
-    : QObject(parent)
-{
-    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
-}
-
-QString ResourcesImportController::currentHubPath() const
+QString InAppClipboard::currentHubPath() const
 {
     return m_currentHubPath;
 }
 
-void ResourcesImportController::setCurrentHubPath(QString hubPath)
+void InAppClipboard::setCurrentHubPath(QString hubPath)
 {
     hubPath = hubPath.trimmed().isEmpty()
                   ? QString()
@@ -873,22 +972,22 @@ void ResourcesImportController::setCurrentHubPath(QString hubPath)
     emit currentHubPathChanged();
 }
 
-bool ResourcesImportController::busy() const noexcept
+bool InAppClipboard::busy() const noexcept
 {
     return m_busy;
 }
 
-QString ResourcesImportController::lastError() const
+QString InAppClipboard::lastError() const
 {
     return m_lastError;
 }
 
-void ResourcesImportController::setReloadResourcesCallback(std::function<bool(const QString&, QString*)> callback)
+void InAppClipboard::setReloadResourcesCallback(std::function<bool(const QString&, QString*)> callback)
 {
     m_reloadResourcesCallback = std::move(callback);
 }
 
-bool ResourcesImportController::canImportUrls(const QVariantList& urls) const
+bool InAppClipboard::canImportUrls(const QVariantList& urls) const
 {
     if (m_busy || m_currentHubPath.trimmed().isEmpty())
     {
@@ -898,12 +997,12 @@ bool ResourcesImportController::canImportUrls(const QVariantList& urls) const
     return !extractDroppedLocalFiles(urls).isEmpty();
 }
 
-bool ResourcesImportController::canImportDroppedUrls(const QVariantList& urls) const
+bool InAppClipboard::canImportDroppedUrls(const QVariantList& urls) const
 {
     return canImportUrls(urls);
 }
 
-QVariantMap ResourcesImportController::inspectImportConflictForUrls(const QVariantList& urls) const
+QVariantMap InAppClipboard::inspectImportConflictForUrls(const QVariantList& urls) const
 {
     if (m_busy || m_currentHubPath.trimmed().isEmpty())
     {
@@ -945,17 +1044,17 @@ QVariantMap ResourcesImportController::inspectImportConflictForUrls(const QVaria
     return importConflictMap(descriptor);
 }
 
-bool ResourcesImportController::importUrls(const QVariantList& urls)
+bool InAppClipboard::importUrls(const QVariantList& urls)
 {
     return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort);
 }
 
-bool ResourcesImportController::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
+bool InAppClipboard::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
 {
     return importUrlsInternal(urls, nullptr, true, conflictPolicy);
 }
 
-QVariantList ResourcesImportController::importUrlsForEditor(const QVariantList& urls)
+QVariantList InAppClipboard::importUrlsForEditor(const QVariantList& urls)
 {
     QVariantList importedEntries;
     if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort))
@@ -965,7 +1064,7 @@ QVariantList ResourcesImportController::importUrlsForEditor(const QVariantList& 
     return importedEntries;
 }
 
-QVariantList ResourcesImportController::importUrlsForEditorWithConflictPolicy(
+QVariantList InAppClipboard::importUrlsForEditorWithConflictPolicy(
     const QVariantList& urls,
     const int conflictPolicy)
 {
@@ -977,7 +1076,75 @@ QVariantList ResourcesImportController::importUrlsForEditorWithConflictPolicy(
     return importedEntries;
 }
 
-bool ResourcesImportController::importUrlsInternal(
+bool InAppClipboard::refreshClipboardResourceAvailabilitySnapshot()
+{
+    const bool available = hasResource() || captureSystemClipboardResource();
+    emit resourceChanged();
+    return available;
+}
+
+QVariantList InAppClipboard::importClipboardResourceForEditor()
+{
+    QVariantList importedEntries;
+    if (!importClipboardResourceInternal(&importedEntries, false, ConflictPolicyAbort))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+QVariantList InAppClipboard::importClipboardResourceForEditorWithConflictPolicy(const int conflictPolicy)
+{
+    QVariantList importedEntries;
+    if (!importClipboardResourceInternal(&importedEntries, false, conflictPolicy))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+bool InAppClipboard::importClipboardResourceInternal(
+    QVariantList* importedEntries,
+    const bool reloadRuntime,
+    const int conflictPolicy)
+{
+    if (!hasResource() && !captureSystemClipboardResource())
+    {
+        const QString errorMessage = QStringLiteral("Clipboard does not contain an importable resource.");
+        setLastError(errorMessage);
+        emit operationFailed(errorMessage);
+        emit resourceChanged();
+        return false;
+    }
+
+    QTemporaryDir temporaryDirectory;
+    QString localFilePath;
+    QString materializeError;
+    if (!materializeClipboardResourceImport(
+        resourceImport(),
+        &temporaryDirectory,
+        &localFilePath,
+        &materializeError))
+    {
+        setLastError(materializeError);
+        emit operationFailed(materializeError);
+        emit resourceChanged();
+        return false;
+    }
+
+    const bool imported = importUrlsInternal(
+        QVariantList{QUrl::fromLocalFile(localFilePath)},
+        importedEntries,
+        reloadRuntime,
+        conflictPolicy);
+    if (imported)
+    {
+        clear();
+    }
+    return imported;
+}
+
+bool InAppClipboard::importUrlsInternal(
     const QVariantList& urls,
     QVariantList* importedEntries,
     const bool reloadRuntime,
@@ -1321,12 +1488,12 @@ bool ResourcesImportController::importUrlsInternal(
     return true;
 }
 
-bool ResourcesImportController::importDroppedUrls(const QVariantList& urls)
+bool InAppClipboard::importDroppedUrls(const QVariantList& urls)
 {
     return importUrlsWithConflictPolicy(urls, ConflictPolicyAbort);
 }
 
-bool ResourcesImportController::reloadImportedResources()
+bool InAppClipboard::reloadImportedResources()
 {
     if (!m_reloadResourcesCallback)
     {
@@ -1374,7 +1541,7 @@ bool ResourcesImportController::reloadImportedResources()
     return true;
 }
 
-void ResourcesImportController::setBusy(const bool busy)
+void InAppClipboard::setBusy(const bool busy)
 {
     if (m_busy == busy)
     {
@@ -1385,7 +1552,7 @@ void ResourcesImportController::setBusy(const bool busy)
     emit busyChanged();
 }
 
-void ResourcesImportController::setLastError(QString errorMessage)
+void InAppClipboard::setLastError(QString errorMessage)
 {
     errorMessage = errorMessage.trimmed();
     if (m_lastError == errorMessage)

@@ -1,0 +1,42 @@
+#pragma once
+
+#include <QByteArray>
+#include <QImage>
+#include <QString>
+#include <QVariantMap>
+
+namespace WhatSon::Clipboard
+{
+    struct ClipboardResourceImport final
+    {
+        QString fileName;
+        QString localFilePath;
+        QString mimeType;
+        QString format;
+        QString type;
+        QString bucket;
+        QByteArray payloadBytes;
+        QImage image;
+
+        bool valid() const noexcept;
+        bool hasLocalFile() const noexcept;
+        bool hasMemoryPayload() const noexcept;
+        QVariantMap toVariantMap() const;
+    };
+
+    QString formatFromMimeType(const QString& mimeType);
+    QString defaultClipboardResourceFileName(const QString& format);
+    ClipboardResourceImport resourceImportForFileType(
+        const QString& fileName,
+        const QString& mimeType = QString());
+    ClipboardResourceImport resourceImportForLocalFile(
+        const QString& localFilePath,
+        const QString& mimeType = QString());
+    ClipboardResourceImport resourceImportForImage(
+        const QImage& image,
+        const QString& mimeType = QStringLiteral("image/png"));
+    ClipboardResourceImport resourceImportForBytes(
+        const QByteArray& bytes,
+        const QString& fileName,
+        const QString& mimeType);
+} // namespace WhatSon::Clipboard

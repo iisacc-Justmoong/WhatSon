@@ -1,5 +1,6 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
+#include "app/models/clipboard/InAppClipboard.h"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
@@ -8,7 +9,6 @@
 #include "app/models/hierarchy/progress/ProgressHierarchyController.hpp"
 #include "app/models/hierarchy/projects/ProjectsHierarchyController.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
-#include "app/models/file/resource/ResourcesImportController.hpp"
 #include "app/models/hierarchy/tags/TagsHierarchyController.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/navigationbar/EditorViewModeController.hpp"
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
     BookmarksHierarchyController bookmarksHierarchyController;
     TagsHierarchyController tagsHierarchyController;
     ResourcesHierarchyController resourcesHierarchyController;
-    ResourcesImportController resourcesImportController;
+    InAppClipboard inAppClipboard;
     ProgressHierarchyController progressHierarchyController;
     EventHierarchyController eventHierarchyController;
     PresetHierarchyController presetHierarchyController;
@@ -448,7 +448,7 @@ int main(int argc, char* argv[])
         &app,
         requestCalendarProjectedNotesReload);
     Q_UNUSED(hubSyncWiring);
-    resourcesImportController.setReloadResourcesCallback(
+    inAppClipboard.setReloadResourcesCallback(
         [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
         {
             const bool reloaded = startupRuntimeCoordinator.reloadResourcesDomainIntoRuntime(hubPath, errorMessage);
@@ -474,13 +474,13 @@ int main(int argc, char* argv[])
     const auto publishLoadedHubConnection =
         [&selectedHubStore,
          &hubSyncController,
-         &resourcesImportController,
+         &inAppClipboard,
          &calendarBoardStore,
          &libraryHierarchyController](const QString& hubPath, const QByteArray& accessBookmark)
     {
         selectedHubStore.setSelectedHubSelection(hubPath, accessBookmark);
         hubSyncController.setCurrentHubPath(hubPath);
-        resourcesImportController.setCurrentHubPath(hubPath);
+        inAppClipboard.setCurrentHubPath(hubPath);
         calendarBoardStore.setProjectedNotesHubPath(hubPath);
         calendarBoardStore.reloadProjectedNotesFromSnapshot(
             libraryHierarchyController.indexedNotesSnapshot());
@@ -544,7 +544,7 @@ int main(int argc, char* argv[])
     workspaceContextObjects.bookmarksHierarchyController = &bookmarksHierarchyController;
     workspaceContextObjects.tagsHierarchyController = &tagsHierarchyController;
     workspaceContextObjects.resourcesHierarchyController = &resourcesHierarchyController;
-    workspaceContextObjects.resourcesImportController = &resourcesImportController;
+    workspaceContextObjects.inAppClipboard = &inAppClipboard;
     workspaceContextObjects.progressHierarchyController = &progressHierarchyController;
     workspaceContextObjects.eventHierarchyController = &eventHierarchyController;
     workspaceContextObjects.presetHierarchyController = &presetHierarchyController;

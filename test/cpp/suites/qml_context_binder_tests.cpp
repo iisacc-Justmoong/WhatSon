@@ -21,7 +21,7 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(binderSource.contains(QStringLiteral("QStringLiteral(\"resourceDetailPanelController\")")));
     QVERIFY(binderSource.contains(QStringLiteral("objects.resourceDetailPanelController")));
     QVERIFY(binderSource.contains(
-        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"resourcesImportController\")")));
+        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"inAppClipboard\")")));
     QVERIFY(binderSource.contains(
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"panelControllerRegistry\")")));
     QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteActiveState = nullptr;")));
@@ -38,10 +38,13 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(mainCppSource.contains(QStringLiteral("const lvrs::QmlContextBindResult workspaceContextBindResult")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteActiveStateTracker noteActiveState;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteEditorDocumentSession noteEditorSession;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("InAppClipboard inAppClipboard;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteEditorSession.setNoteActiveState(&noteActiveState);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteActiveState = &noteActiveState;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteEditorSession = &noteEditorSession;")));
+    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.inAppClipboard = &inAppClipboard;")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("ResourcesImportController")));
     QVERIFY(mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine, workspaceContextObjects)")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextBindResult.errorMessage()")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine.rootContext()")));

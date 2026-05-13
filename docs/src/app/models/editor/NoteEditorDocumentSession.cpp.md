@@ -19,6 +19,8 @@ Implements the active note editor document session.
 6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
+7. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboard` has persisted
+   the resource package. The session inserts RAW resource calls and returns the corresponding editor HTML projection.
 
 ## Guardrails
 
@@ -29,8 +31,8 @@ Implements the active note editor document session.
   by a redundant body reload.
 - The session computes parsed RAW source line count in C++ so QML gutter code does not read or parse note files. The
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
-- The former imported-resource insertion API has been removed. New resource insertion work must define a fresh C++
-  session boundary instead of depending on the deleted clipboard/drop paste adapter.
+- Imported-resource insertion consumes metadata returned by `InAppClipboard`; it must not inspect MIME data or create
+  resource packages itself.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
@@ -47,8 +49,9 @@ Implements the active note editor document session.
   session file로 투영하고, LVRS 저장 이벤트는 다시 canonical source로 복원해 `.wsnbody` 직렬화 경로로 연결한다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
-- 기존 clipboard/drop resource metadata 삽입 API는 제거되었다. 새 resource 삽입 설계가 들어오기 전까지 이 세션은
-  LVRS editor session persistence와 포맷 태그 삽입 경계만 유지한다.
+- clipboard resource paste는 `InAppClipboard`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
+  `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 본문 RAW source에 `<resource ... />` 참조를
+  삽입하고 editor HTML projection을 반환한다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
   mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline

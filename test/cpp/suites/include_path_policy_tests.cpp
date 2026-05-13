@@ -461,11 +461,18 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         !QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/hierarchy"))).exists(),
         "Hierarchy backend docs must not be nested under the persistent file-storage docs.");
     QVERIFY2(
-        QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/file/resource"))).exists(),
-        "Resource file support must live under the file/resource model shard.");
+        !QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/file/resource"))).exists()
+            || QDir(repositoryRoot.filePath(QStringLiteral("src/app/models/file/resource"))).entryList(
+                   QDir::Files | QDir::NoDotAndDotDot).isEmpty(),
+        "The deleted resource import controller must not leave source files in the file/resource shard.");
     QVERIFY2(
-        QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/resource"))).exists(),
-        "Resource file support documentation must mirror the file/resource model shard.");
+        !QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/resource"))).exists()
+            || QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/file/resource"))).entryList(
+                   QDir::Files | QDir::NoDotAndDotDot).isEmpty(),
+        "The deleted resource import controller docs must not leave file/resource docs behind.");
+    QVERIFY2(
+        QDir(repositoryRoot.filePath(QStringLiteral("docs/src/app/models/clipboard"))).exists(),
+        "Clipboard import documentation must mirror the clipboard model shard.");
     const QString legacyResourceImportSourceDirectory =
         QStringLiteral("src/app/models/file") + QStringLiteral("/import");
     const QString legacyResourceImportDocsDirectory =
@@ -546,8 +553,16 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(progressControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
     QVERIFY(progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
 
-    const QString resourcesImportControllerSource = readUtf8SourceFile(
-        QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp"));
+    const QString inAppClipboardImportSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("docs/src/app/models/file/resource/ResourcesImportController.hpp.md"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("docs/src/app/models/file/resource/ResourcesImportController.cpp.md"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("src/app/models/file/resource/WhatSonResourceClipboardImportSupport.hpp"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
@@ -556,12 +571,25 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         QStringLiteral("src/app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.hpp"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("src/app/models/file/resource/WhatSonClipboardResourceImportFileNamePolicy.cpp"))));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport")));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("ClipboardImportSupport::")));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("importClipboardImage")));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("refreshClipboardImageAvailability")));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
-    QVERIFY(!resourcesImportControllerSource.contains(QStringLiteral("bool extractClipboardImage(")));
+    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/InAppClipboard.h"))));
+    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp"))));
+    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.h"))));
+    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp"))));
+    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+        QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp"))));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("ClipboardImportSupport::")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("importClipboardImage")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("refreshClipboardImageAvailability")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("bool mimeFormatLooksLikeImage(")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("bool extractClipboardImage(")));
+    QVERIFY(!inAppClipboardImportSource.contains(QStringLiteral("ResourcesImportController")));
+    QVERIFY(inAppClipboardImportSource.contains(QStringLiteral("InAppClipboard::importClipboardResourceForEditor")));
+    QVERIFY(inAppClipboardImportSource.contains(QStringLiteral("InAppClipboard::importUrlsForEditor")));
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/file)")));
@@ -578,6 +606,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!testCMakeSource.contains(QStringLiteral(
         "src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp")));
     QVERIFY(!testCMakeSource.contains(legacyResourceImportSourceDirectory));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")));
+    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/TagInsertionWriter.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));

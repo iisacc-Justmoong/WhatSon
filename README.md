@@ -368,14 +368,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - Editor body persistence now treats live editing as write-through by default: ordinary typing, formatting, and
   programmatic source rewrites request immediate `.wsnbody` flushes first, and QML editor sessions use the buffered
   fetch clock only to drain or retry note snapshots that were already accepted into the persistence lane.
-- Desktop/mobile editor hosts now also accept native file drags directly over the note surface without a MIME-key
-  prefilter, route those drops through `ResourcesImportViewModel`, create flat `.wsresource` packages under the
-  active hub `*.wsresources` root, append the package paths into `Resources.wsresources`, inject canonical
-  `<resource type="..." format="..." path="...">` calls into the live note source, and rebuild the in-editor
-  resource-card overlay from the current presentation snapshot so the dropped asset appears immediately instead of
-  waiting for a later filesystem reread.
-- The legacy clipboard image paste path has been removed. `ResourcesImportController` remains the file/url import
-  orchestration owner for conflict detection, package persistence, editor-return metadata, and reload callbacks.
+- Desktop/mobile editor hosts keep resource insertion as a C++ pipeline: supported clipboard or file resources are
+  routed through `InAppClipboard`, persisted as `.wsresource` packages under the active hub `.wsresources` root,
+  appended into `Resources.wsresources`, and only then inserted into the live note source as canonical
+  `<resource type="..." format="..." path="...">` calls.
+- Clipboard/file resource import now runs through `src/app/models/clipboard/InAppClipboard`. The deleted
+  `ResourcesImportController` boundary is replaced by the in-app clipboard object for conflict detection, package
+  persistence, editor-return metadata, and reload callbacks.
 - Immediate editor flush requests now fail fast when the persistence lane rejects the current snapshot, instead of
   silently reporting acceptance while the note remains dirty only in memory.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
@@ -547,9 +546,9 @@ The automated regression suite lives under `test/`, with the maintained build en
   helpers, and structured document mutation/collection policies.
 - `whatson_regression` combines the build gate and the runtime C++ regression suite for the standard repository
   verification pass.
-- Source-tree regression coverage also locks the single-responsibility controller split for hierarchy note-record
-  helpers, resource import orchestration, and editor selection-contract resolution, so those responsibilities do not
-  drift back into their orchestration controllers.
+- Source-tree regression coverage also locks the single-responsibility split for hierarchy note-record helpers,
+  clipboard-owned resource import orchestration, and editor selection-contract resolution, so those responsibilities do
+  not drift back into unrelated controllers.
 
 ```bash
 cmake -S . -B build

@@ -96,6 +96,7 @@ Item {
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
+    property var inAppClipboard: null
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -130,6 +131,59 @@ Item {
         return !!(editorItem
                   && editorItem.activeFocus !== undefined
                   && Boolean(editorItem.activeFocus));
+    }
+    function listLikeCount(value) {
+        if (!value)
+            return 0;
+        if (value.length !== undefined)
+            return Math.max(0, Math.floor(Number(value.length) || 0));
+        if (value.count !== undefined)
+            return Math.max(0, Math.floor(Number(value.count) || 0));
+        return 0;
+    }
+    function pasteClipboardResourceIntoEditor() {
+        if (!contentViewLayout.inAppClipboard
+                || !contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.inAppClipboard.importClipboardResourceForEditor === undefined
+                || contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource === undefined)
+            return false;
+
+        const importedEntries = contentViewLayout.inAppClipboard.importClipboardResourceForEditor();
+        if (contentViewLayout.listLikeCount(importedEntries) <= 0)
+            return false;
+
+        const insertion = contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource(
+                    contentsTextEditor.editorDocumentText,
+                    contentsTextEditor.editorSelectionStart,
+                    contentsTextEditor.editorSelectionLength,
+                    importedEntries);
+        if (!insertion || !Boolean(insertion.valid))
+            return false;
+
+        const editorDocumentText = insertion.editorDocumentText !== undefined
+                && insertion.editorDocumentText !== null
+                ? String(insertion.editorDocumentText)
+                : String(insertion.bodySourceText);
+        if (!contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText,
+                    Number(insertion.cursorPosition) || 0))
+            return false;
+
+        if (contentViewLayout.inAppClipboard.reloadImportedResources !== undefined)
+            return Boolean(contentViewLayout.inAppClipboard.reloadImportedResources());
+        return true;
+    }
+    function handleEditorPasteShortcut() {
+        if (!contentViewLayout.inAppClipboard
+                || contentViewLayout.inAppClipboard.refreshClipboardResourceAvailabilitySnapshot === undefined
+                || !contentViewLayout.inAppClipboard.refreshClipboardResourceAvailabilitySnapshot()) {
+            contentsTextEditor.pasteNativeClipboardText();
+            return;
+        }
+
+        if (!contentViewLayout.pasteClipboardResourceIntoEditor())
+            contentsTextEditor.pasteNativeClipboardText();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -331,6 +385,15 @@ Item {
                 sourceViewportHeight: contentsTextEditor.editorViewportHeight
                 visible: contentViewLayout.minimapVisible
             }
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
+            sequence: StandardKey.Paste
+
+            onActivated: contentViewLayout.handleEditorPasteShortcut()
         }
 
         Shortcut {

@@ -51,7 +51,7 @@ LV.ApplicationWindow {
     readonly property var rootSidebarHierarchyController: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
     readonly property var rootNoteActiveState: typeof noteActiveState !== "undefined" ? noteActiveState : null
     readonly property var rootNoteEditorSession: typeof noteEditorSession !== "undefined" ? noteEditorSession : null
-    readonly property var rootResourcesImportController: typeof resourcesImportController !== "undefined" ? resourcesImportController : null
+    readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
     readonly property var rootAgendaController: typeof agendaController !== "undefined" ? agendaController : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
@@ -552,7 +552,7 @@ LV.ApplicationWindow {
         onLoaded: {
             if (item) {
                 item.hostWindow = applicationWindow;
-                item.resourcesImportController = applicationWindow.rootResourcesImportController;
+                item.inAppClipboard = applicationWindow.rootInAppClipboard;
             }
         }
     }
@@ -677,6 +677,7 @@ LV.ApplicationWindow {
                     noteDeletionController: applicationWindow.rootLibraryNoteMutationController
                     noteActiveState: applicationWindow.rootNoteActiveState
                     noteEditorSession: applicationWindow.rootNoteEditorSession
+                    inAppClipboard: applicationWindow.rootInAppClipboard
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
@@ -739,6 +740,7 @@ LV.ApplicationWindow {
             navigationModeController: applicationWindow.rootNavigationModeController
             noteActiveState: applicationWindow.rootNoteActiveState
             noteEditorSession: applicationWindow.rootNoteEditorSession
+            inAppClipboard: applicationWindow.rootInAppClipboard
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames

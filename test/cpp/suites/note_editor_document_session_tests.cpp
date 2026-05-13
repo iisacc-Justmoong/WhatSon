@@ -379,3 +379,46 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_formatsAgainstLoadedBo
         result.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("<bold><highlight>Alpha</highlight></bold> Beta"));
 }
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("resource-note"),
+        QStringLiteral("Alpha\nBeta"));
+
+    QVariantMap importedResource;
+    importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-1"));
+    importedResource.insert(
+        QStringLiteral("resourcePath"),
+        QStringLiteral("Workspace.wsresources/capture-1.wsresource"));
+    importedResource.insert(QStringLiteral("type"), QStringLiteral("image"));
+    importedResource.insert(QStringLiteral("format"), QStringLiteral(".png"));
+    importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
+
+    const QVariantMap result = session.insertImportedResourcesIntoSource(
+        editorHtml,
+        5,
+        0,
+        QVariantList{importedResource});
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        result.value(QStringLiteral("insertedText")).toString(),
+        QStringLiteral(
+            "\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />"));
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral(
+            "Alpha\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-1.wsresource\" id=\"capture-1\" />\nBeta"));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("&lt;resource")));
+    const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(editorDocumentText.contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("<br/>Beta")));
+    QCOMPARE(session.parsedLineCount(), 3);
+}
