@@ -6,8 +6,6 @@
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
-#include <QFont>
-#include <QFontMetrics>
 #include <QImage>
 #include <QImageReader>
 #include <QPainter>
@@ -25,9 +23,7 @@ namespace
     constexpr int kFrameTextLineHeight = 11;
     constexpr int kMoreIconSize = 16;
     constexpr int kMoreDotSize = 2;
-    constexpr int kMoreFirstDotOffset = 2;
-    constexpr int kMoreDotStep = 5;
-    constexpr auto kFrameRenderVersion = "figma-292-50-editor-width-chrome-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-structured-frame-v1";
 
     QString htmlAttribute(QString value)
     {
@@ -207,138 +203,39 @@ namespace
         return image;
     }
 
-    QString elidedFrameText(QPainter* painter, const QString& text, const int width)
-    {
-        if (painter == nullptr)
-        {
-            return text;
-        }
-
-        const QFontMetrics metrics(painter->font());
-        return metrics.elidedText(text, Qt::ElideRight, qMax(1, width));
-    }
-
-    void paintFrameText(
-        QPainter* painter,
-        const QRect& rect,
-        const QString& text,
-        const Qt::Alignment alignment = Qt::AlignLeft | Qt::AlignVCenter)
-    {
-        if (painter == nullptr)
-        {
-            return;
-        }
-
-        const QString elidedText = elidedFrameText(
-            painter,
-            text,
-            rect.width() - kFrameHorizontalPadding);
-        painter->drawText(rect, alignment, elidedText);
-    }
-
-    void paintMoreIcon(QPainter* painter, const QRect& rect)
-    {
-        if (painter == nullptr)
-        {
-            return;
-        }
-
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(QStringLiteral("#CED0D6")));
-        const int dotY = rect.y() + ((rect.height() - kMoreDotSize) / 2);
-        for (int dotIndex = 0; dotIndex < 3; ++dotIndex)
-        {
-            const int dotX = rect.x() + kMoreFirstDotOffset + (dotIndex * kMoreDotStep);
-            painter->drawEllipse(QRect(dotX, dotY, kMoreDotSize, kMoreDotSize));
-        }
-    }
-
-    QImage renderFramePreviewImage(
+    QImage renderMediaPreviewImage(
         const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor,
-        const QSize& sourceSize,
-        const QString& typeLabel,
-        const QString& fileName)
+        const QSize& sourceSize)
     {
         const int frameRenderWidth = frameRenderWidthForViewport(descriptor.editorViewportWidth);
-        const QSize frameSize = frameRasterSizeForSource(sourceSize, frameRenderWidth);
-        if (!frameSize.isValid() || frameSize.isEmpty())
+        const QSize mediaSize = mediaRasterSizeForSource(sourceSize, frameRenderWidth);
+        if (!mediaSize.isValid() || mediaSize.isEmpty())
         {
             return {};
         }
 
-        QImage frame(frameSize, QImage::Format_ARGB32_Premultiplied);
-        frame.fill(Qt::transparent);
+        QImage media(mediaSize, QImage::Format_ARGB32_Premultiplied);
+        media.fill(QColor(QStringLiteral("#1E1F20")));
 
-        QPainter painter(&frame);
+        QPainter painter(&media);
         painter.setRenderHint(QPainter::Antialiasing, true);
-
-        const QColor backgroundColor(QStringLiteral("#1E1F20"));
-        const QColor strokeColor(QStringLiteral("#2C2E2F"));
-        const QColor captionTextColor(255, 255, 255, 128);
-
-        const QRectF frameRect(0.5, 0.5, frame.width() - 1.0, frame.height() - 1.0);
-        painter.setPen(QPen(strokeColor, 1));
-        painter.setBrush(backgroundColor);
-        painter.drawRoundedRect(frameRect, kFrameRadius, kFrameRadius);
-
-        painter.setPen(QPen(strokeColor, 1));
-        painter.drawLine(1, kFrameHeaderHeight, frame.width() - 2, kFrameHeaderHeight);
-        painter.drawLine(
-            1,
-            frame.height() - kFrameToolbarHeight,
-            frame.width() - 2,
-            frame.height() - kFrameToolbarHeight);
-
-        QFont textFont(QStringLiteral("Pretendard"));
-        textFont.setPixelSize(kFrameTextPixelSize);
-        textFont.setWeight(QFont::Normal);
-        painter.setFont(textFont);
-        painter.setPen(captionTextColor);
-
-        const QRect headerTextRect(
-            kFrameHorizontalPadding,
-            0,
-            frame.width() - (kFrameHorizontalPadding * 2) - kMoreIconSize,
-            kFrameHeaderHeight);
-        paintFrameText(&painter, headerTextRect, typeLabel);
-
-        const QRect moreRect(
-            frame.width() - kFrameHorizontalPadding - kMoreIconSize,
-            (kFrameHeaderHeight - kMoreIconSize) / 2,
-            kMoreIconSize,
-            kMoreIconSize);
-        paintMoreIcon(&painter, moreRect);
-
-        const QRect mediaRect(
-            1,
-            kFrameHeaderHeight + 1,
-            frame.width() - 2,
-            frame.height() - kFrameHeaderHeight - kFrameToolbarHeight - 2);
         if (isImageDescriptor(descriptor))
         {
             const QImage sourceImage = readSourceImage(descriptor);
             if (!sourceImage.isNull())
             {
                 const QImage scaledImage = sourceImage.scaled(
-                    mediaRect.size(),
+                    media.size(),
                     Qt::KeepAspectRatio,
                     Qt::SmoothTransformation);
                 const QPoint mediaTopLeft(
-                    mediaRect.x() + ((mediaRect.width() - scaledImage.width()) / 2),
-                    mediaRect.y() + ((mediaRect.height() - scaledImage.height()) / 2));
+                    (media.width() - scaledImage.width()) / 2,
+                    (media.height() - scaledImage.height()) / 2);
                 painter.drawImage(mediaTopLeft, scaledImage);
             }
         }
 
-        painter.setPen(captionTextColor);
-        const QRect toolbarTextRect(
-            kFrameHorizontalPadding,
-            frame.height() - kFrameToolbarHeight,
-            frame.width() - (kFrameHorizontalPadding * 2),
-            kFrameToolbarHeight);
-        paintFrameText(&painter, toolbarTextRect, fileName);
-
-        return frame;
+        return media;
     }
 
     QString dataUriForFrameImage(const QImage& frameImage)
@@ -410,14 +307,12 @@ namespace
         return QDir(cacheRoot).filePath(QStringLiteral("resource-frames/%1").arg(cacheFileName));
     }
 
-    QString framePreviewImageUrl(
+    QString mediaPreviewImageUrl(
         const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor,
-        const QSize& sourceSize,
-        const QString& typeLabel,
-        const QString& fileName)
+        const QSize& sourceSize)
     {
-        const QImage frameImage = renderFramePreviewImage(descriptor, sourceSize, typeLabel, fileName);
-        if (frameImage.isNull())
+        const QImage mediaImage = renderMediaPreviewImage(descriptor, sourceSize);
+        if (mediaImage.isNull())
         {
             return {};
         }
@@ -426,12 +321,12 @@ namespace
         const QFileInfo cacheInfo(cachePath);
         QDir cacheDir(cacheInfo.absolutePath());
         if ((cacheDir.exists() || QDir().mkpath(cacheInfo.absolutePath()))
-            && (cacheInfo.isFile() || frameImage.save(cachePath, "PNG")))
+            && (cacheInfo.isFile() || mediaImage.save(cachePath, "PNG")))
         {
             return QUrl::fromLocalFile(cachePath).toString();
         }
 
-        return dataUriForFrameImage(frameImage);
+        return dataUriForFrameImage(mediaImage);
     }
 
     void appendUniqueTextLine(QStringList* lines, const QString& line)
@@ -475,30 +370,58 @@ namespace WhatSon::EditorComponent
         const QString fileName = displayFileName(descriptor);
         const QSize sourceImageSize =
             isImageDescriptor(descriptor) ? imageSourceSize(descriptor) : QSize();
-        const QString previewImageUrl = framePreviewImageUrl(
-            descriptor,
+        const QString previewImageUrl = mediaPreviewImageUrl(descriptor, sourceImageSize);
+        const QString metricAttributes = frameMetricAttributes(
             sourceImageSize,
-            typeLabel,
-            fileName);
+            frameRenderWidthForViewport(descriptor.editorViewportWidth));
 
         QString html;
-        html.reserve(1400);
+        html.reserve(2600);
         html += QStringLiteral("<!--whatson-resource-source:");
         html += sourceMarker(descriptor.sourceTag);
         html += QStringLiteral("-->");
         html += QStringLiteral(
-            "<img src=\"%1\" class=\"whatson-resource-frame\" data-figma-node-id=\"292:50\" "
-            "data-resource-preview=\"single-object-raster\" data-resource-type-label=\"%2\" "
-            "data-resource-file-name=\"%3\" data-max-width-height-ratio=\"1:1\"%4 "
+            "<table class=\"whatson-resource-frame\" data-figma-node-id=\"292:50\" "
+            "data-resource-preview=\"structured-frame\" data-resource-type-label=\"%1\" "
+            "data-resource-file-name=\"%2\" data-max-width-height-ratio=\"1:1\"%3 "
+            "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
+            "style=\"width:100%;max-width:100%;border-spacing:0;border-collapse:separate;"
+            "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%4px;\">"
+            "<tr class=\"resourceHeader\" style=\"height:%5px;\">"
+            "<td class=\"whatson-resource-type-display\" data-display-role=\"resource-type\" "
+            "style=\"height:%5px;padding:4px %6px 4px %6px;border-bottom:1px solid #2C2E2F;"
+            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
+            "color:rgba(255,255,255,0.50);\">%1</td>"
+            "<td class=\"whatson-resource-more\" data-display-role=\"resource-more\" align=\"right\" "
+            "style=\"width:%9px;height:%5px;padding:4px %6px 4px 0;border-bottom:1px solid #2C2E2F;"
+            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
+            "color:#CED0D6;\">...</td>"
+            "</tr>"
+            "<tr><td colspan=\"2\" style=\"padding:0;margin:0;\">"
+            "<img src=\"%10\" class=\"whatson-resource-media\" data-resource-preview=\"media-raster\" "
             "width=\"100%\" style=\"display:block;width:100%;max-width:100%;height:auto;"
-            "max-height:100%;vertical-align:middle;object-fit:contain;border:0;\" />")
+            "max-height:100%;vertical-align:middle;object-fit:contain;border:0;\" />"
+            "</td></tr>"
+            "<tr class=\"resourceToolbar\" style=\"height:%11px;\">"
+            "<td colspan=\"2\" class=\"whatson-resource-filename-display\" "
+            "data-display-role=\"resource-file-name\" "
+            "style=\"height:%11px;padding:4px %6px;border-top:1px solid #2C2E2F;"
+            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
+            "color:rgba(255,255,255,0.50);\">%2</td>"
+            "</tr>"
+            "</table>")
             .arg(
-                htmlAttribute(previewImageUrl),
                 htmlAttribute(typeLabel),
                 htmlAttribute(fileName),
-                frameMetricAttributes(
-                    sourceImageSize,
-                    frameRenderWidthForViewport(descriptor.editorViewportWidth)));
+                metricAttributes,
+                QString::number(kFrameRadius),
+                QString::number(kFrameHeaderHeight),
+                QString::number(kFrameHorizontalPadding),
+                QString::number(kFrameTextPixelSize),
+                QString::number(kFrameTextLineHeight),
+                QString::number(kMoreIconSize),
+                htmlAttribute(previewImageUrl),
+                QString::number(kFrameToolbarHeight));
         html += QStringLiteral("<!--/whatson-resource-source-->");
         return html;
     }

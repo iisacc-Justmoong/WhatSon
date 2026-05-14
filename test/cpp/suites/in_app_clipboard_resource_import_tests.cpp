@@ -394,8 +394,9 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"single-object-raster\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"structured-frame\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-preview=\"single-object-raster\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-type-label=\"Image\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-file-name=\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
@@ -406,8 +407,12 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
-    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
-    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-type\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-file-name\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral(">Image<")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral(">...<")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("contenteditable")));
