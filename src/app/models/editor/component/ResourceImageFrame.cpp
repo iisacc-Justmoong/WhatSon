@@ -15,68 +15,12 @@
 namespace
 {
     constexpr int kFigmaFrameWidth = 480;
-    constexpr int kFrameHeaderHeight = 24;
-    constexpr int kFrameToolbarHeight = 19;
-    constexpr int kFrameHorizontalPadding = 8;
     constexpr int kFrameRadius = 12;
-    constexpr int kFrameTextPixelSize = 11;
-    constexpr int kFrameTextLineHeight = 11;
-    constexpr int kMoreIconSize = 16;
-    constexpr int kMoreDotSize = 2;
-    constexpr auto kFrameRenderVersion = "figma-292-50-structured-frame-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-pure-image-container-v1";
 
     QString htmlAttribute(QString value)
     {
         return value.toHtmlEscaped();
-    }
-
-    QString displayTypeLabel(const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor)
-    {
-        QString type = WhatSon::Resources::normalizedType(descriptor.type);
-        if (type.isEmpty())
-        {
-            type = WhatSon::Resources::inferTypeFromFormat(descriptor.format);
-        }
-        if (type.isEmpty())
-        {
-            type = QStringLiteral("resource");
-        }
-
-        type[0] = type.at(0).toUpper();
-        return type;
-    }
-
-    QString displayFileName(const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor)
-    {
-        const QString fileName = QFileInfo(descriptor.resourcePath.trimmed()).fileName().trimmed();
-        if (!fileName.isEmpty())
-        {
-            return fileName;
-        }
-        if (!descriptor.resourceId.trimmed().isEmpty())
-        {
-            return descriptor.resourceId.trimmed();
-        }
-        if (!descriptor.resourcePath.trimmed().isEmpty())
-        {
-            return descriptor.resourcePath.trimmed();
-        }
-        return QStringLiteral("filename");
-    }
-
-    QString displayResourceLabel(const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor)
-    {
-        if (!descriptor.resourceId.trimmed().isEmpty())
-        {
-            return descriptor.resourceId.trimmed();
-        }
-
-        const QString completeBaseName = QFileInfo(descriptor.resourcePath.trimmed()).completeBaseName().trimmed();
-        if (!completeBaseName.isEmpty())
-        {
-            return completeBaseName;
-        }
-        return displayFileName(descriptor);
     }
 
     bool isImageDescriptor(const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor)
@@ -132,36 +76,17 @@ namespace
 
     int frameDisplayHeightForSource(const QSize& sourceSize, const int frameRenderWidth)
     {
-        return mediaRasterSizeForSource(sourceSize, frameRenderWidth).height()
-            + kFrameHeaderHeight
-            + kFrameToolbarHeight;
-    }
-
-    QSize frameRasterSizeForSource(const QSize& sourceSize, const int frameRenderWidth)
-    {
-        return QSize(frameRenderWidth, frameDisplayHeightForSource(sourceSize, frameRenderWidth));
+        return mediaRasterSizeForSource(sourceSize, frameRenderWidth).height();
     }
 
     QString frameMetricAttributes(const QSize& sourceSize, const int frameRenderWidth)
     {
         QString attributes = QStringLiteral(
                                  " data-frame-design-width=\"%1\""
-                                 " data-frame-render-width=\"%2\""
-                                 " data-frame-header-height=\"%3\""
-                                 " data-frame-toolbar-height=\"%4\""
-                                 " data-frame-text-pixel-size=\"%5\""
-                                 " data-frame-text-line-height=\"%6\""
-                                 " data-frame-more-icon-size=\"%7\""
-                                 " data-frame-more-dot-size=\"%8\"")
+                                 " data-frame-render-width=\"%2\"")
             .arg(
                 QString::number(kFigmaFrameWidth),
-                QString::number(frameRenderWidth),
-                QString::number(kFrameHeaderHeight),
-                QString::number(kFrameToolbarHeight),
-                QString::number(kFrameTextPixelSize),
-                QString::number(kFrameTextLineHeight),
-                QString::number(kMoreIconSize),
-                QString::number(kMoreDotSize));
+                QString::number(frameRenderWidth));
 
         if (!sourceSize.isValid() || sourceSize.isEmpty())
         {
@@ -271,16 +196,6 @@ namespace
         key += QByteArray::number(frameRenderWidthForViewport(descriptor.editorViewportWidth));
         key += '\0';
         key += QByteArray::number(kFigmaFrameWidth);
-        key += 'x';
-        key += QByteArray::number(kFrameHeaderHeight);
-        key += 'x';
-        key += QByteArray::number(kFrameToolbarHeight);
-        key += 'x';
-        key += QByteArray::number(kFrameTextPixelSize);
-        key += 'x';
-        key += QByteArray::number(kMoreIconSize);
-        key += 'x';
-        key += QByteArray::number(kMoreDotSize);
         key += '\0';
         key += descriptor.sourceTag.toUtf8();
         key += '\0';
@@ -329,15 +244,6 @@ namespace
         return dataUriForFrameImage(mediaImage);
     }
 
-    void appendUniqueTextLine(QStringList* lines, const QString& line)
-    {
-        const QString normalizedLine = line.trimmed().simplified();
-        if (normalizedLine.isEmpty() || lines->contains(normalizedLine, Qt::CaseInsensitive))
-        {
-            return;
-        }
-        lines->push_back(normalizedLine);
-    }
 } // namespace
 
 namespace WhatSon::EditorComponent
@@ -366,8 +272,6 @@ namespace WhatSon::EditorComponent
 
     QString ResourceFrame::renderHtml(const ResourceFrameDescriptor& descriptor)
     {
-        const QString typeLabel = displayTypeLabel(descriptor);
-        const QString fileName = displayFileName(descriptor);
         const QSize sourceImageSize =
             isImageDescriptor(descriptor) ? imageSourceSize(descriptor) : QSize();
         const QString previewImageUrl = mediaPreviewImageUrl(descriptor, sourceImageSize);
@@ -382,67 +286,22 @@ namespace WhatSon::EditorComponent
         html += QStringLiteral("-->");
         html += QStringLiteral(
             "<table class=\"whatson-resource-frame\" data-figma-node-id=\"292:50\" "
-            "data-resource-preview=\"structured-frame\" data-resource-type-label=\"%1\" "
-            "data-resource-file-name=\"%2\" data-max-width-height-ratio=\"1:1\"%3 "
+            "data-resource-preview=\"image-only-frame\" data-max-width-height-ratio=\"1:1\"%1 "
             "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
             "style=\"width:100%;max-width:100%;border-spacing:0;border-collapse:separate;"
-            "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%4px;\">"
-            "<tr class=\"resourceHeader\" style=\"height:%5px;\">"
-            "<td class=\"whatson-resource-type-display\" data-display-role=\"resource-type\" "
-            "style=\"height:%5px;padding:4px %6px 4px %6px;border-bottom:1px solid #2C2E2F;"
-            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
-            "color:rgba(255,255,255,0.50);\">%1</td>"
-            "<td class=\"whatson-resource-more\" data-display-role=\"resource-more\" align=\"right\" "
-            "style=\"width:%9px;height:%5px;padding:4px %6px 4px 0;border-bottom:1px solid #2C2E2F;"
-            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
-            "color:#CED0D6;\">...</td>"
-            "</tr>"
-            "<tr><td colspan=\"2\" style=\"padding:0;margin:0;\">"
-            "<img src=\"%10\" class=\"whatson-resource-media\" data-resource-preview=\"media-raster\" "
+            "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%2px;\">"
+            "<tr><td style=\"padding:0;margin:0;\">"
+            "<img src=\"%3\" alt=\"\" class=\"whatson-resource-media\" data-resource-preview=\"media-raster\" "
             "width=\"100%\" style=\"display:block;width:100%;max-width:100%;height:auto;"
             "max-height:100%;vertical-align:middle;object-fit:contain;border:0;\" />"
             "</td></tr>"
-            "<tr class=\"resourceToolbar\" style=\"height:%11px;\">"
-            "<td colspan=\"2\" class=\"whatson-resource-filename-display\" "
-            "data-display-role=\"resource-file-name\" "
-            "style=\"height:%11px;padding:4px %6px;border-top:1px solid #2C2E2F;"
-            "font-family:Pretendard;font-size:%7px;line-height:%8px;font-weight:400;"
-            "color:rgba(255,255,255,0.50);\">%2</td>"
-            "</tr>"
             "</table>")
             .arg(
-                htmlAttribute(typeLabel),
-                htmlAttribute(fileName),
                 metricAttributes,
                 QString::number(kFrameRadius),
-                QString::number(kFrameHeaderHeight),
-                QString::number(kFrameHorizontalPadding),
-                QString::number(kFrameTextPixelSize),
-                QString::number(kFrameTextLineHeight),
-                QString::number(kMoreIconSize),
-                htmlAttribute(previewImageUrl),
-                QString::number(kFrameToolbarHeight));
+                htmlAttribute(previewImageUrl));
         html += QStringLiteral("<!--/whatson-resource-source-->");
         return html;
     }
 
-    QStringList ResourceFrame::renderedTextLines(const ResourceFrameDescriptor& descriptor)
-    {
-        QStringList lines;
-        const QString typeLabel = displayTypeLabel(descriptor);
-        appendUniqueTextLine(&lines, typeLabel);
-        appendUniqueTextLine(&lines, QStringLiteral("..."));
-        appendUniqueTextLine(&lines, QStringLiteral("%1...").arg(typeLabel));
-        appendUniqueTextLine(&lines, QStringLiteral("%1 ...").arg(typeLabel));
-        appendUniqueTextLine(&lines, displayFileName(descriptor));
-
-        const QString label = displayResourceLabel(descriptor);
-        const QString type = WhatSon::Resources::normalizedType(descriptor.type);
-        const QString format = WhatSon::Resources::normalizeFormat(descriptor.format);
-        appendUniqueTextLine(&lines, label);
-        appendUniqueTextLine(&lines, QStringLiteral("%1 %2").arg(type, format));
-        appendUniqueTextLine(&lines, QStringLiteral("%1 %2 %3").arg(label, type, format));
-        appendUniqueTextLine(&lines, descriptor.resourcePath);
-        return lines;
-    }
 } // namespace WhatSon::EditorComponent

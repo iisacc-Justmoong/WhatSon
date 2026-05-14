@@ -2,7 +2,6 @@
 
 #include <QSize>
 #include <QString>
-#include <QStringList>
 
 namespace WhatSon::EditorComponent
 {
@@ -24,6 +23,5 @@ namespace WhatSon::EditorComponent
         static QSize imageDisplaySize(const QSize& sourceSize);
         static QString sourceMarker(const QString& sourceTag);
         static QString renderHtml(const ResourceFrameDescriptor& descriptor);
-        static QStringList renderedTextLines(const ResourceFrameDescriptor& descriptor);
     };
 } // namespace WhatSon::EditorComponent

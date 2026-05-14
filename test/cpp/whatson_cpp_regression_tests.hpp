@@ -1242,7 +1242,7 @@ private slots:
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
     void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
-    void resourceFrame_rendersFigmaImageChrome();
+    void resourceFrame_rendersImageOnlyContainer();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();

@@ -81,10 +81,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(0, safeLength)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorResourceObjectReplacementText: \"\\uFFFC\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorPlainTextLineRecords()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function lineContainsResourceObject(lineText)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameHeader(lineText)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameFileName(lineText)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function resourceFrameSpanLengthAt(lineRecords, lineIndex)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameHeader(lineText)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameFileName(lineText)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function resourceFrameSpanLengthAt(lineRecords, lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineStartPositions()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineIndexForPosition(position)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedOverflowMetricFor(lineIndex, lineStartPositions, fallbackMetric, fallbackHeight)")));

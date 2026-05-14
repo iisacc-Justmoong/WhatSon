@@ -27,9 +27,8 @@
 - `editorPlainText` reads the public LVRS editor item's plain-text range through `getText(...)`, so the wrapper can
   locate logical editor line starts without depending on RichText HTML markup. CRLF/CR and Qt line/paragraph separator
   characters are normalized to `\n`.
-- Resource frames are rendered as one source line but may expose several plain-text rows from their chrome and object
-  replacement marker. The wrapper collapses those rows while mapping source line starts and cursor line indices, so the
-  sibling gutter continues to number canonical source lines instead of frame chrome rows.
+- Resource frames are rendered as one source line and the image-only frame exposes one object-replacement row in the
+  editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
 - `editorSelectionStart`, `editorSelectionLength`, and `editorSelectedText` expose normalized public LVRS selection
@@ -84,9 +83,9 @@
   각 source line의 첫 렌더 위치를 알려 주기 위한 배치 보조값일 뿐, 거터 row 개수를 만들지 않는다.
 - 거터가 생성할 줄 번호 개수는 C++ parsed RAW source line count만 사용한다. LVRS editor surface의 visual wrap
   line count나 QML plain-text line count는 거터 row count가 아니다.
-- 리소스 프레임은 RAW source에서는 `<resource ... />` 한 줄이지만 editor plain text에서는 타입 표시, object
-  replacement marker, 파일명 표시 등 여러 줄로 드러날 수 있다. `TextEditor.qml`은 이 프레임 chrome 줄들을
-  하나의 source line으로 접은 source-aligned line start를 사용해 거터 숫자가 리소스 뒤에서 겹치지 않게 한다.
+- 리소스 프레임은 RAW source에서는 `<resource ... />` 한 줄이며, image-only frame은 editor plain text에서
+  object replacement row 하나로 드러난다. `TextEditor.qml`은 별도 chrome row 접기 없이 공개 plain-text row에서
+  source-aligned line start를 계산한다.
 - parsed source line이 LVRS plain-text row보다 많은 경우에도 남은 source line은 document 끝 좌표 하나를
   재사용하지 않고 마지막 측정 rectangle 아래로 fallback line-height만큼 밀어 배치한다.
 - 현재 cursor line indicator를 위해 source-aligned plain-text cursor position으로 계산한 logical

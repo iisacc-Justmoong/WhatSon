@@ -627,31 +627,6 @@ namespace
         return line.contains(QChar::ObjectReplacementCharacter);
     }
 
-    bool lineMatchesRenderedResourceFrameText(
-        const QString& line,
-        const QString& resourceTag)
-    {
-        const QString trimmedLine = line.trimmed().simplified();
-        if (trimmedLine.isEmpty())
-        {
-            return false;
-        }
-
-        const QStringList frameTextLines =
-            WhatSon::EditorComponent::ResourceFrame::renderedTextLines(
-                resourceFrameDescriptorFromSourceTag(resourceTag, QString(), 0));
-
-        for (const QString& frameTextLine : frameTextLines)
-        {
-            if (!frameTextLine.trimmed().isEmpty()
-                && QString::compare(trimmedLine, frameTextLine.trimmed().simplified(), Qt::CaseInsensitive) == 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     QString compactRestoredResourcePadding(
         const QStringList& restoredLines,
         const QVector<ActiveResourceSourceLine>& resourceLines)
@@ -717,53 +692,12 @@ namespace
         restoredLines.reserve(editorLines.size());
 
         int resourceIndex = 0;
-        int frameTextAfterResourceIndex = -1;
         bool skipNextPaddingLineAfterResource = false;
-        // If a rich resource object is deleted first, Qt may leave header/footer text behind.
-        // Treat that text run as residue from one deleted resource component, not note text.
-        bool skippedFrameTextForCurrentResource = false;
         for (int index = 0; index < editorLines.size(); ++index)
         {
             const QString& editorLine = editorLines.at(index);
             const bool lineIsBlank = editorLine.trimmed().isEmpty();
             const bool lineHasResourceObject = lineContainsRichTextObjectReplacement(editorLine);
-
-            if (frameTextAfterResourceIndex >= 0
-                && frameTextAfterResourceIndex < resourceLines.size()
-                && lineMatchesRenderedResourceFrameText(
-                    editorLine,
-                    resourceLines.at(frameTextAfterResourceIndex).sourceTag))
-            {
-                continue;
-            }
-
-            if (!lineIsBlank
-                && resourceIndex < resourceLines.size()
-                && lineMatchesRenderedResourceFrameText(
-                    editorLine,
-                    resourceLines.at(resourceIndex).sourceTag))
-            {
-                skippedFrameTextForCurrentResource = true;
-                continue;
-            }
-
-            if (skippedFrameTextForCurrentResource && lineIsBlank)
-            {
-                continue;
-            }
-
-            if (skippedFrameTextForCurrentResource
-                && !lineHasResourceObject
-                && resourceIndex < resourceLines.size())
-            {
-                ++resourceIndex;
-                skippedFrameTextForCurrentResource = false;
-            }
-
-            if (!lineIsBlank)
-            {
-                frameTextAfterResourceIndex = -1;
-            }
 
             if (skipNextPaddingLineAfterResource && lineIsBlank)
             {
@@ -783,23 +717,11 @@ namespace
                 continue;
             }
 
-            if (!lineIsBlank
-                && nextLineIsResourceObject
-                && resourceIndex < resourceLines.size()
-                && lineMatchesRenderedResourceFrameText(
-                    editorLine,
-                    resourceLines.at(resourceIndex).sourceTag))
-            {
-                continue;
-            }
-
             if (lineHasResourceObject && resourceIndex < resourceLines.size())
             {
                 const ActiveResourceSourceLine& resourceLine = resourceLines.at(resourceIndex);
                 restoredLines.push_back(resourceLine.sourceTag);
                 skipNextPaddingLineAfterResource = !resourceLine.hasBlankAfter;
-                frameTextAfterResourceIndex = resourceIndex;
-                skippedFrameTextForCurrentResource = false;
                 ++resourceIndex;
                 continue;
             }

@@ -522,23 +522,23 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-figma-node-id=\"292:50\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-type-label=\"Image\"")));
-    QVERIFY(editorDocumentText.contains(
-        QStringLiteral("data-resource-file-name=\"%1\"").arg(
-            QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName())));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"structured-frame\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-type-label")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-file-name")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"image-only-frame\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-preview=\"structured-frame\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-preview=\"single-object-raster\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceHeader")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceToolbar")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-more")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-type\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-file-name\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral(">Image<")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral(">...<")));
-    QVERIFY(editorDocumentText.contains(
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("resourceHeader")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("resourceToolbar")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-more")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-type\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("data-display-role=\"resource-file-name\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral(">Image<")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral(">...<")));
+    QVERIFY(!editorDocumentText.contains(
         QStringLiteral(">%1<").arg(QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName())));
+    QVERIFY(!editorDocumentText.contains(QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
@@ -617,14 +617,15 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsBackspacedReso
 
     const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
     QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-frame")));
-    QVERIFY(mountedEditorSource.contains(QStringLiteral("data-resource-file-name=\"capture.wsresource\"")));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("data-resource-file-name")));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("capture.wsresource")));
 
     QTextDocument mountedEditorDocument;
     mountedEditorDocument.setHtml(mountedEditorSource);
     const QString mountedPlainText = mountedEditorDocument.toPlainText();
     QVERIFY(mountedPlainText.contains(QChar::ObjectReplacementCharacter));
-    QVERIFY(mountedPlainText.contains(QStringLiteral("Image")));
-    QVERIFY(mountedPlainText.contains(QStringLiteral("capture.wsresource")));
+    QVERIFY(!mountedPlainText.contains(QStringLiteral("Image")));
+    QVERIFY(!mountedPlainText.contains(QStringLiteral("capture.wsresource")));
 
     QString editorTextAfterSingleObjectDeletion = mountedPlainText;
     editorTextAfterSingleObjectDeletion.remove(QChar::ObjectReplacementCharacter);

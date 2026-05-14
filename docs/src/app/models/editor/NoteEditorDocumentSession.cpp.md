@@ -46,9 +46,8 @@ Implements the active note editor document session.
   replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
   resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
   round-trips.
-- If Backspace/Delete removes the rich-text object but leaves resource-frame chrome text such as the type label, menu
-  dots, or file name, `persistEditorFile(...)` treats that chrome as the residue of one deleted resource component and
-  removes it instead of saving it as ordinary note text.
+- If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
+  header/footer chrome cleanup path is kept in the current image-only frame contract.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
@@ -73,10 +72,9 @@ Implements the active note editor document session.
   `component/ResourceImageFrame`을 통해 Figma `292:50` 형태의 `whatson-resource-frame`으로 렌더링되고, 이미지 package
   asset을 active note/hub 기준으로 찾을 수 있으면 `file://` 이미지로 표시된다. 저장 시에는
   `whatson-resource-source` marker가 다시 canonical `<resource ... />` source tag로 복구된다. Qt RichText 직렬화가
-  marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과
-  `ResourceFrame::renderedTextLines(...)`를 기준으로 이미지 object placeholder를 다시 `<resource ... />`로 복원한다.
-  반대로 Backspace/Delete 뒤 이미지 object는 사라지고 frame chrome 텍스트만 남은 경우에는 그 chrome을 일반 본문
-  텍스트로 저장하지 않고 삭제된 resource component의 잔여물로 제거한다.
+  marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
+  placeholder를 기준으로 `<resource ... />`를 복원한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는
+  resource frame이 삭제된 것으로 본다.
 - editor viewport 폭이 바뀌면 `reprojectResourceFramesForEditorWidth(...)`가 현재 editor HTML을 source로 복원하고,
   resource frame이 있는 경우에만 새 폭으로 frame preview를 다시 만든다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로

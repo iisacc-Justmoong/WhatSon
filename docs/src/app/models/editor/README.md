@@ -48,10 +48,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
   not let the LVRS rendered wrap-line count create additional gutter rows.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
-  image-resource chrome as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
-  from the current editor viewport width, fixed Figma chrome metrics for the header/footer text and more affordance,
-  display-only native text labels for type/file-name, and legacy rendered text lines that persistence may ignore when
-  older rich frame residue is serialized back into plain text.
+  image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
+  from the current editor viewport width, and an image-only visible rendering surface inside the frame container. It does
+  not emit type/file-name display metadata or visible header/footer chrome.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -59,7 +58,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
 - Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `Break`
-  standalone source projection, `ResourceImageFrame` Figma chrome rendering, `SetProperty`
+  standalone source projection, `ResourceImageFrame` image-only container rendering, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, editor format-tag insertion, unsupported input rejection, and `.wsnbody`
   reserialization.
@@ -87,9 +86,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   위치만 제공할 수 있다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
-  상단 resource type, 더보기 `...`, 하단 resource file name은 입력란이 아닌 native editor text 표시란이다.
-  이미지 media bitmap의 intrinsic width는 현재 editor viewport 폭을 따르고, chrome은 Figma 480px design baseline,
-  24px header, 19px toolbar, 11px label text를 고정 metric으로 사용한다.
-  Qt RichText 저장 왕복에서 이전 frame chrome 텍스트가 source에 섞이지 않도록 legacy 복원용 텍스트 목록도 함께
-  제공한다.
+  frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media bitmap의 intrinsic width는 현재 editor
+  viewport 폭을 따른다. resource type, `...`, file name 표시 정보는 HTML에도 내보내지 않으며, 표시용
+  header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

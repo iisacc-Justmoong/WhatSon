@@ -215,10 +215,8 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversRenderedResourceFram
     const QString renderedEditorHtml = QStringLiteral(
                                            "<p>Alpha</p>"
                                            "<!--whatson-resource-source:%1-->"
-                                           "<table class=\"whatson-resource-frame\" data-resource-preview=\"structured-frame\">"
-                                           "<tr><td data-display-role=\"resource-type\">Image</td><td>...</td></tr>"
-                                           "<tr><td colspan=\"2\"><img class=\"whatson-resource-media\" src=\"data:image/png;base64,ZmFrZQ==\" /></td></tr>"
-                                           "<tr><td colspan=\"2\" data-display-role=\"resource-file-name\">capture.wsresource</td></tr>"
+                                           "<table class=\"whatson-resource-frame\" data-resource-preview=\"image-only-frame\">"
+                                           "<tr><td><img class=\"whatson-resource-media\" src=\"data:image/png;base64,ZmFrZQ==\" /></td></tr>"
                                            "</table>"
                                            "<!--/whatson-resource-source-->"
                                            "<p>Beta</p>")

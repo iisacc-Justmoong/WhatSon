@@ -12,7 +12,7 @@ Declares the active note editor document session object.
   editor HTML or after synced editor HTML is converted back to source; QML uses this value as the gutter delegate
   count instead of LVRS rendered wrap-line count.
 - Exposes `editorViewportWidth`, which QML binds from the public LVRS editor item width so image resource frames can
-  render editor-width media while keeping header/footer text as native editor text.
+  render editor-width media inside the resource-frame container.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Provides `persistEditorFile(path)` for the LVRS `syncFinished` hook.

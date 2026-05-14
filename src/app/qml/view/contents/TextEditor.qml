@@ -205,76 +205,12 @@ LV.TextEditor {
         return lineRecords;
     }
 
-    function lineContainsResourceObject(lineText) {
-        return String(lineText).indexOf(textEditor.editorResourceObjectReplacementText) >= 0;
-    }
-
-    function lineLooksLikeResourceFrameHeader(lineText) {
-        const trimmedLine = String(lineText).replace(/\u00a0/g, " ").trim();
-        if (trimmedLine.length <= 0)
-            return false;
-
-        const normalizedLine = trimmedLine.toLowerCase();
-        if (normalizedLine === "image"
-                || normalizedLine === "video"
-                || normalizedLine === "document"
-                || normalizedLine === "model"
-                || normalizedLine === "link"
-                || normalizedLine === "audio"
-                || normalizedLine === "archive"
-                || normalizedLine === "resource")
-            return true;
-
-        return trimmedLine === "..."
-                || normalizedLine.endsWith(" ...")
-                || normalizedLine.endsWith("...");
-    }
-
-    function lineLooksLikeResourceFrameFileName(lineText) {
-        const normalizedLine = String(lineText).replace(/\u00a0/g, " ").trim().toLowerCase();
-        return normalizedLine.endsWith(".wsresource")
-                || normalizedLine.indexOf(".wsresource ") >= 0;
-    }
-
-    function resourceFrameSpanLengthAt(lineRecords, lineIndex) {
-        if (!lineRecords
-                || lineIndex < 0
-                || lineIndex >= lineRecords.length)
-            return 0;
-
-        let objectLineIndex = -1;
-        const maximumHeaderLookahead = Math.min(lineRecords.length - 1, lineIndex + 3);
-        for (let candidateIndex = lineIndex; candidateIndex <= maximumHeaderLookahead; ++candidateIndex) {
-            const candidateLine = lineRecords[candidateIndex].text;
-            if (textEditor.lineContainsResourceObject(candidateLine)) {
-                objectLineIndex = candidateIndex;
-                break;
-            }
-
-            if (!textEditor.lineLooksLikeResourceFrameHeader(candidateLine))
-                return 0;
-        }
-
-        if (objectLineIndex < 0)
-            return 0;
-
-        let frameEndIndex = objectLineIndex;
-        while (frameEndIndex + 1 < lineRecords.length
-               && textEditor.lineLooksLikeResourceFrameFileName(lineRecords[frameEndIndex + 1].text))
-            ++frameEndIndex;
-
-        return frameEndIndex - lineIndex + 1;
-    }
-
     function sourceAlignedLineStartPositions() {
         const lineRecords = textEditor.editorPlainTextLineRecords();
         const lineStartPositions = [];
 
-        for (let lineIndex = 0; lineIndex < lineRecords.length;) {
+        for (let lineIndex = 0; lineIndex < lineRecords.length; ++lineIndex)
             lineStartPositions.push(lineRecords[lineIndex].start);
-            const resourceFrameSpanLength = textEditor.resourceFrameSpanLengthAt(lineRecords, lineIndex);
-            lineIndex += Math.max(1, resourceFrameSpanLength);
-        }
 
         if (lineStartPositions.length <= 0)
             lineStartPositions.push(0);
