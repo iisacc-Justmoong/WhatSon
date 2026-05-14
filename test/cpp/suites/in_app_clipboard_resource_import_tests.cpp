@@ -400,7 +400,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-file-name=\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
-    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
@@ -482,7 +482,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
         importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
-    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"352\"")));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height:auto")));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));

@@ -41,7 +41,7 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     QVERIFY(!html.contains(QStringLiteral("whatson-resource-filename-display")));
     QVERIFY(!html.contains(QStringLiteral("data-display-role=\"resource-type\"")));
     QVERIFY(!html.contains(QStringLiteral("data-display-role=\"resource-file-name\"")));
-    QVERIFY(!html.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!html.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!html.contains(QStringLiteral("colspan")));
     QVERIFY(!html.contains(QStringLiteral(">Image<")));
     QVERIFY(!html.contains(QStringLiteral(">capture.wsresource<")));
@@ -53,9 +53,16 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     QVERIFY(html.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(html.contains(QStringLiteral("data-source-width=\"1600\"")));
     QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
-    QVERIFY(html.contains(QStringLiteral("data-display-width=\"1600\"")));
-    QVERIFY(html.contains(QStringLiteral("data-display-height=\"900\"")));
-    QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"940\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-width=\"480\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-height=\"270\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"313\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-chrome-width=\"480\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-header-height=\"24\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-toolbar-height=\"19\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-text-pixel-size=\"11\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-text-line-height=\"11\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-more-icon-size=\"16\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-more-dot-size=\"2\"")));
     QVERIFY(html.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
     QVERIFY(html.contains(QStringLiteral("max-height:100%")));
     QVERIFY(!html.contains(QStringLiteral("<input")));
@@ -63,6 +70,15 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     QVERIFY(!html.contains(QStringLiteral("contenteditable")));
     QVERIFY(!html.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!html.contains(QStringLiteral("cellpadding=\"6\"")));
+
+    const QRegularExpression imageSourceExpression(QStringLiteral("src=\"([^\"]+)\""));
+    const QRegularExpressionMatch imageSourceMatch = imageSourceExpression.match(html);
+    QVERIFY(imageSourceMatch.hasMatch());
+    const QString previewPath = QUrl(imageSourceMatch.captured(1)).toLocalFile();
+    QVERIFY2(!previewPath.isEmpty(), qPrintable(imageSourceMatch.captured(1)));
+    const QImage previewImage(previewPath);
+    QVERIFY(!previewImage.isNull());
+    QCOMPARE(previewImage.size(), QSize(480, 313));
 
     QTextDocument richTextDocument;
     richTextDocument.setHtml(html);

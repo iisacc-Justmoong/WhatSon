@@ -535,7 +535,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
-    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));

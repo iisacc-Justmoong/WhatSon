@@ -16,12 +16,18 @@
 
 namespace
 {
-    constexpr int kFrameHeaderHeight = 20;
-    constexpr int kFrameToolbarHeight = 20;
+    constexpr int kFigmaFrameWidth = 480;
+    constexpr int kFrameHeaderHeight = 24;
+    constexpr int kFrameToolbarHeight = 19;
     constexpr int kFrameHorizontalPadding = 8;
     constexpr int kFrameRadius = 12;
-    constexpr int kMinimumPreviewWidth = 320;
-    constexpr int kMaximumPreviewWidth = 1600;
+    constexpr int kFrameTextPixelSize = 11;
+    constexpr int kFrameTextLineHeight = 11;
+    constexpr int kMoreIconSize = 16;
+    constexpr int kMoreDotSize = 2;
+    constexpr int kMoreFirstDotOffset = 2;
+    constexpr int kMoreDotStep = 5;
+    constexpr auto kFrameRenderVersion = "figma-292-50-fixed-chrome-v1";
 
     QString htmlAttribute(QString value)
     {
@@ -111,42 +117,64 @@ namespace
             : fallbackMediaDisplaySize();
     }
 
+    QSize mediaRasterSizeForSource(const QSize& sourceSize)
+    {
+        const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
+        const qreal mediaScale =
+            displaySize.width() > 0
+            ? static_cast<qreal>(kFigmaFrameWidth) / static_cast<qreal>(displaySize.width())
+            : 1.0;
+        return QSize(
+            kFigmaFrameWidth,
+            qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
+    }
+
     int frameDisplayHeightForSource(const QSize& sourceSize)
     {
-        return mediaDisplaySizeForSource(sourceSize).height() + kFrameHeaderHeight + kFrameToolbarHeight;
+        return mediaRasterSizeForSource(sourceSize).height() + kFrameHeaderHeight + kFrameToolbarHeight;
     }
 
     QSize frameRasterSizeForSource(const QSize& sourceSize)
     {
-        const QSize mediaDisplaySize = mediaDisplaySizeForSource(sourceSize);
-        const int rasterWidth =
-            qBound(kMinimumPreviewWidth, mediaDisplaySize.width(), kMaximumPreviewWidth);
-        const qreal scale =
-            mediaDisplaySize.width() > 0
-            ? static_cast<qreal>(rasterWidth) / static_cast<qreal>(mediaDisplaySize.width())
-            : 1.0;
-        const int rasterMediaHeight = qMax(1, qRound(static_cast<qreal>(mediaDisplaySize.height()) * scale));
-        return QSize(rasterWidth, rasterMediaHeight + kFrameHeaderHeight + kFrameToolbarHeight);
+        return QSize(kFigmaFrameWidth, frameDisplayHeightForSource(sourceSize));
     }
 
-    QString sourceSizeAttributes(const QSize& sourceSize)
+    QString frameMetricAttributes(const QSize& sourceSize)
     {
+        QString attributes = QStringLiteral(
+                                 " data-frame-chrome-width=\"%1\""
+                                 " data-frame-header-height=\"%2\""
+                                 " data-frame-toolbar-height=\"%3\""
+                                 " data-frame-text-pixel-size=\"%4\""
+                                 " data-frame-text-line-height=\"%5\""
+                                 " data-frame-more-icon-size=\"%6\""
+                                 " data-frame-more-dot-size=\"%7\"")
+            .arg(
+                QString::number(kFigmaFrameWidth),
+                QString::number(kFrameHeaderHeight),
+                QString::number(kFrameToolbarHeight),
+                QString::number(kFrameTextPixelSize),
+                QString::number(kFrameTextLineHeight),
+                QString::number(kMoreIconSize),
+                QString::number(kMoreDotSize));
+
         if (!sourceSize.isValid() || sourceSize.isEmpty())
         {
-            return {};
+            return attributes;
         }
 
-        const QSize displaySize = WhatSon::EditorComponent::ResourceFrame::imageDisplaySize(sourceSize);
-        return QStringLiteral(
-                   " data-source-width=\"%1\" data-source-height=\"%2\""
-                   " data-display-width=\"%3\" data-display-height=\"%4\""
-                   " data-frame-display-height=\"%5\"")
+        const QSize displaySize = mediaRasterSizeForSource(sourceSize);
+        attributes += QStringLiteral(
+                          " data-source-width=\"%1\" data-source-height=\"%2\""
+                          " data-display-width=\"%3\" data-display-height=\"%4\""
+                          " data-frame-display-height=\"%5\"")
             .arg(
                 QString::number(sourceSize.width()),
                 QString::number(sourceSize.height()),
                 QString::number(displaySize.width()),
                 QString::number(displaySize.height()),
                 QString::number(frameDisplayHeightForSource(sourceSize)));
+        return attributes;
     }
 
     QImage readSourceImage(const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor)
@@ -199,6 +227,23 @@ namespace
         painter->drawText(rect, alignment, elidedText);
     }
 
+    void paintMoreIcon(QPainter* painter, const QRect& rect)
+    {
+        if (painter == nullptr)
+        {
+            return;
+        }
+
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(QStringLiteral("#CED0D6")));
+        const int dotY = rect.y() + ((rect.height() - kMoreDotSize) / 2);
+        for (int dotIndex = 0; dotIndex < 3; ++dotIndex)
+        {
+            const int dotX = rect.x() + kMoreFirstDotOffset + (dotIndex * kMoreDotStep);
+            painter->drawEllipse(QRect(dotX, dotY, kMoreDotSize, kMoreDotSize));
+        }
+    }
+
     QImage renderFramePreviewImage(
         const WhatSon::EditorComponent::ResourceFrameDescriptor& descriptor,
         const QSize& sourceSize,
@@ -219,8 +264,7 @@ namespace
 
         const QColor backgroundColor(QStringLiteral("#1E1F20"));
         const QColor strokeColor(QStringLiteral("#2C2E2F"));
-        const QColor secondaryTextColor(QStringLiteral("#7F7F7F"));
-        const QColor primaryTextColor(QStringLiteral("#CED0D6"));
+        const QColor captionTextColor(255, 255, 255, 128);
 
         const QRectF frameRect(0.5, 0.5, frame.width() - 1.0, frame.height() - 1.0);
         painter.setPen(QPen(strokeColor, 1));
@@ -236,21 +280,24 @@ namespace
             frame.height() - kFrameToolbarHeight);
 
         QFont textFont(QStringLiteral("Pretendard"));
-        textFont.setPixelSize(11);
+        textFont.setPixelSize(kFrameTextPixelSize);
         textFont.setWeight(QFont::Normal);
         painter.setFont(textFont);
-        painter.setPen(secondaryTextColor);
+        painter.setPen(captionTextColor);
 
         const QRect headerTextRect(
             kFrameHorizontalPadding,
             0,
-            frame.width() - (kFrameHorizontalPadding * 2) - 24,
+            frame.width() - (kFrameHorizontalPadding * 2) - kMoreIconSize,
             kFrameHeaderHeight);
         paintFrameText(&painter, headerTextRect, typeLabel);
 
-        painter.setPen(primaryTextColor);
-        const QRect moreRect(frame.width() - 24, 0, 16, kFrameHeaderHeight);
-        painter.drawText(moreRect, Qt::AlignCenter, QStringLiteral("..."));
+        const QRect moreRect(
+            frame.width() - kFrameHorizontalPadding - kMoreIconSize,
+            (kFrameHeaderHeight - kMoreIconSize) / 2,
+            kMoreIconSize,
+            kMoreIconSize);
+        paintMoreIcon(&painter, moreRect);
 
         const QRect mediaRect(
             1,
@@ -273,7 +320,7 @@ namespace
             }
         }
 
-        painter.setPen(secondaryTextColor);
+        painter.setPen(captionTextColor);
         const QRect toolbarTextRect(
             kFrameHorizontalPadding,
             frame.height() - kFrameToolbarHeight,
@@ -312,6 +359,20 @@ namespace
         }
 
         QByteArray key;
+        key += kFrameRenderVersion;
+        key += '\0';
+        key += QByteArray::number(kFigmaFrameWidth);
+        key += 'x';
+        key += QByteArray::number(kFrameHeaderHeight);
+        key += 'x';
+        key += QByteArray::number(kFrameToolbarHeight);
+        key += 'x';
+        key += QByteArray::number(kFrameTextPixelSize);
+        key += 'x';
+        key += QByteArray::number(kMoreIconSize);
+        key += 'x';
+        key += QByteArray::number(kMoreDotSize);
+        key += '\0';
         key += descriptor.sourceTag.toUtf8();
         key += '\0';
         key += descriptor.resourcePath.toUtf8();
@@ -423,7 +484,7 @@ namespace WhatSon::EditorComponent
                 htmlAttribute(previewImageUrl),
                 htmlAttribute(typeLabel),
                 htmlAttribute(fileName),
-                sourceSizeAttributes(sourceImageSize));
+                frameMetricAttributes(sourceImageSize));
         html += QStringLiteral("<!--/whatson-resource-source-->");
         return html;
     }
