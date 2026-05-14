@@ -123,6 +123,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("property var inAppClipboard: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var clipboardEditorPaste: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var noteEditorSession: null")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"editorViewportWidth\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("target: textEditor.noteEditorSession")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("Math.round(textEditor.editorViewportWidth)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorResourceFrameViewportWidth()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("reprojectResourceFramesForEditorWidth(")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function refreshClipboardEditorPasteOwner()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("attachEditorPasteOwner(")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));

@@ -8,7 +8,7 @@ Implements the editor image resource-frame HTML renderer.
 
 - Figma file: `fQUfzeMDED9JWvh4saYiVT`
 - Node: `292:50`
-- Shape: editor-width image resource frame with a 480px Figma logical chrome width, 12px radius, `#2C2E2F`
+- Shape: editor-width image resource frame with a 480px Figma design baseline, 12px radius, `#2C2E2F`
   stroke, 24px top `resourceHeader`, an auto-height media area, and 19px bottom `resourceToolbar`.
 - Fixed Figma text metrics: Pretendard Regular 11px, 11px line height, 0 letter spacing, 8px horizontal
   padding, 4px vertical padding. The `more` affordance is a 16px icon made from three 2px `#CED0D6` dots.
@@ -25,10 +25,11 @@ Implements the editor image resource-frame HTML renderer.
 - `imageDisplaySize(...)` preserves the source image ratio until the derived height would exceed the width; taller
   images are capped to a square 1:1 display box. The emitted HTML carries `data-max-width-height-ratio="1:1"` and
   source/display dimensions so the editor session can preserve that contract across rich-text round-trips.
-- The preview bitmap is generated in the application cache under `resource-frames/` and uses the Figma 480px logical
-  chrome width instead of the source image width. This keeps the header/footer labels and `more` dots from shrinking
-  when a high-resolution clipboard screenshot is rendered at editor width. The editor HTML carries source/display
-  metadata, but the actual editable surface remains a single image object.
+- The preview bitmap is generated in the application cache under `resource-frames/` and uses the current editor
+  viewport width supplied by `NoteEditorDocumentSession`, while still carrying the Figma 480px design baseline as
+  metadata. This makes the single image object fill the editor width in Qt rich text even where percentage image widths
+  are not honored, while the header/footer labels and `more` dots remain painted at fixed 11px/2px metrics instead of
+  being scaled down from the source image size.
 - The cache key includes the resource-frame render version and fixed chrome metrics so old generated previews do not
   survive metric changes.
 - The HTML keeps an `object-fit:contain` style marker for the design contract even though Qt rich text support for CSS
@@ -49,9 +50,9 @@ Implements the editor image resource-frame HTML renderer.
 
 - 이 구현은 Figma `292:50`의 이미지 resource frame 구조를 Qt rich text HTML로 변환한다. 실제 HTML에는
   `whatson-resource-frame` class를 가진 `<img>` 하나만 노출하고, frame chrome은 캐시 PNG로 그린다.
-- frame chrome은 원본 이미지 폭이 아니라 Figma 480px 논리 폭 기준으로 그린다. 상단은 24px, 하단은 19px이며,
-  type/file name 텍스트는 Pretendard Regular 11px/line-height 11px 고정값을 사용한다. 더보기 표시는 16px 영역
-  안의 2px 점 세 개로 그린다.
+- frame chrome은 원본 이미지 폭이 아니라 현재 editor viewport 폭으로 그리며, Figma 480px 기준은 design baseline
+  metadata로만 남긴다. 상단은 24px, 하단은 19px이며, type/file name 텍스트는 Pretendard Regular
+  11px/line-height 11px 고정값을 사용한다. 더보기 표시는 16px 영역 안의 2px 점 세 개로 그린다.
 - resource frame은 synthetic outer block을 사용하지 않는다. 별도 outer block은 Qt rich text 흐름 높이를
   흐트러뜨릴 수 있으므로 사용하지 않는다.
 - 상단과 하단의 텍스트는 입력란이 아니라 표시란이다. 상단은 resource type, 하단은 resource file name을 표시한다.

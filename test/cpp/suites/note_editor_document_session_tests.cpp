@@ -498,6 +498,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
 
     NoteEditorDocumentSession session;
     session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
 
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-frame-note"), noteDirectoryPath));
@@ -535,6 +536,8 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-frame-render-width=\"960\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
@@ -547,6 +550,16 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("cellpadding=\"6\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
+
+    const QVariantMap reprojectedResult = session.reprojectResourceFramesForEditorWidth(editorDocumentText, 720);
+    QVERIFY(reprojectedResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(reprojectedResult.value(QStringLiteral("changed")).toBool());
+    const QString reprojectedEditorText = reprojectedResult.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("height:auto")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"720\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-render-width=\"720\"")));
+    QVERIFY(!reprojectedEditorText.contains(QStringLiteral(" width=\"720\"")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
             QStringLiteral("clipboard-frame-note"),

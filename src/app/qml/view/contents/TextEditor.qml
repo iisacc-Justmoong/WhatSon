@@ -478,6 +478,22 @@ LV.TextEditor {
         return true;
     }
 
+    function refreshEditorResourceFrameViewportWidth() {
+        if (!textEditor.noteEditorSession
+                || textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth === undefined)
+            return false;
+
+        const editorWidth = Math.max(1, Math.round(textEditor.editorViewportWidth));
+        const result = textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth(
+                    textEditor.editorDocumentText,
+                    editorWidth);
+        if (!result || !result.valid || !result.changed || result.editorDocumentText === undefined)
+            return false;
+
+        textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition);
+        return true;
+    }
+
     function pasteNativeClipboardText() {
         textEditor.forceEditorFocus();
         textEditor.paste();
@@ -656,7 +672,11 @@ LV.TextEditor {
 
     onInAppClipboardChanged: textEditor.refreshClipboardEditorPasteOwner()
     onClipboardEditorPasteChanged: textEditor.refreshClipboardEditorPasteOwner()
-    onNoteEditorSessionChanged: textEditor.refreshClipboardEditorPasteOwner()
+    onNoteEditorSessionChanged: {
+        textEditor.refreshClipboardEditorPasteOwner();
+        Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth);
+    }
+    onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()
 
     Component.onCompleted: {
         textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
@@ -678,6 +698,7 @@ LV.TextEditor {
         textEditor.bumpEditorLineMetricsRevision();
     }
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
+    onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)
 
     LV.EventListener {
         enabled: LV.Theme.mobileTarget && !textEditor.readOnly
@@ -709,6 +730,15 @@ LV.TextEditor {
         restoreMode: Binding.RestoreBindingOrValue
         target: textEditor.editorItem
         value: textEditor.editorPaddedEditorItemHeight
+    }
+
+    Binding {
+        property: "editorViewportWidth"
+        restoreMode: Binding.RestoreBindingOrValue
+        target: textEditor.noteEditorSession
+        value: Math.round(textEditor.editorViewportWidth)
+        when: textEditor.noteEditorSession
+              && textEditor.noteEditorSession.editorViewportWidth !== undefined
     }
 
     MouseArea {

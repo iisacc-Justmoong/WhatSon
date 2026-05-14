@@ -11,8 +11,8 @@ Implements the active note editor document session.
 3. The source is projected into editor HTML and written to a cache/session `.wsnsource` file so LVRS
    `TextEditor` receives explicit rich-text line breaks.
 4. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
-   and uses that value as the gutter delegate count. The sibling editor supplies only rendered start positions for
-   those parsed source lines.
+   binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
+   count. The sibling editor supplies only rendered start positions for those parsed source lines.
 5. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
    HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
    so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
@@ -39,6 +39,9 @@ Implements the active note editor document session.
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context
   render as `<img src="file://...">` inside the Figma `292:50` resource frame; unresolved or non-image resources still
   render as a visible resource frame with the stored resource reference.
+- Resource frame projection uses `editorViewportWidth` from QML as the preview bitmap's intrinsic width, while preserving
+  `width="100%"` and `height:auto` in the emitted HTML. `reprojectResourceFramesForEditorWidth(...)` can re-render the
+  current editor document when the editor viewport width changes.
 - When Qt serializes the rich editor document and strips those HTML markers, image frames remain as rich-text object
   replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
   resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
@@ -62,6 +65,8 @@ Implements the active note editor document session.
   session file로 투영하고, LVRS 저장 이벤트는 다시 canonical source로 복원해 `.wsnbody` 직렬화 경로로 연결한다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
+- QML은 공개 LVRS editor item 폭을 `editorViewportWidth`로 전달한다. 이 값은 resource frame preview bitmap의
+  intrinsic width가 되어 Qt rich text에서 프레임이 editor 폭을 채우도록 만든다.
 - clipboard resource paste는 `InAppClipboardManager`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
   `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 본문 RAW source에 `<resource ... />` 참조를
   삽입하고 editor HTML projection을 반환한다. standalone resource source line은 editor HTML에서
@@ -72,6 +77,8 @@ Implements the active note editor document session.
   `ResourceFrame::renderedTextLines(...)`를 기준으로 이미지 object placeholder를 다시 `<resource ... />`로 복원한다.
   반대로 Backspace/Delete 뒤 이미지 object는 사라지고 frame chrome 텍스트만 남은 경우에는 그 chrome을 일반 본문
   텍스트로 저장하지 않고 삭제된 resource component의 잔여물로 제거한다.
+- editor viewport 폭이 바뀌면 `reprojectResourceFramesForEditorWidth(...)`가 현재 editor HTML을 source로 복원하고,
+  resource frame이 있는 경우에만 새 폭으로 frame preview를 다시 만든다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
   mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline

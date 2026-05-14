@@ -49,9 +49,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   not let the LVRS rendered wrap-line count create additional gutter rows.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource chrome as a cached single-image-object preview, marker-wrapped source recovery, editor-width
-  responsive frame sizing, fixed 480px Figma chrome metrics for the header/footer text and more dots, display-only
-  type/file-name labels, and legacy rendered text lines that persistence may ignore when older rich frame residue is
-  serialized back into plain text.
+  responsive frame sizing from the current editor viewport width, fixed Figma chrome metrics for the header/footer text
+  and more dots, display-only type/file-name labels, and legacy rendered text lines that persistence may ignore when
+  older rich frame residue is serialized back into plain text.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -88,8 +88,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 단일 image object이며 editor width 100%를 채운다.
   상단 resource type과 하단 resource file name은 입력란이 아닌 표시란이고 cached preview bitmap 안에 그려진다.
-  이 chrome은 Figma 480px 논리 폭, 24px header, 19px toolbar, 11px label text, 16px more icon/2px dots를
-  고정 metric으로 사용한다.
+  preview bitmap의 intrinsic width는 현재 editor viewport 폭을 따르고, chrome은 Figma 480px design baseline,
+  24px header, 19px toolbar, 11px label text, 16px more icon/2px dots를 고정 metric으로 사용한다.
   Qt RichText 저장 왕복에서 이전 frame chrome 텍스트가 source에 섞이지 않도록 legacy 복원용 텍스트 목록도 함께
   제공한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

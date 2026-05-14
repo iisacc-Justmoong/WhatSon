@@ -11,12 +11,16 @@ Declares the active note editor document session object.
 - Exposes `parsedLineCount` as canonical RAW source line metadata. The value is derived before source is projected into
   editor HTML or after synced editor HTML is converted back to source; QML uses this value as the gutter delegate
   count instead of LVRS rendered wrap-line count.
+- Exposes `editorViewportWidth`, which QML binds from the public LVRS editor item width so image resource frames can
+  render a single intrinsic-width object that visually fills the editor.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Provides `persistEditorFile(path)` for the LVRS `syncFinished` hook.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
   `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, and returns
   an editor HTML projection for the live LVRS surface.
+- Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
+  and re-renders only resource frames for a changed editor viewport width.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
@@ -42,10 +46,14 @@ Declares the active note editor document session object.
 - `editorFilePath`는 `.wsnbody` 원문이 아니라 editor HTML session file이어야 한다.
 - `parsedLineCount`는 canonical RAW source line metadata이며 QML이 직접 파일을 읽거나 파싱하지 않게 한다.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
+- `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 단일 image
+  object가 editor 폭을 채우도록 C++ 렌더러에 전달된다.
 - LVRS가 session file 저장을 끝내면 `persistEditorFile(...)`이 다시 `.wsnbody` 저장 경로로 넘긴다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
   canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입한다. clipboard MIME 판별과 package
   persistence는 이 세션의 책임이 아니다.
+- `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame이
+  있을 때만 새 viewport 폭으로 다시 렌더한다.
 - `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리

@@ -27,7 +27,7 @@ namespace
     constexpr int kMoreDotSize = 2;
     constexpr int kMoreFirstDotOffset = 2;
     constexpr int kMoreDotStep = 5;
-    constexpr auto kFrameRenderVersion = "figma-292-50-fixed-chrome-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-editor-width-chrome-v1";
 
     QString htmlAttribute(QString value)
     {
@@ -117,40 +117,49 @@ namespace
             : fallbackMediaDisplaySize();
     }
 
-    QSize mediaRasterSizeForSource(const QSize& sourceSize)
+    int frameRenderWidthForViewport(const int editorViewportWidth)
+    {
+        return editorViewportWidth > 0 ? qMax(1, editorViewportWidth) : kFigmaFrameWidth;
+    }
+
+    QSize mediaRasterSizeForSource(const QSize& sourceSize, const int frameRenderWidth)
     {
         const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
         const qreal mediaScale =
             displaySize.width() > 0
-            ? static_cast<qreal>(kFigmaFrameWidth) / static_cast<qreal>(displaySize.width())
+            ? static_cast<qreal>(frameRenderWidth) / static_cast<qreal>(displaySize.width())
             : 1.0;
         return QSize(
-            kFigmaFrameWidth,
+            frameRenderWidth,
             qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
     }
 
-    int frameDisplayHeightForSource(const QSize& sourceSize)
+    int frameDisplayHeightForSource(const QSize& sourceSize, const int frameRenderWidth)
     {
-        return mediaRasterSizeForSource(sourceSize).height() + kFrameHeaderHeight + kFrameToolbarHeight;
+        return mediaRasterSizeForSource(sourceSize, frameRenderWidth).height()
+            + kFrameHeaderHeight
+            + kFrameToolbarHeight;
     }
 
-    QSize frameRasterSizeForSource(const QSize& sourceSize)
+    QSize frameRasterSizeForSource(const QSize& sourceSize, const int frameRenderWidth)
     {
-        return QSize(kFigmaFrameWidth, frameDisplayHeightForSource(sourceSize));
+        return QSize(frameRenderWidth, frameDisplayHeightForSource(sourceSize, frameRenderWidth));
     }
 
-    QString frameMetricAttributes(const QSize& sourceSize)
+    QString frameMetricAttributes(const QSize& sourceSize, const int frameRenderWidth)
     {
         QString attributes = QStringLiteral(
-                                 " data-frame-chrome-width=\"%1\""
-                                 " data-frame-header-height=\"%2\""
-                                 " data-frame-toolbar-height=\"%3\""
-                                 " data-frame-text-pixel-size=\"%4\""
-                                 " data-frame-text-line-height=\"%5\""
-                                 " data-frame-more-icon-size=\"%6\""
-                                 " data-frame-more-dot-size=\"%7\"")
+                                 " data-frame-design-width=\"%1\""
+                                 " data-frame-render-width=\"%2\""
+                                 " data-frame-header-height=\"%3\""
+                                 " data-frame-toolbar-height=\"%4\""
+                                 " data-frame-text-pixel-size=\"%5\""
+                                 " data-frame-text-line-height=\"%6\""
+                                 " data-frame-more-icon-size=\"%7\""
+                                 " data-frame-more-dot-size=\"%8\"")
             .arg(
                 QString::number(kFigmaFrameWidth),
+                QString::number(frameRenderWidth),
                 QString::number(kFrameHeaderHeight),
                 QString::number(kFrameToolbarHeight),
                 QString::number(kFrameTextPixelSize),
@@ -163,7 +172,7 @@ namespace
             return attributes;
         }
 
-        const QSize displaySize = mediaRasterSizeForSource(sourceSize);
+        const QSize displaySize = mediaRasterSizeForSource(sourceSize, frameRenderWidth);
         attributes += QStringLiteral(
                           " data-source-width=\"%1\" data-source-height=\"%2\""
                           " data-display-width=\"%3\" data-display-height=\"%4\""
@@ -173,7 +182,7 @@ namespace
                 QString::number(sourceSize.height()),
                 QString::number(displaySize.width()),
                 QString::number(displaySize.height()),
-                QString::number(frameDisplayHeightForSource(sourceSize)));
+                QString::number(frameDisplayHeightForSource(sourceSize, frameRenderWidth)));
         return attributes;
     }
 
@@ -250,7 +259,8 @@ namespace
         const QString& typeLabel,
         const QString& fileName)
     {
-        const QSize frameSize = frameRasterSizeForSource(sourceSize);
+        const int frameRenderWidth = frameRenderWidthForViewport(descriptor.editorViewportWidth);
+        const QSize frameSize = frameRasterSizeForSource(sourceSize, frameRenderWidth);
         if (!frameSize.isValid() || frameSize.isEmpty())
         {
             return {};
@@ -360,6 +370,8 @@ namespace
 
         QByteArray key;
         key += kFrameRenderVersion;
+        key += '\0';
+        key += QByteArray::number(frameRenderWidthForViewport(descriptor.editorViewportWidth));
         key += '\0';
         key += QByteArray::number(kFigmaFrameWidth);
         key += 'x';
@@ -484,7 +496,9 @@ namespace WhatSon::EditorComponent
                 htmlAttribute(previewImageUrl),
                 htmlAttribute(typeLabel),
                 htmlAttribute(fileName),
-                frameMetricAttributes(sourceImageSize));
+                frameMetricAttributes(
+                    sourceImageSize,
+                    frameRenderWidthForViewport(descriptor.editorViewportWidth)));
         html += QStringLiteral("<!--/whatson-resource-source-->");
         return html;
     }

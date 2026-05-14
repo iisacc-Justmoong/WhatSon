@@ -509,7 +509,8 @@ namespace
 
     WhatSon::EditorComponent::ResourceFrameDescriptor resourceFrameDescriptorFromSourceTag(
         const QString& resourceTag,
-        const QString& noteDirectoryPath)
+        const QString& noteDirectoryPath,
+        const int editorViewportWidth)
     {
         const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
         const QVariantMap descriptor = resourceDescriptorFromSourceTag(canonicalTag);
@@ -523,10 +524,14 @@ namespace
         frameDescriptor.resolvedAssetPath = noteDirectoryPath.trimmed().isEmpty()
             ? QString()
             : resolvedResourceAssetPath(descriptor, noteDirectoryPath);
+        frameDescriptor.editorViewportWidth = editorViewportWidth;
         return frameDescriptor;
     }
 
-    QString resourceFrameHtml(const QString& resourceTag, const QString& noteDirectoryPath)
+    QString resourceFrameHtml(
+        const QString& resourceTag,
+        const QString& noteDirectoryPath,
+        const int editorViewportWidth)
     {
         const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
         if (canonicalTag.isEmpty())
@@ -535,13 +540,14 @@ namespace
         }
 
         return WhatSon::EditorComponent::ResourceFrame::renderHtml(
-            resourceFrameDescriptorFromSourceTag(canonicalTag, noteDirectoryPath));
+            resourceFrameDescriptorFromSourceTag(canonicalTag, noteDirectoryPath, editorViewportWidth));
     }
 
     QString editorHtmlFromBodySourceForNoteContext(
         const QString& noteId,
         const QString& bodySourceText,
-        const QString& noteDirectoryPath)
+        const QString& noteDirectoryPath,
+        const int editorViewportWidth)
     {
         const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
         const QStringList sourceLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
@@ -579,7 +585,7 @@ namespace
             }
 
             flushPendingSourceLines();
-            htmlLines.push_back(resourceFrameHtml(resourceLine, noteDirectoryPath));
+            htmlLines.push_back(resourceFrameHtml(resourceLine, noteDirectoryPath, editorViewportWidth));
         }
         flushPendingSourceLines();
         return htmlLines.join(QStringLiteral("<br/>"));
@@ -633,7 +639,7 @@ namespace
 
         const QStringList frameTextLines =
             WhatSon::EditorComponent::ResourceFrame::renderedTextLines(
-                resourceFrameDescriptorFromSourceTag(resourceTag, QString()));
+                resourceFrameDescriptorFromSourceTag(resourceTag, QString(), 0));
 
         for (const QString& frameTextLine : frameTextLines)
         {
@@ -922,6 +928,11 @@ int NoteEditorDocumentSession::parsedLineCount() const noexcept
     return m_parsedLineCount;
 }
 
+int NoteEditorDocumentSession::editorViewportWidth() const noexcept
+{
+    return m_editorViewportWidth;
+}
+
 bool NoteEditorDocumentSession::hasActiveNote() const noexcept
 {
     return !m_activeNoteId.trimmed().isEmpty();
@@ -945,6 +956,18 @@ QString NoteEditorDocumentSession::lastError() const
 void NoteEditorDocumentSession::setSessionRootPathForTests(const QString& sessionRootPath)
 {
     m_sessionRootPathForTests = normalizePath(sessionRootPath);
+}
+
+void NoteEditorDocumentSession::setEditorViewportWidth(const int editorViewportWidth)
+{
+    const int normalizedEditorViewportWidth = qMax(0, editorViewportWidth);
+    if (m_editorViewportWidth == normalizedEditorViewportWidth)
+    {
+        return;
+    }
+
+    m_editorViewportWidth = normalizedEditorViewportWidth;
+    emit editorViewportWidthChanged();
 }
 
 bool NoteEditorDocumentSession::openNoteForEditing(
@@ -1062,6 +1085,67 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
     return enqueued;
 }
 
+QVariantMap NoteEditorDocumentSession::reprojectResourceFramesForEditorWidth(
+    const QString& editorDocumentText,
+    const int editorViewportWidth)
+{
+    setEditorViewportWidth(editorViewportWidth);
+
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const bool hasResourceFrame =
+        editorDocumentText.contains(QStringLiteral("whatson-resource-frame"))
+        || sourceText.contains(QRegularExpression(QStringLiteral("<\\s*resource\\b")));
+    if (!hasResourceFrame)
+    {
+        QVariantMap result;
+        result.insert(QStringLiteral("valid"), true);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("bodySourceText"), sourceText);
+        result.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
+        result.insert(QStringLiteral("editorViewportWidth"), m_editorViewportWidth);
+        result.insert(QStringLiteral("errorMessage"), QString());
+        return result;
+    }
+
+    const QString reprojectedEditorDocumentText = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        sourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+    const bool changed = reprojectedEditorDocumentText != editorDocumentText;
+    QString errorMessage;
+    bool valid = true;
+
+    if (changed
+        && !m_editorFilePath.trimmed().isEmpty()
+        && !writeEditorSourceFile(m_editorFilePath, reprojectedEditorDocumentText, &errorMessage))
+    {
+        valid = false;
+        setLastError(errorMessage);
+    }
+    else if (valid)
+    {
+        if (hasActiveNote())
+        {
+            m_activeBodySourceText = sourceText;
+        }
+        setParsedLineCount(lineCountForEditorSource(sourceText));
+        setLastError(QString());
+    }
+
+    QVariantMap result;
+    result.insert(QStringLiteral("valid"), valid);
+    result.insert(QStringLiteral("changed"), valid && changed);
+    result.insert(QStringLiteral("bodySourceText"), sourceText);
+    result.insert(QStringLiteral("editorDocumentText"), valid ? reprojectedEditorDocumentText : editorDocumentText);
+    result.insert(QStringLiteral("editorViewportWidth"), m_editorViewportWidth);
+    result.insert(QStringLiteral("errorMessage"), errorMessage);
+    return result;
+}
+
 QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     const QString& editorDocumentText,
     const int cursorPosition,
@@ -1135,7 +1219,8 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     const QString projectedEditorDocumentText = editorHtmlFromBodySourceForNoteContext(
         noteId,
         mutatedSourceText,
-        m_activeNoteDirectoryPath);
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
     const int sourceCursorPosition = beforeSelection.size() + prefix.size() + insertedBlock.size();
 
     setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
@@ -1202,7 +1287,8 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
         noteId,
         resultSourceText,
-        m_activeNoteDirectoryPath);
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
     result.insert(QStringLiteral("editorDocumentText"), editorHtml);
     result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
     result.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
@@ -1287,7 +1373,8 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
     const QString editorDocumentText = editorHtmlFromBodySourceForNoteContext(
         loadedNoteId,
         bodySourceText,
-        loadedNoteDirectoryPath);
+        loadedNoteDirectoryPath,
+        m_editorViewportWidth);
     if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
     {
         switchToBlankEditorFile();

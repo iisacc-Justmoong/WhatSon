@@ -19,6 +19,7 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     descriptor.type = QStringLiteral("image");
     descriptor.format = QStringLiteral(".png");
     descriptor.resolvedAssetPath = imagePath;
+    descriptor.editorViewportWidth = 960;
 
     const QString html = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
 
@@ -53,10 +54,11 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     QVERIFY(html.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(html.contains(QStringLiteral("data-source-width=\"1600\"")));
     QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
-    QVERIFY(html.contains(QStringLiteral("data-display-width=\"480\"")));
-    QVERIFY(html.contains(QStringLiteral("data-display-height=\"270\"")));
-    QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"313\"")));
-    QVERIFY(html.contains(QStringLiteral("data-frame-chrome-width=\"480\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"583\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-design-width=\"480\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-render-width=\"960\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-header-height=\"24\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-toolbar-height=\"19\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-text-pixel-size=\"11\"")));
@@ -78,7 +80,7 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     QVERIFY2(!previewPath.isEmpty(), qPrintable(imageSourceMatch.captured(1)));
     const QImage previewImage(previewPath);
     QVERIFY(!previewImage.isNull());
-    QCOMPARE(previewImage.size(), QSize(480, 313));
+    QCOMPARE(previewImage.size(), QSize(960, 583));
 
     QTextDocument richTextDocument;
     richTextDocument.setHtml(html);

@@ -20,6 +20,7 @@ class NoteEditorDocumentSession final : public QObject
     Q_PROPERTY(QString activeNoteId READ activeNoteId NOTIFY activeNoteChanged)
     Q_PROPERTY(QString activeNoteDirectoryPath READ activeNoteDirectoryPath NOTIFY activeNoteChanged)
     Q_PROPERTY(int parsedLineCount READ parsedLineCount NOTIFY parsedLineCountChanged)
+    Q_PROPERTY(int editorViewportWidth READ editorViewportWidth WRITE setEditorViewportWidth NOTIFY editorViewportWidthChanged)
     Q_PROPERTY(bool hasActiveNote READ hasActiveNote NOTIFY activeNoteChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(bool readOnly READ readOnly NOTIFY readOnlyChanged)
@@ -36,12 +37,14 @@ public:
     QString activeNoteId() const;
     QString activeNoteDirectoryPath() const;
     int parsedLineCount() const noexcept;
+    int editorViewportWidth() const noexcept;
     bool hasActiveNote() const noexcept;
     bool loading() const noexcept;
     bool readOnly() const noexcept;
     QString lastError() const;
 
     void setSessionRootPathForTests(const QString& sessionRootPath);
+    void setEditorViewportWidth(int editorViewportWidth);
 
     Q_INVOKABLE bool openNoteForEditing(
         const QString& noteId,
@@ -53,6 +56,9 @@ public:
         int cursorPosition,
         int selectionLength,
         const QVariantList& importedEntries);
+    Q_INVOKABLE QVariantMap reprojectResourceFramesForEditorWidth(
+        const QString& editorDocumentText,
+        int editorViewportWidth);
     Q_INVOKABLE QVariantMap insertFormatTagIntoSource(
         const QString& tagName,
         const QString& editorDocumentText,
@@ -65,6 +71,7 @@ signals:
     void editorFilePathChanged();
     void activeNoteChanged();
     void parsedLineCountChanged();
+    void editorViewportWidthChanged();
     void loadingChanged();
     void readOnlyChanged();
     void lastErrorChanged();
@@ -143,6 +150,7 @@ private:
     QString m_activeBodySourceText;
     quint64 m_pendingLoadSequence = 0;
     int m_parsedLineCount = 0;
+    int m_editorViewportWidth = 0;
     bool m_loading = false;
     bool m_readOnly = true;
     QString m_lastError;

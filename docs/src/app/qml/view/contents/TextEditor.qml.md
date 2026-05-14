@@ -13,6 +13,9 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
+- `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width changes
+  call the C++ `reprojectResourceFramesForEditorWidth(...)` hook so image resource frames keep a `width:100%` editor
+  fill while using an intrinsic preview bitmap width that Qt rich text can lay out.
 - `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
   LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - The wrapper also binds the public LVRS `editorItem.height` to the measured document end plus the same bottom padding.
@@ -65,6 +68,8 @@
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
   HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
   then lets LVRS perform its automatic write-through sync.
+- Replacing the current document text for a C++ resource-frame viewport reproject follows the same public
+  `LV.TextEditor.text`/cursor path and remains a thin view hook; source recovery and frame rendering stay in C++.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or
@@ -93,6 +98,9 @@
   않게 한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
+- 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌면 QML은
+  현재 editor HTML과 새 폭을 C++ `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이 resource frame을
+  다시 렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
 - 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
   화면 상단 쪽까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
   계산에는 참여하지 않는다.
