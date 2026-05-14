@@ -48,6 +48,9 @@ Implements the active note editor document session.
   round-trips.
 - If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
   header/footer chrome cleanup path is kept in the current image-only frame contract.
+- After a successful editor persistence callback, the session canonicalizes the persisted source through the same
+  `.wsnbody` serializer/read-back boundary before refreshing `parsedLineCount`. This keeps deleted atomic resource
+  objects from leaving a transient trailing editor line in the gutter contract.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
@@ -74,7 +77,9 @@ Implements the active note editor document session.
   `whatson-resource-source` marker가 다시 canonical `<resource ... />` source tag로 복구된다. Qt RichText 직렬화가
   marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
   placeholder를 기준으로 `<resource ... />`를 복원한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는
-  resource frame이 삭제된 것으로 본다.
+  resource frame이 삭제된 것으로 본다. persistence 성공 콜백 뒤에는 `.wsnbody` serializer/read-back 경계의
+  canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
+  남지 않게 한다.
 - editor viewport 폭이 바뀌면 `reprojectResourceFramesForEditorWidth(...)`가 현재 editor HTML을 source로 복원하고,
   resource frame이 있는 경우에만 새 폭으로 frame preview를 다시 만든다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로

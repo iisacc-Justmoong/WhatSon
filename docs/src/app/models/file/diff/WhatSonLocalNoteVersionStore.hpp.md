@@ -37,6 +37,7 @@ operations.
 - New captures must persist both raw snapshot payload and unified patch metadata.
 
 ## Tests
-- This repository does not maintain in-repo automated tests for this module.
+- `test/cpp/suites/note_version_store_tests.cpp` covers the commit snapshot created through
+  `WhatSonLocalNoteFileStore::updateNote(...)`.
 - Keep the regression checks above synchronized with `WhatSonLocalNoteVersionStore.cpp` behavior when schema fields
   change.

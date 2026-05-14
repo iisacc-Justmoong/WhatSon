@@ -40,5 +40,6 @@ Implements `.wsnversion` persistence and snapshot lifecycle for one local note p
 - Rollback snapshots must persist a new commit record with parent/source lineage.
 
 ## Tests
-- In-repo automated tests are currently absent by repository policy.
+- `test/cpp/suites/note_version_store_tests.cpp` verifies that a note update which advances `modifiedCount` appends a
+  `.wsnversion` snapshot with the expected `commitModifiedCount`, payload text, and unified patch metadata.
 - Keep these regression checks updated when snapshot schema or patch formatting changes.

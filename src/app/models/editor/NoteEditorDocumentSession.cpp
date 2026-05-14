@@ -674,6 +674,62 @@ namespace
         return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(compactedLines.join(QLatin1Char('\n')));
     }
 
+    QStringList removeDeletedResourceObjectPaddingLines(
+        QStringList restoredLines,
+        const QString& activeBodySourceText)
+    {
+        const QStringList activeLines =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(activeBodySourceText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        for (int activeIndex = 0; activeIndex < activeLines.size(); ++activeIndex)
+        {
+            if (canonicalResourceSourceLine(activeLines.at(activeIndex)).isEmpty())
+            {
+                continue;
+            }
+            if (activeIndex <= 0 || activeIndex + 1 >= activeLines.size())
+            {
+                continue;
+            }
+            if (activeLines.at(activeIndex - 1).trimmed().isEmpty()
+                || activeLines.at(activeIndex + 1).trimmed().isEmpty())
+            {
+                continue;
+            }
+
+            const QString previousLine = activeLines.at(activeIndex - 1).trimmed();
+            const QString nextLine = activeLines.at(activeIndex + 1).trimmed();
+            for (int lineIndex = 0; lineIndex + 2 < restoredLines.size(); ++lineIndex)
+            {
+                if (restoredLines.at(lineIndex).trimmed() != previousLine)
+                {
+                    continue;
+                }
+
+                int blankEndIndex = lineIndex + 1;
+                while (blankEndIndex < restoredLines.size()
+                       && restoredLines.at(blankEndIndex).trimmed().isEmpty())
+                {
+                    ++blankEndIndex;
+                }
+                if (blankEndIndex == lineIndex + 1
+                    || blankEndIndex >= restoredLines.size()
+                    || restoredLines.at(blankEndIndex).trimmed() != nextLine)
+                {
+                    continue;
+                }
+
+                while (blankEndIndex - lineIndex > 1)
+                {
+                    restoredLines.removeAt(lineIndex + 1);
+                    --blankEndIndex;
+                }
+                break;
+            }
+        }
+        return restoredLines;
+    }
+
     QString restoreResourceObjectPlaceholdersFromActiveSource(
         const QString& editorSourceText,
         const QString& activeBodySourceText)
@@ -729,7 +785,9 @@ namespace
             restoredLines.push_back(editorLine);
         }
 
-        return compactRestoredResourcePadding(restoredLines, resourceLines);
+        return compactRestoredResourcePadding(
+            removeDeletedResourceObjectPaddingLines(restoredLines, activeBodySourceText),
+            resourceLines);
     }
 
     QVariantMap invalidImportedResourcesInsertionResult(
@@ -1321,11 +1379,18 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
 
 void NoteEditorDocumentSession::handleEditorTextPersistenceFinished(
     const QString& noteId,
-    const QString&,
+    const QString& text,
     const bool success,
     const QString& errorMessage)
 {
     setLastError(success ? QString() : errorMessage);
+    if (success && noteId == m_activeNoteId)
+    {
+        const QString canonicalSourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(
+            WhatSon::NoteBodyPersistence::serializeBodyDocument(noteId, text));
+        m_activeBodySourceText = canonicalSourceText;
+        setParsedLineCount(lineCountForEditorSource(canonicalSourceText));
+    }
     emit editorSourcePersistFinished(noteId, success, errorMessage);
 }
 

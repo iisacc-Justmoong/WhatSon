@@ -1274,6 +1274,7 @@ private slots:
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void localNoteVersionStore_capturesCommitSnapshotWhenNoteUpdateAdvancesModifiedCount();
     void noteManagementCoordinator_openCountReloadsPersistedMetadata();
     void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
     void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();
