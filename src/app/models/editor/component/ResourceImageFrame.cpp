@@ -16,7 +16,7 @@ namespace
 {
     constexpr int kFigmaFrameWidth = 480;
     constexpr int kFrameRadius = 12;
-    constexpr auto kFrameRenderVersion = "figma-292-50-pure-image-container-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-centered-image-container-v1";
 
     QString htmlAttribute(QString value)
     {
@@ -65,13 +65,44 @@ namespace
     QSize mediaRasterSizeForSource(const QSize& sourceSize, const int frameRenderWidth)
     {
         const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
-        const qreal mediaScale =
-            displaySize.width() > 0
-            ? static_cast<qreal>(frameRenderWidth) / static_cast<qreal>(displaySize.width())
-            : 1.0;
+        if (!displaySize.isValid() || displaySize.isEmpty())
+        {
+            return QSize(qMax(1, frameRenderWidth), 1);
+        }
+
+        if (displaySize.width() <= frameRenderWidth)
+        {
+            return QSize(frameRenderWidth, displaySize.height());
+        }
+
+        const qreal mediaScale = static_cast<qreal>(frameRenderWidth) / static_cast<qreal>(displaySize.width());
         return QSize(
             frameRenderWidth,
             qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
+    }
+
+    QSize mediaDisplaySizeForFrame(const QSize& sourceSize, const int frameRenderWidth)
+    {
+        const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
+        if (!displaySize.isValid() || displaySize.isEmpty())
+        {
+            return QSize(qMax(1, frameRenderWidth), 1);
+        }
+
+        if (displaySize.width() <= frameRenderWidth)
+        {
+            return displaySize;
+        }
+
+        const qreal mediaScale = static_cast<qreal>(frameRenderWidth) / static_cast<qreal>(displaySize.width());
+        return QSize(
+            frameRenderWidth,
+            qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
+    }
+
+    QPoint mediaDisplayTopLeft(const QSize& displaySize, const int frameRenderWidth)
+    {
+        return QPoint(qMax(0, (frameRenderWidth - displaySize.width()) / 2), 0);
     }
 
     int frameDisplayHeightForSource(const QSize& sourceSize, const int frameRenderWidth)
@@ -93,16 +124,20 @@ namespace
             return attributes;
         }
 
-        const QSize displaySize = mediaRasterSizeForSource(sourceSize, frameRenderWidth);
+        const QSize displaySize = mediaDisplaySizeForFrame(sourceSize, frameRenderWidth);
+        const QPoint displayTopLeft = mediaDisplayTopLeft(displaySize, frameRenderWidth);
         attributes += QStringLiteral(
                           " data-source-width=\"%1\" data-source-height=\"%2\""
                           " data-display-width=\"%3\" data-display-height=\"%4\""
-                          " data-frame-display-height=\"%5\"")
+                          " data-display-left=\"%5\" data-display-top=\"%6\""
+                          " data-frame-display-height=\"%7\"")
             .arg(
                 QString::number(sourceSize.width()),
                 QString::number(sourceSize.height()),
                 QString::number(displaySize.width()),
                 QString::number(displaySize.height()),
+                QString::number(displayTopLeft.x()),
+                QString::number(displayTopLeft.y()),
                 QString::number(frameDisplayHeightForSource(sourceSize, frameRenderWidth)));
         return attributes;
     }
@@ -133,6 +168,7 @@ namespace
         const QSize& sourceSize)
     {
         const int frameRenderWidth = frameRenderWidthForViewport(descriptor.editorViewportWidth);
+        const QSize displaySize = mediaDisplaySizeForFrame(sourceSize, frameRenderWidth);
         const QSize mediaSize = mediaRasterSizeForSource(sourceSize, frameRenderWidth);
         if (!mediaSize.isValid() || mediaSize.isEmpty())
         {
@@ -150,12 +186,13 @@ namespace
             if (!sourceImage.isNull())
             {
                 const QImage scaledImage = sourceImage.scaled(
-                    media.size(),
+                    displaySize,
                     Qt::KeepAspectRatio,
                     Qt::SmoothTransformation);
+                const QPoint displayTopLeft = mediaDisplayTopLeft(displaySize, frameRenderWidth);
                 const QPoint mediaTopLeft(
-                    (media.width() - scaledImage.width()) / 2,
-                    (media.height() - scaledImage.height()) / 2);
+                    displayTopLeft.x() + ((displaySize.width() - scaledImage.width()) / 2),
+                    displayTopLeft.y() + ((displaySize.height() - scaledImage.height()) / 2));
                 painter.drawImage(mediaTopLeft, scaledImage);
             }
         }
@@ -287,13 +324,14 @@ namespace WhatSon::EditorComponent
         html += QStringLiteral(
             "<table class=\"whatson-resource-frame\" data-figma-node-id=\"292:50\" "
             "data-resource-preview=\"image-only-frame\" data-max-width-height-ratio=\"1:1\"%1 "
+            "data-media-alignment=\"center\" "
             "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
             "style=\"width:100%;max-width:100%;border-spacing:0;border-collapse:separate;"
             "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%2px;\">"
-            "<tr><td style=\"padding:0;margin:0;\">"
+            "<tr><td align=\"center\" style=\"padding:0;margin:0;text-align:center;\">"
             "<img src=\"%3\" alt=\"\" class=\"whatson-resource-media\" data-resource-preview=\"media-raster\" "
             "width=\"100%\" style=\"display:block;width:100%;max-width:100%;height:auto;"
-            "max-height:100%;vertical-align:middle;object-fit:contain;border:0;\" />"
+            "max-height:100%;margin-left:auto;margin-right:auto;vertical-align:middle;object-fit:contain;border:0;\" />"
             "</td></tr>"
             "</table>")
             .arg(

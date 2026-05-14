@@ -61,9 +61,12 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
     QVERIFY(html.contains(QStringLiteral("data-display-width=\"960\"")));
     QVERIFY(html.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-left=\"0\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-top=\"0\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"540\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-design-width=\"480\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-render-width=\"960\"")));
+    QVERIFY(html.contains(QStringLiteral("data-media-alignment=\"center\"")));
     QVERIFY(!html.contains(QStringLiteral("data-frame-header-height")));
     QVERIFY(!html.contains(QStringLiteral("data-frame-toolbar-height")));
     QVERIFY(!html.contains(QStringLiteral("data-frame-text-pixel-size")));
@@ -78,16 +81,65 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(!html.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!html.contains(QStringLiteral("cellpadding=\"6\"")));
 
-    const QRegularExpression imageSourceExpression(QStringLiteral("src=\"([^\"]+)\""));
-    const QRegularExpressionMatch imageSourceMatch = imageSourceExpression.match(html);
-    QVERIFY(imageSourceMatch.hasMatch());
-    const QString previewPath = QUrl(imageSourceMatch.captured(1)).toLocalFile();
-    QVERIFY2(!previewPath.isEmpty(), qPrintable(imageSourceMatch.captured(1)));
+    const auto previewPathFromHtml = [](const QString& renderedHtml) {
+        const QRegularExpression imageSourceExpression(QStringLiteral("src=\"([^\"]+)\""));
+        const QRegularExpressionMatch imageSourceMatch = imageSourceExpression.match(renderedHtml);
+        return imageSourceMatch.hasMatch()
+            ? QUrl(imageSourceMatch.captured(1)).toLocalFile()
+            : QString();
+    };
+
+    const QString previewPath = previewPathFromHtml(html);
+    QVERIFY2(!previewPath.isEmpty(), qPrintable(html));
     const QImage previewImage(previewPath);
     QVERIFY(!previewImage.isNull());
     QCOMPARE(previewImage.size(), QSize(960, 540));
     QCOMPARE(previewImage.pixelColor(0, 0), sourceImage.pixelColor(0, 0));
     QCOMPARE(previewImage.pixelColor(previewImage.width() - 1, previewImage.height() - 1), sourceImage.pixelColor(0, 0));
+
+    const QString centeredImagePath = QDir(imageDirectory.path()).filePath(QStringLiteral("centered-capture.png"));
+    QImage centeredSourceImage(QSize(320, 180), QImage::Format_ARGB32_Premultiplied);
+    centeredSourceImage.fill(qRgba(220, 45, 90, 255));
+    QVERIFY(centeredSourceImage.save(centeredImagePath));
+
+    descriptor.sourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/centered.wsresource\" id=\"centered\" />");
+    descriptor.resourcePath = QStringLiteral("Workspace.wsresources/centered.wsresource");
+    descriptor.resourceId = QStringLiteral("centered");
+    descriptor.resolvedAssetPath = centeredImagePath;
+    descriptor.editorViewportWidth = 960;
+
+    const QString centeredHtml = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-display-width=\"320\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-display-height=\"180\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-display-left=\"320\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-display-top=\"0\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-frame-render-width=\"960\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("data-frame-display-height=\"180\"")));
+
+    const QImage centeredPreviewImage(previewPathFromHtml(centeredHtml));
+    QVERIFY(!centeredPreviewImage.isNull());
+    QCOMPARE(centeredPreviewImage.size(), QSize(960, 180));
+    QCOMPARE(centeredPreviewImage.pixelColor(319, 90), QColor(QStringLiteral("#1E1F20")));
+    QCOMPARE(centeredPreviewImage.pixelColor(320, 90), centeredSourceImage.pixelColor(0, 0));
+    QCOMPARE(centeredPreviewImage.pixelColor(639, 90), centeredSourceImage.pixelColor(0, 0));
+    QCOMPARE(centeredPreviewImage.pixelColor(640, 90), QColor(QStringLiteral("#1E1F20")));
+
+    descriptor.editorViewportWidth = 1200;
+
+    const QString widerCenteredHtml = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
+    QVERIFY(widerCenteredHtml.contains(QStringLiteral("data-display-width=\"320\"")));
+    QVERIFY(widerCenteredHtml.contains(QStringLiteral("data-display-height=\"180\"")));
+    QVERIFY(widerCenteredHtml.contains(QStringLiteral("data-display-left=\"440\"")));
+    QVERIFY(widerCenteredHtml.contains(QStringLiteral("data-frame-render-width=\"1200\"")));
+
+    const QImage widerCenteredPreviewImage(previewPathFromHtml(widerCenteredHtml));
+    QVERIFY(!widerCenteredPreviewImage.isNull());
+    QCOMPARE(widerCenteredPreviewImage.size(), QSize(1200, 180));
+    QCOMPARE(widerCenteredPreviewImage.pixelColor(439, 90), QColor(QStringLiteral("#1E1F20")));
+    QCOMPARE(widerCenteredPreviewImage.pixelColor(440, 90), centeredSourceImage.pixelColor(0, 0));
+    QCOMPARE(widerCenteredPreviewImage.pixelColor(759, 90), centeredSourceImage.pixelColor(0, 0));
+    QCOMPARE(widerCenteredPreviewImage.pixelColor(760, 90), QColor(QStringLiteral("#1E1F20")));
 
     QTextDocument richTextDocument;
     richTextDocument.setHtml(html);

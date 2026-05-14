@@ -9,7 +9,7 @@ Implements the editor image resource-frame HTML renderer.
 - Figma file: `fQUfzeMDED9JWvh4saYiVT`
 - Node: `292:50`
 - Shape: editor-width image resource frame with a 480px Figma design baseline, 12px radius, `#2C2E2F`
-  stroke, and one auto-height media area.
+  stroke, and one centered auto-height media area.
 - The emitted HTML exposes a `whatson-resource-frame` table as the component container. That container is still the
   resource frame model; the image is not emitted as an independent loose image.
 - The frame renders only one visible child: the media `<img>`. Type, `...`, and file-name values are not emitted into the
@@ -20,14 +20,16 @@ Implements the editor image resource-frame HTML renderer.
 
 ## Runtime Behavior
 
-- Image resources render at `width:100%` and `height:auto`, letting the decoded image size drive the visible height.
+- Image resources render through an editor-width cached media raster at `width:100%` and `height:auto`, while the decoded
+  image display box is centered inside that frame-width raster.
 - `imageDisplaySize(...)` preserves the source image ratio until the derived height would exceed the width; taller
   images are capped to a square 1:1 display box. The emitted HTML carries `data-max-width-height-ratio="1:1"` and
   source/display dimensions so the editor session can preserve that contract across rich-text round-trips.
 - The image bitmap is generated in the application cache under `resource-frames/` and uses the current editor
   viewport width supplied by `NoteEditorDocumentSession`, while still carrying the Figma 480px design baseline as
   metadata. This makes the image row fill the editor width in Qt rich text even where percentage image widths are not
-  honored.
+  honored. When the image display box is narrower than the current editor viewport, the raster stores a dynamic centered
+  left offset derived from the active frame width.
 - The cache key includes the resource-frame render version so old generated previews do not survive contract changes.
 - The HTML keeps an `object-fit:contain` style marker for the design contract even though Qt rich text support for CSS
   object fitting is limited.
@@ -42,11 +44,13 @@ Implements the editor image resource-frame HTML renderer.
   `whatson-resource-frame` table을 노출하고, 이 table이 frame container 역할을 한다.
 - frame 안에서 보이는 콘텐츠는 이미지 하나뿐이다. resource type, `...`, file name은 화면 텍스트나
   diagnostic attribute로도 내보내지 않는다.
-- 이미지는 현재 editor viewport 폭으로 캐시 PNG를 만들며, Figma 480px 기준은 design baseline metadata로만 남긴다.
+- 이미지는 현재 editor viewport 폭으로 캐시 PNG를 만들며, 실제 이미지 표시 박스는 frame 폭 안에서 중앙 정렬한다.
+  Figma 480px 기준은 design baseline metadata로만 남긴다.
 - resource frame은 synthetic outer block을 사용하지 않는다. 별도 outer block은 Qt rich text 흐름 높이를
   흐트러뜨릴 수 있으므로 사용하지 않는다.
 - 이미지 영역은 에디터 폭을 채우고 `height:auto`로 렌더한다. 높이는 이미지 source 해상도의 비율을 따르되,
-  높이가 폭을 넘는 경우에는 1:1 display box로 제한한다.
+  높이가 폭을 넘는 경우에는 1:1 display box로 제한한다. 이미지 표시 박스가 에디터 폭보다 작으면 남는 좌우 폭을
+  동일하게 나누어, 에디터 폭 변경 시 frame 내부 위치도 다시 중앙으로 계산한다.
 - cached preview key는 frame render version을 포함하므로, 이전 렌더링 산출물이 새 계약 변경을 가리지 않는다.
 - editor plain text에는 image object만 나타나야 한다. 이전 table chrome 텍스트가 남아 들어오는 경우에는 legacy
   residue로 보고 canonical source에 저장하지 않는다.

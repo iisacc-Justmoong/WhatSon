@@ -543,8 +543,12 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"16\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-height=\"10\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-left=\"472\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-top=\"0\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-frame-render-width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-media-alignment=\"center\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
@@ -564,7 +568,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     const QString reprojectedEditorText = reprojectedResult.value(QStringLiteral("editorDocumentText")).toString();
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("height:auto")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"720\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"16\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-height=\"10\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-left=\"352\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-render-width=\"720\"")));
     QVERIFY(!reprojectedEditorText.contains(QStringLiteral(" width=\"720\"")));
     QCOMPARE(

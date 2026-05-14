@@ -49,8 +49,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   not let the LVRS rendered wrap-line count create additional gutter rows.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
-  from the current editor viewport width, and an image-only visible rendering surface inside the frame container. It does
-  not emit type/file-name display metadata or visible header/footer chrome.
+  from the current editor viewport width, dynamic centered image placement inside that frame-width media raster, and an
+  image-only visible rendering surface inside the frame container. It does not emit type/file-name display metadata or
+  visible header/footer chrome.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -86,7 +87,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   위치만 제공할 수 있다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
-  frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media bitmap의 intrinsic width는 현재 editor
-  viewport 폭을 따른다. resource type, `...`, file name 표시 정보는 HTML에도 내보내지 않으며, 표시용
-  header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
+  frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor
+  viewport 폭을 따른다. 실제 이미지 표시 박스는 frame 폭 안에서 동적으로 중앙 정렬된다. resource type, `...`,
+  file name 표시 정보는 HTML에도 내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

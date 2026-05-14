@@ -85,7 +85,6 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsHierarchyParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsHierarchyStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsJsonParser.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/models/file/viewer/ImageFormatCompatibilityLayer.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubMountValidator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/runtime/startup/WhatSonStartupHubResolver.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp"
