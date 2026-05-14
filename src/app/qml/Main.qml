@@ -52,6 +52,7 @@ LV.ApplicationWindow {
     readonly property var rootNoteActiveState: typeof noteActiveState !== "undefined" ? noteActiveState : null
     readonly property var rootNoteEditorSession: typeof noteEditorSession !== "undefined" ? noteEditorSession : null
     readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
+    readonly property var rootClipboardEditorPaste: typeof clipboardEditorPaste !== "undefined" ? clipboardEditorPaste : null
     readonly property var rootAgendaController: typeof agendaController !== "undefined" ? agendaController : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
@@ -678,6 +679,7 @@ LV.ApplicationWindow {
                     noteActiveState: applicationWindow.rootNoteActiveState
                     noteEditorSession: applicationWindow.rootNoteEditorSession
                     inAppClipboard: applicationWindow.rootInAppClipboard
+                    clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
@@ -741,6 +743,7 @@ LV.ApplicationWindow {
             noteActiveState: applicationWindow.rootNoteActiveState
             noteEditorSession: applicationWindow.rootNoteEditorSession
             inAppClipboard: applicationWindow.rootInAppClipboard
+            clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames

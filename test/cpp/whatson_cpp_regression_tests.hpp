@@ -2,6 +2,8 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/clipboard/ClipboardEditorPaste.h"
+#include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
 #include "app/models/clipboard/InAppClipboardStore.h"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
@@ -1172,6 +1174,7 @@ private slots:
     void noteActiveStateTracker_rejectsHierarchyContextMutationAfterLock();
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
+    void filetypeCapture_ownsClipboardFileTypeDetection();
     void inAppClipboardStore_ownsResourceSnapshotState();
     void inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy();
     void inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData();
@@ -1297,6 +1300,10 @@ private slots:
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();
     void inAppClipboard_importsClipboardImageThroughManager();
     void inAppClipboard_importsNonImageClipboardPayloadThroughManager();
+    void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
+    void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
+    void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
+    void clipboardEditorPaste_fallsBackForNonImageResource();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();

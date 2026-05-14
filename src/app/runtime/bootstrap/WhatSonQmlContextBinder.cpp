@@ -44,6 +44,7 @@ namespace
         appendContextObjectBinding(plan, QStringLiteral("noteActiveState"), objects.noteActiveState);
         appendContextObjectBinding(plan, QStringLiteral("noteEditorSession"), objects.noteEditorSession);
         appendContextObjectBinding(plan, QStringLiteral("inAppClipboard"), objects.inAppClipboard);
+        appendContextObjectBinding(plan, QStringLiteral("clipboardEditorPaste"), objects.clipboardEditorPaste);
         appendContextObjectBinding(plan, QStringLiteral("asyncScheduler"), objects.asyncScheduler);
         appendContextObjectBinding(plan, QStringLiteral("calendarBoardStore"), objects.calendarBoardStore);
         appendContextObjectBinding(plan, QStringLiteral("systemCalendarStore"), objects.systemCalendarStore);

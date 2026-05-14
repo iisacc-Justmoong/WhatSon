@@ -100,10 +100,15 @@
   `WhatSonLibraryNoteListProjection` 같은 전용 C++ collaborator에 둔다.
 - note record lookup, persisted body-state 반영, note directory/body-source 조회처럼 여러 note-backed hierarchy
   Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
-- `InAppClipboardManager`는 `src/app/models/clipboard`에서 단일 in-app clipboard resource state와 file/url 기반
-  import orchestration, conflict/persistence 처리를 소유한다. 이 clipboard resource state는 이미지 전용이
-  아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML, 오디오, 비디오, 3D 모델, 압축 파일 같은
-  비이미지 payload도 받을 수 있어야 한다. `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.
+- `InAppClipboardManager`는 `src/app/models/clipboard`에서 file/url 기반 import orchestration,
+  conflict/persistence 처리를 소유하고, 단일 in-app clipboard resource state는 `InAppClipboardStore`에 둔다.
+  이 clipboard resource state는 이미지 전용이 아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML,
+  오디오, 비디오, 3D 모델, 압축 파일 같은 비이미지 payload도 받을 수 있어야 한다.
+  clipboard file type/MIME 확인은 `FiletypeCapture`에 두고 `ClipboardResourceImport`는 확인된 format으로
+  import descriptor만 구성해야 한다.
+  editor paste orchestration은 `ClipboardEditorPaste`가 담당하며, 현재는 이미지 `.wsresource` 붙여넣기를
+  우선 지원하고 비이미지는 native paste fallback으로 넘긴다.
+  `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.
 - resource taxonomy에서 음악 파일과 일반 오디오 파일은 canonical type/bucket을 `audio`/`Audio`로 합친다.
   과거 `music`/`Music` metadata는 legacy alias로만 읽고, 앱 내부 record와 resources hierarchy에는 `audio`만
   남겨야 한다.
@@ -137,11 +142,11 @@
   `parsedLineCount`, 그리고 `TextEditor.qml`이 전달하는 viewport offset/line height만 입력으로 받아 line
   number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
 - clipboard image paste와 정적 포맷 태그 단축키는 예외적으로 `ContentViewLayout.qml`의 얇은 command wiring을
-  허용한다. 이 QML은 `InAppClipboardManager.importClipboardResourceForEditor()`,
-  `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`,
-  `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`, `TextEditor.qml`의 LVRS document 반영 hook만
-  순서대로 호출해야 하며, MIME 판별, resource import, editor document에서 RAW source로의 변환, RAW tag 생성,
-  `.wsnbody` persistence 정책을 구현하면 안 된다.
+  허용한다. 이 QML은 image resource paste의 경우 `ClipboardEditorPaste.pasteImageResourceIntoEditor(...)`
+  결과를 `TextEditor.qml`의 LVRS document 반영 hook에 적용하고, 정적 포맷 태그는
+  `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` 결과만 적용해야 한다. paste command 도달성 보강은
+  LVRS `RuntimeEvents.keyPressed`를 같은 paste command로 합류시키는 수준까지 허용한다. MIME 판별, resource
+  import, editor document에서 RAW source로의 변환, RAW tag 생성, `.wsnbody` persistence 정책을 구현하면 안 된다.
 - clipboard image paste는 먼저 `InAppClipboardManager`가 이미지를 `.wsresources/<id>.wsresource` 패키지와
   `Resources.wsresources` 목록에 등록한 뒤, 그 반환 metadata의 `resourcePath`만 본문 RAW `<resource ... />`
   태그로 삽입해야 한다. 본문에는 이미지 payload나 asset file path를 직접 넣지 않는다.

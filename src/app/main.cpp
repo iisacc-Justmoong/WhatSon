@@ -1,5 +1,6 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
+#include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyController.hpp"
@@ -228,6 +229,7 @@ int main(int argc, char* argv[])
     TagsHierarchyController tagsHierarchyController;
     ResourcesHierarchyController resourcesHierarchyController;
     InAppClipboardManager inAppClipboard;
+    ClipboardEditorPaste clipboardEditorPaste;
     ProgressHierarchyController progressHierarchyController;
     EventHierarchyController eventHierarchyController;
     PresetHierarchyController presetHierarchyController;
@@ -545,6 +547,7 @@ int main(int argc, char* argv[])
     workspaceContextObjects.tagsHierarchyController = &tagsHierarchyController;
     workspaceContextObjects.resourcesHierarchyController = &resourcesHierarchyController;
     workspaceContextObjects.inAppClipboard = &inAppClipboard;
+    workspaceContextObjects.clipboardEditorPaste = &clipboardEditorPaste;
     workspaceContextObjects.progressHierarchyController = &progressHierarchyController;
     workspaceContextObjects.eventHierarchyController = &eventHierarchyController;
     workspaceContextObjects.presetHierarchyController = &presetHierarchyController;

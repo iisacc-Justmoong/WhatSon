@@ -30,10 +30,12 @@ The minimap receives the sibling editor's rich-text document, viewport geometry,
 hook so it can render a VSCode-style right-side miniature and viewport thumb without owning parser or persistence
 state.
 
-Clipboard resource paste command wiring is limited to the focus-gated `StandardKey.Paste` shortcut dispatch. The layout
-asks the `inAppClipboard` context object to capture and import one supported clipboard resource into `.wsresources`,
-then passes the returned package metadata to `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`. Native
-text paste stays inside the LVRS `TextEditor` path when no supported clipboard resource is available.
+Clipboard resource paste command wiring is limited to the focus-gated paste command. The layout keeps the
+`StandardKey.Paste` shortcut path and also listens to LVRS `RuntimeEvents.keyPressed` so the command still reaches the
+resource paste path when the native `TextEdit` consumes `Cmd+V` first. The layout calls the `ClipboardEditorPaste`
+context object, which captures and imports one supported clipboard resource into `.wsresources`, delegates source
+insertion to `NoteEditorDocumentSession`, and returns the editor HTML to apply. Native text paste stays inside the LVRS
+`TextEditor` path when no supported clipboard image resource is available.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
@@ -75,8 +77,8 @@ or calendar page logic.
   visibility.
 - Keep minimap wiring limited to editor document text, viewport geometry, source font tokens, and the editor viewport
   scroll hook.
-- Keep clipboard paste handling limited to `inAppClipboard` import calls followed by
-  `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
+- Keep clipboard paste handling limited to `ClipboardEditorPaste` result application; resource import, source insertion,
+  and resource reload stay in C++.
 - Keep format shortcut and selected-text context-menu handling limited to command dispatch; static tag allow-lists,
   source mutation, editor HTML projection, and persistence policy stay in `SetTag`, `NoteEditorDocumentSession`, and
   note-body persistence.
@@ -102,11 +104,13 @@ or calendar page logic.
   행은 거터 줄 번호를 늘리지 않으며, continuation row는 번호 없이 비워 둔다. 모바일 editor route는 기존 미니맵
   숨김 정책과 같이 `gutterVisible`을 꺼서 본문 폭을 확보한다.
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
-- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 `StandardKey.Paste` dispatch에만 둔다.
-  `inAppClipboard`가 clipboard 리소스를 `.wsresource` package로 먼저 등록하고, `ContentViewLayout.qml`은 반환
-  metadata를 `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`로 넘겨 `<resource ...>` 참조만
-  삽입한다. 세션이 반환한 editor HTML projection이 리소스 프레임을 표시한다. 지원 리소스가 없으면 일반 텍스트
-  paste는 LVRS `TextEditor` native 경로에 맡긴다.
+- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 paste command에만 둔다. `StandardKey.Paste`와
+  LVRS `RuntimeEvents.keyPressed` 보조 경로가 같은 `ClipboardEditorPaste` 호출로 합쳐지며, 이는 native
+  `TextEdit`이 `Cmd+V`를 먼저 소비해도 `.wsresource` 등록 경로가 호출되도록 하기 위한 것이다.
+  `ClipboardEditorPaste`가 clipboard 리소스를 `.wsresource` package로 먼저 등록하고,
+  `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`로 `<resource ...>` 참조와 editor HTML projection을
+  만든다. QML은 세션이 반환한 editor HTML projection만 적용해 리소스 프레임을 표시한다. 지원 리소스가 없으면 일반
+  텍스트 paste는 LVRS `TextEditor` native 경로에 맡긴다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
   브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령

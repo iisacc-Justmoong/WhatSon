@@ -1,0 +1,124 @@
+#include "app/models/clipboard/ClipboardEditorPaste.h"
+
+#include "app/models/clipboard/InAppClipboardManager.h"
+#include "app/models/editor/NoteEditorDocumentSession.hpp"
+
+#include <QVariantList>
+
+namespace
+{
+    QVariantMap editorPasteResult(
+        const bool valid,
+        const bool nativePaste,
+        const QString& errorMessage = QString())
+    {
+        QVariantMap result;
+        result.insert(QStringLiteral("valid"), valid);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("nativePaste"), nativePaste);
+        result.insert(QStringLiteral("reloadSucceeded"), true);
+        result.insert(QStringLiteral("errorMessage"), errorMessage.trimmed());
+        return result;
+    }
+
+    bool clipboardResourceIsImage(const InAppClipboardManager& clipboard)
+    {
+        return clipboard.resourceType().trimmed().compare(QStringLiteral("image"), Qt::CaseInsensitive) == 0;
+    }
+
+    QVariantMap nativePasteFallbackResult(const QString& errorMessage)
+    {
+        return editorPasteResult(false, true, errorMessage);
+    }
+
+    QVariantMap handledFailureResult(const QString& errorMessage)
+    {
+        return editorPasteResult(false, false, errorMessage);
+    }
+} // namespace
+
+ClipboardEditorPaste::ClipboardEditorPaste(QObject* parent)
+    : QObject(parent)
+{
+}
+
+ClipboardEditorPaste::~ClipboardEditorPaste() = default;
+
+QVariantMap ClipboardEditorPaste::pasteImageResourceIntoEditor(
+    QObject* clipboardObject,
+    QObject* noteEditorSessionObject,
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    auto* clipboard = qobject_cast<InAppClipboardManager*>(clipboardObject);
+    if (clipboard == nullptr)
+    {
+        const QString errorMessage = QStringLiteral("Clipboard editor paste requires InAppClipboardManager.");
+        emit pasteFailed(errorMessage);
+        return nativePasteFallbackResult(errorMessage);
+    }
+
+    auto* noteEditorSession = qobject_cast<NoteEditorDocumentSession*>(noteEditorSessionObject);
+    if (noteEditorSession == nullptr)
+    {
+        const QString errorMessage = QStringLiteral("Clipboard editor paste requires NoteEditorDocumentSession.");
+        emit pasteFailed(errorMessage);
+        return handledFailureResult(errorMessage);
+    }
+
+    if (!clipboard->refreshClipboardResourceAvailabilitySnapshot())
+    {
+        const QString errorMessage = QStringLiteral("Clipboard does not contain an importable resource.");
+        return nativePasteFallbackResult(errorMessage);
+    }
+
+    if (!clipboardResourceIsImage(*clipboard))
+    {
+        const QString errorMessage =
+            QStringLiteral("Only image clipboard resources can be pasted into the editor for now.");
+        return nativePasteFallbackResult(errorMessage);
+    }
+
+    const QVariantList importedEntries = clipboard->importClipboardResourceForEditor();
+    if (importedEntries.isEmpty())
+    {
+        const QString errorMessage = clipboard->lastError().trimmed().isEmpty()
+            ? QStringLiteral("Failed to import the clipboard image resource.")
+            : clipboard->lastError().trimmed();
+        emit pasteFailed(errorMessage);
+        return handledFailureResult(errorMessage);
+    }
+
+    QVariantMap insertion = noteEditorSession->insertImportedResourcesIntoSource(
+        editorDocumentText,
+        cursorPosition,
+        selectionLength,
+        importedEntries);
+    if (!insertion.value(QStringLiteral("valid")).toBool())
+    {
+        const QString sessionError = noteEditorSession->lastError().trimmed();
+        const QString errorMessage = sessionError.isEmpty()
+            ? QStringLiteral("Failed to insert the imported resource into the editor source.")
+            : sessionError;
+        emit pasteFailed(errorMessage);
+        return handledFailureResult(errorMessage);
+    }
+
+    insertion.insert(QStringLiteral("nativePaste"), false);
+    insertion.insert(QStringLiteral("importedEntries"), importedEntries);
+
+    const bool reloadSucceeded = clipboard->reloadImportedResources();
+    insertion.insert(QStringLiteral("reloadSucceeded"), reloadSucceeded);
+    if (!reloadSucceeded)
+    {
+        insertion.insert(QStringLiteral("errorMessage"), clipboard->lastError().trimmed());
+    }
+    else if (!insertion.contains(QStringLiteral("errorMessage")))
+    {
+        insertion.insert(QStringLiteral("errorMessage"), QString());
+    }
+
+    emit pasteCompleted(insertion);
+    return insertion;
+}

@@ -24,8 +24,6 @@ namespace WhatSon::Clipboard
         QVariantMap toVariantMap() const;
     };
 
-    QString formatFromMimeType(const QString& mimeType);
-    QString defaultClipboardResourceFileName(const QString& format);
     ClipboardResourceImport resourceImportForFileType(
         const QString& fileName,
         const QString& mimeType = QString());

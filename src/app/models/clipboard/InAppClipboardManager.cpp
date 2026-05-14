@@ -1,5 +1,6 @@
 #include "app/models/clipboard/InAppClipboardManager.h"
 
+#include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -45,7 +46,7 @@ namespace
 
     bool mimeFormatLooksLikeSupportedResource(const QString& mimeFormat)
     {
-        return !WhatSon::Clipboard::formatFromMimeType(mimeFormat).trimmed().isEmpty();
+        return !WhatSon::Clipboard::FiletypeCapture::formatFromMimeType(mimeFormat).trimmed().isEmpty();
     }
 
     QByteArray payloadForMimeFormat(const QMimeData* mimeData, const QString& mimeFormat)
@@ -1296,7 +1297,7 @@ namespace
         }
 
         const QString fileName = resourceImport.fileName.trimmed().isEmpty()
-            ? WhatSon::Clipboard::defaultClipboardResourceFileName(resourceImport.format)
+            ? WhatSon::Clipboard::FiletypeCapture::defaultResourceFileName(resourceImport.format)
             : QFileInfo(resourceImport.fileName).fileName();
         const QString localFilePath = QDir(temporaryDirectory->path()).filePath(fileName);
         if (!resourceImport.payloadBytes.isEmpty())
@@ -1460,7 +1461,14 @@ QVariantList InAppClipboardManager::importUrlsForEditorWithConflictPolicy(
 
 bool InAppClipboardManager::refreshClipboardResourceAvailabilitySnapshot()
 {
-    const bool available = hasResource() || captureSystemClipboardResource();
+    const bool hadSnapshot = hasResource();
+    const WhatSon::Clipboard::ClipboardResourceImport previousSnapshot = resourceImport();
+    const bool captured = captureSystemClipboardResource();
+    if (!captured && hadSnapshot)
+    {
+        setResourceImport(previousSnapshot);
+    }
+    const bool available = captured || hasResource();
     emit resourceChanged();
     return available;
 }

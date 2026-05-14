@@ -16,6 +16,7 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* tagsHierarchyController = nullptr;
         QObject* resourcesHierarchyController = nullptr;
         QObject* inAppClipboard = nullptr;
+        QObject* clipboardEditorPaste = nullptr;
         QObject* progressHierarchyController = nullptr;
         QObject* eventHierarchyController = nullptr;
         QObject* presetHierarchyController = nullptr;

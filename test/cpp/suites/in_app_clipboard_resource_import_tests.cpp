@@ -2,6 +2,9 @@
 
 #include "app/models/clipboard/InAppClipboardManager.h"
 
+#include <QClipboard>
+#include <QMimeData>
+
 namespace
 {
     QString readUtf8FileForInAppClipboardImportTest(const QString& path)
@@ -179,4 +182,216 @@ void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadTh
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
     const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
     QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThroughPasteObject()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardEditorPasteHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-editor-paste-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QImage clipboardImage(QSize(12, 8), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(80, 20, 190, 255));
+
+    InAppClipboardManager clipboard;
+    QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
+    clipboard.setCurrentHubPath(hubPath);
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-editor-paste-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    ClipboardEditorPaste editorPaste;
+    const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
+    const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
+        &clipboard,
+        &session,
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0);
+
+    QVERIFY2(result.value(QStringLiteral("valid")).toBool(), qPrintable(result.value(QStringLiteral("errorMessage")).toString()));
+    QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(result.value(QStringLiteral("reloadSucceeded")).toBool(), true);
+    QVERIFY(!clipboard.hasResource());
+
+    const QVariantList importedEntries = result.value(QStringLiteral("importedEntries")).toList();
+    QCOMPARE(importedEntries.size(), 1);
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
+    QVERIFY(importedResource.value(QStringLiteral("resourcePath")).toString().endsWith(QStringLiteral(".wsresource")));
+
+    const QString bodySourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(bodySourceText.contains(QStringLiteral("<resource type=\"image\" format=\".png\"")));
+    QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"12\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"8\"")));
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("SystemClipboardEditorPasteHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("system-clipboard-editor-paste-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+    QImage clipboardImage(QSize(13, 9), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(12, 140, 70, 255));
+    systemClipboard->setImage(clipboardImage);
+
+    InAppClipboardManager clipboard;
+    clipboard.setCurrentHubPath(hubPath);
+    QVERIFY(!clipboard.hasResource());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("system-clipboard-editor-paste-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    ClipboardEditorPaste editorPaste;
+    const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
+    const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
+        &clipboard,
+        &session,
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0);
+
+    QVERIFY2(result.value(QStringLiteral("valid")).toBool(), qPrintable(result.value(QStringLiteral("errorMessage")).toString()));
+    QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
+    QVERIFY(!clipboard.hasResource());
+
+    const QVariantList importedEntries = result.value(QStringLiteral("importedEntries")).toList();
+    QCOMPARE(importedEntries.size(), 1);
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
+    QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(
+        importedResource.value(QStringLiteral("resourcePath")).toString()));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"13\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"9\"")));
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage()
+{
+    InAppClipboardManager clipboard;
+    QVERIFY(clipboard.setResourceBytes(
+        QByteArrayLiteral("%PDF-1.7\nold clipboard document"),
+        QStringLiteral("old-clipboard-document.pdf"),
+        QStringLiteral("application/pdf")));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));
+
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+    QImage clipboardImage(QSize(5, 4), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(70, 88, 210, 255));
+    systemClipboard->setImage(clipboardImage);
+
+    QVERIFY(clipboard.refreshClipboardResourceAvailabilitySnapshot());
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("image"));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".png"));
+    QVERIFY(clipboard.resourceEntry().value(QStringLiteral("hasImage")).toBool());
+}
+
+void WhatSonCppRegressionTests::clipboardEditorPaste_fallsBackForNonImageResource()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardEditorPasteDocumentHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QByteArray pdfBytes = QByteArrayLiteral("%PDF-1.7\nclipboard document");
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+    auto* mimeData = new QMimeData;
+    mimeData->setData(QStringLiteral("application/pdf"), pdfBytes);
+    systemClipboard->setMimeData(mimeData);
+
+    InAppClipboardManager clipboard;
+    clipboard.setCurrentHubPath(hubPath);
+
+    NoteEditorDocumentSession session;
+    ClipboardEditorPaste editorPaste;
+    const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
+        &clipboard,
+        &session,
+        QStringLiteral("Alpha"),
+        5,
+        0);
+
+    QCOMPARE(result.value(QStringLiteral("valid")).toBool(), false);
+    QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), true);
+    QVERIFY(result.value(QStringLiteral("errorMessage")).toString().contains(QStringLiteral("Only image clipboard resources")));
+    QVERIFY(clipboard.hasResource());
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(!resourcesListText.contains(QStringLiteral(".wsresource")));
 }

@@ -97,6 +97,9 @@ Item {
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
+    property var clipboardEditorPaste: null
+    property double lastEditorPasteCommandEpochMs: -1
+    readonly property int editorPasteCommandDedupMs: 120
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -144,22 +147,21 @@ Item {
     function pasteClipboardResourceIntoEditor() {
         if (!contentViewLayout.inAppClipboard
                 || !contentViewLayout.noteEditorSession
+                || !contentViewLayout.clipboardEditorPaste
                 || contentViewLayout.editorReadOnly
-                || contentViewLayout.inAppClipboard.importClipboardResourceForEditor === undefined
-                || contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource === undefined)
+                || contentViewLayout.clipboardEditorPaste.pasteImageResourceIntoEditor === undefined)
             return false;
 
-        const importedEntries = contentViewLayout.inAppClipboard.importClipboardResourceForEditor();
-        if (contentViewLayout.listLikeCount(importedEntries) <= 0)
-            return false;
-
-        const insertion = contentViewLayout.noteEditorSession.insertImportedResourcesIntoSource(
+        const insertion = contentViewLayout.clipboardEditorPaste.pasteImageResourceIntoEditor(
+                    contentViewLayout.inAppClipboard,
+                    contentViewLayout.noteEditorSession,
                     contentsTextEditor.editorDocumentText,
                     contentsTextEditor.editorSelectionStart,
-                    contentsTextEditor.editorSelectionLength,
-                    importedEntries);
-        if (!insertion || !Boolean(insertion.valid))
+                    contentsTextEditor.editorSelectionLength);
+        if (!insertion || Boolean(insertion.nativePaste))
             return false;
+        if (!Boolean(insertion.valid))
+            return true;
 
         const editorDocumentText = insertion.editorDocumentText !== undefined
                 && insertion.editorDocumentText !== null
@@ -168,22 +170,39 @@ Item {
         if (!contentsTextEditor.replaceEditorDocumentText(
                     editorDocumentText,
                     Number(insertion.cursorPosition) || 0))
-            return false;
-
-        if (contentViewLayout.inAppClipboard.reloadImportedResources !== undefined)
-            return Boolean(contentViewLayout.inAppClipboard.reloadImportedResources());
+            return true;
         return true;
     }
     function handleEditorPasteShortcut() {
-        if (!contentViewLayout.inAppClipboard
-                || contentViewLayout.inAppClipboard.refreshClipboardResourceAvailabilitySnapshot === undefined
-                || !contentViewLayout.inAppClipboard.refreshClipboardResourceAvailabilitySnapshot()) {
-            contentsTextEditor.pasteNativeClipboardText();
-            return;
-        }
-
         if (!contentViewLayout.pasteClipboardResourceIntoEditor())
             contentsTextEditor.pasteNativeClipboardText();
+    }
+    function requestEditorPasteCommand() {
+        const now = Date.now();
+        if (contentViewLayout.lastEditorPasteCommandEpochMs >= 0
+                && now - contentViewLayout.lastEditorPasteCommandEpochMs < contentViewLayout.editorPasteCommandDedupMs)
+            return true;
+        contentViewLayout.lastEditorPasteCommandEpochMs = now;
+        contentViewLayout.handleEditorPasteShortcut();
+        return true;
+    }
+    function editorPasteShortcutMatches(key, modifiers) {
+        const normalizedKey = Math.floor(Number(key) || 0);
+        const normalizedModifiers = Math.floor(Number(modifiers) || 0);
+        const commandModifier =
+                (normalizedModifiers & Qt.MetaModifier) === Qt.MetaModifier
+                || (normalizedModifiers & Qt.ControlModifier) === Qt.ControlModifier;
+        const disallowedModifiers =
+                (normalizedModifiers & Qt.ShiftModifier) === Qt.ShiftModifier
+                || (normalizedModifiers & Qt.AltModifier) === Qt.AltModifier;
+        return normalizedKey === Qt.Key_V && commandModifier && !disallowedModifiers;
+    }
+    function handleRuntimeEditorPasteKey(key, modifiers, autoRepeat) {
+        if (Boolean(autoRepeat)
+                || !contentViewLayout.editorCommandShortcutEnabled()
+                || !contentViewLayout.editorPasteShortcutMatches(key, modifiers))
+            return false;
+        return contentViewLayout.requestEditorPasteCommand();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -393,7 +412,15 @@ Item {
             enabled: contentViewLayout.editorCommandShortcutEnabled()
             sequence: StandardKey.Paste
 
-            onActivated: contentViewLayout.handleEditorPasteShortcut()
+            onActivated: contentViewLayout.requestEditorPasteCommand()
+        }
+
+        Connections {
+            target: LV.RuntimeEvents
+
+            function onKeyPressed(key, modifiers, autoRepeat, text) {
+                contentViewLayout.handleRuntimeEditorPasteKey(key, modifiers, autoRepeat);
+            }
         }
 
         Shortcut {

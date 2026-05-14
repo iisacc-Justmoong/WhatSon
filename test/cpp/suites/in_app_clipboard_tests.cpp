@@ -2,6 +2,44 @@
 
 #include <QMimeData>
 
+void WhatSonCppRegressionTests::filetypeCapture_ownsClipboardFileTypeDetection()
+{
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::normalizeMimeType(
+            QStringLiteral(" Text/HTML; charset=utf-8 ")),
+        QStringLiteral("text/html"));
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::formatFromMimeType(QStringLiteral("AUDIO/MPEG")),
+        QStringLiteral(".mp3"));
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::normalizedFormatForFileType(
+            QStringLiteral("Scene.GLTF"),
+            QString()),
+        QStringLiteral(".gltf"));
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::normalizedFormatForFileType(
+            QString(),
+            QStringLiteral("application/pdf")),
+        QStringLiteral(".pdf"));
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::normalizedFileNameOrDefault(
+            QStringLiteral("../Capture.PNG"),
+            QStringLiteral(".png")),
+        QStringLiteral("Capture.PNG"));
+    QCOMPARE(
+        WhatSon::Clipboard::FiletypeCapture::defaultResourceFileName(QStringLiteral(".pdf")),
+        QStringLiteral("clipboard-resource.pdf"));
+
+    const QString importSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp"));
+    const QString filetypeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/FiletypeCapture.cpp"));
+    QVERIFY(!importSource.contains(QStringLiteral("kFormatsByMimeType")));
+    QVERIFY(!importSource.contains(QStringLiteral("QString formatFromMimeType(")));
+    QVERIFY(filetypeSource.contains(QStringLiteral("kFormatsByMimeType")));
+    QVERIFY(filetypeSource.contains(QStringLiteral("QString formatFromMimeType(")));
+}
+
 void WhatSonCppRegressionTests::inAppClipboardStore_ownsResourceSnapshotState()
 {
     const QString managerHeader = readUtf8SourceFile(
