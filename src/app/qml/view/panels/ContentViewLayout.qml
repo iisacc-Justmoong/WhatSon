@@ -188,13 +188,26 @@ Item {
             return true;
         return true;
     }
-    function handleEditorPasteShortcut() {
-        if (!contentViewLayout.pasteClipboardResourceIntoEditor())
-            contentsTextEditor.pasteNativeClipboardText();
-    }
     function requestEditorPasteCommand() {
-        contentViewLayout.handleEditorPasteShortcut();
-        return true;
+        return contentViewLayout.pasteClipboardResourceIntoEditor();
+    }
+    function editorPasteKeyMatches(key, modifiers) {
+        const normalizedKey = Math.floor(Number(key) || 0);
+        const normalizedModifiers = Math.floor(Number(modifiers) || 0);
+        const commandModifier =
+                (normalizedModifiers & Qt.MetaModifier) === Qt.MetaModifier
+                || (normalizedModifiers & Qt.ControlModifier) === Qt.ControlModifier;
+        const disallowedModifiers =
+                (normalizedModifiers & Qt.ShiftModifier) === Qt.ShiftModifier
+                || (normalizedModifiers & Qt.AltModifier) === Qt.AltModifier;
+        return normalizedKey === Qt.Key_V && commandModifier && !disallowedModifiers;
+    }
+    function handleRuntimeEditorPasteKey(key, modifiers, autoRepeat) {
+        if (Boolean(autoRepeat)
+                || !contentViewLayout.editorCommandShortcutEnabled()
+                || !contentViewLayout.editorPasteKeyMatches(key, modifiers))
+            return false;
+        return contentViewLayout.requestEditorPasteCommand();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -398,14 +411,12 @@ Item {
             }
         }
 
-        Shortcut {
-            autoRepeat: false
-            context: Qt.ApplicationShortcut
-            enabled: contentViewLayout.editorCommandShortcutEnabled()
-            sequence: StandardKey.Paste
+        Connections {
+            target: LV.RuntimeEvents
 
-            onActivated: contentViewLayout.requestEditorPasteCommand()
-            onActivatedAmbiguously: contentViewLayout.requestEditorPasteCommand()
+            function onKeyPressed(key, modifiers, autoRepeat, text) {
+                contentViewLayout.handleRuntimeEditorPasteKey(key, modifiers, autoRepeat);
+            }
         }
 
         Shortcut {

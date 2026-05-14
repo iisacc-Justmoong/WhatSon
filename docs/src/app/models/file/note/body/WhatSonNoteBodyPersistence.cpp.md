@@ -66,6 +66,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   - editor/source projection keeps `</break>`
   - `.wsnbody` body XML stores `<break/>` (valid XML)
   - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
+  - editor HTML renders the token through `component/Break` as a logical blank line, not literal tag text
 - Agenda/task and callout tags are ordinary transparent paired tags. They are preserved inside paragraph RAW source
   instead of being promoted to direct body-format blocks.
 - Resource/divider source blocks are normalized onto standalone editor lines before save/load projection. Adjacent text
@@ -92,7 +93,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
-  - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
+  - divider block tags (`<break/>` and legacy `<hr/>`) -> logical editor break line
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
   `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
   line breaks, inline style rendering, and escaped resource text stay aligned with the persisted note body contract.
@@ -172,7 +173,7 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 - A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
-  `<break/>`, and rich-text projection must show a divider line instead of literal tag text.
+  `<break/>`, and rich-text projection must show a logical editor break line instead of literal tag text.
 - A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and
   rich-text projection as one active hyperlink instead of escaping back into literal XML.
 - A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled

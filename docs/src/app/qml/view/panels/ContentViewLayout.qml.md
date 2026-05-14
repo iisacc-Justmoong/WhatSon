@@ -30,15 +30,15 @@ The minimap receives the sibling editor's rich-text document, viewport geometry,
 hook so it can render a VSCode-style right-side miniature and viewport thumb without owning parser or persistence
 state.
 
-Clipboard resource paste command wiring is limited to one focus-gated `StandardKey.Paste` shortcut path. The layout
-handles that shortcut's `activated` and `activatedAmbiguously` signals, but it does not install an additional
-`RuntimeEvents.keyPressed` paste listener and it does not use a clock-based dedup window. This keeps one physical paste
-gesture from entering both a shortcut path and a runtime key-event path. The layout calls the `ClipboardEditorPaste`
-context object, which captures and imports one supported clipboard resource into `.wsresources`, delegates source
-insertion to `NoteEditorDocumentSession`, and returns the editor HTML to apply. Native text paste stays inside the LVRS
-`TextEditor` path when no supported clipboard image resource is available. The last paste result stage, error message,
-and native-fallback flag are stored on the layout as diagnostics only; QML still does not import, classify, or serialize
-resources itself.
+Clipboard resource paste command wiring is limited to one focus-gated `LV.RuntimeEvents.keyPressed` path. The layout
+does not install a separate `StandardKey.Paste` shortcut and it does not use a clock-based dedup window. This keeps one
+physical paste gesture from entering both a shortcut path and a runtime key-event path while still observing paste keys
+that the focused LVRS `TextEditor` surface may consume before a QML `Shortcut` can fire. The layout calls the
+`ClipboardEditorPaste` context object, which captures and imports one supported clipboard resource into `.wsresources`,
+delegates source insertion to `NoteEditorDocumentSession`, and returns the editor HTML to apply. Native text paste stays
+inside the LVRS `TextEditor` path when no supported clipboard image resource is available; the layout does not call the
+native paste fallback from the runtime key listener. The last paste result stage, error message, and native-fallback
+flag are stored on the layout as diagnostics only; QML still does not import, classify, or serialize resources itself.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
@@ -107,15 +107,16 @@ or calendar page logic.
   행은 거터 줄 번호를 늘리지 않으며, continuation row는 번호 없이 비워 둔다. 모바일 editor route는 기존 미니맵
   숨김 정책과 같이 `gutterVisible`을 꺼서 본문 폭을 확보한다.
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
-- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 단일 `StandardKey.Paste` shortcut 경로에만 둔다.
-  이 shortcut의 `activated`/`activatedAmbiguously`는 같은 command를 호출하지만, 별도의
-  LVRS `RuntimeEvents.keyPressed` paste listener와 시간 기반 dedup window를 두지 않는다. 따라서 한 번의 물리
-  paste 입력이 shortcut 경로와 runtime key-event 경로에 동시에 들어가지 않는다.
+- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 단일 LVRS `RuntimeEvents.keyPressed` 경로에만 둔다.
+  별도의 `StandardKey.Paste` shortcut과 시간 기반 dedup window를 두지 않는다. 따라서 한 번의 물리 paste 입력이
+  shortcut 경로와 runtime key-event 경로에 동시에 들어가지 않으면서, focused LVRS `TextEditor`가 QML shortcut보다
+  먼저 `Cmd+V`를 소비하는 경우에도 resource paste 경로가 호출된다.
   `ClipboardEditorPaste`가 clipboard 리소스를 `.wsresource` package로 먼저 등록하고,
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`로 `<resource ...>` 참조와 editor HTML projection을
   만든다. QML은 세션이 반환한 editor HTML projection만 적용해 리소스 프레임을 표시한다. 지원 리소스가 없으면 일반
-  텍스트 paste는 LVRS `TextEditor` native 경로에 맡긴다. 마지막 paste의 stage/error/native fallback 여부만
-  diagnostic property로 보관하며, 리소스 판별과 import 책임은 C++ clipboard 객체에 남긴다.
+  텍스트 paste는 LVRS `TextEditor` native 경로에 맡기며, runtime key listener에서 native paste fallback을 직접
+  호출하지 않는다. 마지막 paste의 stage/error/native fallback 여부만 diagnostic property로 보관하며, 리소스 판별과
+  import 책임은 C++ clipboard 객체에 남긴다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
   브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령

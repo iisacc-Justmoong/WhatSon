@@ -9,6 +9,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
+  - `component/Break.h`
+  - `component/Break.cpp`
   - `component/ResourceImageFrame.h`
   - `component/ResourceImageFrame.cpp`
   - `TagInsertionWriter.hpp`
@@ -35,6 +37,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   the tag under the requested cursor position.
 - `GetProperty` is the read-side `.wsnbody` tag-attribute capture object. It stores the current tag's dynamic
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
+- `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
+  legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
+  literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
@@ -52,8 +57,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 ## Verification Notes
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
-- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `ResourceImageFrame`
-  Figma chrome rendering, `SetProperty`
+- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `Break`
+  standalone source projection, `ResourceImageFrame` Figma chrome rendering, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, editor format-tag insertion, unsupported input rejection, and `.wsnbody`
   reserialization.
@@ -71,6 +76,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
+- 현재: `component/Break`는 standalone editor source token `</break>`를 소유한다. `</break>`, `<break/>`, legacy
+  `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
+  투영된다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제

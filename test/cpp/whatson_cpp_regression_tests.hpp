@@ -50,6 +50,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
+#include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
@@ -1240,10 +1241,12 @@ private slots:
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
+    void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
     void resourceFrame_rendersFigmaImageChrome();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
+    void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
     void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();

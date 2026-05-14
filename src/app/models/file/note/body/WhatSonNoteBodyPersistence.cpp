@@ -1,6 +1,7 @@
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
+#include "app/models/editor/component/Break.h"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
@@ -205,6 +206,11 @@ namespace
 
     QString renderInlineSourceToHtml(const QString& sourceFragment)
     {
+        if (WhatSon::EditorComponent::Break::isSourceLine(sourceFragment))
+        {
+            return WhatSon::EditorComponent::Break::renderHtml();
+        }
+
         QString rendered;
         rendered.reserve(sourceFragment.size() + 32);
 
@@ -260,6 +266,11 @@ namespace
 
     QString renderInlineSourceToPlainText(const QString& sourceFragment)
     {
+        if (WhatSon::EditorComponent::Break::isSourceLine(sourceFragment))
+        {
+            return {};
+        }
+
         QString rendered;
         rendered.reserve(sourceFragment.size());
 
@@ -473,7 +484,7 @@ namespace
         if (QString::compare(tagName, QStringLiteral("break"), Qt::CaseInsensitive) == 0
             || QString::compare(tagName, QStringLiteral("hr"), Qt::CaseInsensitive) == 0)
         {
-            return QStringLiteral("</break>");
+            return WhatSon::EditorComponent::Break::sourceToken();
         }
 
         const QString attributes = serializeAttributes(document, node);
@@ -506,9 +517,6 @@ namespace
         static const QRegularExpression resourceLinePattern(
             QStringLiteral(R"(^\s*(<resource\b[^>]*?/?>)\s*$)"),
             QRegularExpression::CaseInsensitiveOption);
-        static const QRegularExpression breakLinePattern(
-            QStringLiteral(R"(^\s*<(?:break|hr)\b[^>]*?/?>\s*$)"),
-            QRegularExpression::CaseInsensitiveOption);
         const QString normalizedDocumentText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyDocumentText);
         const QStringList documentLines = normalizedDocumentText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
         bool insideBody = false;
@@ -540,9 +548,9 @@ namespace
                 continue;
             }
 
-            if (breakLinePattern.match(line).hasMatch())
+            if (WhatSon::EditorComponent::Break::isSourceLine(line))
             {
-                rawLines.push_back(QStringLiteral("</break>"));
+                rawLines.push_back(WhatSon::EditorComponent::Break::sourceToken());
                 continue;
             }
 
@@ -801,10 +809,7 @@ namespace
 
     bool isStandaloneBreakLine(const QString& trimmedLine)
     {
-        static const QRegularExpression breakPattern(
-            QStringLiteral(R"(^(?:</\s*break\s*>|<\s*break\s*/\s*>|<\s*hr\b[^>]*?/\s*>)$)"),
-            QRegularExpression::CaseInsensitiveOption);
-        return breakPattern.match(trimmedLine).hasMatch();
+        return WhatSon::EditorComponent::Break::isSourceLine(trimmedLine);
     }
 
     QString serializeParagraphLine(const QString& line)

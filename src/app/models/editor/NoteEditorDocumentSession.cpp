@@ -1,5 +1,6 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
+#include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
@@ -161,6 +162,11 @@ namespace
                     if (WhatSon::NoteBodySemanticTagSupport::isRenderedLineBreakTagName(tagName))
                     {
                         visibleCharacters.push_back({cursor, tagEnd + 1, QStringLiteral("\n")});
+                        cursor = tagEnd + 1;
+                        continue;
+                    }
+                    if (WhatSon::EditorComponent::Break::isSourceLine(tagToken.toString()))
+                    {
                         cursor = tagEnd + 1;
                         continue;
                     }
@@ -559,6 +565,12 @@ namespace
 
         for (const QString& sourceLine : sourceLines)
         {
+            if (WhatSon::EditorComponent::Break::isSourceLine(sourceLine))
+            {
+                pendingSourceLines.push_back(WhatSon::EditorComponent::Break::sourceToken());
+                continue;
+            }
+
             const QString resourceLine = canonicalResourceSourceLine(sourceLine);
             if (resourceLine.isEmpty())
             {

@@ -219,6 +219,35 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("break-projection-note"),
+        QStringLiteral("Alpha\n</break>\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("break-projection-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QCOMPARE(mountedEditorSource, QStringLiteral("Alpha<br/><br/>Beta"));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("</break>")));
+    QVERIFY(!mountedEditorSource.contains(QStringLiteral("&lt;/break&gt;")));
+    QCOMPARE(session.parsedLineCount(), 3);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection()
 {
     NoteEditorDocumentSession session;
