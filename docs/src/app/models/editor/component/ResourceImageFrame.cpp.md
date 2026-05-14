@@ -1,8 +1,8 @@
-# `src/app/models/editor/component/ResourceFrame.cpp`
+# `src/app/models/editor/component/ResourceImageFrame.cpp`
 
 ## Responsibility
 
-Implements the editor resource-frame HTML renderer.
+Implements the editor image resource-frame HTML renderer.
 
 ## Design Source
 

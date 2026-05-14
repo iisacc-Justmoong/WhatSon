@@ -101,8 +101,6 @@ Item {
     property string lastEditorPasteStage: ""
     property string lastEditorPasteErrorMessage: ""
     property bool lastEditorPasteNativeFallback: false
-    property double lastEditorPasteCommandEpochMs: -1
-    readonly property int editorPasteCommandDedupMs: 120
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -195,31 +193,8 @@ Item {
             contentsTextEditor.pasteNativeClipboardText();
     }
     function requestEditorPasteCommand() {
-        const now = Date.now();
-        if (contentViewLayout.lastEditorPasteCommandEpochMs >= 0
-                && now - contentViewLayout.lastEditorPasteCommandEpochMs < contentViewLayout.editorPasteCommandDedupMs)
-            return true;
-        contentViewLayout.lastEditorPasteCommandEpochMs = now;
         contentViewLayout.handleEditorPasteShortcut();
         return true;
-    }
-    function editorPasteShortcutMatches(key, modifiers) {
-        const normalizedKey = Math.floor(Number(key) || 0);
-        const normalizedModifiers = Math.floor(Number(modifiers) || 0);
-        const commandModifier =
-                (normalizedModifiers & Qt.MetaModifier) === Qt.MetaModifier
-                || (normalizedModifiers & Qt.ControlModifier) === Qt.ControlModifier;
-        const disallowedModifiers =
-                (normalizedModifiers & Qt.ShiftModifier) === Qt.ShiftModifier
-                || (normalizedModifiers & Qt.AltModifier) === Qt.AltModifier;
-        return normalizedKey === Qt.Key_V && commandModifier && !disallowedModifiers;
-    }
-    function handleRuntimeEditorPasteKey(key, modifiers, autoRepeat) {
-        if (Boolean(autoRepeat)
-                || !contentViewLayout.editorCommandShortcutEnabled()
-                || !contentViewLayout.editorPasteShortcutMatches(key, modifiers))
-            return false;
-        return contentViewLayout.requestEditorPasteCommand();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -431,14 +406,6 @@ Item {
 
             onActivated: contentViewLayout.requestEditorPasteCommand()
             onActivatedAmbiguously: contentViewLayout.requestEditorPasteCommand()
-        }
-
-        Connections {
-            target: LV.RuntimeEvents
-
-            function onKeyPressed(key, modifiers, autoRepeat, text) {
-                contentViewLayout.handleRuntimeEditorPasteKey(key, modifiers, autoRepeat);
-            }
         }
 
         Shortcut {

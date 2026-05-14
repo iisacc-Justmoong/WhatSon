@@ -9,8 +9,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
-  - `component/ResourceFrame.h`
-  - `component/ResourceFrame.cpp`
+  - `component/ResourceImageFrame.h`
+  - `component/ResourceImageFrame.cpp`
   - `TagInsertionWriter.hpp`
   - `TagInsertionWriter.cpp`
   - `NoteEditorDocumentSession.hpp`
@@ -42,7 +42,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   persistence path after converting them to canonical source. The gutter uses the session's parsed source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
   not let the LVRS rendered wrap-line count create additional gutter rows.
-- `component/ResourceFrame` owns standalone `<resource ... />` editor frame rendering. It implements the Figma `292:50`
+- `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource chrome as a cached single-image-object preview, marker-wrapped source recovery, editor-width
   responsive frame sizing, display-only type/file-name labels, and legacy rendered text lines that persistence may
   ignore when older rich frame residue is serialized back into plain text.
@@ -52,7 +52,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 ## Verification Notes
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
-- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `ResourceFrame`
+- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `ResourceImageFrame`
   Figma chrome rendering, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, editor format-tag insertion, unsupported input rejection, and `.wsnbody`
@@ -76,8 +76,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다.
-- 현재: `component/ResourceFrame`은 standalone `<resource ... />` 라인을 Figma `292:50` 기준의 editor resource
-  frame으로 렌더링한다. 이 frame은 source marker로 감싼 단일 image object이며 editor width 100%를 채운다.
+- 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
+  resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 단일 image object이며 editor width 100%를 채운다.
   상단 resource type과 하단 resource file name은 입력란이 아닌 표시란이고 cached preview bitmap 안에 그려진다.
   Qt RichText 저장 왕복에서 이전 frame chrome 텍스트가 source에 섞이지 않도록 legacy 복원용 텍스트 목록도 함께
   제공한다.

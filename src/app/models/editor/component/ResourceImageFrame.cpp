@@ -1,4 +1,4 @@
-#include "app/models/editor/component/ResourceFrame.h"
+#include "app/models/editor/component/ResourceImageFrame.h"
 
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 

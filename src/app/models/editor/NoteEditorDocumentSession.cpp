@@ -1,6 +1,6 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
-#include "app/models/editor/component/ResourceFrame.h"
+#include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"

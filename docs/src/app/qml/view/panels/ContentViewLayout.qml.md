@@ -30,14 +30,15 @@ The minimap receives the sibling editor's rich-text document, viewport geometry,
 hook so it can render a VSCode-style right-side miniature and viewport thumb without owning parser or persistence
 state.
 
-Clipboard resource paste command wiring is limited to the focus-gated paste command. The layout keeps the
-`StandardKey.Paste` shortcut path, handles both `activated` and `activatedAmbiguously`, and also listens to LVRS
-`RuntimeEvents.keyPressed` so the command still reaches the resource paste path when the native `TextEdit` consumes
-or competes for `Cmd+V` first. The layout calls the `ClipboardEditorPaste` context object, which captures and imports
-one supported clipboard resource into `.wsresources`, delegates source insertion to `NoteEditorDocumentSession`, and
-returns the editor HTML to apply. Native text paste stays inside the LVRS `TextEditor` path when no supported clipboard
-image resource is available. The last paste result stage, error message, and native-fallback flag are stored on the
-layout as diagnostics only; QML still does not import, classify, or serialize resources itself.
+Clipboard resource paste command wiring is limited to one focus-gated `StandardKey.Paste` shortcut path. The layout
+handles that shortcut's `activated` and `activatedAmbiguously` signals, but it does not install an additional
+`RuntimeEvents.keyPressed` paste listener and it does not use a clock-based dedup window. This keeps one physical paste
+gesture from entering both a shortcut path and a runtime key-event path. The layout calls the `ClipboardEditorPaste`
+context object, which captures and imports one supported clipboard resource into `.wsresources`, delegates source
+insertion to `NoteEditorDocumentSession`, and returns the editor HTML to apply. Native text paste stays inside the LVRS
+`TextEditor` path when no supported clipboard image resource is available. The last paste result stage, error message,
+and native-fallback flag are stored on the layout as diagnostics only; QML still does not import, classify, or serialize
+resources itself.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
@@ -106,10 +107,10 @@ or calendar page logic.
   행은 거터 줄 번호를 늘리지 않으며, continuation row는 번호 없이 비워 둔다. 모바일 editor route는 기존 미니맵
   숨김 정책과 같이 `gutterVisible`을 꺼서 본문 폭을 확보한다.
 - 미니맵에는 editor document text, viewport geometry, source font token, editor viewport scroll hook만 전달한다.
-- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 paste command에만 둔다. `StandardKey.Paste`의
-  `activated`/`activatedAmbiguously`와 LVRS `RuntimeEvents.keyPressed` 보조 경로가 같은 `ClipboardEditorPaste`
-  호출로 합쳐지며, 이는 native `TextEdit`이 `Cmd+V`를 먼저 소비하거나 단축키가 모호 상태가 되어도
-  `.wsresource` 등록 경로가 호출되도록 하기 위한 것이다.
+- 이미지 paste command wiring은 에디터 포커스 조건을 통과한 단일 `StandardKey.Paste` shortcut 경로에만 둔다.
+  이 shortcut의 `activated`/`activatedAmbiguously`는 같은 command를 호출하지만, 별도의
+  LVRS `RuntimeEvents.keyPressed` paste listener와 시간 기반 dedup window를 두지 않는다. 따라서 한 번의 물리
+  paste 입력이 shortcut 경로와 runtime key-event 경로에 동시에 들어가지 않는다.
   `ClipboardEditorPaste`가 clipboard 리소스를 `.wsresource` package로 먼저 등록하고,
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`로 `<resource ...>` 참조와 editor HTML projection을
   만든다. QML은 세션이 반환한 editor HTML projection만 적용해 리소스 프레임을 표시한다. 지원 리소스가 없으면 일반

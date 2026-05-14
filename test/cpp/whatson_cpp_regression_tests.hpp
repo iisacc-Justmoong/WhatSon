@@ -50,7 +50,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
-#include "app/models/editor/component/ResourceFrame.h"
+#include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/editor/SetProperty.h"
