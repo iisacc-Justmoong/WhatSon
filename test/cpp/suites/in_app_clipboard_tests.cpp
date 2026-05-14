@@ -1,5 +1,6 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QBuffer>
 #include <QMimeData>
 
 void WhatSonCppRegressionTests::filetypeCapture_ownsClipboardFileTypeDetection()
@@ -29,6 +30,12 @@ void WhatSonCppRegressionTests::filetypeCapture_ownsClipboardFileTypeDetection()
     QCOMPARE(
         WhatSon::Clipboard::FiletypeCapture::defaultResourceFileName(QStringLiteral(".pdf")),
         QStringLiteral("clipboard-resource.pdf"));
+    QVERIFY(WhatSon::Clipboard::FiletypeCapture::mimeTypeLooksLikeImagePayload(
+        QStringLiteral("application/x-qt-image")));
+    QVERIFY(WhatSon::Clipboard::FiletypeCapture::mimeTypeLooksLikeImagePayload(
+        QStringLiteral("com.apple.tiff")));
+    QVERIFY(!WhatSon::Clipboard::FiletypeCapture::mimeTypeLooksLikeImagePayload(
+        QStringLiteral("application/pdf")));
 
     const QString importSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp"));
@@ -38,6 +45,33 @@ void WhatSonCppRegressionTests::filetypeCapture_ownsClipboardFileTypeDetection()
     QVERIFY(!importSource.contains(QStringLiteral("QString formatFromMimeType(")));
     QVERIFY(filetypeSource.contains(QStringLiteral("kFormatsByMimeType")));
     QVERIFY(filetypeSource.contains(QStringLiteral("QString formatFromMimeType(")));
+}
+
+void WhatSonCppRegressionTests::inAppClipboard_extractsPlatformImageMimePayloads()
+{
+    QImage sourceImage(QSize(9, 5), QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(qRgba(25, 90, 170, 255));
+
+    QByteArray encodedImage;
+    QBuffer buffer(&encodedImage);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(sourceImage.save(&buffer, "PNG"));
+
+    InAppClipboardManager clipboard;
+
+    QMimeData genericQtImageMimeData;
+    genericQtImageMimeData.setData(QStringLiteral("application/x-qt-image"), encodedImage);
+    QVERIFY(clipboard.captureResourceFromMimeData(&genericQtImageMimeData));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("image"));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".png"));
+    QCOMPARE(clipboard.resourceImport().image.size(), sourceImage.size());
+
+    QMimeData macScreenshotMimeData;
+    macScreenshotMimeData.setData(QStringLiteral("com.apple.tiff"), encodedImage);
+    QVERIFY(clipboard.captureResourceFromMimeData(&macScreenshotMimeData));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("image"));
+    QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".png"));
+    QCOMPARE(clipboard.resourceImport().image.size(), sourceImage.size());
 }
 
 void WhatSonCppRegressionTests::inAppClipboardStore_ownsResourceSnapshotState()

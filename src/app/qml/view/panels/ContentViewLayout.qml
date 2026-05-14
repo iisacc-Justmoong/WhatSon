@@ -413,6 +413,7 @@ Item {
             sequence: StandardKey.Paste
 
             onActivated: contentViewLayout.requestEditorPasteCommand()
+            onActivatedAmbiguously: contentViewLayout.requestEditorPasteCommand()
         }
 
         Connections {

@@ -106,7 +106,8 @@ private:
         const QVariantList& urls,
         QVariantList* importedEntries,
         bool reloadRuntime,
-        int conflictPolicy);
+        int conflictPolicy,
+        bool randomizeDefaultClipboardResourceNames);
     bool importClipboardResourceInternal(
         QVariantList* importedEntries,
         bool reloadRuntime,

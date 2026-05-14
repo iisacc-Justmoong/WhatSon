@@ -2,6 +2,7 @@
 
 #include "app/models/clipboard/InAppClipboardManager.h"
 
+#include <QBuffer>
 #include <QClipboard>
 #include <QMimeData>
 
@@ -15,6 +16,12 @@ namespace
             return {};
         }
         return QString::fromUtf8(file.readAll());
+    }
+
+    bool isThirtyTwoCharacterAlnumResourceId(const QString& value)
+    {
+        static const QRegularExpression pattern(QStringLiteral("^[A-Za-z0-9]{32}$"));
+        return pattern.match(value).hasMatch();
     }
 } // namespace
 
@@ -46,7 +53,7 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
 
     QImage sourceImage(QSize(7, 5), QImage::Format_ARGB32_Premultiplied);
     sourceImage.fill(qRgba(40, 120, 210, 255));
-    const QString capturedImagePath = QDir(workspaceDirectory.path()).filePath(QStringLiteral("capture.png"));
+    const QString capturedImagePath = QDir(workspaceDirectory.path()).filePath(QStringLiteral("clipboard-resource.png"));
     QVERIFY(sourceImage.save(capturedImagePath, "PNG"));
 
     InAppClipboardManager clipboard;
@@ -63,7 +70,9 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     const QString resourcePath = importedResource.value(QStringLiteral("resourcePath")).toString();
     const QString assetPath = importedResource.value(QStringLiteral("assetPath")).toString();
 
-    QVERIFY(!resourceId.isEmpty());
+    QCOMPARE(resourceId, QStringLiteral("clipboard-resource"));
+    QCOMPARE(resourcePath, QStringLiteral(".wsresources/clipboard-resource.wsresource"));
+    QCOMPARE(assetPath, QStringLiteral("clipboard-resource.png"));
     QVERIFY(resourcePath.startsWith(QStringLiteral(".wsresources/")));
     QVERIFY(resourcePath.endsWith(QStringLiteral(".wsresource")));
     QVERIFY(assetPath.endsWith(QStringLiteral(".png")));
@@ -135,6 +144,68 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImageThroughManag
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
     const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
     QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardRandomNameHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    InAppClipboardManager clipboard;
+    clipboard.setCurrentHubPath(hubPath);
+
+    QImage firstClipboardImage(QSize(10, 7), QImage::Format_ARGB32_Premultiplied);
+    firstClipboardImage.fill(qRgba(32, 90, 180, 255));
+    QVERIFY(clipboard.setImageResource(firstClipboardImage, QStringLiteral("image/png")));
+    const QVariantList firstEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(firstEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    QImage secondClipboardImage(QSize(11, 8), QImage::Format_ARGB32_Premultiplied);
+    secondClipboardImage.fill(qRgba(180, 80, 32, 255));
+    QVERIFY(clipboard.setImageResource(secondClipboardImage, QStringLiteral("image/png")));
+    const QVariantList secondEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(secondEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    const QVariantMap firstResource = firstEntries.constFirst().toMap();
+    const QVariantMap secondResource = secondEntries.constFirst().toMap();
+    const QString firstResourceId = firstResource.value(QStringLiteral("resourceId")).toString();
+    const QString secondResourceId = secondResource.value(QStringLiteral("resourceId")).toString();
+    const QString firstResourcePath = firstResource.value(QStringLiteral("resourcePath")).toString();
+    const QString secondResourcePath = secondResource.value(QStringLiteral("resourcePath")).toString();
+
+    QVERIFY(isThirtyTwoCharacterAlnumResourceId(firstResourceId));
+    QVERIFY(isThirtyTwoCharacterAlnumResourceId(secondResourceId));
+    QVERIFY(firstResourceId != secondResourceId);
+    QCOMPARE(firstResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(firstResourceId));
+    QCOMPARE(secondResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(secondResourceId));
+    QCOMPARE(
+        firstResource.value(QStringLiteral("assetPath")).toString(),
+        QStringLiteral("%1.png").arg(firstResourceId));
+    QCOMPARE(
+        secondResource.value(QStringLiteral("assetPath")).toString(),
+        QStringLiteral("%1.png").arg(secondResourceId));
+
+    const QString firstPackageDirectoryPath = QDir(hubPath).filePath(firstResourcePath);
+    const QString secondPackageDirectoryPath = QDir(hubPath).filePath(secondResourcePath);
+    QVERIFY(QFileInfo(firstPackageDirectoryPath).isDir());
+    QVERIFY(QFileInfo(secondPackageDirectoryPath).isDir());
+    QVERIFY(QFileInfo(QDir(firstPackageDirectoryPath).filePath(
+        firstResource.value(QStringLiteral("assetPath")).toString())).isFile());
+    QVERIFY(QFileInfo(QDir(secondPackageDirectoryPath).filePath(
+        secondResource.value(QStringLiteral("assetPath")).toString())).isFile());
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(firstResourcePath));
+    QVERIFY(resourcesListText.contains(secondResourcePath));
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadThroughManager()
@@ -231,7 +302,9 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
         QStringLiteral("Alpha").size(),
         0);
 
-    QVERIFY2(result.value(QStringLiteral("valid")).toBool(), qPrintable(result.value(QStringLiteral("errorMessage")).toString()));
+    QVERIFY2(
+        result.value(QStringLiteral("valid")).toBool(),
+        qPrintable(result.value(QStringLiteral("errorMessage")).toString()));
     QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
     QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
     QCOMPARE(result.value(QStringLiteral("reloadSucceeded")).toBool(), true);
@@ -323,6 +396,87 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
         importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"234\"")));
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+}
+
+void WhatSonCppRegressionTests::clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("PlatformClipboardEditorPasteHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("platform-clipboard-editor-paste-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QImage clipboardImage(QSize(14, 9), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(220, 160, 30, 255));
+    QByteArray encodedImage;
+    QBuffer buffer(&encodedImage);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(clipboardImage.save(&buffer, "PNG"));
+
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+    auto* mimeData = new QMimeData;
+    mimeData->setData(QStringLiteral("com.apple.tiff"), encodedImage);
+    systemClipboard->setMimeData(mimeData);
+
+    InAppClipboardManager clipboard;
+    clipboard.setCurrentHubPath(hubPath);
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("platform-clipboard-editor-paste-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    ClipboardEditorPaste editorPaste;
+    const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
+    const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
+        &clipboard,
+        &session,
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0);
+
+    QVERIFY2(result.value(QStringLiteral("valid")).toBool(), qPrintable(result.value(QStringLiteral("errorMessage")).toString()));
+    QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
+
+    const QVariantList importedEntries = result.value(QStringLiteral("importedEntries")).toList();
+    QCOMPARE(importedEntries.size(), 1);
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
+    QVERIFY(isThirtyTwoCharacterAlnumResourceId(importedResource.value(QStringLiteral("resourceId")).toString()));
+    QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(
+        importedResource.value(QStringLiteral("resourcePath")).toString()));
+
+    const QString packageDirectoryPath =
+        QDir(hubPath).filePath(importedResource.value(QStringLiteral("resourcePath")).toString());
+    QVERIFY(QFileInfo(packageDirectoryPath).isDir());
+    QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(
+        importedResource.value(QStringLiteral("assetPath")).toString())).isFile());
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));

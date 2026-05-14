@@ -19,6 +19,7 @@
 #include <QMetaType>
 #include <QMimeData>
 #include <QPixmap>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QSequentialIterable>
@@ -47,6 +48,11 @@ namespace
     bool mimeFormatLooksLikeSupportedResource(const QString& mimeFormat)
     {
         return !WhatSon::Clipboard::FiletypeCapture::formatFromMimeType(mimeFormat).trimmed().isEmpty();
+    }
+
+    bool mimeFormatLooksLikeImagePayload(const QString& mimeFormat)
+    {
+        return WhatSon::Clipboard::FiletypeCapture::mimeTypeLooksLikeImagePayload(mimeFormat);
     }
 
     QByteArray payloadForMimeFormat(const QMimeData* mimeData, const QString& mimeFormat)
@@ -127,6 +133,22 @@ namespace
             if (!textDataUrl.isEmpty())
             {
                 return textDataUrl;
+            }
+        }
+
+        const QStringList formats = mimeData->formats();
+        for (const QString& mimeFormat : formats)
+        {
+            if (!mimeFormat.startsWith(QStringLiteral("text/"), Qt::CaseInsensitive))
+            {
+                continue;
+            }
+
+            const QString payloadText = QString::fromUtf8(mimeData->data(mimeFormat));
+            const QString dataUrl = extractFromText(payloadText);
+            if (!dataUrl.isEmpty())
+            {
+                return dataUrl;
             }
         }
         return {};
@@ -286,26 +308,15 @@ bool InAppClipboardManager::captureResourceFromMimeData(const QMimeData* mimeDat
     const QStringList formats = mimeData->formats();
     for (const QString& mimeFormat : formats)
     {
-        if (!mimeFormatLooksLikeSupportedResource(mimeFormat))
+        if (!mimeFormatLooksLikeImagePayload(mimeFormat))
         {
             continue;
         }
 
-        const QByteArray payload = payloadForMimeFormat(mimeData, mimeFormat);
         QImage image;
-        if (payload.isEmpty() || image.loadFromData(payload))
+        if (image.loadFromData(mimeData->data(mimeFormat)) && !image.isNull())
         {
-            if (!image.isNull())
-            {
-                return setImageResource(image, mimeFormat);
-            }
-        }
-        if (!payload.isEmpty())
-        {
-            return setResourceImport(WhatSon::Clipboard::resourceImportForBytes(
-                payload,
-                QString(),
-                mimeFormat));
+            return setImageResource(image);
         }
     }
 
@@ -326,6 +337,31 @@ bool InAppClipboardManager::captureResourceFromMimeData(const QMimeData* mimeDat
         if (!image.isNull())
         {
             return setImageResource(image);
+        }
+    }
+
+    for (const QString& mimeFormat : formats)
+    {
+        if (!mimeFormatLooksLikeSupportedResource(mimeFormat))
+        {
+            continue;
+        }
+
+        const QByteArray payload = payloadForMimeFormat(mimeData, mimeFormat);
+        QImage image;
+        if (payload.isEmpty() || image.loadFromData(payload))
+        {
+            if (!image.isNull())
+            {
+                return setImageResource(image);
+            }
+        }
+        if (!payload.isEmpty())
+        {
+            return setResourceImport(WhatSon::Clipboard::resourceImportForBytes(
+                payload,
+                QString(),
+                mimeFormat));
         }
     }
 
@@ -614,7 +650,7 @@ namespace
         return value;
     }
 
-    QString uniqueResourceIdForFile(const QString& resourcesDirectoryPath, const QString& sourceFilePath)
+    QSet<QString> existingResourceIdsForPackages(const QString& resourcesDirectoryPath)
     {
         const QFileInfoList packageDirectories = QDir(resourcesDirectoryPath).entryInfoList(
             QStringList{QStringLiteral("*.wsresource")},
@@ -628,7 +664,12 @@ namespace
             existingIds.insert(
                 WhatSon::Resources::resourceIdFromPackageName(packageDirectory.fileName()).toCaseFolded());
         }
+        return existingIds;
+    }
 
+    QString uniqueResourceIdForFile(const QString& resourcesDirectoryPath, const QString& sourceFilePath)
+    {
+        const QSet<QString> existingIds = existingResourceIdsForPackages(resourcesDirectoryPath);
         const QString baseId = sanitizeResourceId(sourceFilePath);
         QString candidateId = baseId;
         int suffix = 2;
@@ -639,6 +680,49 @@ namespace
         }
 
         return candidateId;
+    }
+
+    QString randomClipboardResourceId()
+    {
+        constexpr int kRandomClipboardResourceIdLength = 32;
+        static const QString kAlphabet =
+            QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+        QString value;
+        value.reserve(kRandomClipboardResourceIdLength);
+        for (int i = 0; i < kRandomClipboardResourceIdLength; ++i)
+        {
+            value.append(kAlphabet.at(QRandomGenerator::global()->bounded(kAlphabet.size())));
+        }
+        return value;
+    }
+
+    QString uniqueRandomClipboardResourceId(const QString& resourcesDirectoryPath)
+    {
+        const QSet<QString> existingIds = existingResourceIdsForPackages(resourcesDirectoryPath);
+        QString candidateId;
+        do
+        {
+            candidateId = randomClipboardResourceId();
+        } while (existingIds.contains(candidateId.toCaseFolded()));
+        return candidateId;
+    }
+
+    bool isDefaultMaterializedClipboardResourceFile(const QFileInfo& sourceFileInfo)
+    {
+        return sourceFileInfo.completeBaseName().trimmed() == QStringLiteral("clipboard-resource");
+    }
+
+    QString clipboardAssetFileNameForResourceId(
+        const QFileInfo& sourceFileInfo,
+        const QString& resourceId)
+    {
+        QString suffix = sourceFileInfo.suffix().trimmed();
+        if (suffix.isEmpty())
+        {
+            suffix = QStringLiteral("bin");
+        }
+        return QStringLiteral("%1.%2").arg(resourceId, suffix);
     }
 
     bool loadExistingResourcePackageEntries(
@@ -991,6 +1075,7 @@ namespace
     bool importSingleFile(
         const QString& sourceFilePath,
         const QString& resourcesDirectoryPath,
+        const bool randomizeDefaultClipboardResourceNames,
         QString* outResourcePath,
         QString* outCreatedPackagePath,
         WhatSon::Resources::ResourcePackageMetadata* outMetadata,
@@ -1019,10 +1104,18 @@ namespace
             return false;
         }
 
-        const QString resourceId = uniqueResourceIdForFile(resourcesDirectoryPath, sourceFilePath);
+        const bool defaultClipboardResourceFile =
+            randomizeDefaultClipboardResourceNames
+            && isDefaultMaterializedClipboardResourceFile(sourceFileInfo);
+        const QString resourceId = defaultClipboardResourceFile
+            ? uniqueRandomClipboardResourceId(resourcesDirectoryPath)
+            : uniqueResourceIdForFile(resourcesDirectoryPath, sourceFilePath);
         const QString packageDirectoryPath = QDir(resourcesDirectoryPath).filePath(
             resourceId + WhatSon::Resources::packageDirectorySuffix());
-        const QString destinationAssetPath = QDir(packageDirectoryPath).filePath(sourceFileInfo.fileName());
+        const QString destinationAssetFileName = defaultClipboardResourceFile
+            ? clipboardAssetFileNameForResourceId(sourceFileInfo, resourceId)
+            : sourceFileInfo.fileName();
+        const QString destinationAssetPath = QDir(packageDirectoryPath).filePath(destinationAssetFileName);
         const QString resourcePath = WhatSon::Resources::normalizePath(
             QStringLiteral("%1/%2")
                 .arg(QFileInfo(resourcesDirectoryPath).fileName(), QFileInfo(packageDirectoryPath).fileName()));
@@ -1050,7 +1143,7 @@ namespace
 
         const WhatSon::Resources::ResourcePackageMetadata metadata =
             WhatSon::Resources::buildMetadataForAssetFile(
-                sourceFileInfo.fileName(),
+                destinationAssetFileName,
                 resourceId,
                 resourcePath);
 
@@ -1429,18 +1522,18 @@ QVariantMap InAppClipboardManager::inspectImportConflictForUrls(const QVariantLi
 
 bool InAppClipboardManager::importUrls(const QVariantList& urls)
 {
-    return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort);
+    return importUrlsInternal(urls, nullptr, true, ConflictPolicyAbort, false);
 }
 
 bool InAppClipboardManager::importUrlsWithConflictPolicy(const QVariantList& urls, const int conflictPolicy)
 {
-    return importUrlsInternal(urls, nullptr, true, conflictPolicy);
+    return importUrlsInternal(urls, nullptr, true, conflictPolicy, false);
 }
 
 QVariantList InAppClipboardManager::importUrlsForEditor(const QVariantList& urls)
 {
     QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort))
+    if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort, false))
     {
         return {};
     }
@@ -1452,7 +1545,7 @@ QVariantList InAppClipboardManager::importUrlsForEditorWithConflictPolicy(
     const int conflictPolicy)
 {
     QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries, false, conflictPolicy))
+    if (!importUrlsInternal(urls, &importedEntries, false, conflictPolicy, false))
     {
         return {};
     }
@@ -1526,7 +1619,8 @@ bool InAppClipboardManager::importClipboardResourceInternal(
         QVariantList{QUrl::fromLocalFile(localFilePath)},
         importedEntries,
         reloadRuntime,
-        conflictPolicy);
+        conflictPolicy,
+        true);
     if (imported)
     {
         clear();
@@ -1538,7 +1632,8 @@ bool InAppClipboardManager::importUrlsInternal(
     const QVariantList& urls,
     QVariantList* importedEntries,
     const bool reloadRuntime,
-    const int conflictPolicy)
+    const int conflictPolicy,
+    const bool randomizeDefaultClipboardResourceNames)
 {
     WhatSon::Debug::traceSelf(
         this,
@@ -1738,6 +1833,7 @@ bool InAppClipboardManager::importUrlsInternal(
                 : importSingleFile(
                     sourceFilePath,
                     resourcesDirectoryPath,
+                    randomizeDefaultClipboardResourceNames,
                     &resourcePath,
                     &packagePath,
                     &importedMetadata,

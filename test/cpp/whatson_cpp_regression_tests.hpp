@@ -1176,6 +1176,7 @@ private slots:
     void detailCurrentNoteContextBridge_rejectsWiringMutationAfterLock();
     void onboardingRouteBootstrapController_rejectsHubControllerMutationAfterLock();
     void filetypeCapture_ownsClipboardFileTypeDetection();
+    void inAppClipboard_extractsPlatformImageMimePayloads();
     void inAppClipboardStore_ownsResourceSnapshotState();
     void inAppClipboard_matchesMimeAndFileTypesToResourceTaxonomy();
     void inAppClipboard_acceptsNonImagePayloadsFromAppAndMimeData();
@@ -1301,9 +1302,11 @@ private slots:
     void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();
     void inAppClipboard_importsClipboardImageThroughManager();
+    void inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds();
     void inAppClipboard_importsNonImageClipboardPayloadThroughManager();
     void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
     void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
+    void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
     void clipboardEditorPaste_fallsBackForNonImageResource();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();

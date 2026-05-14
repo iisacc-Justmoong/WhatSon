@@ -18,6 +18,28 @@ namespace WhatSon::Clipboard::FiletypeCapture
         return value;
     }
 
+    bool mimeTypeLooksLikeImagePayload(const QString& mimeType)
+    {
+        const QString normalized = normalizeMimeType(mimeType);
+        return normalized.startsWith(QStringLiteral("image/"))
+            || normalized == QStringLiteral("application/x-qt-image")
+            || normalized == QStringLiteral("com.apple.tiff")
+            || normalized == QStringLiteral("public.tiff")
+            || normalized == QStringLiteral("public.png")
+            || normalized == QStringLiteral("public.jpeg")
+            || normalized.contains(QStringLiteral("image"))
+            || normalized.contains(QStringLiteral("png"))
+            || normalized.contains(QStringLiteral("jpeg"))
+            || normalized.contains(QStringLiteral("jpg"))
+            || normalized.contains(QStringLiteral("gif"))
+            || normalized.contains(QStringLiteral("bmp"))
+            || normalized.contains(QStringLiteral("webp"))
+            || normalized.contains(QStringLiteral("tif"))
+            || normalized.contains(QStringLiteral("tiff"))
+            || normalized.contains(QStringLiteral("heic"))
+            || normalized.contains(QStringLiteral("heif"));
+    }
+
     QString formatFromMimeType(const QString& mimeType)
     {
         static const QHash<QString, QString> kFormatsByMimeType = {
@@ -33,6 +55,8 @@ namespace WhatSon::Clipboard::FiletypeCapture
             {QStringLiteral("image/heif"), QStringLiteral(".heic")},
             {QStringLiteral("image/avif"), QStringLiteral(".avif")},
             {QStringLiteral("image/svg+xml"), QStringLiteral(".svg")},
+            {QStringLiteral("application/x-qt-image"), QStringLiteral(".png")},
+            {QStringLiteral("com.apple.tiff"), QStringLiteral(".png")},
             {QStringLiteral("public.png"), QStringLiteral(".png")},
             {QStringLiteral("public.jpeg"), QStringLiteral(".jpg")},
             {QStringLiteral("public.tiff"), QStringLiteral(".tiff")},
