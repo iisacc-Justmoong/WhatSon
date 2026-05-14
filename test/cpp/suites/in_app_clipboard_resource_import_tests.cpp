@@ -29,10 +29,24 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
 {
     const QString clipboardSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
+    const QString editorPasteHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.h"));
+    const QString editorPasteSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.cpp"));
 
     QVERIFY(!clipboardSource.isEmpty());
+    QVERIFY(!editorPasteHeader.isEmpty());
+    QVERIFY(!editorPasteSource.isEmpty());
     QVERIFY(clipboardSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
     QVERIFY(clipboardSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
+    QVERIFY(editorPasteHeader.contains(QStringLiteral("attachEditorPasteOwner")));
+    QVERIFY(editorPasteHeader.contains(QStringLiteral("bool eventFilter(QObject* watched, QEvent* event) override")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("QEvent::KeyPress")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("event->accept();")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("return true;")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("return false;")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
+    QVERIFY(editorPasteSource.contains(QStringLiteral("replaceEditorDocumentText")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")).exists());

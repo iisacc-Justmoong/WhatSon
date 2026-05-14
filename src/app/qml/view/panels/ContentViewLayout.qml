@@ -98,9 +98,6 @@ Item {
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
-    property string lastEditorPasteStage: ""
-    property string lastEditorPasteErrorMessage: ""
-    property bool lastEditorPasteNativeFallback: false
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -144,70 +141,6 @@ Item {
         if (value.count !== undefined)
             return Math.max(0, Math.floor(Number(value.count) || 0));
         return 0;
-    }
-    function rememberEditorPasteResult(result) {
-        contentViewLayout.lastEditorPasteStage = "";
-        contentViewLayout.lastEditorPasteErrorMessage = "";
-        contentViewLayout.lastEditorPasteNativeFallback = false;
-        if (!result)
-            return;
-
-        if (result.stage !== undefined && result.stage !== null)
-            contentViewLayout.lastEditorPasteStage = String(result.stage);
-        if (result.errorMessage !== undefined && result.errorMessage !== null)
-            contentViewLayout.lastEditorPasteErrorMessage = String(result.errorMessage).trim();
-        contentViewLayout.lastEditorPasteNativeFallback = Boolean(result.nativePaste);
-    }
-    function pasteClipboardResourceIntoEditor() {
-        if (!contentViewLayout.inAppClipboard
-                || !contentViewLayout.noteEditorSession
-                || !contentViewLayout.clipboardEditorPaste
-                || contentViewLayout.editorReadOnly
-                || contentViewLayout.clipboardEditorPaste.pasteImageResourceIntoEditor === undefined)
-            return false;
-
-        const insertion = contentViewLayout.clipboardEditorPaste.pasteImageResourceIntoEditor(
-                    contentViewLayout.inAppClipboard,
-                    contentViewLayout.noteEditorSession,
-                    contentsTextEditor.editorDocumentText,
-                    contentsTextEditor.editorSelectionStart,
-                    contentsTextEditor.editorSelectionLength);
-        contentViewLayout.rememberEditorPasteResult(insertion);
-        if (!insertion || Boolean(insertion.nativePaste))
-            return false;
-        if (!Boolean(insertion.valid))
-            return true;
-
-        const editorDocumentText = insertion.editorDocumentText !== undefined
-                && insertion.editorDocumentText !== null
-                ? String(insertion.editorDocumentText)
-                : String(insertion.bodySourceText);
-        if (!contentsTextEditor.replaceEditorDocumentText(
-                    editorDocumentText,
-                    Number(insertion.cursorPosition) || 0))
-            return true;
-        return true;
-    }
-    function requestEditorPasteCommand() {
-        return contentViewLayout.pasteClipboardResourceIntoEditor();
-    }
-    function editorPasteKeyMatches(key, modifiers) {
-        const normalizedKey = Math.floor(Number(key) || 0);
-        const normalizedModifiers = Math.floor(Number(modifiers) || 0);
-        const commandModifier =
-                (normalizedModifiers & Qt.MetaModifier) === Qt.MetaModifier
-                || (normalizedModifiers & Qt.ControlModifier) === Qt.ControlModifier;
-        const disallowedModifiers =
-                (normalizedModifiers & Qt.ShiftModifier) === Qt.ShiftModifier
-                || (normalizedModifiers & Qt.AltModifier) === Qt.AltModifier;
-        return normalizedKey === Qt.Key_V && commandModifier && !disallowedModifiers;
-    }
-    function handleRuntimeEditorPasteKey(key, modifiers, autoRepeat) {
-        if (Boolean(autoRepeat)
-                || !contentViewLayout.editorCommandShortcutEnabled()
-                || !contentViewLayout.editorPasteKeyMatches(key, modifiers))
-            return false;
-        return contentViewLayout.requestEditorPasteCommand();
     }
     function applyEditorFormatTag(tagName, allowSelectionSnapshot) {
         if (!contentViewLayout.noteEditorSession
@@ -347,8 +280,11 @@ Item {
 
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
                 editorReadOnly: contentViewLayout.editorReadOnly
+                inAppClipboard: contentViewLayout.inAppClipboard
                 noteBodyFilePath: contentViewLayout.editorSourceFilePath
+                noteEditorSession: contentViewLayout.noteEditorSession
                 objectName: "contentsDisplayTextEditor"
 
                 onSyncFinished: function(path) {
@@ -408,14 +344,6 @@ Item {
                 sourceFontWeight: LV.Theme.textBodyWeight
                 sourceViewportHeight: contentsTextEditor.editorViewportHeight
                 visible: contentViewLayout.minimapVisible
-            }
-        }
-
-        Connections {
-            target: LV.RuntimeEvents
-
-            function onKeyPressed(key, modifiers, autoRepeat, text) {
-                contentViewLayout.handleRuntimeEditorPasteKey(key, modifiers, autoRepeat);
             }
         }
 

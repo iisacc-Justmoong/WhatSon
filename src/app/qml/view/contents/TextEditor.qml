@@ -8,6 +8,9 @@ LV.TextEditor {
 
     property bool editorReadOnly: false
     property string noteBodyFilePath: ""
+    property var inAppClipboard: null
+    property var clipboardEditorPaste: null
+    property var noteEditorSession: null
     property var viewportFlickable: null
     property int editorPlainTextRevision: 0
     property int editorLineMetricsRevision: 0
@@ -481,6 +484,20 @@ LV.TextEditor {
         return true;
     }
 
+    function refreshClipboardEditorPasteOwner() {
+        if (!textEditor.clipboardEditorPaste
+                || textEditor.clipboardEditorPaste.attachEditorPasteOwner === undefined
+                || !textEditor.editorItem
+                || !textEditor.inAppClipboard
+                || !textEditor.noteEditorSession)
+            return false;
+        return textEditor.clipboardEditorPaste.attachEditorPasteOwner(
+                    textEditor.editorItem,
+                    textEditor,
+                    textEditor.inAppClipboard,
+                    textEditor.noteEditorSession);
+    }
+
     function appendEditorGestureUiTokens(tokens, value) {
         if (value === undefined || value === null)
             return;
@@ -637,12 +654,23 @@ LV.TextEditor {
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor
 
+    onInAppClipboardChanged: textEditor.refreshClipboardEditorPasteOwner()
+    onClipboardEditorPasteChanged: textEditor.refreshClipboardEditorPasteOwner()
+    onNoteEditorSessionChanged: textEditor.refreshClipboardEditorPasteOwner()
+
     Component.onCompleted: {
         textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
                     textEditor,
                     "editorViewportFlickable");
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
+        Qt.callLater(textEditor.refreshClipboardEditorPasteOwner);
+    }
+    Component.onDestruction: {
+        if (textEditor.clipboardEditorPaste
+                && textEditor.clipboardEditorPaste.detachEditorPasteOwner !== undefined
+                && textEditor.editorItem)
+            textEditor.clipboardEditorPaste.detachEditorPasteOwner(textEditor.editorItem);
     }
 
     onTextChanged: {

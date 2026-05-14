@@ -8,6 +8,9 @@ Implements image resource paste orchestration for the note editor.
 
 - Refreshes the in-app clipboard resource snapshot, currently accepts only `image` resources, and requests native paste
   fallback for unsupported resource types.
+- Owns a C++ event filter attachment for the editor's public LVRS editor item. The event filter handles non-repeated
+  `Cmd/Ctrl+V` key press events, runs image resource paste synchronously, and returns `true` only when the key event must
+  be consumed.
 - Returns a `stage` field for every handled result so QML can distinguish capture failure, unsupported resources,
   import failure, source insertion failure, reload failure, and completed paste without reaching into lower-level
   objects.
@@ -24,3 +27,5 @@ Implements image resource paste orchestration for the note editor.
 - 반환 map의 `stage`는 `capture`, `unsupported-resource`, `import`, `source-insertion`, `reload`, `completed`
   같은 실패/완료 단계를 담아 QML이 native paste fallback과 실제 처리 실패를 구분할 수 있게 한다.
 - QML은 반환된 `editorDocumentText`와 `cursorPosition`만 LVRS `TextEditor`에 반영한다.
+- C++ event filter가 적용을 완료한 image paste event는 consume한다. 지원 리소스가 없어 native paste fallback이
+  필요한 경우에는 consume하지 않아 LVRS `TextEdit` 기본 paste가 계속 실행될 수 있다.
