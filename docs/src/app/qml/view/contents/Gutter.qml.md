@@ -17,7 +17,10 @@
 - Each line-number delegate calls `lineMetricProvider(index)` to place the number at the rendered start of that logical
   source line. Wrapped continuation rows do not create delegates and therefore remain unnumbered. `fallbackLineHeight`
   is used only when the editor surface has not exposed a measurable peer line yet.
-- The delegate whose index matches `currentLineIndex` draws a blue rounded pill bar on the right side of the gutter as
+- If a logical source line has a tall rendered block such as an image resource frame, the delegate may span the whole
+  block height, but the visible line number and current-line indicator stay inside the top fallback-line-height band.
+  They must not be vertically centered inside the entire resource frame.
+- The delegate whose index matches `currentLineIndex` draws a blue rounded pill bar on the left side of the gutter as
   the current cursor-line indicator. `currentLineIndex` is expected to be the sibling editor's logical cursor line.
 - It does not draw a separator between the gutter and editor.
 - It does not own parser, projection, persistence, editor session, or note mutation behavior.
@@ -32,7 +35,9 @@
 - 동작: 각 줄 번호는 sibling `TextEditor.qml`의 `lineMetricProvider(index)`가 반환한 logical source line 시작
   위치에 배치된다. paragraph가 wrap되어 여러 시각 행이 되어도 continuation row에는 delegate가 없으므로 번호가
   찍히지 않는다.
-- 동작: `currentLineIndex`와 일치하는 줄 번호의 우측에는 파란색 알약 모양 막대를 그려 현재 cursor line을
+- 동작: 이미지 resource frame처럼 한 source line이 큰 높이로 렌더되어도 line number와 현재 줄 indicator는
+  전체 block 중앙이 아니라 상단 fallback line-height 밴드 안에 표시된다.
+- 동작: `currentLineIndex`와 일치하는 줄 번호의 좌측에는 파란색 알약 모양 막대를 그려 현재 cursor line을
   표시한다. 이 값은 sibling editor의 logical cursor line 기준이어야 하며, paragraph wrap visual row를 별도
   줄로 세지 않는다.
 - 동작: 거터 우측과 에디터 좌측 사이의 분리선은 그리지 않는다.

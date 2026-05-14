@@ -492,15 +492,29 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-figma-node-id=\"292:50\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceHeader")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceToolbar")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-more")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral(">Image<")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-type-label=\"Image\"")));
     QVERIFY(editorDocumentText.contains(
-        QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName()));
+        QStringLiteral("data-resource-file-name=\"%1\"").arg(
+            QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName())));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("resourceHeader")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("resourceToolbar")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-more")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral(">Image<")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"338\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"211\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("contenteditable")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("cellpadding=\"6\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
@@ -525,4 +539,62 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         bodySourceText);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/capture.wsresource\" id=\"capture\" />");
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("resource-frame-delete-note"),
+        QStringLiteral("Alpha\n%1\nBeta").arg(resourceTag),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("resource-frame-delete-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("data-resource-file-name=\"capture.wsresource\"")));
+
+    QTextDocument mountedEditorDocument;
+    mountedEditorDocument.setHtml(mountedEditorSource);
+    const QString mountedPlainText = mountedEditorDocument.toPlainText();
+    QVERIFY(mountedPlainText.contains(QChar::ObjectReplacementCharacter));
+    QVERIFY(!mountedPlainText.contains(QStringLiteral("Image")));
+    QVERIFY(!mountedPlainText.contains(QStringLiteral("capture.wsresource")));
+
+    QString editorTextAfterSingleObjectDeletion = mountedPlainText;
+    editorTextAfterSingleObjectDeletion.remove(QChar::ObjectReplacementCharacter);
+    editorTextAfterSingleObjectDeletion.replace(QStringLiteral("\n\n"), QStringLiteral("\n"));
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+        session.editorFilePath(),
+        editorTextAfterSingleObjectDeletion));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QVERIFY(session.persistEditorFile(session.editorFilePath()));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+    QCOMPARE(session.parsedLineCount(), 2);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha\nBeta"));
+    QVERIFY(!persistedBodyDocument.contains(QStringLiteral("<resource")));
+    QVERIFY(!persistedBodyDocument.contains(QStringLiteral("capture.wsresource")));
 }

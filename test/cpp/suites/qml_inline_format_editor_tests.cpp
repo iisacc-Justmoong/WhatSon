@@ -51,6 +51,8 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportWidth")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.75")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPadding")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorPaddedEditorItemHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPaddingHitAreaHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorPlainText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorLogicalLineHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorPlainTextRevision: 0")));
@@ -64,8 +66,15 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorAtDocumentEnd()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorPaddedEditorItemHeight")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("objectName: \"contentsTextEditorBottomViewportPaddingHitArea\"")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("preventStealing: false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorSurface.lineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function onContentHeightChanged()")));

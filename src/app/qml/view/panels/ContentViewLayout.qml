@@ -98,6 +98,9 @@ Item {
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
+    property string lastEditorPasteStage: ""
+    property string lastEditorPasteErrorMessage: ""
+    property bool lastEditorPasteNativeFallback: false
     property double lastEditorPasteCommandEpochMs: -1
     readonly property int editorPasteCommandDedupMs: 120
     property var sidebarHierarchyController: null
@@ -144,6 +147,19 @@ Item {
             return Math.max(0, Math.floor(Number(value.count) || 0));
         return 0;
     }
+    function rememberEditorPasteResult(result) {
+        contentViewLayout.lastEditorPasteStage = "";
+        contentViewLayout.lastEditorPasteErrorMessage = "";
+        contentViewLayout.lastEditorPasteNativeFallback = false;
+        if (!result)
+            return;
+
+        if (result.stage !== undefined && result.stage !== null)
+            contentViewLayout.lastEditorPasteStage = String(result.stage);
+        if (result.errorMessage !== undefined && result.errorMessage !== null)
+            contentViewLayout.lastEditorPasteErrorMessage = String(result.errorMessage).trim();
+        contentViewLayout.lastEditorPasteNativeFallback = Boolean(result.nativePaste);
+    }
     function pasteClipboardResourceIntoEditor() {
         if (!contentViewLayout.inAppClipboard
                 || !contentViewLayout.noteEditorSession
@@ -158,6 +174,7 @@ Item {
                     contentsTextEditor.editorDocumentText,
                     contentsTextEditor.editorSelectionStart,
                     contentsTextEditor.editorSelectionLength);
+        contentViewLayout.rememberEditorPasteResult(insertion);
         if (!insertion || Boolean(insertion.nativePaste))
             return false;
         if (!Boolean(insertion.valid))

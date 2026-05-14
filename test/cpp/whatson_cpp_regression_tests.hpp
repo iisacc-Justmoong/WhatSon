@@ -1250,6 +1250,7 @@ private slots:
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
+    void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
@@ -1259,6 +1260,7 @@ private slots:
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
+    void noteBodyPersistence_dropsDeletedSingleResourceObjectMarker();
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
@@ -1303,10 +1305,12 @@ private slots:
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();
     void inAppClipboard_importsClipboardImageThroughManager();
     void inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds();
+    void inAppClipboard_randomizesClipboardResourceNameBeforeConflictPreflight();
     void inAppClipboard_importsNonImageClipboardPayloadThroughManager();
     void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
     void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
     void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
+    void clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
     void clipboardEditorPaste_fallsBackForNonImageResource();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();

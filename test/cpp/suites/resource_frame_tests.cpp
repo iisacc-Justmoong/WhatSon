@@ -22,21 +22,45 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
 
     const QString html = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
 
+    QVERIFY(html.contains(QStringLiteral("<!--whatson-resource-source:")));
     QVERIFY(html.startsWith(QStringLiteral("<!--whatson-resource-source:")));
     QVERIFY(html.contains(QStringLiteral("class=\"whatson-resource-frame\"")));
+    QVERIFY(!html.contains(QStringLiteral("<div class=\"whatson-resource-frame\"")));
+    QVERIFY(!html.contains(QStringLiteral("data-whatson-component=\"resource-frame\"")));
+    QVERIFY(!html.contains(QStringLiteral("<table")));
+    QVERIFY(html.count(QStringLiteral("<img")) == 1);
+    QVERIFY(html.contains(QStringLiteral("width:100%")));
+    QVERIFY(html.contains(QStringLiteral("max-width:100%")));
     QVERIFY(html.contains(QStringLiteral("data-figma-node-id=\"292:50\"")));
-    QVERIFY(html.contains(QStringLiteral("resourceHeader")));
-    QVERIFY(html.contains(QStringLiteral("resourceToolbar")));
-    QVERIFY(html.contains(QStringLiteral("whatson-resource-more")));
-    QVERIFY(html.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(html.contains(QStringLiteral("data-resource-type-label=\"Image\"")));
+    QVERIFY(html.contains(QStringLiteral("data-resource-file-name=\"capture.wsresource\"")));
+    QVERIFY(!html.contains(QStringLiteral("resourceHeader")));
+    QVERIFY(!html.contains(QStringLiteral("resourceToolbar")));
+    QVERIFY(!html.contains(QStringLiteral("whatson-resource-more")));
+    QVERIFY(!html.contains(QStringLiteral("whatson-resource-type-display")));
+    QVERIFY(!html.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(!html.contains(QStringLiteral("data-display-role=\"resource-type\"")));
+    QVERIFY(!html.contains(QStringLiteral("data-display-role=\"resource-file-name\"")));
+    QVERIFY(!html.contains(QStringLiteral("width=\"480\"")));
     QVERIFY(!html.contains(QStringLiteral("colspan")));
-    QVERIFY(html.contains(QStringLiteral("border-color:#2C2E2F")));
-    QVERIFY(html.contains(QStringLiteral("border-radius:12px")));
-    QVERIFY(html.contains(QStringLiteral(">Image<")));
-    QVERIFY(html.contains(QStringLiteral(">capture.wsresource<")));
+    QVERIFY(!html.contains(QStringLiteral(">Image<")));
+    QVERIFY(!html.contains(QStringLiteral(">capture.wsresource<")));
     QVERIFY(html.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(html.contains(QStringLiteral("width=\"338\"")));
-    QVERIFY(html.contains(QStringLiteral("height=\"190\"")));
+    QVERIFY(html.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(!html.contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(!html.contains(QStringLiteral("height=\"352\"")));
+    QVERIFY(html.contains(QStringLiteral("height:auto")));
+    QVERIFY(html.contains(QStringLiteral("object-fit:contain")));
+    QVERIFY(html.contains(QStringLiteral("data-source-width=\"1600\"")));
+    QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-width=\"1600\"")));
+    QVERIFY(html.contains(QStringLiteral("data-display-height=\"900\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-display-height=\"940\"")));
+    QVERIFY(html.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
+    QVERIFY(html.contains(QStringLiteral("max-height:100%")));
+    QVERIFY(!html.contains(QStringLiteral("<input")));
+    QVERIFY(!html.contains(QStringLiteral("<textarea")));
+    QVERIFY(!html.contains(QStringLiteral("contenteditable")));
     QVERIFY(!html.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!html.contains(QStringLiteral("cellpadding=\"6\"")));
 
@@ -45,13 +69,21 @@ void WhatSonCppRegressionTests::resourceFrame_rendersFigmaImageChrome()
     const QString richTextRoundTrip = richTextDocument.toHtml();
     QVERIFY(richTextRoundTrip.contains(QStringLiteral("<img")));
     QVERIFY(richTextRoundTrip.contains(QStringLiteral("file://")));
+    QCOMPARE(richTextDocument.toPlainText(), QString(QChar::ObjectReplacementCharacter));
 
     const QStringList renderedTextLines =
         WhatSon::EditorComponent::ResourceFrame::renderedTextLines(descriptor);
     QVERIFY(renderedTextLines.contains(QStringLiteral("Image")));
     QVERIFY(renderedTextLines.contains(QStringLiteral("...")));
+    QVERIFY(renderedTextLines.contains(QStringLiteral("Image...")));
     QVERIFY(renderedTextLines.contains(QStringLiteral("Image ...")));
     QVERIFY(renderedTextLines.contains(QStringLiteral("capture.wsresource")));
     QVERIFY(renderedTextLines.contains(QStringLiteral("capture image .png")));
-    QCOMPARE(WhatSon::EditorComponent::ResourceFrame::previewViewportSize(), QSize(338, 352));
+    QCOMPARE(WhatSon::EditorComponent::ResourceFrame::previewViewportSize(), QSize());
+    QCOMPARE(
+        WhatSon::EditorComponent::ResourceFrame::imageDisplaySize(QSize(1600, 900)),
+        QSize(1600, 900));
+    QCOMPARE(
+        WhatSon::EditorComponent::ResourceFrame::imageDisplaySize(QSize(900, 1600)),
+        QSize(900, 900));
 }

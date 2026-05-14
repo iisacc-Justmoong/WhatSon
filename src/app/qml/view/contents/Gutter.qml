@@ -75,6 +75,11 @@ Item {
             required property int index
             readonly property var lineMetric: gutter.lineMetricAt(index)
             readonly property bool currentLineActive: gutter.hasCurrentLineIndicator && index === gutter.currentLineIndex
+            readonly property real lineNumberBandHeight: Math.max(
+                    1,
+                    Math.min(
+                        lineNumberRow.height,
+                        Number(gutter.fallbackLineHeight) || lineNumberRow.height))
 
             height: Math.max(1, Number(lineMetric.height) || gutter.fallbackLineHeight)
             visible: gutter.showLineNumbers && gutter.hasSelectedSource
@@ -86,7 +91,7 @@ Item {
                 elide: Text.ElideLeft
                 font.family: LV.Theme.fontBody
                 font.pixelSize: LV.Theme.textCaption
-                height: parent.height
+                height: lineNumberRow.lineNumberBandHeight
                 horizontalAlignment: Text.AlignRight
                 text: String(lineNumberRow.index + 1)
                 verticalAlignment: Text.AlignVCenter
@@ -102,8 +107,8 @@ Item {
                 radius: width / 2
                 visible: lineNumberRow.currentLineActive
                 width: Math.max(LV.Theme.gap2, LV.Theme.strokeThin * 2)
-                x: Math.max(LV.Theme.gapNone, parent.width - width - LV.Theme.gap2)
-                y: Math.max(LV.Theme.gapNone, (parent.height - height) / 2)
+                x: LV.Theme.gapNone
+                y: Math.max(LV.Theme.gapNone, (lineNumberRow.lineNumberBandHeight - height) / 2)
             }
         }
     }

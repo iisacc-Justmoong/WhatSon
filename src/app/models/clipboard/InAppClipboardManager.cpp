@@ -713,6 +713,33 @@ namespace
         return sourceFileInfo.completeBaseName().trimmed() == QStringLiteral("clipboard-resource");
     }
 
+    bool shouldRandomizeDefaultClipboardResourceFile(
+        const QString& sourceFilePath,
+        const bool randomizeDefaultClipboardResourceNames)
+    {
+        return randomizeDefaultClipboardResourceNames
+            && isDefaultMaterializedClipboardResourceFile(QFileInfo(sourceFilePath));
+    }
+
+    QStringList conflictCheckedSourceFiles(
+        const QStringList& sourceFiles,
+        const bool randomizeDefaultClipboardResourceNames)
+    {
+        QStringList checkedFiles;
+        checkedFiles.reserve(sourceFiles.size());
+        for (const QString& sourceFilePath : sourceFiles)
+        {
+            if (shouldRandomizeDefaultClipboardResourceFile(
+                sourceFilePath,
+                randomizeDefaultClipboardResourceNames))
+            {
+                continue;
+            }
+            checkedFiles.push_back(sourceFilePath);
+        }
+        return checkedFiles;
+    }
+
     QString clipboardAssetFileNameForResourceId(
         const QFileInfo& sourceFileInfo,
         const QString& resourceId)
@@ -1554,16 +1581,9 @@ QVariantList InAppClipboardManager::importUrlsForEditorWithConflictPolicy(
 
 bool InAppClipboardManager::refreshClipboardResourceAvailabilitySnapshot()
 {
-    const bool hadSnapshot = hasResource();
-    const WhatSon::Clipboard::ClipboardResourceImport previousSnapshot = resourceImport();
     const bool captured = captureSystemClipboardResource();
-    if (!captured && hadSnapshot)
-    {
-        setResourceImport(previousSnapshot);
-    }
-    const bool available = captured || hasResource();
     emit resourceChanged();
-    return available;
+    return captured;
 }
 
 QVariantList InAppClipboardManager::importClipboardResourceForEditor()
@@ -1703,8 +1723,16 @@ bool InAppClipboardManager::importUrlsInternal(
         return false;
     }
 
+    const QStringList preflightConflictSourceFiles = conflictCheckedSourceFiles(
+        sourceFiles,
+        randomizeDefaultClipboardResourceNames);
     ImportConflictDescriptor conflictDescriptor;
-    if (!findFirstImportConflict(sourceFiles, resourcesDirectoryPath, &conflictDescriptor, &resolveError))
+    if (!preflightConflictSourceFiles.isEmpty()
+        && !findFirstImportConflict(
+            preflightConflictSourceFiles,
+            resourcesDirectoryPath,
+            &conflictDescriptor,
+            &resolveError))
     {
         setLastError(resolveError);
         emit operationFailed(resolveError);
@@ -1801,7 +1829,14 @@ bool InAppClipboardManager::importUrlsInternal(
     for (const QString& sourceFilePath : sourceFiles)
     {
         ImportConflictDescriptor sourceFileConflictDescriptor;
-        if (!findFirstImportConflict(QStringList{sourceFilePath}, resourcesDirectoryPath, &sourceFileConflictDescriptor, &resolveError))
+        if (!shouldRandomizeDefaultClipboardResourceFile(
+                sourceFilePath,
+                randomizeDefaultClipboardResourceNames)
+            && !findFirstImportConflict(
+                QStringList{sourceFilePath},
+                resourcesDirectoryPath,
+                &sourceFileConflictDescriptor,
+                &resolveError))
         {
             rollbackImportedResources(false, nullptr);
 

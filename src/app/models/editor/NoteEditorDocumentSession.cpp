@@ -687,8 +687,7 @@ namespace
     {
         const QVector<ActiveResourceSourceLine> resourceLines =
             activeResourceSourceLines(activeBodySourceText);
-        if (resourceLines.isEmpty()
-            || !editorSourceText.contains(QChar::ObjectReplacementCharacter))
+        if (resourceLines.isEmpty())
         {
             return editorSourceText;
         }
@@ -702,10 +701,15 @@ namespace
         int resourceIndex = 0;
         int frameTextAfterResourceIndex = -1;
         bool skipNextPaddingLineAfterResource = false;
+        // If a rich resource object is deleted first, Qt may leave header/footer text behind.
+        // Treat that text run as residue from one deleted resource component, not note text.
+        bool skippedFrameTextForCurrentResource = false;
         for (int index = 0; index < editorLines.size(); ++index)
         {
             const QString& editorLine = editorLines.at(index);
             const bool lineIsBlank = editorLine.trimmed().isEmpty();
+            const bool lineHasResourceObject = lineContainsRichTextObjectReplacement(editorLine);
+
             if (frameTextAfterResourceIndex >= 0
                 && frameTextAfterResourceIndex < resourceLines.size()
                 && lineMatchesRenderedResourceFrameText(
@@ -714,14 +718,30 @@ namespace
             {
                 continue;
             }
+
             if (!lineIsBlank
                 && resourceIndex < resourceLines.size()
                 && lineMatchesRenderedResourceFrameText(
                     editorLine,
                     resourceLines.at(resourceIndex).sourceTag))
             {
+                skippedFrameTextForCurrentResource = true;
                 continue;
             }
+
+            if (skippedFrameTextForCurrentResource && lineIsBlank)
+            {
+                continue;
+            }
+
+            if (skippedFrameTextForCurrentResource
+                && !lineHasResourceObject
+                && resourceIndex < resourceLines.size())
+            {
+                ++resourceIndex;
+                skippedFrameTextForCurrentResource = false;
+            }
+
             if (!lineIsBlank)
             {
                 frameTextAfterResourceIndex = -1;
@@ -755,13 +775,13 @@ namespace
                 continue;
             }
 
-            if (lineContainsRichTextObjectReplacement(editorLine)
-                && resourceIndex < resourceLines.size())
+            if (lineHasResourceObject && resourceIndex < resourceLines.size())
             {
                 const ActiveResourceSourceLine& resourceLine = resourceLines.at(resourceIndex);
                 restoredLines.push_back(resourceLine.sourceTag);
                 skipNextPaddingLineAfterResource = !resourceLine.hasBlankAfter;
                 frameTextAfterResourceIndex = resourceIndex;
+                skippedFrameTextForCurrentResource = false;
                 ++resourceIndex;
                 continue;
             }

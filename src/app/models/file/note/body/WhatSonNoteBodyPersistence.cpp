@@ -652,6 +652,18 @@ namespace
         QString sourceTag;
     };
 
+    bool markerBodyContainsLiveRenderedResourceFrame(const QString& markerBody)
+    {
+        const QString foldedMarkerBody = markerBody.trimmed().toCaseFolded();
+        if (foldedMarkerBody.isEmpty())
+        {
+            return false;
+        }
+        return foldedMarkerBody.contains(QStringLiteral("whatson-resource-frame"))
+            || foldedMarkerBody.contains(QStringLiteral("data-resource-preview"))
+            || foldedMarkerBody.contains(QStringLiteral("<img"));
+    }
+
     QVector<RenderedResourceSourceToken> replaceRenderedResourceBlocksWithSourceTokens(QString* editorHtml)
     {
         QVector<RenderedResourceSourceToken> tokens;
@@ -679,6 +691,11 @@ namespace
             if (sourceTag.isEmpty())
             {
                 rewrittenHtml += match.captured(0);
+            }
+            else if (!markerBodyContainsLiveRenderedResourceFrame(match.captured(2)))
+            {
+                // The marker can survive after Qt/backspace removes the image object. In that
+                // case the canonical resource source must be deleted with the object.
             }
             else
             {

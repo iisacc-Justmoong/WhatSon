@@ -208,6 +208,58 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImagesWithRandomA
     QVERIFY(resourcesListText.contains(secondResourcePath));
 }
 
+void WhatSonCppRegressionTests::inAppClipboard_randomizesClipboardResourceNameBeforeConflictPreflight()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardPreflightRandomNameHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    QImage existingClipboardNamedImage(QSize(8, 6), QImage::Format_ARGB32_Premultiplied);
+    existingClipboardNamedImage.fill(qRgba(30, 120, 210, 255));
+    const QString existingClipboardNamedPath =
+        QDir(workspaceDirectory.path()).filePath(QStringLiteral("clipboard-resource.png"));
+    QVERIFY(existingClipboardNamedImage.save(existingClipboardNamedPath, "PNG"));
+
+    InAppClipboardManager clipboard;
+    clipboard.setCurrentHubPath(hubPath);
+
+    const QVariantList existingEntries =
+        clipboard.importUrlsForEditor(QVariantList{QUrl::fromLocalFile(existingClipboardNamedPath)});
+    QVERIFY2(existingEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QCOMPARE(
+        existingEntries.constFirst().toMap().value(QStringLiteral("assetPath")).toString(),
+        QStringLiteral("clipboard-resource.png"));
+
+    QImage pastedClipboardImage(QSize(9, 7), QImage::Format_ARGB32_Premultiplied);
+    pastedClipboardImage.fill(qRgba(190, 75, 40, 255));
+    QVERIFY(clipboard.setImageResource(pastedClipboardImage, QStringLiteral("image/png")));
+
+    const QVariantList pastedEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(pastedEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    const QVariantMap pastedResource = pastedEntries.constFirst().toMap();
+    const QString pastedResourceId = pastedResource.value(QStringLiteral("resourceId")).toString();
+    const QString pastedResourcePath = pastedResource.value(QStringLiteral("resourcePath")).toString();
+    const QString pastedAssetPath = pastedResource.value(QStringLiteral("assetPath")).toString();
+
+    QVERIFY(isThirtyTwoCharacterAlnumResourceId(pastedResourceId));
+    QCOMPARE(pastedResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(pastedResourceId));
+    QCOMPARE(pastedAssetPath, QStringLiteral("%1.png").arg(pastedResourceId));
+    QVERIFY(pastedAssetPath != QStringLiteral("clipboard-resource.png"));
+
+    const QString resourcesFilePath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    QVERIFY(resourcesListText.contains(QStringLiteral(".wsresources/clipboard-resource.wsresource")));
+    QVERIFY(resourcesListText.contains(pastedResourcePath));
+}
+
 void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadThroughManager()
 {
     QTemporaryDir workspaceDirectory;
@@ -281,10 +333,14 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
 
     QImage clipboardImage(QSize(12, 8), QImage::Format_ARGB32_Premultiplied);
     clipboardImage.fill(qRgba(80, 20, 190, 255));
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+    systemClipboard->setImage(clipboardImage);
 
     InAppClipboardManager clipboard;
-    QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
     clipboard.setCurrentHubPath(hubPath);
+    QVERIFY(!clipboard.hasResource());
 
     NoteEditorDocumentSession session;
     session.setSessionRootPathForTests(sessionRootDir.path());
@@ -308,6 +364,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
     QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
     QCOMPARE(result.value(QStringLiteral("reloadSucceeded")).toBool(), true);
+    QCOMPARE(result.value(QStringLiteral("stage")).toString(), QStringLiteral("completed"));
     QVERIFY(!clipboard.hasResource());
 
     const QVariantList importedEntries = result.value(QStringLiteral("importedEntries")).toList();
@@ -323,8 +380,23 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"338\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"225\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"single-object-raster\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-type-label=\"Image\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-file-name=\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-filename-display")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("contenteditable")));
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
@@ -394,8 +466,12 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
     QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
     QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(
         importedResource.value(QStringLiteral("resourcePath")).toString()));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"234\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"480\"")));
+    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"352\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height:auto")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
@@ -506,6 +582,35 @@ void WhatSonCppRegressionTests::inAppClipboard_refreshReplacesStaleSnapshotWithS
     QVERIFY(clipboard.resourceEntry().value(QStringLiteral("hasImage")).toBool());
 }
 
+void WhatSonCppRegressionTests::clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture()
+{
+    InAppClipboardManager clipboard;
+    QImage staleClipboardImage(QSize(5, 4), QImage::Format_ARGB32_Premultiplied);
+    staleClipboardImage.fill(qRgba(70, 88, 210, 255));
+    QVERIFY(clipboard.setImageResource(staleClipboardImage, QStringLiteral("image/png")));
+    QCOMPARE(clipboard.resourceType(), QStringLiteral("image"));
+
+    QClipboard* systemClipboard = QGuiApplication::clipboard();
+    QVERIFY(systemClipboard != nullptr);
+    systemClipboard->clear();
+
+    NoteEditorDocumentSession session;
+    ClipboardEditorPaste editorPaste;
+    const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
+        &clipboard,
+        &session,
+        QStringLiteral("Alpha"),
+        5,
+        0);
+
+    QCOMPARE(result.value(QStringLiteral("valid")).toBool(), false);
+    QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), true);
+    QCOMPARE(result.value(QStringLiteral("stage")).toString(), QStringLiteral("capture"));
+    QVERIFY(result.value(QStringLiteral("errorMessage")).toString().contains(
+        QStringLiteral("Clipboard does not contain")));
+    QVERIFY(!clipboard.hasResource());
+}
+
 void WhatSonCppRegressionTests::clipboardEditorPaste_fallsBackForNonImageResource()
 {
     QTemporaryDir workspaceDirectory;
@@ -540,6 +645,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_fallsBackForNonImageResourc
 
     QCOMPARE(result.value(QStringLiteral("valid")).toBool(), false);
     QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), true);
+    QCOMPARE(result.value(QStringLiteral("stage")).toString(), QStringLiteral("unsupported-resource"));
     QVERIFY(result.value(QStringLiteral("errorMessage")).toString().contains(QStringLiteral("Only image clipboard resources")));
     QVERIFY(clipboard.hasResource());
     QCOMPARE(clipboard.resourceType(), QStringLiteral("document"));

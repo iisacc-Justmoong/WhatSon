@@ -38,10 +38,35 @@ LV.TextEditor {
             0,
             textEditor.editorViewportHeight * Math.max(0, Number(textEditor.editorBottomViewportPaddingRatio) || 0))
     readonly property real editorLogicalLineHeight: Math.max(1, Number(textEditor.lineHeight) || 1)
+    readonly property real editorTextContentBottomY: {
+        textEditor.editorLineMetricsRevision;
+        return textEditor.editorTextContentBottom();
+    }
+    readonly property real editorPaddedEditorItemHeight: Math.max(
+            textEditor.editorViewportHeight,
+            textEditor.editorTextContentBottomY + textEditor.editorBottomViewportPadding)
+    readonly property real editorBottomViewportPaddingAreaTop: textEditor.editorItem
+            ? textEditor.numberOrFallback(textEditor.editorItem.y, 0)
+              + textEditor.editorTextContentBottomY
+              - textEditor.viewportContentY
+            : textEditor.height
+    readonly property real editorBottomViewportPaddingAreaBottom: textEditor.editorItem
+            ? textEditor.numberOrFallback(textEditor.editorItem.y, 0)
+              + textEditor.editorPaddedEditorItemHeight
+              - textEditor.viewportContentY
+            : textEditor.height
+    readonly property real editorBottomViewportPaddingHitAreaY: Math.max(
+            0,
+            textEditor.editorBottomViewportPaddingAreaTop)
+    readonly property real editorBottomViewportPaddingHitAreaHeight: Math.max(
+            0,
+            Math.min(textEditor.height, textEditor.editorBottomViewportPaddingAreaBottom)
+            -textEditor.editorBottomViewportPaddingHitAreaY)
     readonly property string editorPlainText: {
         textEditor.editorPlainTextRevision;
         return textEditor.editorSurfacePlainText();
     }
+    readonly property string editorResourceObjectReplacementText: "\uFFFC"
     readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForLogicalCursor()
 
     function numberOrFallback(value, fallbackValue) {
@@ -127,29 +152,193 @@ LV.TextEditor {
         return textEditor.normalizedEditorPlainText(textEditor.editorDocumentText);
     }
 
+    function editorTextContentBottom() {
+        const editorSurface = textEditor.editorSurfaceObject();
+        const fallbackHeight = Math.max(1, Number(textEditor.editorLogicalLineHeight) || 1);
+        if (!editorSurface)
+            return fallbackHeight;
+
+        const safeLength = editorSurface.length !== undefined
+                ? Math.max(0, Math.floor(Number(editorSurface.length) || 0))
+                : textEditor.editorDocumentText.length;
+        if (editorSurface.positionToRectangle !== undefined) {
+            const endRectangle = editorSurface.positionToRectangle(safeLength);
+            if (endRectangle) {
+                const endY = textEditor.numberOrFallback(endRectangle.y, 0);
+                const endHeight = Math.max(
+                            1,
+                            textEditor.numberOrFallback(endRectangle.height, fallbackHeight));
+                return Math.max(fallbackHeight, endY + endHeight);
+            }
+        }
+
+        return Math.max(
+                    fallbackHeight,
+                    textEditor.numberOrFallback(editorSurface.contentHeight, fallbackHeight));
+    }
+
+    function editorPlainTextLineRecords() {
+        const documentText = textEditor.editorPlainText;
+        const lineRecords = [];
+        let lineStartPosition = 0;
+
+        for (let position = 0; position < documentText.length; ++position) {
+            if (documentText.charAt(position) !== "\n")
+                continue;
+
+            lineRecords.push({
+                                 text: documentText.slice(lineStartPosition, position),
+                                 start: lineStartPosition,
+                                 end: position
+                             });
+            lineStartPosition = position + 1;
+        }
+
+        lineRecords.push({
+                             text: documentText.slice(lineStartPosition),
+                             start: lineStartPosition,
+                             end: documentText.length
+                         });
+        return lineRecords;
+    }
+
+    function lineContainsResourceObject(lineText) {
+        return String(lineText).indexOf(textEditor.editorResourceObjectReplacementText) >= 0;
+    }
+
+    function lineLooksLikeResourceFrameHeader(lineText) {
+        const trimmedLine = String(lineText).replace(/\u00a0/g, " ").trim();
+        if (trimmedLine.length <= 0)
+            return false;
+
+        const normalizedLine = trimmedLine.toLowerCase();
+        if (normalizedLine === "image"
+                || normalizedLine === "video"
+                || normalizedLine === "document"
+                || normalizedLine === "model"
+                || normalizedLine === "link"
+                || normalizedLine === "audio"
+                || normalizedLine === "archive"
+                || normalizedLine === "resource")
+            return true;
+
+        return trimmedLine === "..."
+                || normalizedLine.endsWith(" ...")
+                || normalizedLine.endsWith("...");
+    }
+
+    function lineLooksLikeResourceFrameFileName(lineText) {
+        const normalizedLine = String(lineText).replace(/\u00a0/g, " ").trim().toLowerCase();
+        return normalizedLine.endsWith(".wsresource")
+                || normalizedLine.indexOf(".wsresource ") >= 0;
+    }
+
+    function resourceFrameSpanLengthAt(lineRecords, lineIndex) {
+        if (!lineRecords
+                || lineIndex < 0
+                || lineIndex >= lineRecords.length)
+            return 0;
+
+        let objectLineIndex = -1;
+        const maximumHeaderLookahead = Math.min(lineRecords.length - 1, lineIndex + 3);
+        for (let candidateIndex = lineIndex; candidateIndex <= maximumHeaderLookahead; ++candidateIndex) {
+            const candidateLine = lineRecords[candidateIndex].text;
+            if (textEditor.lineContainsResourceObject(candidateLine)) {
+                objectLineIndex = candidateIndex;
+                break;
+            }
+
+            if (!textEditor.lineLooksLikeResourceFrameHeader(candidateLine))
+                return 0;
+        }
+
+        if (objectLineIndex < 0)
+            return 0;
+
+        let frameEndIndex = objectLineIndex;
+        while (frameEndIndex + 1 < lineRecords.length
+               && textEditor.lineLooksLikeResourceFrameFileName(lineRecords[frameEndIndex + 1].text))
+            ++frameEndIndex;
+
+        return frameEndIndex - lineIndex + 1;
+    }
+
+    function sourceAlignedLineStartPositions() {
+        const lineRecords = textEditor.editorPlainTextLineRecords();
+        const lineStartPositions = [];
+
+        for (let lineIndex = 0; lineIndex < lineRecords.length;) {
+            lineStartPositions.push(lineRecords[lineIndex].start);
+            const resourceFrameSpanLength = textEditor.resourceFrameSpanLengthAt(lineRecords, lineIndex);
+            lineIndex += Math.max(1, resourceFrameSpanLength);
+        }
+
+        if (lineStartPositions.length <= 0)
+            lineStartPositions.push(0);
+        return lineStartPositions;
+    }
+
+    function sourceAlignedLineIndexForPosition(position) {
+        const lineStartPositions = textEditor.sourceAlignedLineStartPositions();
+        const safePosition = Math.max(
+                    0,
+                    Math.min(
+                        textEditor.editorPlainText.length,
+                        Math.floor(Number(position) || 0)));
+
+        let sourceLineIndex = 0;
+        for (let index = 0; index < lineStartPositions.length; ++index) {
+            if (lineStartPositions[index] > safePosition)
+                break;
+            sourceLineIndex = index;
+        }
+        return sourceLineIndex;
+    }
+
+    function sourceAlignedOverflowMetricFor(lineIndex, lineStartPositions, fallbackMetric, fallbackHeight) {
+        const editorSurface = textEditor.editorSurfaceObject();
+        if (!editorSurface
+                || editorSurface.positionToRectangle === undefined
+                || !lineStartPositions
+                || lineStartPositions.length <= 0)
+            return fallbackMetric;
+
+        const lastLineIndex = Math.max(0, lineStartPositions.length - 1);
+        const lastRectangle = editorSurface.positionToRectangle(lineStartPositions[lastLineIndex]);
+        const endRectangle = editorSurface.positionToRectangle(textEditor.editorPlainText.length);
+        if (!lastRectangle && !endRectangle)
+            return fallbackMetric;
+
+        const editorSurfaceY = textEditor.numberOrFallback(editorSurface.y, 0);
+        const lastY = lastRectangle
+                ? Math.max(0, editorSurfaceY + textEditor.numberOrFallback(lastRectangle.y, fallbackMetric.y))
+                : fallbackMetric.y;
+        const lastHeight = lastRectangle
+                ? Math.max(1, textEditor.numberOrFallback(lastRectangle.height, fallbackHeight))
+                : fallbackHeight;
+        const endY = endRectangle
+                ? Math.max(0, editorSurfaceY + textEditor.numberOrFallback(endRectangle.y, lastY + lastHeight))
+                : lastY + lastHeight;
+        const missingLineOffset = Math.max(0, Math.floor(Number(lineIndex) || 0) - lineStartPositions.length);
+
+        return {
+            y: Math.max(endY, lastY + lastHeight) + missingLineOffset * fallbackHeight,
+            height: fallbackHeight
+        };
+    }
+
     function cursorLineIndexForLogicalCursor() {
         textEditor.cursorPosition;
         textEditor.editorPlainTextRevision;
-        return textEditor.cursorLineIndexFor(
-                    textEditor.editorPlainText,
-                    textEditor.cursorPosition);
+        return textEditor.sourceAlignedLineIndexForPosition(textEditor.cursorPosition);
     }
 
     function logicalLineStartPositionFor(lineIndex) {
         const normalizedIndex = Math.max(0, Math.floor(Number(lineIndex) || 0));
-        const documentText = textEditor.editorPlainText;
-        if (normalizedIndex <= 0)
-            return 0;
-
-        let currentLineIndex = 0;
-        for (let position = 0; position < documentText.length; ++position) {
-            if (documentText.charAt(position) === "\n") {
-                ++currentLineIndex;
-                if (currentLineIndex >= normalizedIndex)
-                    return position + 1;
-            }
-        }
-        return documentText.length;
+        const lineStartPositions = textEditor.sourceAlignedLineStartPositions();
+        if (normalizedIndex < lineStartPositions.length)
+            return lineStartPositions[normalizedIndex];
+        return textEditor.editorPlainText.length;
     }
 
     function editorLogicalLineMetricFor(lineIndex) {
@@ -164,17 +353,44 @@ LV.TextEditor {
         if (!editorSurface || editorSurface.positionToRectangle === undefined)
             return fallbackMetric;
 
-        const lineStartPosition = textEditor.logicalLineStartPositionFor(normalizedIndex);
+        const lineStartPositions = textEditor.sourceAlignedLineStartPositions();
+        if (normalizedIndex >= lineStartPositions.length)
+            return textEditor.sourceAlignedOverflowMetricFor(
+                        normalizedIndex,
+                        lineStartPositions,
+                        fallbackMetric,
+                        fallbackHeight);
+
+        const lineStartPosition = normalizedIndex < lineStartPositions.length
+                ? lineStartPositions[normalizedIndex]
+                : textEditor.editorPlainText.length;
+        const nextLineStartPosition = normalizedIndex + 1 < lineStartPositions.length
+                ? lineStartPositions[normalizedIndex + 1]
+                : -1;
         const rectangle = editorSurface.positionToRectangle(lineStartPosition);
         if (!rectangle)
             return fallbackMetric;
 
-        return {
-            y: Math.max(
+        const y = Math.max(
                     0,
                     textEditor.numberOrFallback(editorSurface.y, 0)
-                    + textEditor.numberOrFallback(rectangle.y, fallbackMetric.y)),
-            height: Math.max(1, textEditor.numberOrFallback(rectangle.height, fallbackHeight))
+                    + textEditor.numberOrFallback(rectangle.y, fallbackMetric.y));
+        let height = Math.max(1, textEditor.numberOrFallback(rectangle.height, fallbackHeight));
+        if (nextLineStartPosition >= 0) {
+            const nextRectangle = editorSurface.positionToRectangle(nextLineStartPosition);
+            if (nextRectangle) {
+                const nextY = Math.max(
+                            0,
+                            textEditor.numberOrFallback(editorSurface.y, 0)
+                            + textEditor.numberOrFallback(nextRectangle.y, y + height));
+                if (nextY > y)
+                    height = Math.max(height, nextY - y);
+            }
+        }
+
+        return {
+            y: y,
+            height: height
         };
     }
 
@@ -213,6 +429,15 @@ LV.TextEditor {
             textEditor.cursorPosition = deferredCursorPosition;
             textEditor.deselect();
         });
+    }
+
+    function focusEditorAtDocumentEnd() {
+        const editorSurface = textEditor.editorSurfaceObject();
+        const documentEnd = editorSurface && editorSurface.length !== undefined
+                ? Math.max(0, Math.floor(Number(editorSurface.length) || 0))
+                : textEditor.editorDocumentText.length;
+        textEditor.restoreEditorCursorPosition(documentEnd);
+        return true;
     }
 
     function findDescendantByObjectName(root, objectName) {
@@ -449,6 +674,43 @@ LV.TextEditor {
         restoreMode: Binding.RestoreBindingOrValue
         target: textEditor.editorItem
         value: textEditor.editorBottomViewportPadding
+    }
+
+    Binding {
+        property: "height"
+        restoreMode: Binding.RestoreBindingOrValue
+        target: textEditor.editorItem
+        value: textEditor.editorPaddedEditorItemHeight
+    }
+
+    MouseArea {
+        id: editorBottomViewportPaddingHitArea
+
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.IBeamCursor
+        enabled: !textEditor.readOnly
+                 && textEditor.editorBottomViewportPadding > 0
+                 && textEditor.editorBottomViewportPaddingHitAreaHeight > 0
+        height: textEditor.editorBottomViewportPaddingHitAreaHeight
+        objectName: "contentsTextEditorBottomViewportPaddingHitArea"
+        preventStealing: false
+        visible: enabled
+        width: textEditor.editorItem
+               ? Math.max(1, Number(textEditor.editorItem.width) || textEditor.width)
+               : textEditor.width
+        x: textEditor.editorItem
+           ? Math.max(0, Number(textEditor.editorItem.x) || 0)
+           : 0
+        y: textEditor.editorBottomViewportPaddingHitAreaY
+
+        onClicked: function(mouse) {
+            if (mouse.button !== Qt.LeftButton) {
+                mouse.accepted = false;
+                return;
+            }
+            textEditor.focusEditorAtDocumentEnd();
+            mouse.accepted = true;
+        }
     }
 
     Connections {

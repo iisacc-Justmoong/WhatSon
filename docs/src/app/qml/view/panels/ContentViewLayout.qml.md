@@ -36,7 +36,8 @@ Clipboard resource paste command wiring is limited to the focus-gated paste comm
 or competes for `Cmd+V` first. The layout calls the `ClipboardEditorPaste` context object, which captures and imports
 one supported clipboard resource into `.wsresources`, delegates source insertion to `NoteEditorDocumentSession`, and
 returns the editor HTML to apply. Native text paste stays inside the LVRS `TextEditor` path when no supported clipboard
-image resource is available.
+image resource is available. The last paste result stage, error message, and native-fallback flag are stored on the
+layout as diagnostics only; QML still does not import, classify, or serialize resources itself.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
 `underline`, `strikethrough`, `highlight`, and `break` call
@@ -112,7 +113,8 @@ or calendar page logic.
   `ClipboardEditorPaste`가 clipboard 리소스를 `.wsresource` package로 먼저 등록하고,
   `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`로 `<resource ...>` 참조와 editor HTML projection을
   만든다. QML은 세션이 반환한 editor HTML projection만 적용해 리소스 프레임을 표시한다. 지원 리소스가 없으면 일반
-  텍스트 paste는 LVRS `TextEditor` native 경로에 맡긴다.
+  텍스트 paste는 LVRS `TextEditor` native 경로에 맡긴다. 마지막 paste의 stage/error/native fallback 여부만
+  diagnostic property로 보관하며, 리소스 판별과 import 책임은 C++ clipboard 객체에 남긴다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
   브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령

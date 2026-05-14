@@ -105,6 +105,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   `<resource ... />` source tag, and removes renderer padding rows around that atomic frame before persistence.
   This lets the editor display a rich resource frame while the `.wsnbody` source continues to store only the canonical
   resource reference.
+- If the marker pair survives after the single resource image object has been deleted, the inverse boundary now drops
+  that empty marker block instead of restoring the canonical resource source tag. This keeps backspace/delete behavior
+  aligned with the editor's one-object frame contract.
 - The same rich-text projection now preserves visible horizontal whitespace inside text nodes:
   - leading paragraph indentation is emitted as `&nbsp;`, so a Tab-authored space run stays visible after the
     `.wsnbody` parse/read path regenerates the editor RichText

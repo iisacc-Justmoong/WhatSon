@@ -215,7 +215,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversRenderedResourceFram
     const QString renderedEditorHtml = QStringLiteral(
                                            "<p>Alpha</p>"
                                            "<!--whatson-resource-source:%1-->"
-                                           "<p><table><tr><td><img src=\"file:///tmp/capture.png\" /></td></tr></table></p>"
+                                           "<p><img class=\"whatson-resource-frame\" src=\"data:image/png;base64,ZmFrZQ==\" /></p>"
                                            "<!--/whatson-resource-source-->"
                                            "<p>Beta</p>")
                                            .arg(encodedResourceTag);
@@ -227,6 +227,25 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversRenderedResourceFram
     QCOMPARE(
         sourceText,
         QStringLiteral("Alpha\n%1\nBeta").arg(resourceTag));
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_dropsDeletedSingleResourceObjectMarker()
+{
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/capture.wsresource\" id=\"capture\" />");
+    const QString encodedResourceTag = QString::fromLatin1(resourceTag.toUtf8().toHex());
+    const QString renderedEditorHtml = QStringLiteral(
+                                           "<p>Alpha</p>"
+                                           "<!--whatson-resource-source:%1-->"
+                                           "<!--/whatson-resource-source-->"
+                                           "<p>Beta</p>")
+                                           .arg(encodedResourceTag);
+
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        QStringLiteral("resource-note"),
+        renderedEditorHtml);
+
+    QCOMPARE(sourceText, QStringLiteral("Alpha\nBeta"));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource()
