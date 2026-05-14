@@ -1,5 +1,6 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
+#include "app/models/editor/component/ResourceFrame.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
@@ -9,18 +10,15 @@
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <utility>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QImageReader>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
-#include <QUrl>
 #include <QVector>
 
 namespace
@@ -391,16 +389,6 @@ namespace
         return line;
     }
 
-    QString htmlAttribute(QString value)
-    {
-        return value.toHtmlEscaped();
-    }
-
-    QString renderedResourceSourceMarker(const QString& resourceTag)
-    {
-        return QString::fromLatin1(resourceTag.toUtf8().toHex());
-    }
-
     QString hubRootPathForNoteDirectory(const QString& noteDirectoryPath)
     {
         QFileInfo currentInfo(normalizePath(noteDirectoryPath));
@@ -498,41 +486,6 @@ namespace
         return descriptor;
     }
 
-    bool descriptorIsImageResource(const QVariantMap& descriptor)
-    {
-        const QString type = WhatSon::Resources::normalizedType(descriptor.value(QStringLiteral("type")).toString());
-        const QString format = WhatSon::Resources::normalizeFormat(
-            descriptor.value(QStringLiteral("format")).toString()).toCaseFolded();
-        return type == QStringLiteral("image")
-            || WhatSon::Resources::inferTypeFromFormat(format) == QStringLiteral("image");
-    }
-
-    QSize boundedImageDisplaySize(const QString& imagePath)
-    {
-        QSize sourceSize;
-        QImageReader reader(imagePath);
-        reader.setAutoTransform(true);
-        if (reader.size().isValid() && !reader.size().isEmpty())
-        {
-            sourceSize = reader.size();
-        }
-        if (!sourceSize.isValid() || sourceSize.isEmpty())
-        {
-            sourceSize = QSize(338, 220);
-        }
-
-        constexpr int kMaxWidth = 480;
-        constexpr int kMaxHeight = 360;
-        const double scale = std::min(
-            1.0,
-            std::min(
-                static_cast<double>(kMaxWidth) / std::max(1, sourceSize.width()),
-                static_cast<double>(kMaxHeight) / std::max(1, sourceSize.height())));
-        return QSize(
-            std::max(1, static_cast<int>(std::lround(sourceSize.width() * scale))),
-            std::max(1, static_cast<int>(std::lround(sourceSize.height() * scale))));
-    }
-
     QString resolvedResourceAssetPath(const QVariantMap& descriptor, const QString& noteDirectoryPath)
     {
         const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
@@ -548,6 +501,25 @@ namespace
         return WhatSon::Resources::resolveAssetLocationFromReference(resourcePath, std::move(basePaths));
     }
 
+    WhatSon::EditorComponent::ResourceFrameDescriptor resourceFrameDescriptorFromSourceTag(
+        const QString& resourceTag,
+        const QString& noteDirectoryPath)
+    {
+        const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
+        const QVariantMap descriptor = resourceDescriptorFromSourceTag(canonicalTag);
+
+        WhatSon::EditorComponent::ResourceFrameDescriptor frameDescriptor;
+        frameDescriptor.sourceTag = canonicalTag;
+        frameDescriptor.resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
+        frameDescriptor.resourceId = descriptor.value(QStringLiteral("id")).toString().trimmed();
+        frameDescriptor.type = descriptor.value(QStringLiteral("type")).toString().trimmed();
+        frameDescriptor.format = descriptor.value(QStringLiteral("format")).toString().trimmed();
+        frameDescriptor.resolvedAssetPath = noteDirectoryPath.trimmed().isEmpty()
+            ? QString()
+            : resolvedResourceAssetPath(descriptor, noteDirectoryPath);
+        return frameDescriptor;
+    }
+
     QString resourceFrameHtml(const QString& resourceTag, const QString& noteDirectoryPath)
     {
         const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
@@ -556,59 +528,8 @@ namespace
             return WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), resourceTag);
         }
 
-        const QVariantMap descriptor = resourceDescriptorFromSourceTag(canonicalTag);
-        const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
-        const QString resourceId = descriptor.value(QStringLiteral("id")).toString().trimmed();
-        const QString type = descriptor.value(QStringLiteral("type")).toString().trimmed();
-        const QString format = descriptor.value(QStringLiteral("format")).toString().trimmed();
-        const QString label = !resourceId.isEmpty()
-            ? resourceId
-            : QFileInfo(resourcePath).completeBaseName().trimmed();
-        const QString resolvedAssetPath = resolvedResourceAssetPath(descriptor, noteDirectoryPath);
-        const bool imageResource = descriptorIsImageResource(descriptor)
-            && QFileInfo(resolvedAssetPath).isFile();
-
-        const QString marker = renderedResourceSourceMarker(canonicalTag);
-        QString mediaHtml;
-        if (imageResource)
-        {
-            const QSize displaySize = boundedImageDisplaySize(resolvedAssetPath);
-            mediaHtml = QStringLiteral(
-                            "<img src=\"%1\" width=\"%2\" height=\"%3\" style=\"vertical-align:top;\" />")
-                            .arg(
-                                htmlAttribute(QUrl::fromLocalFile(resolvedAssetPath).toString()),
-                                QString::number(displaySize.width()),
-                                QString::number(displaySize.height()));
-        }
-        else
-        {
-            mediaHtml = QStringLiteral(
-                            "<span style=\"font-size:13px;color:#AEB4B7;\">%1</span>")
-                            .arg(htmlAttribute(resourcePath.isEmpty() ? QStringLiteral("Resource") : resourcePath));
-        }
-
-        return QStringLiteral(
-                   "<!--whatson-resource-source:%1-->"
-                   "<p class=\"whatson-resource-frame\" style=\"margin-top:0px;margin-bottom:0px;line-height:1;\">"
-                   "<table border=\"1\" cellspacing=\"0\" cellpadding=\"6\" style=\"border-color:#2C2E2F;\">"
-                   "<tr><td bgcolor=\"#151819\">"
-                   "<span style=\"font-size:12px;font-weight:700;color:#DDE3E6;\">%2</span>"
-                   "<span style=\"font-size:12px;color:#7C858A;\"> %3 %4</span>"
-                   "</td></tr>"
-                   "<tr><td bgcolor=\"#0B0D0E\" align=\"center\">%5</td></tr>"
-                   "<tr><td bgcolor=\"#151819\">"
-                   "<span style=\"font-size:11px;color:#7C858A;\">%6</span>"
-                   "</td></tr>"
-                   "</table>"
-                   "</p>"
-                   "<!--/whatson-resource-source-->")
-            .arg(
-                marker,
-                htmlAttribute(label.isEmpty() ? QStringLiteral("Resource") : label),
-                htmlAttribute(type),
-                htmlAttribute(format),
-                mediaHtml,
-                htmlAttribute(resourcePath));
+        return WhatSon::EditorComponent::ResourceFrame::renderHtml(
+            resourceFrameDescriptorFromSourceTag(canonicalTag, noteDirectoryPath));
     }
 
     QString editorHtmlFromBodySourceForNoteContext(
@@ -692,37 +613,15 @@ namespace
         const QString& line,
         const QString& resourceTag)
     {
-        const QVariantMap descriptor = resourceDescriptorFromSourceTag(resourceTag);
-        const QString resourcePath = descriptor.value(QStringLiteral("resourcePath")).toString().trimmed();
-        const QString resourceId = descriptor.value(QStringLiteral("id")).toString().trimmed();
-        const QString type = descriptor.value(QStringLiteral("type")).toString().trimmed();
-        const QString format = descriptor.value(QStringLiteral("format")).toString().trimmed();
-        const QString label = !resourceId.isEmpty()
-            ? resourceId
-            : QFileInfo(resourcePath).completeBaseName().trimmed();
         const QString trimmedLine = line.trimmed().simplified();
         if (trimmedLine.isEmpty())
         {
             return false;
         }
 
-        QStringList frameTextLines;
-        if (!label.isEmpty())
-        {
-            frameTextLines.push_back(label);
-        }
-        if (!type.isEmpty() || !format.isEmpty())
-        {
-            frameTextLines.push_back(QStringLiteral("%1 %2").arg(type, format).trimmed().simplified());
-        }
-        if (!label.isEmpty() && (!type.isEmpty() || !format.isEmpty()))
-        {
-            frameTextLines.push_back(QStringLiteral("%1 %2 %3").arg(label, type, format).trimmed().simplified());
-        }
-        if (!resourcePath.isEmpty())
-        {
-            frameTextLines.push_back(resourcePath);
-        }
+        const QStringList frameTextLines =
+            WhatSon::EditorComponent::ResourceFrame::renderedTextLines(
+                resourceFrameDescriptorFromSourceTag(resourceTag, QString()));
 
         for (const QString& frameTextLine : frameTextLines)
         {
@@ -812,6 +711,14 @@ namespace
                 && lineMatchesRenderedResourceFrameText(
                     editorLine,
                     resourceLines.at(frameTextAfterResourceIndex).sourceTag))
+            {
+                continue;
+            }
+            if (!lineIsBlank
+                && resourceIndex < resourceLines.size()
+                && lineMatchesRenderedResourceFrameText(
+                    editorLine,
+                    resourceLines.at(resourceIndex).sourceTag))
             {
                 continue;
             }

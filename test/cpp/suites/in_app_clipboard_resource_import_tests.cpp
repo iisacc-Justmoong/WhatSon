@@ -250,8 +250,8 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"12\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"8\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"225\"")));
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
@@ -321,8 +321,8 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
     QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
     QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(
         importedResource.value(QStringLiteral("resourcePath")).toString()));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"13\"")));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"9\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"234\"")));
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));

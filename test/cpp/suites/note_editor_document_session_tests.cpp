@@ -491,9 +491,18 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-figma-node-id=\"292:50\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceHeader")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("resourceToolbar")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-more")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral(">Image<")));
+    QVERIFY(editorDocumentText.contains(
+        QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"16\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"10\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"338\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"211\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("font-weight:700")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("cellpadding=\"6\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(

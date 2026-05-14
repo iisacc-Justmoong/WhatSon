@@ -44,6 +44,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/clipboard/InAppClipboardManager.h"
         "${CMAKE_SOURCE_DIR}/src/app/models/clipboard/InAppClipboardManager.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/GetProperty.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/component/ResourceFrame.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/TagInsertionWriter.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/NoteEditorDocumentSession.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetProperty.cpp"
