@@ -41,7 +41,9 @@ Implements the active note editor document session.
   render as a visible resource frame with the stored resource reference.
 - Resource frame projection uses `editorViewportWidth` from QML as the media raster's intrinsic width, while preserving
   a structured `width="100%"` frame, `height:auto` media, and dynamic centered image placement in the emitted HTML.
-  `reprojectResourceFramesForEditorWidth(...)` can re-render the current editor document when the editor viewport width changes.
+  The first projection records `data-frame-display-height`; `reprojectResourceFramesForEditorWidth(...)` parses that
+  existing marker and reuses it as the locked frame height, so a window resize changes frame width and x-axis centering
+  without changing the initial auto height.
 - When Qt serializes the rich editor document and strips those HTML markers, image frames remain as rich-text object
   replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
   resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
@@ -82,7 +84,9 @@ Implements the active note editor document session.
   canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
   남지 않게 한다.
 - editor viewport 폭이 바뀌면 `reprojectResourceFramesForEditorWidth(...)`가 현재 editor HTML을 source로 복원하고,
-  resource frame이 있는 경우에만 새 폭으로 frame preview를 다시 만든다.
+  resource frame이 있는 경우에만 새 폭으로 frame preview를 다시 만든다. 이때 기존
+  `data-frame-display-height`를 읽어 frame height를 초기 auto 값으로 고정하므로, resize는 frame 폭과 x축 중앙
+  offset만 바꾸고 높이는 바꾸지 않는다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
   mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline

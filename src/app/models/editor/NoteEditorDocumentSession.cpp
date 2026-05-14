@@ -17,6 +17,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
@@ -510,7 +511,8 @@ namespace
     WhatSon::EditorComponent::ResourceFrameDescriptor resourceFrameDescriptorFromSourceTag(
         const QString& resourceTag,
         const QString& noteDirectoryPath,
-        const int editorViewportWidth)
+        const int editorViewportWidth,
+        const int lockedFrameDisplayHeight)
     {
         const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
         const QVariantMap descriptor = resourceDescriptorFromSourceTag(canonicalTag);
@@ -525,13 +527,15 @@ namespace
             ? QString()
             : resolvedResourceAssetPath(descriptor, noteDirectoryPath);
         frameDescriptor.editorViewportWidth = editorViewportWidth;
+        frameDescriptor.lockedFrameDisplayHeight = qMax(0, lockedFrameDisplayHeight);
         return frameDescriptor;
     }
 
     QString resourceFrameHtml(
         const QString& resourceTag,
         const QString& noteDirectoryPath,
-        const int editorViewportWidth)
+        const int editorViewportWidth,
+        const int lockedFrameDisplayHeight)
     {
         const QString canonicalTag = canonicalResourceSourceLine(resourceTag);
         if (canonicalTag.isEmpty())
@@ -540,14 +544,19 @@ namespace
         }
 
         return WhatSon::EditorComponent::ResourceFrame::renderHtml(
-            resourceFrameDescriptorFromSourceTag(canonicalTag, noteDirectoryPath, editorViewportWidth));
+            resourceFrameDescriptorFromSourceTag(
+                canonicalTag,
+                noteDirectoryPath,
+                editorViewportWidth,
+                lockedFrameDisplayHeight));
     }
 
     QString editorHtmlFromBodySourceForNoteContext(
         const QString& noteId,
         const QString& bodySourceText,
         const QString& noteDirectoryPath,
-        const int editorViewportWidth)
+        const int editorViewportWidth,
+        const QHash<QString, int>* lockedFrameDisplayHeightsBySourceTag = nullptr)
     {
         const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
         const QStringList sourceLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
@@ -585,10 +594,59 @@ namespace
             }
 
             flushPendingSourceLines();
-            htmlLines.push_back(resourceFrameHtml(resourceLine, noteDirectoryPath, editorViewportWidth));
+            const int lockedFrameDisplayHeight = lockedFrameDisplayHeightsBySourceTag == nullptr
+                ? 0
+                : lockedFrameDisplayHeightsBySourceTag->value(resourceLine, 0);
+            htmlLines.push_back(resourceFrameHtml(
+                resourceLine,
+                noteDirectoryPath,
+                editorViewportWidth,
+                lockedFrameDisplayHeight));
         }
         flushPendingSourceLines();
         return htmlLines.join(QStringLiteral("<br/>"));
+    }
+
+    QHash<QString, int> resourceFrameDisplayHeightsBySourceTag(const QString& editorDocumentText)
+    {
+        QHash<QString, int> heightsBySourceTag;
+        if (editorDocumentText.isEmpty())
+        {
+            return heightsBySourceTag;
+        }
+
+        static const QRegularExpression markerPattern(
+            QStringLiteral(
+                R"(<!--whatson-resource-source:([0-9a-fA-F]+)-->([\s\S]*?)<!--\/whatson-resource-source-->)"));
+        static const QRegularExpression displayHeightPattern(
+            QStringLiteral(R"rx(data-frame-display-height\s*=\s*"([0-9]+)")rx"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QRegularExpressionMatchIterator matchIterator = markerPattern.globalMatch(editorDocumentText);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            const QString sourceTag = canonicalResourceSourceLine(
+                QString::fromUtf8(QByteArray::fromHex(match.captured(1).toLatin1())).trimmed());
+            if (sourceTag.isEmpty())
+            {
+                continue;
+            }
+
+            const QRegularExpressionMatch displayHeightMatch = displayHeightPattern.match(match.captured(2));
+            if (!displayHeightMatch.hasMatch())
+            {
+                continue;
+            }
+
+            bool parsed = false;
+            const int displayHeight = displayHeightMatch.captured(1).toInt(&parsed);
+            if (parsed && displayHeight > 0)
+            {
+                heightsBySourceTag.insert(sourceTag, displayHeight);
+            }
+        }
+        return heightsBySourceTag;
     }
 
     struct ActiveResourceSourceLine final
@@ -1090,11 +1148,14 @@ QVariantMap NoteEditorDocumentSession::reprojectResourceFramesForEditorWidth(
         return result;
     }
 
+    const QHash<QString, int> lockedFrameDisplayHeights =
+        resourceFrameDisplayHeightsBySourceTag(editorDocumentText);
     const QString reprojectedEditorDocumentText = editorHtmlFromBodySourceForNoteContext(
         noteId,
         sourceText,
         m_activeNoteDirectoryPath,
-        m_editorViewportWidth);
+        m_editorViewportWidth,
+        &lockedFrameDisplayHeights);
     const bool changed = reprojectedEditorDocumentText != editorDocumentText;
     QString errorMessage;
     bool valid = true;

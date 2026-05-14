@@ -14,6 +14,7 @@ namespace WhatSon::EditorComponent
         QString format;
         QString resolvedAssetPath;
         int editorViewportWidth = 0;
+        int lockedFrameDisplayHeight = 0;
     };
 
     class ResourceFrame final

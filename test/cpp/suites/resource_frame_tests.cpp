@@ -110,7 +110,7 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     descriptor.editorViewportWidth = 960;
 
     const QString centeredHtml = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
-    QVERIFY(centeredHtml.contains(QStringLiteral("data-display-width=\"320\"")));
+    QVERIFY2(centeredHtml.contains(QStringLiteral("data-display-width=\"320\"")), qPrintable(centeredHtml));
     QVERIFY(centeredHtml.contains(QStringLiteral("data-display-height=\"180\"")));
     QVERIFY(centeredHtml.contains(QStringLiteral("data-display-left=\"320\"")));
     QVERIFY(centeredHtml.contains(QStringLiteral("data-display-top=\"0\"")));
@@ -140,6 +140,44 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QCOMPARE(widerCenteredPreviewImage.pixelColor(440, 90), centeredSourceImage.pixelColor(0, 0));
     QCOMPARE(widerCenteredPreviewImage.pixelColor(759, 90), centeredSourceImage.pixelColor(0, 0));
     QCOMPARE(widerCenteredPreviewImage.pixelColor(760, 90), QColor(QStringLiteral("#1E1F20")));
+
+    descriptor.sourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/capture.wsresource\" id=\"capture\" />");
+    descriptor.resourcePath = QStringLiteral("Workspace.wsresources/capture.wsresource");
+    descriptor.resourceId = QStringLiteral("capture");
+    descriptor.resolvedAssetPath = imagePath;
+    descriptor.editorViewportWidth = 1200;
+    descriptor.lockedFrameDisplayHeight = 540;
+
+    const QString widerLockedHeightHtml = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-display-left=\"120\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-frame-render-width=\"1200\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+
+    const QImage widerLockedHeightPreviewImage(previewPathFromHtml(widerLockedHeightHtml));
+    QVERIFY(!widerLockedHeightPreviewImage.isNull());
+    QCOMPARE(widerLockedHeightPreviewImage.size(), QSize(1200, 540));
+    QCOMPARE(widerLockedHeightPreviewImage.pixelColor(119, 270), QColor(QStringLiteral("#1E1F20")));
+    QCOMPARE(widerLockedHeightPreviewImage.pixelColor(120, 270), sourceImage.pixelColor(0, 0));
+    QCOMPARE(widerLockedHeightPreviewImage.pixelColor(1079, 270), sourceImage.pixelColor(0, 0));
+    QCOMPARE(widerLockedHeightPreviewImage.pixelColor(1080, 270), QColor(QStringLiteral("#1E1F20")));
+
+    descriptor.editorViewportWidth = 720;
+
+    const QString narrowerLockedHeightHtml = WhatSon::EditorComponent::ResourceFrame::renderHtml(descriptor);
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-display-left=\"-120\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-frame-render-width=\"720\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+
+    const QImage narrowerLockedHeightPreviewImage(previewPathFromHtml(narrowerLockedHeightHtml));
+    QVERIFY(!narrowerLockedHeightPreviewImage.isNull());
+    QCOMPARE(narrowerLockedHeightPreviewImage.size(), QSize(720, 540));
+    QCOMPARE(narrowerLockedHeightPreviewImage.pixelColor(0, 270), sourceImage.pixelColor(0, 0));
+    QCOMPARE(narrowerLockedHeightPreviewImage.pixelColor(719, 270), sourceImage.pixelColor(0, 0));
 
     QTextDocument richTextDocument;
     richTextDocument.setHtml(html);

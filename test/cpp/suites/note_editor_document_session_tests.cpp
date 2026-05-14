@@ -487,7 +487,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
         &createError);
     QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
 
-    QImage clipboardImage(QSize(16, 10), QImage::Format_ARGB32_Premultiplied);
+    QImage clipboardImage(QSize(1600, 900), QImage::Format_ARGB32_Premultiplied);
     clipboardImage.fill(qRgba(18, 110, 190, 255));
 
     InAppClipboardManager clipboard;
@@ -543,11 +543,12 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"16\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-height=\"10\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-left=\"472\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-left=\"0\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-top=\"0\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-frame-render-width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("data-frame-display-height=\"540\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-media-alignment=\"center\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
@@ -562,17 +563,34 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("cellpadding=\"6\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
 
-    const QVariantMap reprojectedResult = session.reprojectResourceFramesForEditorWidth(editorDocumentText, 720);
+    const QVariantMap reprojectedResult = session.reprojectResourceFramesForEditorWidth(editorDocumentText, 1200);
     QVERIFY(reprojectedResult.value(QStringLiteral("valid")).toBool());
     QVERIFY(reprojectedResult.value(QStringLiteral("changed")).toBool());
     const QString reprojectedEditorText = reprojectedResult.value(QStringLiteral("editorDocumentText")).toString();
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("height:auto")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"16\"")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-height=\"10\"")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-left=\"352\"")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-render-width=\"720\"")));
-    QVERIFY(!reprojectedEditorText.contains(QStringLiteral(" width=\"720\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-left=\"120\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-render-width=\"1200\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+    QVERIFY(!reprojectedEditorText.contains(QStringLiteral("data-display-height=\"675\"")));
+    QVERIFY(!reprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"675\"")));
+    QVERIFY(!reprojectedEditorText.contains(QStringLiteral(" width=\"1200\"")));
+
+    const QVariantMap narrowerReprojectedResult =
+        session.reprojectResourceFramesForEditorWidth(reprojectedEditorText, 720);
+    QVERIFY(narrowerReprojectedResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(narrowerReprojectedResult.value(QStringLiteral("changed")).toBool());
+    const QString narrowerReprojectedEditorText =
+        narrowerReprojectedResult.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(narrowerReprojectedEditorText.contains(QStringLiteral("data-display-width=\"960\"")));
+    QVERIFY(narrowerReprojectedEditorText.contains(QStringLiteral("data-display-height=\"540\"")));
+    QVERIFY(narrowerReprojectedEditorText.contains(QStringLiteral("data-display-left=\"-120\"")));
+    QVERIFY(narrowerReprojectedEditorText.contains(QStringLiteral("data-frame-render-width=\"720\"")));
+    QVERIFY(narrowerReprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+    QVERIFY(!narrowerReprojectedEditorText.contains(QStringLiteral("data-display-height=\"405\"")));
+    QVERIFY(!narrowerReprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"405\"")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
             QStringLiteral("clipboard-frame-note"),

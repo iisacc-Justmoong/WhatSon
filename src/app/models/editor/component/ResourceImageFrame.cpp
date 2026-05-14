@@ -16,7 +16,7 @@ namespace
 {
     constexpr int kFigmaFrameWidth = 480;
     constexpr int kFrameRadius = 12;
-    constexpr auto kFrameRenderVersion = "figma-292-50-centered-image-container-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-centered-fixed-height-image-container-v1";
 
     QString htmlAttribute(QString value)
     {
@@ -62,27 +62,31 @@ namespace
         return editorViewportWidth > 0 ? qMax(1, editorViewportWidth) : kFigmaFrameWidth;
     }
 
-    QSize mediaRasterSizeForSource(const QSize& sourceSize, const int frameRenderWidth)
+    QSize mediaDisplaySizeForLockedHeight(const QSize& sourceSize, const int lockedFrameDisplayHeight)
     {
         const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
         if (!displaySize.isValid() || displaySize.isEmpty())
         {
-            return QSize(qMax(1, frameRenderWidth), 1);
+            return QSize(qMax(1, lockedFrameDisplayHeight), qMax(1, lockedFrameDisplayHeight));
         }
 
-        if (displaySize.width() <= frameRenderWidth)
-        {
-            return QSize(frameRenderWidth, displaySize.height());
-        }
-
-        const qreal mediaScale = static_cast<qreal>(frameRenderWidth) / static_cast<qreal>(displaySize.width());
+        const qreal mediaScale = static_cast<qreal>(qMax(1, lockedFrameDisplayHeight))
+            / static_cast<qreal>(displaySize.height());
         return QSize(
-            frameRenderWidth,
-            qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
+            qMax(1, qRound(static_cast<qreal>(displaySize.width()) * mediaScale)),
+            qMax(1, lockedFrameDisplayHeight));
     }
 
-    QSize mediaDisplaySizeForFrame(const QSize& sourceSize, const int frameRenderWidth)
+    QSize mediaDisplaySizeForFrame(
+        const QSize& sourceSize,
+        const int frameRenderWidth,
+        const int lockedFrameDisplayHeight)
     {
+        if (lockedFrameDisplayHeight > 0)
+        {
+            return mediaDisplaySizeForLockedHeight(sourceSize, lockedFrameDisplayHeight);
+        }
+
         const QSize displaySize = mediaDisplaySizeForSource(sourceSize);
         if (!displaySize.isValid() || displaySize.isEmpty())
         {
@@ -100,17 +104,42 @@ namespace
             qMax(1, qRound(static_cast<qreal>(displaySize.height()) * mediaScale)));
     }
 
+    QSize mediaRasterSizeForSource(
+        const QSize& sourceSize,
+        const int frameRenderWidth,
+        const int lockedFrameDisplayHeight)
+    {
+        const QSize displaySize = mediaDisplaySizeForFrame(sourceSize, frameRenderWidth, lockedFrameDisplayHeight);
+        if (lockedFrameDisplayHeight > 0)
+        {
+            return QSize(qMax(1, frameRenderWidth), qMax(1, lockedFrameDisplayHeight));
+        }
+
+        if (!displaySize.isValid() || displaySize.isEmpty())
+        {
+            return QSize(qMax(1, frameRenderWidth), 1);
+        }
+
+        return QSize(qMax(1, frameRenderWidth), displaySize.height());
+    }
+
     QPoint mediaDisplayTopLeft(const QSize& displaySize, const int frameRenderWidth)
     {
-        return QPoint(qMax(0, (frameRenderWidth - displaySize.width()) / 2), 0);
+        return QPoint((frameRenderWidth - displaySize.width()) / 2, 0);
     }
 
-    int frameDisplayHeightForSource(const QSize& sourceSize, const int frameRenderWidth)
+    int frameDisplayHeightForSource(
+        const QSize& sourceSize,
+        const int frameRenderWidth,
+        const int lockedFrameDisplayHeight)
     {
-        return mediaRasterSizeForSource(sourceSize, frameRenderWidth).height();
+        return mediaRasterSizeForSource(sourceSize, frameRenderWidth, lockedFrameDisplayHeight).height();
     }
 
-    QString frameMetricAttributes(const QSize& sourceSize, const int frameRenderWidth)
+    QString frameMetricAttributes(
+        const QSize& sourceSize,
+        const int frameRenderWidth,
+        const int lockedFrameDisplayHeight)
     {
         QString attributes = QStringLiteral(
                                  " data-frame-design-width=\"%1\""
@@ -124,7 +153,10 @@ namespace
             return attributes;
         }
 
-        const QSize displaySize = mediaDisplaySizeForFrame(sourceSize, frameRenderWidth);
+        const QSize displaySize = mediaDisplaySizeForFrame(
+            sourceSize,
+            frameRenderWidth,
+            lockedFrameDisplayHeight);
         const QPoint displayTopLeft = mediaDisplayTopLeft(displaySize, frameRenderWidth);
         attributes += QStringLiteral(
                           " data-source-width=\"%1\" data-source-height=\"%2\""
@@ -138,7 +170,10 @@ namespace
                 QString::number(displaySize.height()),
                 QString::number(displayTopLeft.x()),
                 QString::number(displayTopLeft.y()),
-                QString::number(frameDisplayHeightForSource(sourceSize, frameRenderWidth)));
+                QString::number(frameDisplayHeightForSource(
+                    sourceSize,
+                    frameRenderWidth,
+                    lockedFrameDisplayHeight)));
         return attributes;
     }
 
@@ -168,8 +203,14 @@ namespace
         const QSize& sourceSize)
     {
         const int frameRenderWidth = frameRenderWidthForViewport(descriptor.editorViewportWidth);
-        const QSize displaySize = mediaDisplaySizeForFrame(sourceSize, frameRenderWidth);
-        const QSize mediaSize = mediaRasterSizeForSource(sourceSize, frameRenderWidth);
+        const QSize displaySize = mediaDisplaySizeForFrame(
+            sourceSize,
+            frameRenderWidth,
+            descriptor.lockedFrameDisplayHeight);
+        const QSize mediaSize = mediaRasterSizeForSource(
+            sourceSize,
+            frameRenderWidth,
+            descriptor.lockedFrameDisplayHeight);
         if (!mediaSize.isValid() || mediaSize.isEmpty())
         {
             return {};
@@ -231,6 +272,8 @@ namespace
         key += kFrameRenderVersion;
         key += '\0';
         key += QByteArray::number(frameRenderWidthForViewport(descriptor.editorViewportWidth));
+        key += '\0';
+        key += QByteArray::number(qMax(0, descriptor.lockedFrameDisplayHeight));
         key += '\0';
         key += QByteArray::number(kFigmaFrameWidth);
         key += '\0';
@@ -314,7 +357,8 @@ namespace WhatSon::EditorComponent
         const QString previewImageUrl = mediaPreviewImageUrl(descriptor, sourceImageSize);
         const QString metricAttributes = frameMetricAttributes(
             sourceImageSize,
-            frameRenderWidthForViewport(descriptor.editorViewportWidth));
+            frameRenderWidthForViewport(descriptor.editorViewportWidth),
+            qMax(0, descriptor.lockedFrameDisplayHeight));
 
         QString html;
         html.reserve(2600);
