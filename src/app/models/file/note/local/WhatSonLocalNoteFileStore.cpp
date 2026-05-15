@@ -904,9 +904,26 @@ bool WhatSonLocalNoteFileStore::updateNote(
         request.document.headerStore.setNoteId(resolvedNoteId);
     }
     const WhatSonLocalNoteDocument unchangedDocument = request.document;
+    QString existingHeaderDocument;
+    bool hadExistingHeaderDocument = false;
+    if ((persistHeader || persistBody) && !headerPath.isEmpty() && QFileInfo(headerPath).isFile())
+    {
+        QString existingHeaderReadError;
+        if (!WhatSon::NoteMutationSupport::readUtf8File(headerPath, &existingHeaderDocument, &existingHeaderReadError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = existingHeaderReadError;
+            }
+            return false;
+        }
+        hadExistingHeaderDocument = true;
+    }
+
     QString serializedBodyDocument;
     QString bodyDocumentForStats;
     QString existingBodyDocument;
+    bool hadExistingBodyDocument = false;
     QStringList previousBacklinkTargets;
     if ((persistHeader || persistBody) && !bodyPath.isEmpty() && QFileInfo(bodyPath).isFile())
     {
@@ -928,6 +945,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
             }
             return false;
         }
+        hadExistingBodyDocument = true;
 
         if (persistBody)
         {
@@ -1022,18 +1040,34 @@ bool WhatSonLocalNoteFileStore::updateNote(
             bodyDocumentForStats);
     }
 
+    QString headerTextBeforeLifecycle;
+    if (persistHeader)
+    {
+        WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
+        headerTextBeforeLifecycle = headerCreator.createHeaderText(request.document.headerStore);
+    }
+
+    const bool headerPayloadChanged = persistHeader
+        && (!hadExistingHeaderDocument || existingHeaderDocument != headerTextBeforeLifecycle);
+    const bool bodyPayloadChanged = persistBody
+        && (!hadExistingBodyDocument || existingBodyDocument != serializedBodyDocument);
+    const bool shouldWriteVersionDiff = request.incrementModifiedCount
+        && !versionPath.isEmpty()
+        && (headerPayloadChanged || bodyPayloadChanged);
+    const bool shouldTouchLastModified = request.touchLastModified
+        && (!request.incrementModifiedCount || shouldWriteVersionDiff);
+
     const int modifiedCountBeforeUpdate = request.document.headerStore.modifiedCount();
-    if (request.touchLastModified)
+    if (shouldTouchLastModified)
     {
         request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
     }
-    if (request.incrementModifiedCount && (persistHeader || persistBody))
+    if (shouldWriteVersionDiff)
     {
         request.document.headerStore.incrementModifiedCount();
     }
     const int modifiedCountAfterUpdate = request.document.headerStore.modifiedCount();
-    const bool shouldCaptureVersionCommit = request.incrementModifiedCount
-        && (persistHeader || persistBody)
+    const bool shouldCaptureVersionCommit = shouldWriteVersionDiff
         && modifiedCountAfterUpdate == modifiedCountBeforeUpdate + 1;
 
     QString writeError;

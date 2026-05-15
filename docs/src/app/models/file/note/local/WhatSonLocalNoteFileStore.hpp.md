@@ -25,7 +25,9 @@
 
 - `UpdateRequest` carries the local note document plus persistence toggles for header/body writes.
 - `touchLastModified` updates the header timestamp during the write transaction.
-- `incrementModifiedCount` now independently controls whether that transaction advances the persisted `fileStat.modifiedCount`.
+- `incrementModifiedCount` opts a transaction into persisted `fileStat.modifiedCount` advancement, but the counter only
+  advances when the transaction also has a serialized `.wsnhead` / `.wsnbody` payload diff that will be captured in
+  `.wsnversion`.
 - `refreshIncomingBacklinkStatistics` decides whether the update also pays the hub-wide `.wsnbody` scan needed to
   recompute `backlinkByCount` for the edited note.
 - `refreshAffectedBacklinkTargets` decides whether changed backlink targets should have their own
@@ -33,7 +35,8 @@
 - The intended split is:
   - explicit metadata / structural note writes: keep `incrementModifiedCount == true`
   - changed editor body saves: keep `incrementModifiedCount == true`
-  - unchanged editor body snapshots: rely on the store's no-op body comparison so the counter is not inflated
+  - unchanged editor body snapshots and timestamp-only header rewrites: rely on the store's versioned-payload diff
+    comparison so the counter is not inflated
   - editor hot-path body writes that must stay latency-sensitive: set both backlink-refresh flags to `false` and let a
     higher-level owner trigger that hub scan later
 
@@ -42,7 +45,9 @@
 - Regression checklist:
   - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
   - direct editor body persistence must advance `modifiedCount` when the RAW body changes
-  - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
+  - existing update callers that do not override `incrementModifiedCount` must keep commit-counter behavior when their
+    transaction writes a real versioned header/body diff
+  - timestamp-only header saves must not advance `modifiedCount` or append an empty `.wsnversion` snapshot
   - when `incrementModifiedCount` advances by exactly one, the same transaction must also emit a
     `.wsnversion` snapshot labeled as `commit:<modifiedCount>` via `file/diff/WhatSonLocalNoteVersionStore`
   - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,

@@ -78,3 +78,60 @@ void WhatSonCppRegressionTests::localNoteVersionStore_capturesCommitSnapshotWhen
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("+++ b/body.wsnbody")));
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("Beta")));
 }
+
+void WhatSonCppRegressionTests::localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("unchanged-version-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Stable"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read note fixture: %1").arg(readError)));
+
+    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+    updateRequest.document = document;
+    updateRequest.persistHeader = true;
+    updateRequest.persistBody = false;
+    updateRequest.touchLastModified = true;
+    updateRequest.incrementModifiedCount = true;
+
+    WhatSonLocalNoteDocument updatedDocument;
+    QString updateError;
+    QVERIFY2(
+        fileStore.updateNote(updateRequest, &updatedDocument, &updateError),
+        qPrintable(QStringLiteral("Failed to update unchanged note fixture: %1").arg(updateError)));
+    QCOMPARE(updatedDocument.headerStore.modifiedCount(), 0);
+    QCOMPARE(updatedDocument.headerStore.lastModifiedAt(), document.headerStore.lastModifiedAt());
+
+    QFile versionFile(updatedDocument.noteVersionPath);
+    QVERIFY2(
+        versionFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(QStringLiteral("Failed to open version file: %1").arg(updatedDocument.noteVersionPath)));
+
+    QJsonParseError parseError;
+    const QJsonDocument versionDocument = QJsonDocument::fromJson(versionFile.readAll(), &parseError);
+    QCOMPARE(parseError.error, QJsonParseError::NoError);
+
+    const QJsonObject root = versionDocument.object();
+    QCOMPARE(root.value(QStringLiteral("snapshots")).toArray().size(), 0);
+    QCOMPARE(root.value(QStringLiteral("currentSnapshotId")).toString(), QString());
+    QCOMPARE(root.value(QStringLiteral("headSnapshotId")).toString(), QString());
+}

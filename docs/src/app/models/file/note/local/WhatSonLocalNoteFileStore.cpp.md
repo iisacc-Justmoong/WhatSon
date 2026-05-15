@@ -54,11 +54,14 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - Before persisting `.wsnhead`, the store now also recalculates the note-local `fileStat` block from
   the current header/body state.
 - Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
-- `UpdateRequest` now decides whether a successful write should increment `modifiedCount`.
-- Header / structural mutations still opt in to that counter by default. Direct editor body persistence also opts in
-  when the serialized RAW `.wsnbody` payload changes; unchanged body saves still short-circuit before the counter can
-  advance.
-- Each successful `modifiedCount` increment is now treated as a commit boundary:
+- `UpdateRequest.incrementModifiedCount` opts a transaction into version-diff-gated commit counting. The store first
+  compares the existing `.wsnhead` / `.wsnbody` text with the candidate payload before lifecycle fields are touched.
+  `modifiedCount` and `lastModifiedAt` advance only when that comparison says the transaction will write a
+  `.wsnversion` diff.
+- Header / structural mutations still opt in to that counter by default when they actually change the serialized
+  header. Direct editor body persistence also opts in when the serialized RAW `.wsnbody` payload changes; unchanged
+  body saves still short-circuit before the counter can advance.
+- Each successful version-diff-gated `modifiedCount` increment is treated as a commit boundary:
   - after header/body files persist, the store captures a new `.wsnversion` snapshot
   - capture/diff persistence is delegated to `file/diff/WhatSonLocalNoteVersionStore`
   - snapshot label format: `commit:<modifiedCount>`
@@ -83,6 +86,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
 - Additional regression expectation:
   - changed editor body saves must increment `modifiedCount`; unchanged body saves must not.
+  - header-only timestamp/save turns with no versioned header/body payload diff must not increment `modifiedCount` or
+    append an empty `.wsnversion` snapshot.
   - every update transaction that advances `modifiedCount` by exactly one must append a corresponding snapshot to
     `.wsnversion` with `commitModifiedCount == modifiedCount`
   - each captured snapshot must include unified patch metadata for both header and body payloads

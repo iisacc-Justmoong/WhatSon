@@ -30,9 +30,9 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - `Backlink to`
   - `Backlink by`
   - `Include resources`
-- `Modified count` is backed by successful persisted note-header update transactions. Direct editor body writes now opt
-  in to the modification statistic when the RAW `.wsnbody` payload actually changes, so the detail surface reflects
-  user-visible note edits without counting unchanged reconcile/save turns.
+- `Modified count` is backed by version-diff-gated note package commits. A note update must produce a serialized
+  `.wsnhead` / `.wsnbody` payload diff that is captured in `.wsnversion` before the counter can advance, so the detail
+  surface does not count timestamp-only or unchanged save turns.
 
 ## Numeric Grouping Rules
 - `overviewItems`
