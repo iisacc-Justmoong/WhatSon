@@ -235,6 +235,20 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_emitsHubFilesystemMuta
     QVERIFY(versionText.contains(QStringLiteral("\"generatedAtUtc\"")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_routesOpenPullThroughSyncController()
+{
+    const QString sessionHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/NoteEditorDocumentSession.hpp"));
+    const QString sessionSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/NoteEditorDocumentSession.cpp"));
+
+    QVERIFY(sessionHeader.contains(QStringLiteral("WhatSonEditorRawPullController")));
+    QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.setRawPullCallback(")));
+    QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.requestNoteOpenPull(")));
+    QVERIFY(!sessionSource.contains(
+        QStringLiteral("m_pendingLoadSequence = m_noteManagementCoordinator.loadNoteBodyTextForNote(")));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected()
 {
     QTemporaryDir workspaceDir;

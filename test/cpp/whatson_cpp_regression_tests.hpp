@@ -2,6 +2,7 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 #include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/FiletypeCapture.h"
@@ -1276,6 +1277,7 @@ private slots:
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void editorRawPullController_requestsNoteEntryAndOpenPulls();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
@@ -1306,6 +1308,7 @@ private slots:
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
+    void noteEditorDocumentSession_routesOpenPullThroughSyncController();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();

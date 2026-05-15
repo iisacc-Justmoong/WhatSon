@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 
 #include <QHash>
@@ -153,6 +154,7 @@ private:
 
     QPointer<NoteActiveStateTracker> m_noteActiveState;
     ContentsNoteManagementCoordinator m_noteManagementCoordinator;
+    WhatSonEditorRawPullController m_rawPullController;
     WhatSonEditorRawPushController m_rawPushController;
     QHash<QString, EditorFileContext> m_editorFileContexts;
     QString m_sessionRootPathForTests;

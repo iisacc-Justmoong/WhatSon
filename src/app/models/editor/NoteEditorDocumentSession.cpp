@@ -888,8 +888,26 @@ namespace
 NoteEditorDocumentSession::NoteEditorDocumentSession(QObject* parent)
     : QObject(parent)
     , m_noteManagementCoordinator(this)
+    , m_rawPullController(this)
     , m_rawPushController(this)
 {
+    m_rawPullController.setRawPullCallback(
+        [this](
+            const QString& noteId,
+            const QString& noteDirectoryPath,
+            const QString&,
+            QString* errorMessage) -> quint64
+        {
+            const quint64 sequence = m_noteManagementCoordinator.loadNoteBodyTextForNote(
+                noteId,
+                noteDirectoryPath);
+            if (sequence == 0 && errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to enqueue note body load.");
+            }
+            return sequence;
+        });
+
     m_rawPushController.setRawPushCallback(
         [this](
             const QString& editorFilePath,
@@ -1071,7 +1089,7 @@ bool NoteEditorDocumentSession::openNoteForEditing(
 
     m_pendingLoadNoteId = normalizedNoteId;
     m_pendingLoadNoteDirectoryPath = normalizedNoteDirectoryPath;
-    m_pendingLoadSequence = m_noteManagementCoordinator.loadNoteBodyTextForNote(
+    m_pendingLoadSequence = m_rawPullController.requestNoteOpenPull(
         normalizedNoteId,
         normalizedNoteDirectoryPath);
     if (m_pendingLoadSequence == 0)

@@ -17,6 +17,7 @@ Declares the active note editor document session object.
   render editor-width media inside the resource-frame container.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
+- Routes note-entry/open RAW pulls through `file/sync/WhatSonEditorRawPullController`.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
   push triggers into `file/sync/WhatSonEditorRawPushController`.
@@ -62,6 +63,8 @@ Declares the active note editor document session object.
 - LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
   note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
+- 노트 진입/open 시 filesystem RAW pull 요청은 sync pull controller를 먼저 지나며, 실제 `.wsnbody` 읽기와 editor
+  session file mount는 기존 C++ 세션/코디네이터 경로에 남는다.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해
   hub sync가 로컬 변경으로 인식할 수 있게 한다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아

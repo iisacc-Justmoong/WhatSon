@@ -7,12 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/sync`
 - Child directories: 0
-- Child files: 11
+- Child files: 13
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `WhatSonEditorRawPullController.cpp`
+- `WhatSonEditorRawPullController.hpp`
 - `WhatSonEditorRawPushController.cpp`
 - `WhatSonEditorRawPushController.hpp`
 - `WhatSonHubSyncController.cpp`
@@ -34,6 +36,10 @@
 - `WhatSonHubSyncObservationBuilder` owns recursive hub inspection, signature hashing, and watch-path discovery.
 - `WhatSonHubSyncWatcher` owns `QFileSystemWatcher` registration and watcher path diffs.
 - `WhatSonHubSyncScheduler` owns periodic and debounce timers.
+- `WhatSonEditorRawPullController` owns note-entry/open RAW pull requests from the editor session into the filesystem
+  load queue. The controller stays in `file/sync` because note editor sync is bidirectional; concrete `.wsnbody` reads,
+  editor projection, and session-file writes still remain in `ContentsNoteManagementCoordinator` and
+  `NoteEditorDocumentSession`.
 - `WhatSonEditorRawPushController` owns editor-surface-to-RAW push triggers for idle turns, note departure, and editor
   modified-count increments. The controller stays in `file/sync` because it is sync orchestration; concrete
   `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and `file/note`.
@@ -41,11 +47,12 @@
 ## Tests
 
 - `test/cpp/suites/hub_sync_controller_tests.cpp` verifies the split responsibility boundary and observation behavior.
+- `test/cpp/suites/editor_raw_pull_controller_tests.cpp` verifies the editor RAW pull request controller.
 - `test/cpp/suites/editor_raw_push_controller_tests.cpp` verifies the editor RAW push trigger controller.
 - Regression checklist:
   - Startup/runtime wiring must still resolve `WhatSonHubSyncController` through the new `file/sync` include path.
   - Hub watcher debounce and local-mutation acknowledge flow must remain unchanged after the directory move.
-  - Editor RAW push orchestration may live under `file/sync`, but RAW parsing/serialization and note-package writes
+  - Editor RAW pull/push orchestration may live under `file/sync`, but RAW parsing/serialization and note-package reads/writes
     must remain outside the sync module.
 
 ## Intended Detailed Sections

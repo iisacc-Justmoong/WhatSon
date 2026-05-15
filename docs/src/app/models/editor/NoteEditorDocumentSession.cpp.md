@@ -7,7 +7,8 @@ Implements the active note editor document session.
 ## Runtime Flow
 
 1. Active-note changes are read from `NoteActiveStateTracker`.
-2. `ContentsNoteManagementCoordinator` loads the selected note body as canonical editor-facing RAW source.
+2. Note entry/open pull requests are routed through `file/sync/WhatSonEditorRawPullController`, whose callback delegates
+   to `ContentsNoteManagementCoordinator` to load the selected note body as canonical editor-facing RAW source.
 3. The source is projected into editor HTML and written to a cache/session `.wsnsource` file so LVRS
    `TextEditor` receives explicit rich-text line breaks.
 4. After the session file is mounted, the session binds that selected note through
@@ -37,6 +38,8 @@ Implements the active note editor document session.
 - The session creates blank/editor session files outside the note package.
 - The session keeps a file-path-to-note-context map so late sync signals from a previous editor file still persist to
   the note that originally owned that file.
+- Note entry/open RAW pulls are routed through `file/sync/WhatSonEditorRawPullController`; the session remains the
+  load callback and editor projection owner.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
