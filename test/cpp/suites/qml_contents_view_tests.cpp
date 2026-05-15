@@ -1,19 +1,26 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimapViews()
+void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
 {
     const QDir contentsDir(QStringLiteral("src/app/qml/view/contents"));
     const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
+    const QString imageEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/ImageEditor.qml"));
     const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
     const QString contentViewLayoutSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
     QVERIFY(contentsDir.exists());
     const QStringList contentQmlFiles = contentsDir.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
-    QCOMPARE(contentQmlFiles, QStringList({QStringLiteral("Gutter.qml"), QStringLiteral("Minimap.qml"), QStringLiteral("TextEditor.qml")}));
+    QCOMPARE(contentQmlFiles, QStringList({
+        QStringLiteral("Gutter.qml"),
+        QStringLiteral("ImageEditor.qml"),
+        QStringLiteral("Minimap.qml"),
+        QStringLiteral("TextEditor.qml")
+    }));
     QVERIFY(!QDir(contentsDir.filePath(QStringLiteral("editor"))).exists());
 
     QVERIFY(!gutterSource.isEmpty());
+    QVERIFY(!imageEditorSource.isEmpty());
     QVERIFY(!textEditorSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(!contentViewLayoutSource.isEmpty());
@@ -48,7 +55,16 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(!gutterSource.contains(QStringLiteral("separatorColor")));
     QVERIFY(!gutterSource.contains(QStringLiteral("anchors.right: parent.right")));
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(minimapSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("property var resourceEntry")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("readonly property bool imageResource")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("readonly property string effectiveImageSource")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("function stringEntryValue(key)")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("function urlSourceFor(value)")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("Image {")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("fillMode: Image.PreserveAspectFit")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("source: imageEditor.effectiveImageSource")));
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property bool editorReadOnly: false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
@@ -194,6 +210,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(!textEditorSource.contains(QStringLiteral("filePath: \"\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var noteEditorSession: null")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property bool gutterVisible: true")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var currentResourceEntry")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool resourceListActive")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool imageResourceSelected")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool noteEditorSurfaceVisible")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property string editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property int editorParsedLineCount")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.editorFilePath")));
@@ -252,7 +272,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("currentLineIndex: contentsTextEditor.editorCursorLineIndex")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Layout.preferredWidth: visible ? implicitWidth : 0")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.gutterVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.gutterVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.noteEditorSurfaceVisible")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentText: contentsTextEditor.editorDocumentText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentY: contentsTextEditor.viewportContentY")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentHeight: contentsTextEditor.editorViewportContentHeight")));
@@ -269,14 +290,17 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("persistEditorFile(path)")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.activeNoteBodyPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.ImageEditor {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("resourceEntry: contentViewLayout.currentResourceEntry")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.imageResourceSelected")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("CalendarView.")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("StackLayout")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewModeController")));
 
-    const QList<QString> qmlSources = {gutterSource, textEditorSource, minimapSource};
+    const QList<QString> qmlSources = {gutterSource, imageEditorSource, textEditorSource, minimapSource};
     for (const QString &qmlSource : qmlSources) {
         QVERIFY(!qmlSource.contains(QStringLiteral("scaleMetric(")));
         QVERIFY(!qmlSource.contains(QStringLiteral("#")));
@@ -288,15 +312,17 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     }
 }
 
-void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeInputSafe()
+void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
 {
     const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));
+    const QString imageEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/ImageEditor.qml"));
     const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
     const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
-    const QString combinedSource = gutterSource + textEditorSource + minimapSource;
+    const QString combinedSource = gutterSource + imageEditorSource + textEditorSource + minimapSource;
 
     QVERIFY(!gutterSource.isEmpty());
+    QVERIFY(!imageEditorSource.isEmpty());
     QVERIFY(!textEditorSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(!mainSource.isEmpty());
@@ -327,6 +353,8 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(gutterSource.contains(QStringLiteral("property var lineMetricProvider: null")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("Image {")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("source: imageEditor.effectiveImageSource")));
     QVERIFY(minimapSource.contains(QStringLiteral("TextEdit {")));
     QVERIFY(minimapSource.contains(QStringLiteral("function requestScrollAtMinimapY(minimapY)")));
     QVERIFY(!combinedSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));

@@ -21,7 +21,7 @@ LVRS rich-text editor document from view inputs.
 
 ## 한국어
 
-- 기준: contents 내부 QML에서 허용되는 세 뷰 중 미니맵 담당 파일이다.
+- 기준: contents 내부 QML에서 허용되는 네 뷰 중 미니맵 담당 파일이다.
 - 동작: sibling `TextEditor.qml`이 전달한 rich text document와 viewport geometry를 축소 렌더링하고, 현재
   viewport thumb을 VSCode 오른쪽 미니맵처럼 hover/drag 중에만 표시한다.
 - 동작: 미니맵 폭과 최대 preview scale은 `0.85` 크기 계수로 고정해 이전 기준보다 15% 작게 표시한다.

@@ -45,7 +45,8 @@ Item {
     readonly property bool editorReadOnly: !contentViewLayout.noteEditorSession
             || contentViewLayout.noteEditorSession.readOnly === undefined
             || Boolean(contentViewLayout.noteEditorSession.readOnly)
-    readonly property bool editorFormatContextMenuAvailable: !contentViewLayout.editorReadOnly
+    readonly property bool editorFormatContextMenuAvailable: contentViewLayout.noteEditorSurfaceVisible
+            && !contentViewLayout.editorReadOnly
             && contentsTextEditor
             && contentsTextEditor.editorSelectionLength > 0
     readonly property var editorFormatContextMenuItems: [
@@ -95,6 +96,22 @@ Item {
     property bool editorFormatContextMenuPointerActive: false
     property bool editorApplyingPulledDocumentText: false
     property var noteListModel: null
+    readonly property var currentResourceEntry: contentViewLayout.resourceListActive
+            && contentViewLayout.noteListModel.currentResourceEntry !== undefined
+            && contentViewLayout.noteListModel.currentResourceEntry !== null
+            ? contentViewLayout.noteListModel.currentResourceEntry
+            : ({})
+    readonly property bool resourceListActive: contentViewLayout.noteListModel
+            && contentViewLayout.noteListModel.currentResourceEntry !== undefined
+    readonly property string currentResourceType: contentViewLayout.resourceEntryString("type").toLowerCase()
+    readonly property string currentResourceFormat: contentViewLayout.resourceEntryString("format").toLowerCase()
+    readonly property bool imageResourceSelected: contentViewLayout.resourceListActive
+            && (contentViewLayout.currentResourceType === "image"
+                || contentViewLayout.resourceFormatLooksLikeImage(contentViewLayout.currentResourceFormat))
+            && (contentViewLayout.resourceEntryString("source").length > 0
+                || contentViewLayout.resourceEntryString("resolvedPath").length > 0
+                || contentViewLayout.resourceEntryString("resourcePath").length > 0)
+    readonly property bool noteEditorSurfaceVisible: !contentViewLayout.imageResourceSelected
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
@@ -120,6 +137,8 @@ Item {
         contentViewLayout.viewHookRequested();
     }
     function editorCommandShortcutEnabled() {
+        if (!contentViewLayout.noteEditorSurfaceVisible)
+            return false;
         if (contentViewLayout.editorReadOnly || !contentsTextEditor)
             return false;
         if (contentsTextEditor.activeFocus)
@@ -133,6 +152,32 @@ Item {
         return !!(editorItem
                   && editorItem.activeFocus !== undefined
                   && Boolean(editorItem.activeFocus));
+    }
+    function resourceEntryString(key) {
+        if (!contentViewLayout.currentResourceEntry || typeof contentViewLayout.currentResourceEntry !== "object")
+            return "";
+        const value = contentViewLayout.currentResourceEntry[key];
+        if (value === undefined || value === null)
+            return "";
+        return String(value).trim();
+    }
+    function resourceFormatLooksLikeImage(format) {
+        const normalizedFormat = format === undefined || format === null
+                ? ""
+                : String(format).trim().toLowerCase();
+        const suffixedFormat = normalizedFormat.startsWith(".")
+                ? normalizedFormat
+                : "." + normalizedFormat;
+        return suffixedFormat === ".avif"
+                || suffixedFormat === ".bmp"
+                || suffixedFormat === ".gif"
+                || suffixedFormat === ".heic"
+                || suffixedFormat === ".heif"
+                || suffixedFormat === ".jpeg"
+                || suffixedFormat === ".jpg"
+                || suffixedFormat === ".png"
+                || suffixedFormat === ".svg"
+                || suffixedFormat === ".webp";
     }
     function listLikeCount(value) {
         if (!value)
@@ -289,7 +334,16 @@ Item {
                 selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
                 selectedNoteId: contentViewLayout.editorActiveNoteId
                 sourceFilePath: contentViewLayout.editorSourceFilePath
-                visible: contentViewLayout.gutterVisible
+                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.gutterVisible
+            }
+
+            ContentsView.ImageEditor {
+                id: contentsImageEditor
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                resourceEntry: contentViewLayout.currentResourceEntry
+                visible: contentViewLayout.imageResourceSelected
             }
 
             ContentsView.TextEditor {
@@ -298,14 +352,17 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
+                enabled: contentViewLayout.noteEditorSurfaceVisible
                 editorReadOnly: contentViewLayout.editorReadOnly
                 inAppClipboard: contentViewLayout.inAppClipboard
                 noteBodyFilePath: contentViewLayout.editorSourceFilePath
                 noteEditorSession: contentViewLayout.noteEditorSession
                 objectName: "contentsDisplayTextEditor"
+                visible: contentViewLayout.noteEditorSurfaceVisible
 
                 onSyncFinished: function(path) {
-                    if (contentViewLayout.noteEditorSession
+                    if (contentViewLayout.noteEditorSurfaceVisible
+                            && contentViewLayout.noteEditorSession
                             && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
                         contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
                                     path,
@@ -313,7 +370,8 @@ Item {
                     }
                 }
                 onEditorPlainTextRevisionChanged: {
-                    if (!contentViewLayout.editorApplyingPulledDocumentText
+                    if (contentViewLayout.noteEditorSurfaceVisible
+                            && !contentViewLayout.editorApplyingPulledDocumentText
                             && contentViewLayout.noteEditorSession
                             && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
                             && contentViewLayout.editorSourceFilePath.length > 0) {
@@ -362,7 +420,7 @@ Item {
 
             ContentsView.Minimap {
                 Layout.fillHeight: true
-                Layout.preferredWidth: implicitWidth
+                Layout.preferredWidth: visible ? implicitWidth : 0
                 documentText: contentsTextEditor.editorDocumentText
                 scrollTarget: contentsTextEditor.scrollEditorViewportTo
                 sourceContentHeight: contentsTextEditor.editorViewportContentHeight
@@ -373,7 +431,7 @@ Item {
                 sourceFontPixelSize: LV.Theme.textBody
                 sourceFontWeight: LV.Theme.textBodyWeight
                 sourceViewportHeight: contentsTextEditor.editorViewportHeight
-                visible: contentViewLayout.minimapVisible
+                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.minimapVisible
             }
         }
 

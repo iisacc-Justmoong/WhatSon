@@ -27,7 +27,7 @@
 
 ## 한국어
 
-- 기준: contents 내부 QML에서 허용되는 세 뷰 중 거터 담당 파일이다.
+- 기준: contents 내부 QML에서 허용되는 네 뷰 중 거터 담당 파일이다.
 - 동작: 선택 노트의 session file 경로와 C++ parsed line count를 입력으로 받아 line number rail만 표시한다.
   실제 생성 개수는 `lineCount`가 담당하고, 이는 canonical source line 수다.
   시각적 wrap 행은 별도 line number를 만들지 않는다.

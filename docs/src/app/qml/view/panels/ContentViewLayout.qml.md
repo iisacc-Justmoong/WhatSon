@@ -1,13 +1,17 @@
 # `src/app/qml/view/panels/ContentViewLayout.qml`
 
 ## Role
-`ContentViewLayout.qml` is the content slot surface used by the restored desktop/mobile shell. It exists only to place
-the three contents views side by side.
+`ContentViewLayout.qml` is the content slot surface used by the restored desktop/mobile shell. It exists only to switch
+between the note editor contents views and the image-resource viewer.
 
 ## Composition
 - `ContentsView.Gutter`
+- `ContentsView.ImageEditor`
 - `ContentsView.TextEditor`
 - `ContentsView.Minimap`
+
+The image editor is mounted only when the active list model exposes `currentResourceEntry` and the selected entry is an
+image resource. Its input is the current resource entry map; it does not create a generic resource editor surface.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -61,10 +65,15 @@ snapshot from being overwritten by native context-click selection drift, and men
 snapshot instead of the shifted live metadata.
 
 ## Shell Inputs
+`noteListModel` may expose `currentResourceEntry` for the resources hierarchy list. `ContentViewLayout.qml` reads that
+entry to decide whether the visible content surface is `ContentsView.ImageEditor` or the note editor surface. Image
+viewer routing is based on the entry type/format and the already-resolved `source`, `resolvedPath`, or `resourcePath`
+fields. The layout does not parse resource packages or mutate resource metadata.
+
 `noteEditorSession` is consumed to bind the editor session file into `LV.TextEditor`, to notify the C++ session when
 LVRS finishes syncing that session file, to forward editor modified-count increments for RAW push scheduling, and to
 insert already-imported resource metadata returned from `inAppClipboard`. Other restored-shell state must not be used
-to mount parser, projection, renderer, resource editor, or calendar page logic.
+to mount parser, projection, renderer, generic resource editor, or calendar page logic.
 When the session emits `editorDocumentTextPulled(...)` for a newer idle filesystem pull, the layout replaces the LVRS
 document text through the sibling editor's public wrapper hook and suppresses the resulting revision tick from being
 classified as a local modified-count push.
@@ -72,7 +81,8 @@ classified as a local modified-count push.
 `editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
 ## Guardrails
-- Do not add parser, projection, rendering, document snapshot, resource editor, calendar, or editor view-mode wiring here.
+- Do not add parser, projection, document snapshot, generic resource editor, calendar, or editor view-mode wiring here.
+- Keep image resource routing limited to `ResourcesListModel.currentResourceEntry` and `ContentsView.ImageEditor`.
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
   the thin RAW-push trigger calls into `NoteEditorDocumentSession`.
 - Keep gutter wiring limited to selected-note metadata, parsed source line count, fallback editor logical line height,
@@ -95,8 +105,12 @@ classified as a local modified-count push.
 ## 한국어
 
 - 이 파일은 restored workspace shell의 content slot surface다.
-- 내부 배치는 거터, `LV.TextEditor` wrapper, 미니맵으로 끝난다.
+- 내부 배치는 노트 선택 시 거터, `LV.TextEditor` wrapper, 미니맵으로 끝나며, 이미지 리소스 선택 시
+  `ImageEditor.qml`만 콘텐츠 표면에 표시한다.
 - shell 호환 입력은 받을 수 있고 active note의 editor HTML session file만 `LV.TextEditor.filePath`로 넘긴다.
+- 리소스 하이어라키 list model이 `currentResourceEntry`를 제공하면, type/format과 `source`/`resolvedPath`/
+  `resourcePath`를 기준으로 이미지 리소스 선택 여부를 판단한다. 이 판단은 viewer 전환만 수행하며 `.wsresource`
+  package 파싱이나 resource metadata 저장은 하지 않는다.
 - 노트 본문 wrapper는 모바일 native text gesture 우선권을 끄고 LVRS viewport flick 경로를 유지하므로, 포커스된
   모바일 에디터에서도 손가락 이동으로 본문을 스크롤할 수 있다.
 - 또한 모바일 target에서는 touch begin에서 즉시 포커스하지 않는다. 커서 배치는 LVRS gesture 분류 이후

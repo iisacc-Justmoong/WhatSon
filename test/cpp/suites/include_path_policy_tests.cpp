@@ -389,10 +389,12 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
         contentsRoot + QStringLiteral("/Gutter.qml"),
+        contentsRoot + QStringLiteral("/ImageEditor.qml"),
         contentsRoot + QStringLiteral("/TextEditor.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
         docsContentsRoot + QStringLiteral("/Gutter.qml.md"),
+        docsContentsRoot + QStringLiteral("/ImageEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/TextEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/Minimap.qml.md")
     };
@@ -422,11 +424,17 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
 
     const QStringList contentsQmlFiles =
         QDir(repositoryRoot.filePath(contentsRoot)).entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
-    QCOMPARE(contentsQmlFiles, QStringList({QStringLiteral("Gutter.qml"), QStringLiteral("Minimap.qml"), QStringLiteral("TextEditor.qml")}));
+    QCOMPARE(contentsQmlFiles, QStringList({
+        QStringLiteral("Gutter.qml"),
+        QStringLiteral("ImageEditor.qml"),
+        QStringLiteral("Minimap.qml"),
+        QStringLiteral("TextEditor.qml")
+    }));
     const QStringList contentsDocsFiles =
         QDir(repositoryRoot.filePath(docsContentsRoot)).entryList(QStringList{QStringLiteral("*.md")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsDocsFiles, QStringList({
         QStringLiteral("Gutter.qml.md"),
+        QStringLiteral("ImageEditor.qml.md"),
         QStringLiteral("Minimap.qml.md"),
         QStringLiteral("README.md"),
         QStringLiteral("TextEditor.qml.md")

@@ -1303,8 +1303,8 @@ private slots:
     void progressHierarchySupport_defaultsFirstVisibleItemToFirstDraft();
     void projectsHierarchyParser_roundTripsNestedProjectTree();
     void projectsHierarchyController_keepsNestedProjectPolicy();
-    void qmlContentsView_keepsOnlyGutterTextEditorMinimapViews();
-    void qmlContentsView_threePartsStayViewOnlyAndNativeInputSafe();
+    void qmlContentsView_keepsOnlyAllowedContentsViews();
+    void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();

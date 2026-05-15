@@ -133,11 +133,15 @@
 - editor content surface는 LVRS `TextEditor` 중심으로 유지하되, active note의 `.wsnbody` 파일 경로를
   직접 연결하지 않는다. `ContentViewLayout.qml`은 `NoteEditorDocumentSession`이 만든 parsed RAW source
   session file 경로만 `LV.TextEditor.filePath`로 소비할 수 있다.
-- contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 허용한다.
+- contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
+  네 뷰만 허용한다. `ImageEditor.qml`은 리소스 하이어라키 list model의 `currentResourceEntry`가 이미지 리소스일
+  때 콘텐츠 영역에 표시하는 viewer 전용 QML이다.
 - `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath`를 통해
   `NoteEditorDocumentSession`이 만든 parsed RAW source session file을 가리킨다. 선택된 노트가 없으면
   blank session file 또는 빈 문자열로 둔다.
-- `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `TextEditor.qml`, `Minimap.qml` 세 뷰만 mount한다.
+- `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
+  네 뷰만 mount한다. 노트 선택 시에는 gutter/TextEditor/minimap surface를 보이고, 이미지 리소스 선택 시에는
+  `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에 전달해 이미지 viewer surface로 전환한다.
 - `Gutter.qml`은 선택 노트 id/path, parsed source session file 경로, C++ `NoteEditorDocumentSession`의
   `parsedLineCount`, 그리고 `TextEditor.qml`이 전달하는 viewport offset/line height만 입력으로 받아 line
   number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
@@ -151,7 +155,7 @@
   `Resources.wsresources` 목록에 등록한 뒤, 그 반환 metadata의 `resourcePath`만 본문 RAW `<resource ... />`
   태그로 삽입해야 한다. 본문에는 이미지 payload나 asset file path를 직접 넣지 않는다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
-  resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
+  generic resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
   Plain/Page/Print/Web/Presentation 선택 계약은 navigation bar의 view-mode 콤보박스 계약으로 유지한다.
   단, 이 콤보박스는 현재 editor surface를 `LV.TextEditor`에서 다른 renderer로 전환하는 백엔드 계약이 아니며,
@@ -237,9 +241,10 @@ import LVRS 1.0 as LV
 
 - Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
 - Workspace route: `Main.qml`은 기존 desktop/mobile layout shell을 유지한다. `BodyLayout.qml`의 content slot이
-  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount하고, 그 내부는 gutter/TextEditor/minimap으로 제한하되
-  선택된 노트의 `.wsnbody`를 C++에서 parsed RAW source session file로 mount한 뒤 `LV.TextEditor.filePath`에
-  연결한다.
+  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount하고, 노트 선택 시 내부는 gutter/TextEditor/minimap으로
+  제한하되 선택된 노트의 `.wsnbody`를 C++에서 parsed RAW source session file로 mount한 뒤
+  `LV.TextEditor.filePath`에 연결한다. 리소스 하이어라키에서 이미지 리소스 list item을 선택하면 같은 content
+  slot이 `ImageEditor.qml`을 표시한다.
 - View directory(legacy `shell`과 `pages`에서 병합됨):
     - `src/app/qml/view/panels/StatusBarLayout.qml`
     - `src/app/qml/view/panels/NavigationBarLayout.qml`
@@ -263,6 +268,7 @@ import LVRS 1.0 as LV
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
                     - `src/app/qml/view/contents/Gutter.qml`
+                    - `src/app/qml/view/contents/ImageEditor.qml`
                     - `src/app/qml/view/contents/TextEditor.qml`
                     - `src/app/qml/view/contents/Minimap.qml`
                 - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`

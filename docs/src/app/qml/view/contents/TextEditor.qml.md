@@ -81,7 +81,7 @@
 
 ## 한국어
 
-- 기준: contents 내부 QML에서 허용되는 세 뷰 중 텍스트 에디터 담당 파일이다.
+- 기준: contents 내부 QML에서 허용되는 네 뷰 중 텍스트 에디터 담당 파일이다.
 - 선택된 노트가 있으면 `noteBodyFilePath`를 통해 C++이 만든 editor HTML session file을 편집한다.
 - 거터 동기화를 위해 editor viewport의 `contentY`, fallback `editorLogicalLineHeight`,
   `editorLogicalLineMetricFor(lineIndex)`, `editorLineMetricsRevision`을 바깥 layout에 전달한다. 이 metric은
