@@ -4,6 +4,7 @@
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/preset/PresetHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>
@@ -17,7 +18,7 @@ class PresetHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
-    Q_PROPERTY(PresetHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -31,7 +32,7 @@ public:
     explicit PresetHierarchyController(QObject* parent = nullptr);
     ~PresetHierarchyController() override;
 
-    PresetHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
@@ -90,7 +91,7 @@ private:
     QStringList m_presetNames;
     QVector<PresetHierarchyItem> m_items;
     WhatSonPresetHierarchyStore m_store;
-    PresetHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;

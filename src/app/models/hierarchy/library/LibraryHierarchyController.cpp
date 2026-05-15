@@ -1041,7 +1041,7 @@ LibraryHierarchyController::LibraryHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &LibraryHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -1062,7 +1062,7 @@ LibraryHierarchyController::LibraryHierarchyController(QObject* parent)
 
 LibraryHierarchyController::~LibraryHierarchyController() = default;
 
-LibraryHierarchyModel* LibraryHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* LibraryHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -3627,7 +3627,7 @@ void LibraryHierarchyController::syncModel()
                               QStringLiteral("library.controller"),
                               QStringLiteral("syncModel"),
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }

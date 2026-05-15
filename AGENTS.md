@@ -19,7 +19,8 @@
 - 루트 빌드 정의: `CMakeLists.txt` 및 `cmake/root/*/CMakeLists.txt` 아래의 그룹화된 루트 타깃 shard
 - 기본 QML 루트: `src/app/qml/Main.qml`
 - 라이브러리 계층 백엔드: `src/app/models/hierarchy/library`
-- 라이브러리 계층 모델/컨트롤러: `src/app/models/hierarchy/library/LibraryHierarchyModel.*`,
+- 공통 계층 표시 모델: `src/app/models/hierarchy/WhatSonHierarchyModel.*`
+- 라이브러리 계층 item struct/컨트롤러: `src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`,
   `src/app/models/hierarchy/library/LibraryHierarchyController.*`
 - 라이브러리 오른쪽 패널 목록 모델: `src/app/models/hierarchy/library/LibraryNoteListModel.*`
 - 허브 배치 store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`
@@ -27,7 +28,7 @@
 - 허브 런타임 store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`
 - 런타임 병렬 bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
 - 태그 런타임 상태 store: `src/app/models/hierarchy/tags/WhatSonHubTagsStateStore.*`
-- 태그 계층 모델/컨트롤러: `src/app/models/hierarchy/tags/TagsHierarchyModel.*`,
+- 태그 계층 item struct/컨트롤러: `src/app/models/hierarchy/tags/TagsHierarchyModel.hpp`,
   `src/app/models/hierarchy/tags/TagsHierarchyController.*`
 - 내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,
   `src/app/models/navigationbar/NavigationModeSectionController.*`,
@@ -66,11 +67,17 @@
     - Event -> `EventHierarchyController`
     - Preset -> `PresetHierarchyController`
 - 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
-- 런타임 계층 Controller wiring에는 flat/shared hierarchy model abstraction을 금지한다.
+- 런타임 계층 Controller wiring은 one-type/one-Controller contract를 유지하되, 표시용 item model은
+  `src/app/models/hierarchy/WhatSonHierarchyModel.*` 하나를 공유해야 한다. 각 Controller는 자기 domain의 typed
+  mutation state를 유지하고, `depthItems()`가 반환하는 `LV.Hierarchy` node map을 공통 `WhatSonHierarchyModel`에
+  공급한다.
+- 도메인별 `*HierarchyModel.hpp` 파일은 domain item struct와 icon helper만 둘 수 있으며, 새
+  `QAbstractListModel` subclass를 선언하면 안 된다.
 - model/support 코드는 `src/app/models/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.
 - 하이어라키 row의 우측 chevron expand/collapse 공통 검증과 state flip은 `IHierarchyController`의 protected
   helper(`setHierarchyItemExpanded(...)`, `setAllHierarchyItemsExpanded(...)`)를 부모 계약으로 사용한다. 각 도메인
-  Controller는 이 부모 helper를 호출한 뒤 자기 model sync/persistence 후처리만 수행해야 한다.
+  Controller는 이 부모 helper를 호출한 뒤 단일 row 변경은 `WhatSonHierarchyModel::setItemExpanded(...)`로 반영하고,
+  전체 hierarchy replacement가 필요할 때만 공통 model에 `depthItems()`를 다시 공급해야 한다.
 - Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,
   반복되는 depth item parsing/serialization/selection support는
   `src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다. chevron expansion은

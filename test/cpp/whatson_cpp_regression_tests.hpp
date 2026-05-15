@@ -35,6 +35,7 @@
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 #include "app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
@@ -1345,6 +1346,8 @@ private slots:
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();
     void sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach();
+    void hierarchyItemModel_usesSharedLvrsModelContract();
+    void hierarchyControllers_exposeSharedLvrsHierarchyModel();
     void sidebarHierarchyInteractionController_keepsFooterDispatchOutOfCppPolicy();
     void hierarchyController_parentExpansionPolicyMutatesOnlyChevronRows();
     void hierarchyControllers_delegateChevronExpansionToParentPolicy();

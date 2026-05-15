@@ -27,7 +27,7 @@ EventHierarchyController::EventHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &EventHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -39,7 +39,7 @@ EventHierarchyController::EventHierarchyController(QObject* parent)
 
 EventHierarchyController::~EventHierarchyController() = default;
 
-EventHierarchyModel* EventHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* EventHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -190,9 +190,10 @@ bool EventHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -531,7 +532,7 @@ void EventHierarchyController::updateLoadState(bool succeeded, QString errorMess
 
 void EventHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }

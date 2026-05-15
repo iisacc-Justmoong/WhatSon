@@ -429,7 +429,7 @@ ResourcesHierarchyController::ResourcesHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &ResourcesHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -441,7 +441,7 @@ ResourcesHierarchyController::ResourcesHierarchyController(QObject* parent)
 
 ResourcesHierarchyController::~ResourcesHierarchyController() = default;
 
-ResourcesHierarchyModel* ResourcesHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* ResourcesHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -568,9 +568,10 @@ bool ResourcesHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -1050,7 +1051,7 @@ void ResourcesHierarchyController::updateLoadState(bool succeeded, QString error
 
 void ResourcesHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }

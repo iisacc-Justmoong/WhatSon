@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyModel.hpp"
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/WhatSonFolderDepthEntry.hpp"
@@ -33,7 +34,7 @@ class LibraryHierarchyController final : public IHierarchyController,
         IHierarchyNoteDropCapability
         ILibraryNoteMutationCapability)
 
-    Q_PROPERTY(LibraryHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -49,7 +50,7 @@ public:
     explicit LibraryHierarchyController(QObject* parent = nullptr);
     ~LibraryHierarchyController() override;
 
-    LibraryHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
     LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
@@ -216,7 +217,7 @@ private:
     QString mostRecentIndexedNoteIdByHeader() const;
 
     QVector<LibraryHierarchyItem> m_items;
-    LibraryHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
     WhatSonLibraryIndexedState m_indexedState;
     WhatSonLibraryNoteListProjection m_noteListProjection;

@@ -1,38 +1,12 @@
 # `src/app/models/hierarchy/projects/ProjectsHierarchyModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/models/hierarchy/projects/ProjectsHierarchyModel.hpp`
-- Source kind: C++ header
-- File name: `ProjectsHierarchyModel.hpp`
-- Approximate line count: 93
+This header keeps the typed `ProjectsHierarchyItem` struct and icon helper used by `ProjectsHierarchyController`
+internals.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Shared Model Contract
 
-### Classes and Structs
-- `ProjectsHierarchyItem`
-- `ProjectsHierarchyModel`
-
-### Enums
-- `Role`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- It no longer declares a Qt item model class.
+- The QML/LVRS-facing model is the shared `WhatSonHierarchyModel`.
+- Nested project depth, expansion, and drag flags are serialized by the controller into `LV.Hierarchy` node maps.

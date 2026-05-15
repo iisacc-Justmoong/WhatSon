@@ -6,6 +6,7 @@
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/projects/ProjectsHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>
@@ -20,7 +21,7 @@ class ProjectsHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability IHierarchyReorderCapability)
 
-    Q_PROPERTY(ProjectsHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -35,7 +36,7 @@ public:
     explicit ProjectsHierarchyController(QObject* parent = nullptr);
     ~ProjectsHierarchyController() override;
 
-    ProjectsHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
     LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
@@ -126,7 +127,7 @@ private:
     QStringList m_projectNames;
     QVector<ProjectsHierarchyItem> m_items;
     WhatSonProjectsHierarchyStore m_store;
-    ProjectsHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
     QVector<LibraryNoteRecord> m_allNotes;
     int m_selectedIndex = -1;

@@ -282,7 +282,7 @@ ProgressHierarchyController::ProgressHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &ProgressHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -307,7 +307,7 @@ ProgressHierarchyController::ProgressHierarchyController(QObject* parent)
 
 ProgressHierarchyController::~ProgressHierarchyController() = default;
 
-ProgressHierarchyModel* ProgressHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* ProgressHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -425,9 +425,10 @@ bool ProgressHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -1068,7 +1069,7 @@ void ProgressHierarchyController::syncProgressStatesFromItems()
 
 void ProgressHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }

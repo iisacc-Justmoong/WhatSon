@@ -2,13 +2,11 @@
 
 ## Responsibility
 
-This header defines the flat list model used by the progress sidebar.
+This header keeps the typed `ProgressHierarchyItem` struct and icon helper used by `ProgressHierarchyController`
+internals.
 
-## Icon Mapping
+## Shared Model Contract
 
-- `progressHierarchyIconName(...)` normalizes labels by removing spaces, hyphens, and underscores
-  before matching them.
-- Known labels such as `First draft`, `Modified draft`, `In Progress`, `Pending`, `Reviewing`,
-  `Waiting for approval`, `Done`, `Archived`, and legacy aliases map to stable LVRS icon names.
-- Unknown labels intentionally fall back to an empty icon name so custom progress states can still
-  render without forcing an incorrect glyph.
+- It no longer declares a Qt item model class.
+- The QML/LVRS-facing model is the shared `WhatSonHierarchyModel`.
+- Progress state labels and values are serialized by the controller into `LV.Hierarchy` node maps.

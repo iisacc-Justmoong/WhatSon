@@ -4,6 +4,7 @@
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>
@@ -17,7 +18,7 @@ class EventHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
-    Q_PROPERTY(EventHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -31,7 +32,7 @@ public:
     explicit EventHierarchyController(QObject* parent = nullptr);
     ~EventHierarchyController() override;
 
-    EventHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
@@ -90,7 +91,7 @@ private:
     QStringList m_eventNames;
     QVector<EventHierarchyItem> m_items;
     WhatSonEventHierarchyStore m_store;
-    EventHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;

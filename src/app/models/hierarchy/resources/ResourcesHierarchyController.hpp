@@ -5,6 +5,7 @@
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>
@@ -18,7 +19,7 @@ class ResourcesHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
-    Q_PROPERTY(ResourcesHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(ResourcesListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -33,7 +34,7 @@ public:
     explicit ResourcesHierarchyController(QObject* parent = nullptr);
     ~ResourcesHierarchyController() override;
 
-    ResourcesHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
     ResourcesListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
@@ -101,7 +102,7 @@ private:
     QStringList m_resourceResolutionBasePaths;
     QVector<ResourcesHierarchyItem> m_items;
     WhatSonResourcesHierarchyStore m_store;
-    ResourcesHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     ResourcesListModel m_noteListModel;
     int m_selectedIndex = -1;
     int m_itemCount = 0;

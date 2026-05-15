@@ -4,6 +4,7 @@
 #include "app/models/hierarchy/IHierarchyCapabilities.hpp"
 #include "app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 #include "app/models/hierarchy/IHierarchyController.hpp"
 
 #include <QPointer>
@@ -20,7 +21,7 @@ class BookmarksHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
-    Q_PROPERTY(BookmarksHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(BookmarksNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -37,7 +38,7 @@ public:
     explicit BookmarksHierarchyController(QObject* parent = nullptr);
     ~BookmarksHierarchyController() override;
 
-    BookmarksHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
     BookmarksNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
@@ -115,7 +116,7 @@ private:
 
     QVector<BookmarksHierarchyItem> m_items;
     QVector<LibraryNoteRecord> m_bookmarkedNotes;
-    BookmarksHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     BookmarksNoteListModel m_noteListModel;
     int m_selectedIndex = -1;
     int m_itemCount = 0;

@@ -836,7 +836,7 @@ ProjectsHierarchyController::ProjectsHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &ProjectsHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -848,7 +848,7 @@ ProjectsHierarchyController::ProjectsHierarchyController(QObject* parent)
 
 ProjectsHierarchyController::~ProjectsHierarchyController() = default;
 
-ProjectsHierarchyModel* ProjectsHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* ProjectsHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -1195,9 +1195,10 @@ bool ProjectsHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -1747,7 +1748,7 @@ void ProjectsHierarchyController::updateLoadState(bool succeeded, QString errorM
 
 void ProjectsHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
     refreshNoteListForSelection();

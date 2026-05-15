@@ -308,7 +308,7 @@ BookmarksHierarchyController::BookmarksHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &BookmarksHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -330,7 +330,7 @@ BookmarksHierarchyController::BookmarksHierarchyController(QObject* parent)
 
 BookmarksHierarchyController::~BookmarksHierarchyController() = default;
 
-BookmarksHierarchyModel* BookmarksHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* BookmarksHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -519,9 +519,10 @@ bool BookmarksHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -1006,7 +1007,7 @@ QString BookmarksHierarchyController::selectedColorLabel() const
 
 void BookmarksHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }

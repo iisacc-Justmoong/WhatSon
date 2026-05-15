@@ -1,38 +1,12 @@
 # `src/app/models/hierarchy/bookmarks/BookmarksHierarchyModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/models/hierarchy/bookmarks/BookmarksHierarchyModel.hpp`
-- Source kind: C++ header
-- File name: `BookmarksHierarchyModel.hpp`
-- Approximate line count: 86
+This header keeps the typed `BookmarksHierarchyItem` struct and icon helper used by `BookmarksHierarchyController`
+internals.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Shared Model Contract
 
-### Classes and Structs
-- `BookmarksHierarchyItem`
-- `BookmarksHierarchyModel`
-
-### Enums
-- `Role`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- It no longer declares a Qt item model class.
+- The QML/LVRS-facing model is the shared `WhatSonHierarchyModel`.
+- Bookmark color/icon metadata remains on the typed struct and is published through controller `depthItems()` maps.

@@ -6,6 +6,7 @@
 #include "app/models/hierarchy/IHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/progress/ProgressHierarchyModel.hpp"
+#include "app/models/hierarchy/WhatSonHierarchyModel.hpp"
 
 #include <QStringList>
 #include <QVariantList>
@@ -19,7 +20,7 @@ class ProgressHierarchyController final : public IHierarchyController,
     Q_OBJECT
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
-    Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
@@ -35,7 +36,7 @@ public:
     explicit ProgressHierarchyController(QObject* parent = nullptr);
     ~ProgressHierarchyController() override;
 
-    ProgressHierarchyModel* itemModel() noexcept override;
+    WhatSonHierarchyModel* itemModel() noexcept override;
     LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
@@ -120,7 +121,7 @@ private:
     QStringList m_progressStates;
     QVector<ProgressHierarchyItem> m_items;
     WhatSonProgressHierarchyStore m_store;
-    ProgressHierarchyModel m_itemModel;
+    WhatSonHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
     QVector<LibraryNoteRecord> m_allNotes;
     int m_selectedIndex = -1;

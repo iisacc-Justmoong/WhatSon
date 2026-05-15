@@ -77,6 +77,118 @@ namespace
     }
 }
 
+void WhatSonCppRegressionTests::hierarchyItemModel_usesSharedLvrsModelContract()
+{
+    WhatSonHierarchyModel model;
+    const QVariantList nodes{
+        QVariantMap{
+            {QStringLiteral("key"), QStringLiteral("type:image")},
+            {QStringLiteral("itemId"), 0},
+            {QStringLiteral("label"), QStringLiteral("Images")},
+            {QStringLiteral("depth"), 0},
+            {QStringLiteral("expanded"), false},
+            {QStringLiteral("showChevron"), true},
+            {QStringLiteral("iconName"), QStringLiteral("imageToImage")},
+            {QStringLiteral("count"), 3},
+        },
+        QVariantMap{
+            {QStringLiteral("key"), QStringLiteral("format:image:.png")},
+            {QStringLiteral("itemId"), 1},
+            {QStringLiteral("label"), QStringLiteral(".png")},
+            {QStringLiteral("depth"), 1},
+            {QStringLiteral("expanded"), false},
+            {QStringLiteral("showChevron"), false},
+            {QStringLiteral("iconName"), QStringLiteral("virtualFolder")},
+            {QStringLiteral("count"), 3},
+        },
+    };
+
+    model.setItems(nodes);
+    QCOMPARE(model.rowCount(), 2);
+
+    QSignalSpy resetSpy(&model, &QAbstractItemModel::modelAboutToBeReset);
+    QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+    QSignalSpy itemsChangedSpy(&model, &WhatSonHierarchyModel::itemsChanged);
+
+    QVERIFY(model.setItemExpanded(0, true));
+    QCOMPARE(resetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 1);
+    QCOMPARE(itemsChangedSpy.count(), 1);
+    QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::ExpandedRole).toBool(), true);
+    QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::LabelRole).toString(), QStringLiteral("Images"));
+    QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::KeyRole).toString(), QStringLiteral("type:image"));
+    QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::ItemKeyRole).toString(), QStringLiteral("type:image"));
+    QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::CountRole).toInt(), 3);
+}
+
+void WhatSonCppRegressionTests::hierarchyControllers_exposeSharedLvrsHierarchyModel()
+{
+    const QStringList controllerHeaders{
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/tags/TagsHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/resources/ResourcesHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/progress/ProgressHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/event/EventHierarchyController.hpp"),
+        QStringLiteral("src/app/models/hierarchy/preset/PresetHierarchyController.hpp"),
+    };
+
+    for (const QString& path : controllerHeaders)
+    {
+        const QString source = readUtf8SourceFile(path);
+        QVERIFY2(!source.isEmpty(), qPrintable(path));
+        QVERIFY2(
+            source.contains(QStringLiteral("#include \"app/models/hierarchy/WhatSonHierarchyModel.hpp\"")),
+            qPrintable(QStringLiteral("%1 must include the shared LVRS hierarchy model").arg(path)));
+        QVERIFY2(
+            source.contains(QStringLiteral("Q_PROPERTY(WhatSonHierarchyModel* itemModel READ itemModel CONSTANT)")),
+            qPrintable(QStringLiteral("%1 must expose the shared item model type").arg(path)));
+        QVERIFY2(
+            source.contains(QStringLiteral("WhatSonHierarchyModel* itemModel() noexcept override;")),
+            qPrintable(QStringLiteral("%1 must return the shared item model type").arg(path)));
+        QVERIFY2(
+            source.contains(QStringLiteral("WhatSonHierarchyModel m_itemModel;")),
+            qPrintable(QStringLiteral("%1 must store the shared item model type").arg(path)));
+        QVERIFY2(
+            !source.contains(QStringLiteral("Q_PROPERTY(LibraryHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(ProjectsHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(BookmarksHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(TagsHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(ResourcesHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(ProgressHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(EventHierarchyModel* itemModel"))
+            && !source.contains(QStringLiteral("Q_PROPERTY(PresetHierarchyModel* itemModel")),
+            qPrintable(QStringLiteral("%1 must not expose a domain-specific hierarchy model").arg(path)));
+    }
+
+    const QStringList controllerSources{
+        QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/tags/TagsHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/resources/ResourcesHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/progress/ProgressHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/event/EventHierarchyController.cpp"),
+        QStringLiteral("src/app/models/hierarchy/preset/PresetHierarchyController.cpp"),
+    };
+
+    for (const QString& path : controllerSources)
+    {
+        const QString source = readUtf8SourceFile(path);
+        QVERIFY2(!source.isEmpty(), qPrintable(path));
+        QVERIFY2(
+            source.contains(QStringLiteral("m_itemModel.setItems(depthItems());")),
+            qPrintable(QStringLiteral("%1 must feed the shared model from the LV.Hierarchy node contract").arg(path)));
+        QVERIFY2(
+            source.contains(QStringLiteral("m_itemModel.setItemExpanded(changedIndex, changedExpanded);")),
+            qPrintable(QStringLiteral("%1 must update single chevron changes without resetting the model").arg(path)));
+        QVERIFY2(
+            !source.contains(QStringLiteral("m_itemModel.setItems(m_items);")),
+            qPrintable(QStringLiteral("%1 must not publish domain vectors directly to the LVRS-facing model").arg(path)));
+    }
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyController_preservesFallbackAcrossStoreAttachDetach()
 {
     HierarchyControllerProvider provider;

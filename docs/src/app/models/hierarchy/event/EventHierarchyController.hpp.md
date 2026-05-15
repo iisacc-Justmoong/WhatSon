@@ -31,6 +31,7 @@ views.
 ## Internal State
 
 - `m_eventNames` is the current canonical event-name payload.
-- `m_items` is the rendered bucket/item hierarchy consumed by `EventHierarchyModel`.
+- `m_items` is the rendered bucket/item hierarchy serialized through `depthItems()` into the shared
+  `WhatSonHierarchyModel`.
 - `m_store` remains the serializer/parser-facing domain store for `Event.wsevent`.
 - `m_eventFilePath` identifies the mutation target used by rename/create/delete operations.

@@ -27,7 +27,7 @@ PresetHierarchyController::PresetHierarchyController(QObject* parent)
     initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
-        &PresetHierarchyModel::itemCountChanged,
+        &WhatSonHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -39,7 +39,7 @@ PresetHierarchyController::PresetHierarchyController(QObject* parent)
 
 PresetHierarchyController::~PresetHierarchyController() = default;
 
-PresetHierarchyModel* PresetHierarchyController::itemModel() noexcept
+WhatSonHierarchyModel* PresetHierarchyController::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -190,9 +190,10 @@ bool PresetHierarchyController::setItemExpanded(int index, bool expanded)
         &m_items,
         index,
         expanded,
-        [this](int, bool)
+        [this](int changedIndex, bool changedExpanded)
         {
-            syncModel();
+            m_itemModel.setItemExpanded(changedIndex, changedExpanded);
+            emit hierarchyModelChanged();
         });
 }
 
@@ -532,7 +533,7 @@ void PresetHierarchyController::updateLoadState(bool succeeded, QString errorMes
 
 void PresetHierarchyController::syncModel()
 {
-    m_itemModel.setItems(m_items);
+    m_itemModel.setItems(depthItems());
     updateItemCount();
     emit hierarchyModelChanged();
 }
