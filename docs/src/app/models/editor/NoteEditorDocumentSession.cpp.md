@@ -16,11 +16,15 @@ Implements the active note editor document session.
 5. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
-6. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
-   HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
-   so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
+6. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
+   `requestEditorIdleRawPush(...)`; when the editor surface modified count increases, QML sends the same surface
+   payload to `requestEditorModifiedCountRawPush(...)`. Both routes pass through
+   `WhatSonEditorRawPushController`, then the session converts the editor document HTML back into canonical source text
+   and delegates persistence through `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and
+   `parsedLineCount` is refreshed.
    If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
+   Before note context changes or clears, the session asks the same push controller to flush the active surface.
 7. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
@@ -33,6 +37,8 @@ Implements the active note editor document session.
 - The session creates blank/editor session files outside the note package.
 - The session keeps a file-path-to-note-context map so late sync signals from a previous editor file still persist to
   the note that originally owned that file.
+- Idle, modified-count, and note-departure RAW pushes are routed through
+  `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
 - The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must

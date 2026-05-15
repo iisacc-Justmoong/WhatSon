@@ -289,8 +289,20 @@ Item {
 
                 onSyncFinished: function(path) {
                     if (contentViewLayout.noteEditorSession
-                            && contentViewLayout.noteEditorSession.persistEditorFile !== undefined) {
-                        contentViewLayout.noteEditorSession.persistEditorFile(path);
+                            && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
+                        contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
+                                    path,
+                                    contentsTextEditor.editorDocumentText);
+                    }
+                }
+                onEditorPlainTextRevisionChanged: {
+                    if (contentViewLayout.noteEditorSession
+                            && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
+                            && contentViewLayout.editorSourceFilePath.length > 0) {
+                        contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
+                                    contentViewLayout.editorSourceFilePath,
+                                    contentsTextEditor.editorPlainTextRevision,
+                                    contentsTextEditor.editorDocumentText);
                     }
                 }
                 onEditorDocumentTextChanged: contentViewLayout.clearEditorFormatSelectionSnapshot()

@@ -888,7 +888,28 @@ namespace
 NoteEditorDocumentSession::NoteEditorDocumentSession(QObject* parent)
     : QObject(parent)
     , m_noteManagementCoordinator(this)
+    , m_rawPushController(this)
 {
+    m_rawPushController.setRawPushCallback(
+        [this](
+            const QString& editorFilePath,
+            const QString& editorDocumentText,
+            const bool hasEditorDocumentText,
+            const QString&,
+            QString* errorMessage) -> bool
+        {
+            const bool pushed = hasEditorDocumentText
+                ? persistEditorDocumentText(editorFilePath, editorDocumentText)
+                : persistEditorFile(editorFilePath);
+            if (!pushed && errorMessage != nullptr)
+            {
+                *errorMessage = m_lastError.trimmed().isEmpty()
+                    ? QStringLiteral("Failed to push editor surface to RAW.")
+                    : m_lastError.trimmed();
+            }
+            return pushed;
+        });
+
     connect(
         &m_noteManagementCoordinator,
         &ContentsNoteManagementCoordinator::noteBodyTextLoaded,
@@ -1024,6 +1045,13 @@ bool NoteEditorDocumentSession::openNoteForEditing(
         return clearEditor();
     }
 
+    if (!m_activeNoteId.trimmed().isEmpty()
+        && (m_activeNoteId != normalizedNoteId
+            || m_activeNoteDirectoryPath != normalizedNoteDirectoryPath))
+    {
+        pushActiveEditorBeforeNoteDeparture();
+    }
+
     if (m_pendingLoadSequence == 0
         && m_activeNoteId == normalizedNoteId
         && m_activeNoteDirectoryPath == normalizedNoteDirectoryPath
@@ -1059,6 +1087,11 @@ bool NoteEditorDocumentSession::openNoteForEditing(
 
 bool NoteEditorDocumentSession::clearEditor()
 {
+    if (hasActiveNote())
+    {
+        pushActiveEditorBeforeNoteDeparture();
+    }
+
     m_pendingLoadSequence = 0;
     m_pendingLoadNoteId.clear();
     m_pendingLoadNoteDirectoryPath.clear();
@@ -1077,14 +1110,7 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
     const QString normalizedEditorFilePath = normalizePath(editorFilePath);
     if (normalizedEditorFilePath.isEmpty())
     {
-        return false;
-    }
-
-    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
-    if (contextIterator == m_editorFileContexts.constEnd()
-        || contextIterator->noteId.trimmed().isEmpty()
-        || contextIterator->noteDirectoryPath.trimmed().isEmpty())
-    {
+        setLastError(QStringLiteral("Editor file path is empty."));
         return false;
     }
 
@@ -1093,7 +1119,47 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
     if (!readEditorSourceFile(normalizedEditorFilePath, &editorDocumentText, &readError))
     {
         setLastError(readError);
-        emit editorSourcePersistFinished(contextIterator->noteId, false, readError);
+        return false;
+    }
+
+    return persistEditorDocumentText(normalizedEditorFilePath, editorDocumentText);
+}
+
+void NoteEditorDocumentSession::requestEditorIdleRawPush(
+    const QString& editorFilePath,
+    const QString& editorDocumentText)
+{
+    m_rawPushController.requestIdlePush(editorFilePath, editorDocumentText);
+}
+
+void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
+    const QString& editorFilePath,
+    const int modifiedCount,
+    const QString& editorDocumentText)
+{
+    m_rawPushController.requestModifiedCountPush(
+        editorFilePath,
+        modifiedCount,
+        editorDocumentText);
+}
+
+bool NoteEditorDocumentSession::persistEditorDocumentText(
+    const QString& editorFilePath,
+    const QString& editorDocumentText)
+{
+    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty())
+    {
+        setLastError(QStringLiteral("Editor file path is empty."));
+        return false;
+    }
+
+    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
+    if (contextIterator == m_editorFileContexts.constEnd()
+        || contextIterator->noteId.trimmed().isEmpty()
+        || contextIterator->noteDirectoryPath.trimmed().isEmpty())
+    {
+        setLastError(QStringLiteral("Editor file context is unavailable."));
         return false;
     }
 
@@ -1126,6 +1192,17 @@ bool NoteEditorDocumentSession::persistEditorFile(const QString& editorFilePath)
         m_activeBodySourceText = sourceText;
     }
     return enqueued;
+}
+
+bool NoteEditorDocumentSession::pushActiveEditorBeforeNoteDeparture()
+{
+    const QString normalizedEditorFilePath = normalizePath(m_editorFilePath);
+    if (normalizedEditorFilePath.isEmpty())
+    {
+        return true;
+    }
+
+    return m_rawPushController.pushBeforeNoteDeparture(normalizedEditorFilePath);
 }
 
 QVariantMap NoteEditorDocumentSession::reprojectResourceFramesForEditorWidth(

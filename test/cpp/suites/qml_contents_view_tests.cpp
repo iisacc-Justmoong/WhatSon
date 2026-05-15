@@ -260,7 +260,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentWidth: contentsTextEditor.editorViewportWidth")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("scrollTarget: contentsTextEditor.scrollEditorViewportTo")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("persistEditorFile(path)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorModifiedCountRawPush(")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("persistEditorFile(path)")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.activeNoteBodyPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));

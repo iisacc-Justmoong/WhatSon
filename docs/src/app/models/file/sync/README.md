@@ -7,12 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/sync`
 - Child directories: 0
-- Child files: 9
+- Child files: 11
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `WhatSonEditorRawPushController.cpp`
+- `WhatSonEditorRawPushController.hpp`
 - `WhatSonHubSyncController.cpp`
 - `WhatSonHubSyncController.hpp`
 - `WhatSonHubSyncObservation.hpp`
@@ -32,16 +34,19 @@
 - `WhatSonHubSyncObservationBuilder` owns recursive hub inspection, signature hashing, and watch-path discovery.
 - `WhatSonHubSyncWatcher` owns `QFileSystemWatcher` registration and watcher path diffs.
 - `WhatSonHubSyncScheduler` owns periodic and debounce timers.
-- Note body management is not part of `file/sync`; concrete note-package reads and writes remain under
-  `src/app/models/file/note`.
+- `WhatSonEditorRawPushController` owns editor-surface-to-RAW push triggers for idle turns, note departure, and editor
+  modified-count increments. The controller stays in `file/sync` because it is sync orchestration; concrete
+  `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and `file/note`.
 
 ## Tests
 
 - `test/cpp/suites/hub_sync_controller_tests.cpp` verifies the split responsibility boundary and observation behavior.
+- `test/cpp/suites/editor_raw_push_controller_tests.cpp` verifies the editor RAW push trigger controller.
 - Regression checklist:
   - Startup/runtime wiring must still resolve `WhatSonHubSyncController` through the new `file/sync` include path.
   - Hub watcher debounce and local-mutation acknowledge flow must remain unchanged after the directory move.
-  - Sync tests must continue to reject note-editor persistence ownership under `src/app/models/file/sync`.
+  - Editor RAW push orchestration may live under `file/sync`, but RAW parsing/serialization and note-package writes
+    must remain outside the sync module.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

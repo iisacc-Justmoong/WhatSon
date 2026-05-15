@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
+#include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 
 #include <QHash>
 #include <QObject>
@@ -51,6 +52,13 @@ public:
         const QString& noteDirectoryPath);
     Q_INVOKABLE bool clearEditor();
     Q_INVOKABLE bool persistEditorFile(const QString& editorFilePath);
+    Q_INVOKABLE void requestEditorIdleRawPush(
+        const QString& editorFilePath,
+        const QString& editorDocumentText);
+    Q_INVOKABLE void requestEditorModifiedCountRawPush(
+        const QString& editorFilePath,
+        int modifiedCount,
+        const QString& editorDocumentText);
     Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
         const QString& editorDocumentText,
         int cursorPosition,
@@ -125,6 +133,10 @@ private:
         const QString& filePath,
         QString* outText,
         QString* errorMessage = nullptr) const;
+    bool persistEditorDocumentText(
+        const QString& editorFilePath,
+        const QString& editorDocumentText);
+    bool pushActiveEditorBeforeNoteDeparture();
     QString bodySourceTextForEditorDocument(
         const QString& noteId,
         const QString& editorDocumentText) const;
@@ -141,6 +153,7 @@ private:
 
     QPointer<NoteActiveStateTracker> m_noteActiveState;
     ContentsNoteManagementCoordinator m_noteManagementCoordinator;
+    WhatSonEditorRawPushController m_rawPushController;
     QHash<QString, EditorFileContext> m_editorFileContexts;
     QString m_sessionRootPathForTests;
     QString m_editorFilePath;

@@ -60,6 +60,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubStat.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonHubSyncController.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonEditorRawPushController.hpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonEditorRawPushController.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonHubSyncObservationBuilder.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonHubSyncScheduler.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/sync/WhatSonHubSyncScheduler.cpp"

@@ -2,6 +2,7 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 #include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
@@ -1275,6 +1276,7 @@ private slots:
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
     void hubSyncWiring_includesNoteEditorSessionVersionDiffMutations();
@@ -1300,6 +1302,9 @@ private slots:
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
+    void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
+    void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
+    void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();

@@ -62,16 +62,16 @@ snapshot instead of the shifted live metadata.
 
 ## Shell Inputs
 `noteEditorSession` is consumed to bind the editor session file into `LV.TextEditor`, to notify the C++ session when
-LVRS finishes syncing that session file, and to insert already-imported resource metadata returned from
-`inAppClipboard`. Other restored-shell state must not be used to mount parser, projection, renderer, resource editor,
-or calendar page logic.
+LVRS finishes syncing that session file, to forward editor modified-count increments for RAW push scheduling, and to
+insert already-imported resource metadata returned from `inAppClipboard`. Other restored-shell state must not be used
+to mount parser, projection, renderer, resource editor, or calendar page logic.
 
 `editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
 ## Guardrails
 - Do not add parser, projection, rendering, document snapshot, resource editor, calendar, or editor view-mode wiring here.
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
-  `syncFinished -> NoteEditorDocumentSession.persistEditorFile(...)` hook.
+  the thin RAW-push trigger calls into `NoteEditorDocumentSession`.
 - Keep gutter wiring limited to selected-note metadata, parsed source line count, fallback editor logical line height,
   logical-line placement provider/revision, current logical cursor line index, viewport offset, and route-level
   visibility.
@@ -123,3 +123,6 @@ or calendar page logic.
   처리한다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
+- LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고
+  `NoteEditorDocumentSession`의 RAW push 요청 함수로 넘긴다. 실제 debounce, note-departure flush, RAW 변환은
+  C++ 쪽 책임이다.
