@@ -43,9 +43,10 @@ without changing delegate call sites.
   second search-panel slab.
 - The LVRS row primitive used underneath this view keeps inactive hierarchy rows transparent, so only active, hover,
   pressed, and drag states paint explicit fills.
-- The visible hierarchy model is the active controller's shared `WhatSonHierarchyModel`
-  (`hierarchyController.hierarchyItemModel`). `LV.Hierarchy` binds to that model directly instead of a QML-owned
-  snapshot array.
+- The visible hierarchy model normally binds to the active controller's shared `WhatSonHierarchyModel`
+  (`hierarchyController.hierarchyItemModel`) directly. Resources is the only sidebar exception: it renders the
+  controller-published `hierarchyNodes` snapshot so LVRS chevron clicks stay local to the clicked row instead of
+  forcing the `QAbstractItemModel` invalidation path.
 - LVRS row drag commits use `HierarchyDragDropBridge.applyHierarchyReorder(...)` with
   `hierarchyReorderCommitModel()`. That helper snapshots the shared `WhatSonHierarchyModel` through its `items()`
   method after LVRS has applied the editable move, then the bridge persists the final depth-array result.
@@ -70,9 +71,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `hierarchyController.requestControllerHook()` if the active domain provides it.
 - `onHierarchyNodesChanged` no longer calls `requestControllerHook()` directly.
   Instead, it only resynchronizes LVRS selection/focus presentation.
-- `onHierarchyNodesChanged` no longer rebuilds an intermediate rendered model. It captures expansion state for the C++
-  policy helper, clears transient note-drop state, and resynchronizes selection/focus presentation against the live
-  shared item model.
+- `onHierarchyNodesChanged` no longer rebuilds a view-owned rendered model for shared-model hierarchies. It captures
+  expansion state for the C++ policy helper, clears transient note-drop state, and resynchronizes selection/focus
+  presentation against the live shared item model. Resources keeps a direct `hierarchyNodes` snapshot render binding,
+  matching the pre-shared-model chevron behavior.
 - `requestHierarchyControllerReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
 ## Selected Row Activation Contract
@@ -189,15 +191,19 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `WhatSonHierarchyModel`.
   Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore preserve
   existing expanded/collapsed rows in the controller-owned item data instead of relying on a view-side rendered copy.
-- `LV.Hierarchy` receives the shared model directly. `WhatSonHierarchyModel` exposes editable flags, role writes, row
-  moves, and an `items()` snapshot so LVRS can reorder the visible tree without a QML compatibility array.
+- `LV.Hierarchy` receives the shared model directly for Library, Projects, Bookmarks, Tags, Progress, Event, and
+  Preset. `WhatSonHierarchyModel` exposes editable flags, role writes, row moves, and an `items()` snapshot so LVRS can
+  reorder the visible tree without a QML compatibility array. Resources deliberately renders the
+  `hierarchyNodes` snapshot because its category tree is wider and a chevron-triggered `dataChanged` on the shared
+  model causes LVRS to invalidate/rebuild too much of the list.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
 - LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
   `SidebarHierarchyView` treats that signal as a view callback and forwards it to
   `SidebarHierarchyInteractionController.handleExpansionSignal(...)`, which commits through
   `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state or when
-  this is the first expansion signal seen for that stable row key.
+  this is the first expansion signal seen for that stable row key. In the Resources snapshot branch, the same signal
+  only clears transient armed-click state and returns; the toggle remains in LVRS-local item state.
   After a successful single-row commit, the view does not rebuild the hierarchy model or request a full sidebar hook.
   The changed domain controller calls `WhatSonHierarchyModel::setItemExpanded(...)`, so LVRS receives a row-local
   `expanded` role update.
@@ -344,9 +350,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - Folder tree drag/drop must keep using `applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(),
   itemKey)` from `LV.Hierarchy.onListItemMoved`; adding a second index-replay path can acknowledge a drag before the
   final LVRS snapshot has been persisted.
-- `LV.Hierarchy.model` must remain bound directly to `hierarchyController.hierarchyItemModel`. Reintroducing a
-  view-owned rendered array bypasses the shared `WhatSonHierarchyModel` contract and can make resource/library
-  hierarchy behavior diverge again.
+- `LV.Hierarchy.model` must remain bound directly to `hierarchyController.hierarchyItemModel` for all non-Resources
+  hierarchies. Resources is intentionally bound to `hierarchyNodes` through `hierarchyUsesSnapshotRenderModel`; removing
+  that exception brings back slow chevron responses because each click can enter the shared-model invalidation path.
 - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;

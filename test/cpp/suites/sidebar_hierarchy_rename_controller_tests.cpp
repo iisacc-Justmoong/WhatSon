@@ -32,22 +32,71 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyView_bindsLvrsHierarchyDirectlyToSharedItemModel()
+void WhatSonCppRegressionTests::sidebarHierarchyView_usesResourcesSnapshotRenderModel()
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+    const QString layoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/HierarchySidebarLayout.qml"));
 
     QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(!layoutSource.isEmpty());
 
     QVERIFY(sidebarSource.contains(
-        QStringLiteral("readonly property var hierarchyRenderModel: sidebarHierarchyView.hierarchyController ? sidebarHierarchyView.hierarchyController.hierarchyItemModel : []")));
+        QStringLiteral("property bool hierarchyUsesSnapshotRenderModel: false")));
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("readonly property var hierarchySnapshotRenderModel: sidebarHierarchyView.normalizeHierarchyRenderModel(sidebarHierarchyView.standardHierarchyModel)")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function normalizeHierarchyRenderModel(modelValue)")));
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("sidebarHierarchyView.hierarchyUsesSnapshotRenderModel ? sidebarHierarchyView.hierarchySnapshotRenderModel : sidebarHierarchyView.hierarchySharedItemModel")));
     QVERIFY(sidebarSource.contains(QStringLiteral("model: sidebarHierarchyView.hierarchyRenderModel")));
+    QVERIFY(layoutSource.contains(
+        QStringLiteral("hierarchyUsesSnapshotRenderModel: hierarchyView.currentHierarchy === hierarchyEnum.resources")));
+
     QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyReorderCommitModel()")));
     QVERIFY(sidebarSource.contains(QStringLiteral("return itemModel.items();")));
     QVERIFY(sidebarSource.contains(QStringLiteral("applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(), itemKey)")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("property var displayedHierarchyModel")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("property string displayedHierarchyModelSignature")));
     QVERIFY(!sidebarSource.contains(QStringLiteral("sidebarHierarchyView.displayedHierarchyModel =")));
+}
+
+void WhatSonCppRegressionTests::sidebarHierarchyView_keepsResourcesChevronExpansionLocalToLvrsSnapshot()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+
+    const qsizetype targetFunctionIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionForTarget(targetItem, targetIndex, expectedKey)"));
+    QVERIFY(targetFunctionIndex >= 0);
+    const qsizetype targetFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionAtPosition"), targetFunctionIndex);
+    QVERIFY(targetFunctionEndIndex > targetFunctionIndex);
+    const QString targetFunctionBlock = sidebarSource.mid(targetFunctionIndex, targetFunctionEndIndex - targetFunctionIndex);
+    QVERIFY(targetFunctionBlock.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyUsesSnapshotRenderModel)")));
+    QVERIFY(targetFunctionBlock.contains(QStringLiteral("return false;")));
+
+    const qsizetype expandedHandlerIndex =
+        sidebarSource.indexOf(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)"));
+    QVERIFY(expandedHandlerIndex >= 0);
+    const qsizetype expandedHandlerEndIndex =
+        sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"),
+                              expandedHandlerIndex);
+    QVERIFY(expandedHandlerEndIndex > expandedHandlerIndex);
+    const QString expandedHandlerBlock = sidebarSource.mid(expandedHandlerIndex, expandedHandlerEndIndex - expandedHandlerIndex);
+    QVERIFY(expandedHandlerBlock.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyUsesSnapshotRenderModel)")));
+    QVERIFY(expandedHandlerBlock.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionController.clearArmedExpansionKey();")));
+    QVERIFY(expandedHandlerBlock.contains(QStringLiteral("sidebarHierarchyView.clearHierarchyChevronPointerPress();")));
+    QVERIFY(expandedHandlerBlock.contains(QStringLiteral("return;")));
+
+    const qsizetype snapshotBranchIndex =
+        expandedHandlerBlock.indexOf(QStringLiteral("if (sidebarHierarchyView.hierarchyUsesSnapshotRenderModel)"));
+    const qsizetype bridgeCommitIndex =
+        expandedHandlerBlock.indexOf(QStringLiteral("hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded)"));
+    QVERIFY(snapshotBranchIndex >= 0);
+    QVERIFY(bridgeCommitIndex > snapshotBranchIndex);
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename()

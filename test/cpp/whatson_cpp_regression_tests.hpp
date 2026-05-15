@@ -1359,7 +1359,8 @@ private slots:
     void sidebarHierarchyController_reactsToProviderMappingChanges();
     void sidebarHierarchyRenameController_preservesLiteralSlashFolderLabels();
     void sidebarHierarchyView_bindsInlineHelperDependenciesAtStartup();
-    void sidebarHierarchyView_bindsLvrsHierarchyDirectlyToSharedItemModel();
+    void sidebarHierarchyView_usesResourcesSnapshotRenderModel();
+    void sidebarHierarchyView_keepsResourcesChevronExpansionLocalToLvrsSnapshot();
     void sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename();
     void sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags();
     void sidebarHierarchyView_chevronHitTestUsesLvrsChevronSlotContentItem();

@@ -91,6 +91,7 @@ Item {
         hierarchyInteractionController: sidebarHierarchyInteractionController
         hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
         hierarchyController: hierarchyView.resolvedHierarchyController
+        hierarchyUsesSnapshotRenderModel: hierarchyView.currentHierarchy === hierarchyEnum.resources
         horizontalInset: hierarchyView.horizontalInset
         bookmarkPaletteVisualsEnabled: hierarchyView.currentHierarchy === hierarchyEnum.bookmarks
         panelColor: hierarchyView.panelColor

@@ -116,7 +116,10 @@ Rectangle {
     property bool hierarchyEditable: false
     property var hierarchyInteractionController: null
     property var hierarchyInteractionBridge: null
-    readonly property var hierarchyRenderModel: sidebarHierarchyView.hierarchyController ? sidebarHierarchyView.hierarchyController.hierarchyItemModel : []
+    property bool hierarchyUsesSnapshotRenderModel: false
+    readonly property var hierarchySharedItemModel: sidebarHierarchyView.hierarchyController ? sidebarHierarchyView.hierarchyController.hierarchyItemModel : []
+    readonly property var hierarchySnapshotRenderModel: sidebarHierarchyView.normalizeHierarchyRenderModel(sidebarHierarchyView.standardHierarchyModel)
+    readonly property var hierarchyRenderModel: sidebarHierarchyView.hierarchyUsesSnapshotRenderModel ? sidebarHierarchyView.hierarchySnapshotRenderModel : sidebarHierarchyView.hierarchySharedItemModel
     readonly property var hierarchyFooterToolbarButtons: [
         {
             type: "icon",
@@ -736,6 +739,15 @@ Rectangle {
     function normalizeHierarchyModel(modelValue) {
         return renameController.normalizeHierarchyModel(modelValue);
     }
+    function normalizeHierarchyRenderModel(modelValue) {
+        if (modelValue === undefined || modelValue === null)
+            return [];
+        if (Array.isArray(modelValue))
+            return modelValue.slice();
+        if (modelValue.length !== undefined)
+            return Array.from(modelValue);
+        return [];
+    }
     function normalizeHierarchySelectionIndices(indices) {
         return hierarchySelectionController.normalizeHierarchySelectionIndices(indices);
     }
@@ -953,6 +965,8 @@ Rectangle {
     function requestHierarchyChevronExpansionForTarget(targetItem, targetIndex, expectedKey) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
+        if (sidebarHierarchyView.hierarchyUsesSnapshotRenderModel)
+            return false;
         if (!sidebarHierarchyView.hierarchyInteractionController)
             return false;
         const resolvedIndex = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
@@ -2019,6 +2033,12 @@ Rectangle {
             });
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
+            if (sidebarHierarchyView.hierarchyUsesSnapshotRenderModel) {
+                if (sidebarHierarchyView.hierarchyInteractionController)
+                    sidebarHierarchyView.hierarchyInteractionController.clearArmedExpansionKey();
+                sidebarHierarchyView.clearHierarchyChevronPointerPress();
+                return;
+            }
             if (!sidebarHierarchyView.hierarchyInteractionController)
                 return;
             const resolvedExpansionIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
