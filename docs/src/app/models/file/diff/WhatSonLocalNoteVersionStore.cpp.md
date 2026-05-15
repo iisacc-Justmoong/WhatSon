@@ -12,6 +12,7 @@ Implements `.wsnversion` persistence and snapshot lifecycle for one local note p
    - Reads current `.wsnhead` and `.wsnbody` as the working tree snapshot.
    - Appends a new snapshot with parent linkage.
    - Persists commit metadata (`commitModifiedCount`) and precomputed diff payload (`headerDiff`, `bodyDiff`).
+   - Applies `VersionLimitManager` before writing so only the latest 100 snapshots remain in `.wsnversion`.
 3. `diffSnapshots(...)`
    - Resolves two snapshots by ID.
    - Computes diff segments with unified patch text for header/body.
@@ -32,14 +33,19 @@ Implements `.wsnversion` persistence and snapshot lifecycle for one local note p
 ## Error Handling
 - Any parse/read/write failure returns `false` and surfaces a human-readable message through `errorMessage`.
 - Capture/checkpoint operations are fail-fast; no best-effort partial append is allowed inside `.wsnversion`.
+- Snapshot retention is deterministic: once a write would exceed 100 snapshots, the oldest snapshots are removed from
+  the front of the list and the first retained snapshot starts a new retained parent chain.
 
 ## Regression Checks
 - Capturing a snapshot with no parent must still produce valid diff metadata (empty-base insertion patch).
 - Capturing with a parent must compute diffs against the parent snapshot payload.
 - Loading legacy snapshots with missing diff keys must keep defaults and remain readable.
 - Rollback snapshots must persist a new commit record with parent/source lineage.
+- Capturing 101 snapshots must persist exactly 100 records, retaining `commit:2` through `commit:101` and dropping the
+  original oldest snapshot.
 
 ## Tests
 - `test/cpp/suites/note_version_store_tests.cpp` verifies that a note update which advances `modifiedCount` appends a
   `.wsnversion` snapshot with the expected `commitModifiedCount`, payload text, and unified patch metadata.
+- The same suite verifies that snapshot retention keeps only the newest 100 records.
 - Keep these regression checks updated when snapshot schema or patch formatting changes.

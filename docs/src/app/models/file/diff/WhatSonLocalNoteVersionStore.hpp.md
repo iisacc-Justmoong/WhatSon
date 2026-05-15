@@ -35,9 +35,12 @@ operations.
 - Backward compatibility: loading old `.wsnversion` files without `commitModifiedCount` or `*Diff` fields must still
   succeed with defaults.
 - New captures must persist both raw snapshot payload and unified patch metadata.
+- Persisted snapshot history must be capped at the latest 100 snapshots; records beyond that cap are pruned oldest
+  first by `VersionLimitManager` during write flows.
 
 ## Tests
 - `test/cpp/suites/note_version_store_tests.cpp` covers the commit snapshot created through
   `WhatSonLocalNoteFileStore::updateNote(...)`.
+- The same suite covers the 100-snapshot retention cap.
 - Keep the regression checks above synchronized with `WhatSonLocalNoteVersionStore.cpp` behavior when schema fields
   change.

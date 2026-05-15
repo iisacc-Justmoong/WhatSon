@@ -50,6 +50,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/NoteEditorDocumentSession.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetProperty.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetTag.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/VersionLimitManager.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonLocalNoteVersionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubPackager.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubStat.cpp"

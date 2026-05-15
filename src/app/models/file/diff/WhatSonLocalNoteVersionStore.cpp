@@ -1,5 +1,6 @@
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
 
+#include "app/models/file/diff/VersionLimitManager.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include <QCryptographicHash>
@@ -547,6 +548,7 @@ bool WhatSonLocalNoteVersionStore::captureSnapshot(
     state.snapshots.push_back(snapshot);
     state.currentSnapshotId = snapshot.snapshotId;
     state.headSnapshotId = snapshot.snapshotId;
+    VersionLimitManager::pruneOldestSnapshots(&state);
 
     if (!writeState(versionFilePath, state, errorMessage))
     {
@@ -638,6 +640,7 @@ bool WhatSonLocalNoteVersionStore::checkoutSnapshot(
     }
 
     state.currentSnapshotId = snapshot->snapshotId;
+    VersionLimitManager::pruneOldestSnapshots(&state);
     return writeState(versionFilePath, state, errorMessage);
 }
 
@@ -686,6 +689,7 @@ bool WhatSonLocalNoteVersionStore::rollbackToSnapshot(
     state.snapshots.push_back(rollbackSnapshot);
     state.currentSnapshotId = rollbackSnapshot.snapshotId;
     state.headSnapshotId = rollbackSnapshot.snapshotId;
+    VersionLimitManager::pruneOldestSnapshots(&state);
 
     if (!writeState(versionFilePath, state, errorMessage))
     {

@@ -9,6 +9,8 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
 - Child files: 2
 
 ## Child Files
+- `VersionLimitManager.h`
+- `VersionLimitManager.cpp`
 - `WhatSonLocalNoteVersionStore.hpp`
 - `WhatSonLocalNoteVersionStore.cpp`
 
@@ -16,6 +18,8 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
 - Diff/version code was consolidated from `src/app/models/file/note` into this domain.
 - `file/note/local/WhatSonLocalNoteFileStore` remains the note package orchestrator and delegates version snapshot/diff
   persistence to this module.
+- `VersionLimitManager` owns the retention policy for persisted snapshot history. `.wsnversion` keeps only the latest
+  100 snapshots; writes prune older records from the front of the list before persistence.
 
 ## Dependency Direction
 - Depends on note document/header/body types under `src/app/models/file/note`.
