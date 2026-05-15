@@ -1435,6 +1435,7 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
     setLastError(QString());
     setReadOnly(false);
     setEditorFilePath(sessionFilePath);
+    m_noteManagementCoordinator.bindSelectedNote(loadedNoteId, loadedNoteDirectoryPath);
     emit editorSourceLoaded(loadedNoteId, sessionFilePath);
 }
 

@@ -1245,6 +1245,7 @@ private slots:
     void resourceFrame_rendersImageOnlyContainer();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
+    void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();

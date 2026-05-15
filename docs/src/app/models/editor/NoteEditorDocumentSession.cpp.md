@@ -10,16 +10,19 @@ Implements the active note editor document session.
 2. `ContentsNoteManagementCoordinator` loads the selected note body as canonical editor-facing RAW source.
 3. The source is projected into editor HTML and written to a cache/session `.wsnsource` file so LVRS
    `TextEditor` receives explicit rich-text line breaks.
-4. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
+4. After the session file is mounted, the session binds that selected note through
+   `ContentsNoteManagementCoordinator::bindSelectedNote(...)` so the same coordinator queue advances `openCount` and
+   `lastOpenedAt` without letting the editor surface implement statistics policy.
+5. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
-5. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
+6. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
    HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
    so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
-6. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
+7. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
-7. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
+8. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
 
@@ -30,6 +33,8 @@ Implements the active note editor document session.
   the note that originally owned that file.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
+- The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must
+  not write statistic fields directly.
 - The session computes parsed RAW source line count in C++ so QML gutter code does not read or parse note files. The
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create

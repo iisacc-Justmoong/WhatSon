@@ -8,6 +8,8 @@ Declares the active note editor document session object.
 
 - Exposes `editorFilePath`, the editor HTML session file consumed by `LV.TextEditor.filePath`.
 - Tracks the active note id and note directory path from `NoteActiveStateTracker`.
+- After a successful note mount, binds the selected note through `ContentsNoteManagementCoordinator` so open-count
+  metadata is updated by the model/session queue rather than QML.
 - Exposes `parsedLineCount` as canonical RAW source line metadata. The value is derived before source is projected into
   editor HTML or after synced editor HTML is converted back to source; QML uses this value as the gutter delegate
   count instead of LVRS rendered wrap-line count.
@@ -34,6 +36,8 @@ Declares the active note editor document session object.
 - LVRS `TextEditor` is a rich-text surface, so loaded source must be projected to editor HTML with explicit line breaks
   before it reaches `filePath`.
 - `.wsnbody` parsing and serialization stay in C++ note/editor model code, not QML.
+- `openCount` and `lastOpenedAt` updates stay behind the coordinator selected-note bind path; editor QML only observes
+  the resulting metadata refresh.
 - Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name, current
   cursor/selection metadata, and selected visible text into this session boundary.
 - Inline format mutation must not discard existing RAW wrapper tags just because the editor HTML projection no longer
@@ -45,6 +49,8 @@ Declares the active note editor document session object.
 
 - 이 객체는 선택된 노트를 LVRS `TextEditor`에 연결하기 위한 C++ 세션 경계다.
 - `editorFilePath`는 `.wsnbody` 원문이 아니라 editor HTML session file이어야 한다.
+- 성공적으로 노트를 mount하면 `ContentsNoteManagementCoordinator`의 selected-note bind 경로로 넘겨
+  `openCount`와 `lastOpenedAt` 갱신을 C++ model/session queue가 처리한다.
 - `parsedLineCount`는 canonical RAW source line metadata이며 QML이 직접 파일을 읽거나 파싱하지 않게 한다.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역이

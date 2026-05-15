@@ -120,6 +120,53 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhen
     QCOMPARE(loadedSpy.count(), 1);
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("opened-session-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Open count body"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    auto readHeader = [&fileStore, &readRequest]() -> WhatSonNoteHeaderStore
+    {
+        WhatSonLocalNoteDocument document;
+        QString readError;
+        if (!fileStore.readNote(readRequest, &document, &readError))
+        {
+            return {};
+        }
+        return document.headerStore;
+    };
+    auto openCount = [&readHeader]() -> int
+    {
+        return readHeader().openCount();
+    };
+
+    QTRY_COMPARE_WITH_TIMEOUT(openCount(), 1, 3000);
+    QVERIFY(!readHeader().lastOpenedAt().isEmpty());
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSourceInsertion()
 {
     NoteEditorDocumentSession session;
