@@ -6,6 +6,10 @@ Declares the local note versioning contract that persists snapshot history in `.
 The header models snapshots as commit-like records and exposes the store API for read/capture/diff/checkout/rollback
 operations.
 
+Implementation details are intentionally split out of the store source. File IO, JSON codec, diff construction, and
+snapshot assembly are handled by dedicated helper objects in the same module while this header remains the public
+contract consumed by the note file store and regression tests.
+
 ## Snapshot Schema Contract
 - `WhatSonNoteVersionSnapshot` represents one persisted point-in-time state.
 - Snapshot identity and lineage:
@@ -42,5 +46,7 @@ operations.
 - `test/cpp/suites/note_version_store_tests.cpp` covers the commit snapshot created through
   `WhatSonLocalNoteFileStore::updateNote(...)`.
 - The same suite covers the 100-snapshot retention cap.
+- The same suite also guards the responsibility split so future changes do not collapse IO, JSON, diff, and snapshot
+  construction back into `WhatSonLocalNoteVersionStore.cpp`.
 - Keep the regression checks above synchronized with `WhatSonLocalNoteVersionStore.cpp` behavior when schema fields
   change.

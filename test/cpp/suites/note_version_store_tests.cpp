@@ -6,6 +6,38 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+void WhatSonCppRegressionTests::localNoteVersionStore_splitsVersionResponsibilitiesIntoDedicatedObjects()
+{
+    const QString storeSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/diff/WhatSonLocalNoteVersionStore.cpp"));
+    const QString fileGatewayHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/diff/WhatSonNoteVersionFileGateway.hpp"));
+    const QString stateCodecHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/diff/WhatSonNoteVersionStateCodec.hpp"));
+    const QString diffBuilderHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/diff/WhatSonNoteVersionDiffBuilder.hpp"));
+    const QString snapshotBuilderHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/file/diff/WhatSonNoteVersionSnapshotBuilder.hpp"));
+
+    QVERIFY(!storeSource.isEmpty());
+    QVERIFY(fileGatewayHeader.contains(QStringLiteral("class WhatSonNoteVersionFileGateway final")));
+    QVERIFY(stateCodecHeader.contains(QStringLiteral("class WhatSonNoteVersionStateCodec final")));
+    QVERIFY(diffBuilderHeader.contains(QStringLiteral("class WhatSonNoteVersionDiffBuilder final")));
+    QVERIFY(snapshotBuilderHeader.contains(QStringLiteral("class WhatSonNoteVersionSnapshotBuilder final")));
+
+    QVERIFY(storeSource.contains(QStringLiteral("#include \"app/models/file/diff/WhatSonNoteVersionFileGateway.hpp\"")));
+    QVERIFY(storeSource.contains(QStringLiteral("#include \"app/models/file/diff/WhatSonNoteVersionStateCodec.hpp\"")));
+    QVERIFY(storeSource.contains(QStringLiteral("#include \"app/models/file/diff/WhatSonNoteVersionSnapshotBuilder.hpp\"")));
+    QVERIFY(storeSource.contains(QStringLiteral("WhatSonNoteVersionFileGateway fileGateway;")));
+    QVERIFY(storeSource.contains(QStringLiteral("WhatSonNoteVersionStateCodec stateCodec;")));
+    QVERIFY(storeSource.contains(QStringLiteral("WhatSonNoteVersionSnapshotBuilder snapshotBuilder;")));
+
+    QVERIFY(!storeSource.contains(QStringLiteral("#include <QSaveFile>")));
+    QVERIFY(!storeSource.contains(QStringLiteral("#include <QJsonDocument>")));
+    QVERIFY(!storeSource.contains(QStringLiteral("#include <QCryptographicHash>")));
+    QVERIFY(!storeSource.contains(QStringLiteral("#include <QRegularExpression>")));
+}
+
 void WhatSonCppRegressionTests::localNoteVersionStore_capturesCommitSnapshotWhenNoteUpdateAdvancesModifiedCount()
 {
     QTemporaryDir workspaceDir;
