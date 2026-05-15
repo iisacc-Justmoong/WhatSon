@@ -23,6 +23,8 @@ Only four view files are allowed here: gutter, image editor, text editor, and mi
   persistence wiring are not allowed in this contents namespace.
 - `ContentViewLayout.qml` owns composition outside this directory and may mount only `Gutter.qml`, `ImageEditor.qml`,
   `TextEditor.qml`, and `Minimap.qml` from this namespace.
+- Empty placeholder editor files are not kept in this directory. New content surfaces must first update the allowed-file
+  contract, tests, and composition path before being added to the QML module.
 
 ## Tests
 
@@ -43,5 +45,7 @@ Only four view files are allowed here: gutter, image editor, text editor, and mi
 - 위치: `docs/src/app/qml/view/contents`
 - 역할: 이 디렉터리는 content-surface contents view 네임스페이스다.
 - 배치: `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml` 네 파일만 허용한다.
+- 주의: 빈 placeholder editor QML은 이 디렉터리에 둘 수 없다. 새 surface는 허용 파일 계약, 테스트, composition
+  경로를 먼저 갱신한 뒤 추가한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다. 런타임 본문 편집기 QML은 `LV.TextEditor`를 직접 배치하며 projection, rendering, persistence wiring을 갖지 않는다. 이미지 리소스 선택 시에만 `ImageEditor.qml`이 `ResourcesListModel.currentResourceEntry`를 받아 `source`/`resolvedPath`/`resourcePath` 기반 viewer로 동작한다. 포맷 단축키와 선택 텍스트 포맷 컨텍스트 메뉴는 바깥 `ContentViewLayout.qml` dispatch에서만 허용한다. C++이 계산한 문서 교체 뒤 커서 복원만 wrapper의 공개 LVRS cursor API를 통해 처리한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
