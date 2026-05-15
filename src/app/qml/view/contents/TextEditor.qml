@@ -15,6 +15,7 @@ LV.TextEditor {
     property int editorPlainTextRevision: 0
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
+    property bool cursorViewportSyncQueued: false
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
@@ -346,6 +347,72 @@ LV.TextEditor {
         return true;
     }
 
+    function cursorRectangleInViewportContent() {
+        const editorSurface = textEditor.editorSurfaceObject();
+        if (!editorSurface || editorSurface.positionToRectangle === undefined)
+            return null;
+
+        const rectangle = editorSurface.positionToRectangle(textEditor.boundedCursorPosition(textEditor.cursorPosition));
+        if (!rectangle)
+            return null;
+
+        const fallbackHeight = Math.max(1, Number(textEditor.editorLogicalLineHeight) || 1);
+        const surfaceY = textEditor.numberOrFallback(editorSurface.y, 0);
+        return {
+            y: Math.max(0, surfaceY + textEditor.numberOrFallback(rectangle.y, 0)),
+            height: Math.max(1, textEditor.numberOrFallback(rectangle.height, fallbackHeight))
+        };
+    }
+
+    function ensureCursorVisibleInViewport() {
+        const viewport = textEditor.viewportFlickable;
+        if (!viewport || viewport.contentY === undefined)
+            return false;
+
+        const cursorRectangle = textEditor.cursorRectangleInViewportContent();
+        if (!cursorRectangle)
+            return false;
+
+        const contentHeight = Math.max(0, Number(viewport.contentHeight) || 0);
+        const viewportHeight = Math.max(1, Number(viewport.height) || 1);
+        const maxContentY = Math.max(0, contentHeight - viewportHeight);
+        const currentContentY = textEditor.numberOrFallback(viewport.contentY, 0);
+        const cursorMargin = Math.max(
+                    0,
+                    Math.min(
+                        Math.max(1, Number(textEditor.editorLogicalLineHeight) || 1),
+                        viewportHeight / 3));
+        const visibleTop = currentContentY;
+        const visibleBottom = currentContentY + viewportHeight;
+        const cursorTop = cursorRectangle.y;
+        const cursorBottom = cursorRectangle.y + cursorRectangle.height;
+        let nextContentY = currentContentY;
+
+        if (cursorTop < visibleTop + cursorMargin)
+            nextContentY = cursorTop - cursorMargin;
+        else if (cursorBottom > visibleBottom - cursorMargin)
+            nextContentY = cursorBottom + cursorMargin - viewportHeight;
+
+        nextContentY = Math.max(0, Math.min(maxContentY, nextContentY));
+        if (Math.abs(nextContentY - currentContentY) < 0.5)
+            return false;
+
+        viewport.contentY = Math.max(0, Math.min(maxContentY, nextContentY));
+        return true;
+    }
+
+    function requestEnsureCursorVisibleInViewport() {
+        if (textEditor.cursorViewportSyncQueued)
+            return false;
+
+        textEditor.cursorViewportSyncQueued = true;
+        Qt.callLater(function () {
+            textEditor.cursorViewportSyncQueued = false;
+            textEditor.ensureCursorVisibleInViewport();
+        });
+        return true;
+    }
+
     function boundedCursorPosition(value) {
         const textLength = textEditor.length !== undefined
                 ? Math.max(0, Math.floor(Number(textEditor.length) || 0))
@@ -362,11 +429,13 @@ LV.TextEditor {
         textEditor.forceEditorFocus();
         textEditor.cursorPosition = targetCursorPosition;
         textEditor.deselect();
+        textEditor.ensureCursorVisibleInViewport();
         Qt.callLater(function () {
             const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);
             textEditor.forceEditorFocus();
             textEditor.cursorPosition = deferredCursorPosition;
             textEditor.deselect();
+            textEditor.ensureCursorVisibleInViewport();
         });
     }
 
@@ -633,6 +702,7 @@ LV.TextEditor {
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
     }
+    onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
     onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)
 

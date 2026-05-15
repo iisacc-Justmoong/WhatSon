@@ -88,6 +88,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyGutterTextEditorMinimap
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineIndexForPosition(position)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedOverflowMetricFor(lineIndex, lineStartPositions, fallbackMetric, fallbackHeight)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("return textEditor.sourceAlignedLineIndexForPosition(textEditor.cursorPosition);")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property bool cursorViewportSyncQueued: false")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function cursorRectangleInViewportContent()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function ensureCursorVisibleInViewport()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function requestEnsureCursorVisibleInViewport()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle(textEditor.boundedCursorPosition(textEditor.cursorPosition))")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("if (cursorTop < visibleTop + cursorMargin)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("viewport.contentY = Math.max(0, Math.min(maxContentY, nextContentY));")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const nextLineStartPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const nextRectangle")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const missingLineOffset")));
@@ -308,6 +316,8 @@ void WhatSonCppRegressionTests::qmlContentsView_threePartsStayViewOnlyAndNativeI
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricFor(lineIndex)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricsFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function cursorLineIndexForLogicalCursor()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function ensureCursorVisibleInViewport()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(gutterSource.contains(QStringLiteral("property var lineMetricProvider: null")));

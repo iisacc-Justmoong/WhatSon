@@ -31,6 +31,9 @@
   editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
+- Cursor movement stays visible by mapping the public LVRS `editorItem.positionToRectangle(cursorPosition)` result into
+  the LVRS viewport `Flickable` content coordinates and adjusting `contentY` only when the cursor leaves the visible
+  top/bottom range. Command/Home/End jumps therefore move the viewport without adding key handlers to the wrapper.
 - `editorSelectionStart`, `editorSelectionLength`, and `editorSelectedText` expose normalized public LVRS selection
   metadata so the outer content layout can dispatch C++ format commands without installing key handlers inside this
   wrapper. `editorSelectedText` is read from the live editor surface with
@@ -91,6 +94,9 @@
 - 현재 cursor line indicator를 위해 source-aligned plain-text cursor position으로 계산한 logical
   `editorCursorLineIndex`를 거터에 전달한다. 긴 paragraph가 시각적으로 wrap되어도 같은 logical line number와
   indicator를 유지한다.
+- 커서 위치가 바뀌면 공개 LVRS `editorItem.positionToRectangle(cursorPosition)` 결과를 viewport content 좌표로
+  변환하고, 커서가 보이는 상하단 범위를 벗어난 경우에만 `contentY`를 보정한다. `Cmd+↑`, Home/End 같은 이동도
+  별도 key handler 없이 같은 경로로 화면을 따라오게 한다.
 - 포맷 단축키 dispatch를 위해 공개 selection 상태를 정규화한 `editorSelectionStart`, `editorSelectionLength`,
   `editorSelectedText`를 바깥 layout에 전달한다. `editorSelectedText`는 우선 live editor surface의
   `getText(selectionStart, selectionEnd)`로 읽어 보이는 선택 문자열과 C++ RAW-source repair anchor가 어긋나지
