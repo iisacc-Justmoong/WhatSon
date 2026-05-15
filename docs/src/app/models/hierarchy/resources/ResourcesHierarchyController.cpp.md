@@ -24,9 +24,13 @@ The hierarchy keeps the legacy interaction contract:
 Even when the input path list is empty, the controller still publishes the type parents with their
 default format catalog, so the resources sidebar is never a flat type-only list.
 
-`setItemExpanded(...)` delegates shared chevron validation/state flipping to `IHierarchyController`, then republishes the
-runtime taxonomy through `syncModel()`. The resources taxonomy remains read-only for CRUD, but visible type rows can still
-fold or unfold their format children.
+`syncModel()` publishes `depthItems()` into the shared `WhatSonHierarchyModel`, matching the library hierarchy's
+LVRS-facing model contract while keeping the resources taxonomy source data in `ResourcesHierarchyItem` structs.
+
+`setItemExpanded(...)` delegates shared chevron validation/state flipping to `IHierarchyController`, then calls
+`WhatSonHierarchyModel::setItemExpanded(...)` for the changed row only. It must not rebuild the full model for a single
+chevron click. The resources taxonomy remains read-only for CRUD, but visible type rows can still fold or unfold their
+format children.
 
 ## Right-Panel List Contract
 
@@ -127,3 +131,10 @@ count from `ResourcesHierarchyItem`.
 - `format` rows expose the number of resources classified into that format.
 
 This value is consumed directly by the right-side count renderer in `LV.Hierarchy`.
+
+## Regression Coverage
+
+- `resourcesHierarchyController_publishesDepthItemsToSharedModel` verifies that `depthItems()` and the shared
+  `WhatSonHierarchyModel::items()` snapshot stay aligned.
+- `resourcesHierarchyController_updatesChevronExpansionThroughSharedModelRow` verifies that a resources chevron change
+  emits row-local `dataChanged` without `modelReset`.

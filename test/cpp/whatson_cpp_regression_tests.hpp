@@ -1329,6 +1329,8 @@ private slots:
     void resourcesHierarchyController_defaultsSelectionToImageAndFiltersList();
     void resourcesHierarchyController_collapsesMultiDotImageFormatsIntoTerminalSuffix();
     void resourcesHierarchyController_mergesLegacyMusicResourcesIntoAudio();
+    void resourcesHierarchyController_publishesDepthItemsToSharedModel();
+    void resourcesHierarchyController_updatesChevronExpansionThroughSharedModelRow();
     void resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge();
     void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
     void inAppClipboard_importsUrlsForEditorAsResourcePackages();

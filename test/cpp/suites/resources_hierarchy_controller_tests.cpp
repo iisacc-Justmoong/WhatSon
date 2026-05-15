@@ -180,6 +180,102 @@ void WhatSonCppRegressionTests::resourcesHierarchyController_mergesLegacyMusicRe
     QVERIFY(foundWavFormatUnderAudio);
 }
 
+void WhatSonCppRegressionTests::resourcesHierarchyController_publishesDepthItemsToSharedModel()
+{
+    ResourcesHierarchyController controller;
+    controller.setResourcePaths({
+        QStringLiteral("assets/Cover.png"),
+        QStringLiteral("assets/Clip.mov")
+    });
+
+    WhatSonHierarchyModel* itemModel = controller.itemModel();
+    QVERIFY(itemModel != nullptr);
+    QCOMPARE(itemModel->rowCount(), controller.depthItems().size());
+    QCOMPARE(itemModel->itemCount(), controller.depthItems().size());
+    QCOMPARE(controller.hierarchyModel(), controller.depthItems());
+    QCOMPARE(itemModel->items(), controller.depthItems());
+
+    const int imageIndex = [&controller]() {
+        const QVariantList items = controller.depthItems();
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const QVariantMap item = items.at(index).toMap();
+            if (item.value(QStringLiteral("kind")).toString() == QStringLiteral("type")
+                && item.value(QStringLiteral("type")).toString() == QStringLiteral("image"))
+            {
+                return index;
+            }
+        }
+        return -1;
+    }();
+
+    QVERIFY(imageIndex >= 0);
+    QCOMPARE(
+        itemModel->data(itemModel->index(imageIndex, 0), WhatSonHierarchyModel::KeyRole).toString(),
+        controller.depthItems().at(imageIndex).toMap().value(QStringLiteral("key")).toString());
+    QCOMPARE(
+        itemModel->data(itemModel->index(imageIndex, 0), WhatSonHierarchyModel::ExpandedRole).toBool(),
+        controller.depthItems().at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+}
+
+void WhatSonCppRegressionTests::resourcesHierarchyController_updatesChevronExpansionThroughSharedModelRow()
+{
+    ResourcesHierarchyController controller;
+    controller.setResourcePaths({
+        QStringLiteral("assets/Cover.png"),
+        QStringLiteral("assets/Clip.mov")
+    });
+
+    WhatSonHierarchyModel* itemModel = controller.itemModel();
+    QVERIFY(itemModel != nullptr);
+
+    int imageIndex = -1;
+    const QVariantList initialItems = controller.depthItems();
+    for (int index = 0; index < initialItems.size(); ++index)
+    {
+        const QVariantMap item = initialItems.at(index).toMap();
+        if (item.value(QStringLiteral("kind")).toString() == QStringLiteral("type")
+            && item.value(QStringLiteral("type")).toString() == QStringLiteral("image"))
+        {
+            imageIndex = index;
+            break;
+        }
+    }
+
+    QVERIFY(imageIndex >= 0);
+    QVERIFY(initialItems.at(imageIndex).toMap().value(QStringLiteral("showChevron")).toBool());
+    QVERIFY(!initialItems.at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+
+    QSignalSpy modelResetSpy(itemModel, &QAbstractItemModel::modelReset);
+    QSignalSpy dataChangedSpy(itemModel, &QAbstractItemModel::dataChanged);
+    QSignalSpy itemsChangedSpy(itemModel, &WhatSonHierarchyModel::itemsChanged);
+    QSignalSpy hierarchyChangedSpy(&controller, SIGNAL(hierarchyModelChanged()));
+
+    QVERIFY(controller.setItemExpanded(imageIndex, true));
+    QCOMPARE(modelResetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 1);
+    QCOMPARE(itemsChangedSpy.count(), 1);
+    QCOMPARE(hierarchyChangedSpy.count(), 1);
+    QCOMPARE(dataChangedSpy.at(0).at(0).value<QModelIndex>().row(), imageIndex);
+    QCOMPARE(dataChangedSpy.at(0).at(1).value<QModelIndex>().row(), imageIndex);
+    QVERIFY(itemModel->data(itemModel->index(imageIndex, 0), WhatSonHierarchyModel::ExpandedRole).toBool());
+    QVERIFY(controller.depthItems().at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+
+    QVERIFY(controller.setItemExpanded(imageIndex, true));
+    QCOMPARE(modelResetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 1);
+    QCOMPARE(itemsChangedSpy.count(), 1);
+    QCOMPARE(hierarchyChangedSpy.count(), 1);
+
+    QVERIFY(controller.setItemExpanded(imageIndex, false));
+    QCOMPARE(modelResetSpy.count(), 0);
+    QCOMPARE(dataChangedSpy.count(), 2);
+    QCOMPARE(itemsChangedSpy.count(), 2);
+    QCOMPARE(hierarchyChangedSpy.count(), 2);
+    QVERIFY(!itemModel->data(itemModel->index(imageIndex, 0), WhatSonHierarchyModel::ExpandedRole).toBool());
+    QVERIFY(!controller.depthItems().at(imageIndex).toMap().value(QStringLiteral("expanded")).toBool());
+}
+
 void WhatSonCppRegressionTests::resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge()
 {
     ResourcesHierarchyController resourcesController;
