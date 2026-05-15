@@ -1,9 +1,10 @@
 #pragma once
 
-#include <QByteArray>
-#include <QFileSystemWatcher>
+#include "app/models/file/sync/WhatSonHubSyncObservationBuilder.hpp"
+#include "app/models/file/sync/WhatSonHubSyncScheduler.hpp"
+#include "app/models/file/sync/WhatSonHubSyncWatcher.hpp"
+
 #include <QObject>
-#include <QTimer>
 
 #include <functional>
 
@@ -30,31 +31,17 @@ signals:
 
 private slots:
     void onWatchedPathChanged(const QString& path);
-    void onPeriodicTimeout();
-    void onDebounceTimeout();
+    void onScheduledSyncCheck();
 
 private:
-    struct HubObservation final
-    {
-        QByteArray signature;
-        QStringList directoryWatchPaths;
-    };
-
-    [[nodiscard]] HubObservation inspectHub(const QString& hubPath) const;
-    void scheduleSyncCheck();
     void refreshBaseline(bool rebuildWatcher);
-    void rebuildWatcher();
-    void rebuildWatcher(QStringList directoryWatchPaths);
-    void clearWatcher();
 
-    QFileSystemWatcher m_fileSystemWatcher;
-    QTimer m_periodicTimer;
-    QTimer m_debounceTimer;
+    WhatSonHubSyncObservationBuilder m_observationBuilder;
+    WhatSonHubSyncScheduler m_scheduler;
+    WhatSonHubSyncWatcher m_watcher;
     std::function<bool(const QString&, QString*)> m_reloadCallback;
     QString m_currentHubPath;
-    QByteArray m_lastKnownHubSignature;
-    QStringList m_lastObservedDirectoryWatchPaths;
-    QStringList m_appliedDirectoryWatchPaths;
+    WhatSonHubSyncObservation m_lastKnownObservation;
     bool m_reloadInProgress = false;
     bool m_localMutationPending = false;
 };

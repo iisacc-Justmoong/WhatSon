@@ -106,6 +106,12 @@ void WhatSonCppRegressionTests::localNoteVersionStore_capturesCommitSnapshotWhen
 
     const QJsonObject headerDiff = snapshot.value(QStringLiteral("headerDiff")).toObject();
     const QJsonObject bodyDiff = snapshot.value(QStringLiteral("bodyDiff")).toObject();
+    const QDateTime headerDiffGeneratedAt =
+        QDateTime::fromString(headerDiff.value(QStringLiteral("generatedAtUtc")).toString(), Qt::ISODateWithMs);
+    const QDateTime bodyDiffGeneratedAt =
+        QDateTime::fromString(bodyDiff.value(QStringLiteral("generatedAtUtc")).toString(), Qt::ISODateWithMs);
+    QVERIFY(headerDiffGeneratedAt.isValid());
+    QVERIFY(bodyDiffGeneratedAt.isValid());
     QVERIFY(headerDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("--- a/header.wsnhead")));
     QVERIFY(headerDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("+++ b/header.wsnhead")));
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("--- a/body.wsnbody")));

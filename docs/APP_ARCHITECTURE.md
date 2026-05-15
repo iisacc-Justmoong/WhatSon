@@ -78,7 +78,8 @@ Calendar content surfaces now consume a shared `CalendarBoardStore`, and board m
 day/week/month/year surfaces.
 
 ## Hub Sync
-`WhatSonHubSyncController` is a filesystem watcher plus debounce/timer coordinator for the mounted `.wshub`.
+`WhatSonHubSyncController` is the facade for mounted `.wshub` synchronization. Recursive observation, watcher
+registration, and debounce/timer scheduling are split into dedicated objects under `src/app/models/file/sync`.
 
 It no longer listens to generic app activation, pointer press, or touch events. Runtime reloads now depend on observed
 filesystem changes and local-mutation acknowledgements only, which keeps hub sync separate from navigation and input

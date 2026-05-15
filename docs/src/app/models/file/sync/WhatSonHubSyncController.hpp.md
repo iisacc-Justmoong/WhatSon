@@ -7,6 +7,9 @@ the in-memory runtime.
 It is intentionally narrow: the class watches the hub, debounces change hints, and asks a caller-provided reload
 callback to rebuild runtime state when the observed hub signature changes.
 
+The implementation is split into collaborators. The controller now keeps the public signal/slot boundary and owns the
+reload decision flow, while observation, watcher registration, and timer scheduling live in dedicated objects.
+
 ## Public API
 - `setReloadCallback(...)`: injects the runtime reload function used after an observed external change.
 - `setCurrentHubPath(...)`: switches the mounted hub path, rebuilds the signature baseline, and reconfigures watcher
@@ -27,19 +30,23 @@ callback to rebuild runtime state when the observed hub signature changes.
 - UI navigation, gestures, and generic input events are outside this class's responsibility.
 - Local app writes are treated differently from external writes through `acknowledgeLocalMutation()`, which keeps the
   current session from reloading itself after its own mutation path.
-- `HubObservation` is the internal single-pass contract: one recursive walk produces both the signature payload and the
-  watcher path coverage.
-- The controller also remembers the last applied watch-path set so unchanged sync hints do not rebuild watcher
+- `WhatSonHubSyncObservationBuilder` owns the single-pass observation contract: one recursive walk produces both the
+  signature payload and watcher path coverage.
+- `WhatSonHubSyncWatcher` remembers the last applied watch-path set so unchanged sync hints do not rebuild watcher
   registration.
+- `WhatSonHubSyncScheduler` owns periodic polling and debounce suppression.
 
 ## Collaborators
 - `main.cpp`: creates the controller, injects the reload callback, and wires local mutation acknowledgements from the
   hierarchy controllers.
 - `WhatSonHubPathUtils`: normalizes the mounted hub path.
-- `QFileSystemWatcher`: provides recursive watch coverage once the controller enumerates relevant hub paths.
+- `WhatSonHubSyncObservationBuilder`: inspects the mounted hub and builds the observation signature.
+- `WhatSonHubSyncWatcher`: wraps recursive `QFileSystemWatcher` coverage.
+- `WhatSonHubSyncScheduler`: wraps periodic/debounce timers.
 
 ## Tests
-- Automated test files are not currently present in this repository.
+- `test/cpp/suites/hub_sync_controller_tests.cpp` covers the responsibility split and the `.whatson` observation
+  ignore contract.
 - Regression checklist:
   - Include consumers must resolve this controller through `file/sync/WhatSonHubSyncController.hpp`.
   - Moving this header into `file/sync` must not alter the public API surface or signal/slot contract.

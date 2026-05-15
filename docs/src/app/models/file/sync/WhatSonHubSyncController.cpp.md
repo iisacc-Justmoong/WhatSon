@@ -3,13 +3,15 @@
 ## Implementation Summary
 The implementation turns hub synchronization into three explicit phases:
 
-1. inspect the mounted `.wshub` once and build a combined observation payload
-2. watch and debounce filesystem change hints
+1. ask `WhatSonHubSyncObservationBuilder` to inspect the mounted `.wshub`
+2. receive watcher and scheduler hints from `WhatSonHubSyncWatcher` and `WhatSonHubSyncScheduler`
 3. decide whether to refresh baseline only or invoke the injected runtime reload callback
 
 ## Observation Model
-`inspectHub(...)` walks the mounted hub recursively, collects normalized file/directory records for hashing, and also
-records the watcher paths that must be registered with `QFileSystemWatcher`.
+Observation now lives in `WhatSonHubSyncObservationBuilder`.
+
+The builder walks the mounted hub recursively, collects normalized file/directory records for hashing, and also records
+the watcher paths that must be registered with `WhatSonHubSyncWatcher`.
 
 The observed signature intentionally ignores:
 - `.whatson`
@@ -19,12 +21,12 @@ This keeps app-private bookkeeping churn out of runtime reload policy.
 This keeps signature hashing and watcher coverage on a single recursive observation pass.
 
 ## Watcher Model
-The collected watcher paths are fed into `QFileSystemWatcher`.
+The collected watcher paths are fed into `WhatSonHubSyncWatcher`.
 
 Watcher registration now short-circuits when the normalized watch-path set is unchanged, so a sync
 hint that observes the same hub topology no longer tears down and re-adds every watched path.
 
-The watcher is paired with:
+The watcher is paired with `WhatSonHubSyncScheduler`, which owns:
 - a periodic timer for eventual consistency
 - a debounce timer for burst suppression
 
@@ -50,7 +52,7 @@ driven by watcher/timer hints and explicit local-write acknowledgements only, wh
 independent from UI navigation and gesture handling.
 
 ## Tests
-- Automated test files are not currently present in this repository.
+- `test/cpp/suites/hub_sync_controller_tests.cpp` covers the split object boundary and the observation ignore contract.
 - Regression checklist:
   - Runtime wiring (`main.cpp`, `WhatSonHubSyncWiring.cpp`) must include this implementation from `file/sync`.
   - Path migration to `src/app/models/file/sync` must not change debounce, watcher rebuild, or local-mutation bypass behavior.
