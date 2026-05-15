@@ -1277,8 +1277,10 @@ private slots:
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
+    void hubSyncWiring_includesNoteEditorSessionVersionDiffMutations();
     void localNoteVersionStore_splitsVersionResponsibilitiesIntoDedicatedObjects();
     void localNoteVersionStore_capturesCommitSnapshotWhenNoteUpdateAdvancesModifiedCount();
+    void localNoteVersionStore_reportsVersionDiffFilesystemPushForSync();
     void localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten();
     void localNoteVersionStore_prunesSnapshotsToLatestOneHundred();
     void noteManagementCoordinator_openCountReloadsPersistedMetadata();
@@ -1298,6 +1300,7 @@ private slots:
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
+    void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();

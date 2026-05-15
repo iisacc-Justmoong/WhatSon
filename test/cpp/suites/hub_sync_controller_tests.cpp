@@ -81,3 +81,16 @@ void WhatSonCppRegressionTests::hubSyncObservationBuilder_ignoresPrivateWhatSonB
     const WhatSonHubSyncObservation visibleChange = builder.inspectHub(hubPath);
     QVERIFY(visibleChange.signature != baseline.signature);
 }
+
+void WhatSonCppRegressionTests::hubSyncWiring_includesNoteEditorSessionVersionDiffMutations()
+{
+    const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+    QVERIFY(!mainSource.isEmpty());
+
+    const int wiringIndex = mainSource.indexOf(QStringLiteral("wireHubSyncController"));
+    QVERIFY(wiringIndex >= 0);
+
+    const int noteEditorSessionIndex =
+        mainSource.indexOf(QStringLiteral("&noteEditorSession"), wiringIndex);
+    QVERIFY(noteEditorSessionIndex > wiringIndex);
+}

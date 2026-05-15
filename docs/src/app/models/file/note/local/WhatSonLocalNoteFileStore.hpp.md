@@ -19,6 +19,7 @@
 - `ReadRequest`
 - `CreateRequest`
 - `UpdateRequest`
+- `UpdateResult`
 - `DeleteRequest`
 
 ## UpdateRequest Contract
@@ -39,6 +40,9 @@
     comparison so the counter is not inflated
   - editor hot-path body writes that must stay latency-sensitive: set both backlink-refresh flags to `false` and let a
     higher-level owner trigger that hub scan later
+- `UpdateResult` reports whether the transaction pushed a timestamped version diff to `.wsnversion`, the version file
+  path that changed, and the generated UTC timestamps copied from the header/body diff segments. Higher-level owners
+  use this result to acknowledge the write as a local filesystem mutation for hub sync.
 
 ## Tests
 
@@ -50,6 +54,8 @@
   - timestamp-only header saves must not advance `modifiedCount` or append an empty `.wsnversion` snapshot
   - when `incrementModifiedCount` advances by exactly one, the same transaction must also emit a
     `.wsnversion` snapshot labeled as `commit:<modifiedCount>` via `file/diff/WhatSonLocalNoteVersionStore`
+  - when that snapshot is written, `UpdateResult.versionDiffPushedToFilesystem` must be true and must carry the
+    persisted `.wsnversion` path plus the generated diff timestamps
   - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,
     `includedResourceCount`, etc.) rewritten into `.wsnhead`
 

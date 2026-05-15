@@ -19,6 +19,8 @@ Implements the active note editor document session.
 6. When LVRS emits `syncFinished(path)`, QML calls `persistEditorFile(path)`, the session converts the editor document
    HTML back into canonical source text, and then delegates persistence through `ContentsNoteManagementCoordinator`
    so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
+   If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
+   `hubFilesystemMutated()` for the composition-root hub-sync wiring.
 7. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
@@ -58,6 +60,8 @@ Implements the active note editor document session.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
   `.wsnbody` serializer/read-back boundary before refreshing `parsedLineCount`. This keeps deleted atomic resource
   objects from leaving a transient trailing editor line in the gutter contract.
+- The session does not decide hub-sync policy itself; it only forwards the coordinator's version-diff filesystem
+  mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
   current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the

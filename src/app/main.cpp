@@ -409,7 +409,8 @@ int main(int argc, char* argv[])
                 &projectsHierarchyController,
                 &bookmarksHierarchyController,
                 &resourcesHierarchyController,
-                &progressHierarchyController
+                &progressHierarchyController,
+                &noteEditorSession
             });
     QObject::connect(
         &hubSyncController,

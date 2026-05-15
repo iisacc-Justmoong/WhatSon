@@ -135,6 +135,69 @@ void WhatSonCppRegressionTests::localNoteVersionStore_capturesCommitSnapshotWhen
                 .isValid());
 }
 
+void WhatSonCppRegressionTests::localNoteVersionStore_reportsVersionDiffFilesystemPushForSync()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("version-sync-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Before sync"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read note fixture: %1").arg(readError)));
+
+    document.bodySourceText = QStringLiteral("After sync");
+    document.bodyPlainText = QStringLiteral("After sync");
+
+    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+    updateRequest.document = document;
+    updateRequest.touchLastModified = true;
+
+    WhatSonLocalNoteDocument updatedDocument;
+    WhatSonLocalNoteFileStore::UpdateResult updateResult;
+    QString updateError;
+    QVERIFY2(
+        fileStore.updateNote(updateRequest, &updatedDocument, &updateError, &updateResult),
+        qPrintable(QStringLiteral("Failed to update note fixture: %1").arg(updateError)));
+
+    QVERIFY(updateResult.versionDiffPushedToFilesystem);
+    QCOMPARE(
+        QDir::cleanPath(updateResult.versionDiffFilePath),
+        QDir::cleanPath(updatedDocument.noteVersionPath));
+    QVERIFY(QFileInfo(updateResult.versionDiffFilePath).isFile());
+
+    const QDateTime headerGeneratedAt =
+        QDateTime::fromString(updateResult.headerDiffGeneratedAtUtc, Qt::ISODateWithMs);
+    const QDateTime bodyGeneratedAt =
+        QDateTime::fromString(updateResult.bodyDiffGeneratedAtUtc, Qt::ISODateWithMs);
+    QVERIFY(headerGeneratedAt.isValid());
+    QVERIFY(bodyGeneratedAt.isValid());
+
+    QFile versionFile(updateResult.versionDiffFilePath);
+    QVERIFY2(
+        versionFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(QStringLiteral("Failed to open version file: %1").arg(updateResult.versionDiffFilePath)));
+    const QString versionText = QString::fromUtf8(versionFile.readAll());
+    QVERIFY(versionText.contains(updateResult.headerDiffGeneratedAtUtc));
+    QVERIFY(versionText.contains(updateResult.bodyDiffGeneratedAtUtc));
+}
+
 void WhatSonCppRegressionTests::localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten()
 {
     QTemporaryDir workspaceDir;

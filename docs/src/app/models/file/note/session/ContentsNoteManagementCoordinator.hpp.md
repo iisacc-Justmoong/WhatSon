@@ -39,6 +39,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
 - `clearSelectedNote()`: clears the selected-note session and header-open-count follow-up context.
 - `editorTextPersistenceFinished(...)`: completion signal back to QML/editor session code once the queued persistence
   request reaches a final result.
+- `hubFilesystemMutated()`: emitted after a successful direct body/reconcile persistence request writes a timestamped
+  `.wsnversion` diff and the mounted/local filesystem sync step has accepted that write.
 
 ## Internal Queue Notes
 
@@ -61,6 +63,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
   refresh or open-count work.
 - A successful body persistence request must still mirror the normalized body state back into the editable hierarchy
   view-model and then schedule tracked-stat refresh as a follow-up management task.
+- A successful body persistence request that produced a timestamped version diff must emit `hubFilesystemMutated()` so
+  the hub sync controller can classify the watcher change as a local mutation.
 - Selecting a note must still bump header open-count metadata, but that work must happen through the coordinator-owned
   background lane instead of synchronously inside editor selection refresh.
 - When the content view-model contract cannot resolve a concrete note package path, direct body persistence must reject

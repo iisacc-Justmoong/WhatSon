@@ -27,6 +27,9 @@
   `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request. Direct
   changed-body writes opt in to `modifiedCount` advancement in the file-store transaction, while unchanged body saves
   still short-circuit before touching `.wsnhead`.
+- When that direct persistence writes a timestamped `.wsnversion` diff, the coordinator emits
+  `hubFilesystemMutated()` after the mounted/local filesystem sync step succeeds. This lets hub sync acknowledge the
+  file watcher change as a local editor mutation instead of reloading it as an external hub edit.
 - Successful open-count header writes now also ask the bound content controller to reload the note metadata so the
   visible file-stat panel mirrors the updated `.wsnhead` without waiting for a note reselection.
 - When the bound hierarchy view-model does not expose `applyPersistedBodyStateForNote(...)` but does expose
@@ -77,6 +80,8 @@
 - Persist completion must not immediately run backlink/open-count scans on the caller path; those must be queued as
   coordinator follow-up tasks. The direct file-store body transaction itself must still advance `modifiedCount` when
   the RAW body changed.
+- Persist completion that wrote a version diff timestamp must also notify hub sync through `hubFilesystemMutated()`;
+  unchanged body snapshots must not emit that signal.
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
 - A successful open-count update must reload note metadata on the bound content controller so `openCount` becomes

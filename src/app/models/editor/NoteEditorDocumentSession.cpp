@@ -899,6 +899,11 @@ NoteEditorDocumentSession::NoteEditorDocumentSession(QObject* parent)
         &ContentsNoteManagementCoordinator::editorTextPersistenceFinished,
         this,
         &NoteEditorDocumentSession::handleEditorTextPersistenceFinished);
+    connect(
+        &m_noteManagementCoordinator,
+        &ContentsNoteManagementCoordinator::hubFilesystemMutated,
+        this,
+        &NoteEditorDocumentSession::hubFilesystemMutated);
 }
 
 NoteEditorDocumentSession::~NoteEditorDocumentSession() = default;

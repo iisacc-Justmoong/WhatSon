@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/models/file/note/local/WhatSonLocalNoteDocument.hpp"
+#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
 #include <QMetaObject>
 #include <QObject>
@@ -51,6 +51,7 @@ signals:
         const QString& text,
         bool success,
         const QString& errorMessage);
+    void hubFilesystemMutated();
     void noteBodyTextLoaded(
         quint64 sequence,
         const QString& noteId,
@@ -96,6 +97,7 @@ private:
         QString noteDirectoryPath;
         QString text;
         WhatSonLocalNoteDocument persistedDocument;
+        WhatSonLocalNoteFileStore::UpdateResult updateResult;
         QString errorMessage;
         bool incrementOpenCount = false;
         bool snapshotRefreshRequested = false;

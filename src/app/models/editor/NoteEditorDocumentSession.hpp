@@ -85,6 +85,7 @@ signals:
         const QString& noteId,
         bool success,
         const QString& errorMessage);
+    void hubFilesystemMutated();
 
 private slots:
     void refreshFromActiveNoteState();

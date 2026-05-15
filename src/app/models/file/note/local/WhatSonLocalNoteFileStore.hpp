@@ -35,6 +35,14 @@ public:
         bool refreshAffectedBacklinkTargets = true;
     };
 
+    struct UpdateResult final
+    {
+        bool versionDiffPushedToFilesystem = false;
+        QString versionDiffFilePath;
+        QString headerDiffGeneratedAtUtc;
+        QString bodyDiffGeneratedAtUtc;
+    };
+
     struct DeleteRequest final
     {
         QString noteDirectoryPath;
@@ -47,7 +55,11 @@ public:
 
     bool createNote(CreateRequest request, WhatSonLocalNoteDocument* outDocument = nullptr, QString* errorMessage = nullptr) const;
     bool readNote(ReadRequest request, WhatSonLocalNoteDocument* outDocument, QString* errorMessage = nullptr) const;
-    bool updateNote(UpdateRequest request, WhatSonLocalNoteDocument* outDocument = nullptr, QString* errorMessage = nullptr) const;
+    bool updateNote(
+        UpdateRequest request,
+        WhatSonLocalNoteDocument* outDocument = nullptr,
+        QString* errorMessage = nullptr,
+        UpdateResult* outResult = nullptr) const;
     bool deleteNote(DeleteRequest request, QString* errorMessage = nullptr) const;
 
 private:

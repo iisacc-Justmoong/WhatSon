@@ -832,8 +832,15 @@ bool WhatSonLocalNoteFileStore::readNote(
 bool WhatSonLocalNoteFileStore::updateNote(
     UpdateRequest request,
     WhatSonLocalNoteDocument* outDocument,
-    QString* errorMessage) const
+    QString* errorMessage,
+    UpdateResult* outResult) const
 {
+    if (outResult != nullptr)
+    {
+        *outResult = UpdateResult();
+    }
+
+    UpdateResult updateResult;
     QString noteDirectoryPath = resolveDirectoryPath(
         request.document.noteDirectoryPath,
         request.document.noteHeaderPath,
@@ -1174,10 +1181,11 @@ bool WhatSonLocalNoteFileStore::updateNote(
         captureRequest.label = QStringLiteral("commit:%1").arg(modifiedCountAfterUpdate);
         captureRequest.commitModifiedCount = modifiedCountAfterUpdate;
 
+        WhatSonNoteVersionSnapshot capturedSnapshot;
         QString captureError;
         if (!versionStore.captureSnapshot(
                 std::move(captureRequest),
-                nullptr,
+                &capturedSnapshot,
                 nullptr,
                 &captureError))
         {
@@ -1187,11 +1195,20 @@ bool WhatSonLocalNoteFileStore::updateNote(
             }
             return false;
         }
+
+        updateResult.versionDiffPushedToFilesystem = true;
+        updateResult.versionDiffFilePath = versionPath;
+        updateResult.headerDiffGeneratedAtUtc = capturedSnapshot.headerDiff.generatedAtUtc;
+        updateResult.bodyDiffGeneratedAtUtc = capturedSnapshot.bodyDiff.generatedAtUtc;
     }
 
     if (outDocument != nullptr)
     {
         *outDocument = std::move(request.document);
+    }
+    if (outResult != nullptr)
+    {
+        *outResult = std::move(updateResult);
     }
     return true;
 }

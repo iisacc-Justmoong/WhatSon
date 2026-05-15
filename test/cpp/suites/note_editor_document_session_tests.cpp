@@ -87,6 +87,44 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAn
         editedSource);
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("session-sync-note"),
+        QStringLiteral("Before sync"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("session-sync-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+        session.editorFilePath(),
+        QStringLiteral("After sync")));
+
+    QSignalSpy filesystemMutationSpy(&session, &NoteEditorDocumentSession::hubFilesystemMutated);
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QVERIFY(session.persistEditorFile(session.editorFilePath()));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+    QTRY_COMPARE_WITH_TIMEOUT(filesystemMutationSpy.count(), 1, 3000);
+
+    const QString versionPath = QDir(noteDirectoryPath).filePath(QStringLiteral("session-sync-note.wsnversion"));
+    const QString versionText = readUtf8FileForNoteEditorSessionTest(versionPath);
+    QVERIFY(versionText.contains(QStringLiteral("\"generatedAtUtc\"")));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected()
 {
     QTemporaryDir workspaceDir;

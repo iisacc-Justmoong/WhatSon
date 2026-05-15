@@ -680,7 +680,11 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
-        if (!noteFileStore.updateNote(updateRequest, &result.persistedDocument, &result.errorMessage))
+        if (!noteFileStore.updateNote(
+                updateRequest,
+                &result.persistedDocument,
+                &result.errorMessage,
+                &result.updateResult))
         {
             return result;
         }
@@ -729,7 +733,11 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
-        if (!noteFileStore.updateNote(updateRequest, &result.persistedDocument, &result.errorMessage))
+        if (!noteFileStore.updateNote(
+                updateRequest,
+                &result.persistedDocument,
+                &result.errorMessage,
+                &result.updateResult))
         {
             return result;
         }
@@ -882,6 +890,11 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
             const QString statsDirectoryPath =
                 !persistedDirectoryPath.isEmpty() ? persistedDirectoryPath : resolveNoteDirectoryPathForNote(result.noteId);
             enqueueTrackedStatisticsRefresh(result.noteId, statsDirectoryPath, false);
+
+            if (result.updateResult.versionDiffPushedToFilesystem)
+            {
+                emit hubFilesystemMutated();
+            }
         }
         else
         {
@@ -1035,6 +1048,11 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                         ? persistedDirectoryPath
                         : resolveNoteDirectoryPathForNote(result.noteId);
                 enqueueTrackedStatisticsRefresh(result.noteId, statsDirectoryPath, false);
+
+                if (result.updateResult.versionDiffPushedToFilesystem)
+                {
+                    emit hubFilesystemMutated();
+                }
             }
         }
 

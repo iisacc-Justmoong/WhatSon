@@ -66,6 +66,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - capture/diff persistence is delegated to `file/diff/WhatSonLocalNoteVersionStore`
   - snapshot label format: `commit:<modifiedCount>`
   - snapshot metadata stores `commitModifiedCount` and git-style unified patches for `.wsnhead` / `.wsnbody`
+- When that commit snapshot is written, `updateNote(...)` fills `UpdateResult` with the changed `.wsnversion` path and
+  the header/body diff `generatedAtUtc` values so callers can acknowledge the filesystem write to hub sync.
 - Debounced editor body autosaves still avoid no-op churn because unchanged body snapshots short-circuit. When the
   editor writes a changed RAW body, the same transaction increments `modifiedCount`, refreshes body-derived stats,
   updates `lastModifiedAt`, and captures the matching `.wsnversion` commit snapshot.
@@ -91,6 +93,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - every update transaction that advances `modifiedCount` by exactly one must append a corresponding snapshot to
     `.wsnversion` with `commitModifiedCount == modifiedCount`
   - each captured snapshot must include unified patch metadata for both header and body payloads
+  - the file-store update result must report the `.wsnversion` filesystem push and the diff timestamps when the commit
+    snapshot is captured
   - editor hot-path writes that disable backlink refresh must still rewrite the current note's normalized body text,
     header timestamp, and non-hub-derived counters
   - non-editor file read/reconcile turns must not regenerate a different `bodySourceText` RAW snapshot solely because
