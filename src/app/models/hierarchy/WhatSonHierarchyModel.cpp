@@ -26,6 +26,86 @@ namespace
         }
         return {};
     }
+
+    QString storageKeyForRole(int role)
+    {
+        switch (role)
+        {
+        case Qt::DisplayRole:
+        case Qt::EditRole:
+        case WhatSonHierarchyModel::LabelRole:
+            return QStringLiteral("label");
+        case WhatSonHierarchyModel::CountRole:
+            return QStringLiteral("count");
+        case WhatSonHierarchyModel::DepthRole:
+        case WhatSonHierarchyModel::IndentLevelRole:
+            return QStringLiteral("depth");
+        case WhatSonHierarchyModel::AccentRole:
+            return QStringLiteral("accent");
+        case WhatSonHierarchyModel::ExpandedRole:
+            return QStringLiteral("expanded");
+        case WhatSonHierarchyModel::ShowChevronRole:
+            return QStringLiteral("showChevron");
+        case WhatSonHierarchyModel::IconNameRole:
+            return QStringLiteral("iconName");
+        case WhatSonHierarchyModel::IconSourceRole:
+            return QStringLiteral("iconSource");
+        case WhatSonHierarchyModel::ItemKeyRole:
+            return QStringLiteral("itemKey");
+        case WhatSonHierarchyModel::KeyRole:
+            return QStringLiteral("key");
+        case WhatSonHierarchyModel::IdRole:
+            return QStringLiteral("id");
+        case WhatSonHierarchyModel::UuidRole:
+            return QStringLiteral("uuid");
+        case WhatSonHierarchyModel::KindRole:
+            return QStringLiteral("kind");
+        case WhatSonHierarchyModel::BucketRole:
+            return QStringLiteral("bucket");
+        case WhatSonHierarchyModel::TypeRole:
+            return QStringLiteral("type");
+        case WhatSonHierarchyModel::FormatRole:
+            return QStringLiteral("format");
+        case WhatSonHierarchyModel::ResourceIdRole:
+            return QStringLiteral("resourceId");
+        case WhatSonHierarchyModel::ResourcePathRole:
+            return QStringLiteral("resourcePath");
+        case WhatSonHierarchyModel::AssetPathRole:
+            return QStringLiteral("assetPath");
+        case WhatSonHierarchyModel::DraggableRole:
+            return QStringLiteral("draggable");
+        case WhatSonHierarchyModel::DragAllowedRole:
+            return QStringLiteral("dragAllowed");
+        case WhatSonHierarchyModel::MovableRole:
+            return QStringLiteral("movable");
+        case WhatSonHierarchyModel::DragLockedRole:
+            return QStringLiteral("dragLocked");
+        case WhatSonHierarchyModel::ProgressValueRole:
+            return QStringLiteral("progressValue");
+        case WhatSonHierarchyModel::ParentKeyRole:
+            return QStringLiteral("parentKey");
+        case WhatSonHierarchyModel::ParentItemKeyRole:
+            return QStringLiteral("parentItemKey");
+        default:
+            return {};
+        }
+    }
+
+    QList<int> changedRolesForRole(int role)
+    {
+        switch (role)
+        {
+        case Qt::DisplayRole:
+        case Qt::EditRole:
+        case WhatSonHierarchyModel::LabelRole:
+            return {Qt::DisplayRole, Qt::EditRole, WhatSonHierarchyModel::LabelRole};
+        case WhatSonHierarchyModel::DepthRole:
+        case WhatSonHierarchyModel::IndentLevelRole:
+            return {WhatSonHierarchyModel::DepthRole, WhatSonHierarchyModel::IndentLevelRole};
+        default:
+            return {role};
+        }
+    }
 }
 
 WhatSonHierarchyModel::WhatSonHierarchyModel(QObject* parent)
@@ -54,6 +134,8 @@ QVariant WhatSonHierarchyModel::data(const QModelIndex& index, int role) const
     const QVariantMap& item = m_items.at(index.row());
     switch (role)
     {
+    case Qt::DisplayRole:
+    case Qt::EditRole:
     case LabelRole:
         return item.value(QStringLiteral("label"));
     case CountRole:
@@ -107,9 +189,90 @@ QVariant WhatSonHierarchyModel::data(const QModelIndex& index, int role) const
         return item.value(QStringLiteral("dragLocked"));
     case ProgressValueRole:
         return item.value(QStringLiteral("progressValue"));
+    case ParentKeyRole:
+        return item.value(QStringLiteral("parentKey"));
+    case ParentItemKeyRole:
+        return item.value(QStringLiteral("parentItemKey"));
     default:
         return {};
     }
+}
+
+bool WhatSonHierarchyModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size() || index.column() != 0)
+    {
+        return false;
+    }
+
+    const QString key = storageKeyForRole(role);
+    if (key.isEmpty())
+    {
+        return false;
+    }
+
+    QVariantMap& item = m_items[index.row()];
+    if (item.value(key) == value)
+    {
+        return true;
+    }
+
+    item.insert(key, value);
+    emit dataChanged(index, index, changedRolesForRole(role));
+    emit itemsChanged();
+    return true;
+}
+
+Qt::ItemFlags WhatSonHierarchyModel::flags(const QModelIndex& index) const
+{
+    Qt::ItemFlags itemFlags = QAbstractListModel::flags(index);
+    if (index.isValid() && index.row() >= 0 && index.row() < m_items.size() && index.column() == 0)
+    {
+        itemFlags |= Qt::ItemIsEditable;
+    }
+    return itemFlags;
+}
+
+bool WhatSonHierarchyModel::moveRows(
+    const QModelIndex& sourceParent,
+    int sourceRow,
+    int count,
+    const QModelIndex& destinationParent,
+    int destinationChild)
+{
+    if (sourceParent.isValid() || destinationParent.isValid())
+    {
+        return false;
+    }
+    if (count <= 0 || sourceRow < 0 || sourceRow + count > m_items.size())
+    {
+        return false;
+    }
+    if (destinationChild < 0 || destinationChild > m_items.size())
+    {
+        return false;
+    }
+    if (destinationChild >= sourceRow && destinationChild <= sourceRow + count)
+    {
+        return false;
+    }
+
+    beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild);
+    QVector<QVariantMap> movedItems;
+    movedItems.reserve(count);
+    for (int index = 0; index < count; ++index)
+    {
+        movedItems.push_back(m_items.at(sourceRow + index));
+    }
+    m_items.erase(m_items.begin() + sourceRow, m_items.begin() + sourceRow + count);
+    const int insertionRow = destinationChild > sourceRow ? destinationChild - count : destinationChild;
+    for (int index = 0; index < movedItems.size(); ++index)
+    {
+        m_items.insert(insertionRow + index, std::move(movedItems[index]));
+    }
+    endMoveRows();
+    emit itemsChanged();
+    return true;
 }
 
 QHash<int, QByteArray> WhatSonHierarchyModel::roleNames() const
@@ -140,6 +303,8 @@ QHash<int, QByteArray> WhatSonHierarchyModel::roleNames() const
         {MovableRole, "movable"},
         {DragLockedRole, "dragLocked"},
         {ProgressValueRole, "progressValue"},
+        {ParentKeyRole, "parentKey"},
+        {ParentItemKeyRole, "parentItemKey"},
     };
 }
 

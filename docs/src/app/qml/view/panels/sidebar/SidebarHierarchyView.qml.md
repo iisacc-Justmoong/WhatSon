@@ -43,12 +43,12 @@ without changing delegate call sites.
   second search-panel slab.
 - The LVRS row primitive used underneath this view keeps inactive hierarchy rows transparent, so only active, hover,
   pressed, and drag states paint explicit fills.
-- The visible hierarchy model is now held in `displayedHierarchyModel`, a view-owned snapshot. The view compares the
-  projected hierarchy payload against the previous snapshot and only replaces the rendered model when the actual row
-  content changed.
-- LVRS row drag commits use `HierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey)`, matching the
-  30-day-old surface contract: LVRS owns the visible tree reorder and the bridge persists the final depth-array
-  snapshot.
+- The visible hierarchy model is the active controller's shared `WhatSonHierarchyModel`
+  (`hierarchyController.hierarchyItemModel`). `LV.Hierarchy` binds to that model directly instead of a QML-owned
+  snapshot array.
+- LVRS row drag commits use `HierarchyDragDropBridge.applyHierarchyReorder(...)` with
+  `hierarchyReorderCommitModel()`. That helper snapshots the shared `WhatSonHierarchyModel` through its `items()`
+  method after LVRS has applied the editable move, then the bridge persists the final depth-array result.
 - The embedded `LV.Hierarchy` now lets the shared `TapHandler` explicitly approve flick takeover, so vertical swipes on
   mobile routes are not trapped by row taps and the underlying LVRS hierarchy scroller can keep its inertial carry.
 - The host now also drives `LV.Hierarchy.listOvershootEnabled`, `listFlickDeceleration`,
@@ -70,8 +70,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `hierarchyController.requestControllerHook()` if the active domain provides it.
 - `onHierarchyNodesChanged` no longer calls `requestControllerHook()` directly.
   Instead, it only resynchronizes LVRS selection/focus presentation.
-- `onHierarchyNodesChanged` also refreshes `displayedHierarchyModel`, but only when the serialized row payload actually
-  differs. Periodic hierarchy refresh signals with unchanged content therefore no longer force a visible tree rebuild.
+- `onHierarchyNodesChanged` no longer rebuilds an intermediate rendered model. It captures expansion state for the C++
+  policy helper, clears transient note-drop state, and resynchronizes selection/focus presentation against the live
+  shared item model.
 - `requestHierarchyControllerReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
 ## Selected Row Activation Contract
@@ -89,7 +90,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   controller reapplies focus to the LVRS input field across a few deferred QML turns so a newly created folder can be
   typed into immediately even if the hierarchy row is regenerated after creation.
 - Post-create inline rename must resolve the inserted row from the model diff, not from the transient selected index.
-  The view captures the hierarchy model before `createFolder()`, refreshes the displayed model after the mutation, finds
+  The view captures the hierarchy model before `createFolder()`, reads the live shared model after the mutation, finds
   the newly inserted stable row key, and lets the rename controller retry by that key until the row geometry is ready.
   This prevents the input overlay from being anchored to protected buckets such as `All Library` while the actual blank
   folder row is inserted lower in the tree.
@@ -183,14 +184,13 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Expansion Routing Guard
 
-- Expansion state is now treated as user-owned UI state. `SidebarHierarchyInteractionController` captures row expansion
-  by stable hierarchy key, and `syncDisplayedHierarchyModel(...)` asks that C++ object to overlay preserved state onto
-  refreshed hierarchy payloads.
-  Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore not reset
-  existing expanded/collapsed rows.
-- After the C++ expansion overlay returns its `QVariantList`, `syncDisplayedHierarchyModel(...)` normalizes that value
-  back into a JS array before assigning `displayedHierarchyModel`. LVRS editable drag commits rely on an array model so
-  `_applyEditableMove(...)` can mutate the visible snapshot and emit `listItemMoved`.
+- Expansion state is treated as user-owned UI state. `SidebarHierarchyInteractionController` captures row expansion by
+  stable hierarchy key, while each domain controller publishes the current state through the shared
+  `WhatSonHierarchyModel`.
+  Count-only changes, folder-structure refreshes, and note-to-folder assignment refreshes must therefore preserve
+  existing expanded/collapsed rows in the controller-owned item data instead of relying on a view-side rendered copy.
+- `LV.Hierarchy` receives the shared model directly. `WhatSonHierarchyModel` exposes editable flags, role writes, row
+  moves, and an `items()` snapshot so LVRS can reorder the visible tree without a QML compatibility array.
 - Expansion keys are scoped by the active hierarchy index, so identical row ids in different hierarchy domains do not
   leak expansion state into each other when the toolbar switches domain.
 - LVRS `HierarchyItem` owns the chevron hit target and emits `onListItemExpanded` after toggling `expanded`.
@@ -198,26 +198,27 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `SidebarHierarchyInteractionController.handleExpansionSignal(...)`, which commits through
   `HierarchyInteractionBridge.setItemExpanded(...)` when the state differs from the preserved user-owned state or when
   this is the first expansion signal seen for that stable row key.
-  After a successful commit, the view forces `syncDisplayedHierarchyModel(true)` and emits
-  `requestViewHook("hierarchy.chevron.toggle")` so read-only hierarchy domains such as Resources receive the preserved
-  expansion overlay before another model refresh can repaint the old collapsed state.
+  After a successful single-row commit, the view does not rebuild the hierarchy model or request a full sidebar hook.
+  The changed domain controller calls `WhatSonHierarchyModel::setItemExpanded(...)`, so LVRS receives a row-local
+  `expanded` role update.
   A separate pointer arm remains only as an activation-suppression/fallback path for platforms that do not deliver the
   LVRS expansion callback from the chevron `MouseArea`.
 - `SidebarHierarchyInteractionController.captureExpansionState(...)` seeds only missing keys. A fresh controller/model
-  refresh must not overwrite a user-owned expansion value that was just written by a chevron click with the stale
-  `displayedHierarchyModel` snapshot from the previous turn.
+  refresh must not overwrite a user-owned expansion value that was just written by a chevron click.
 - `syncSelectedHierarchyItem(...)` refuses to activate a selected row that is hidden behind a collapsed ancestor. This
   prevents LVRS active-item normalization from auto-expanding ancestors during model rebuilds.
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
   (`item.itemId`, then `item.resolvedItemId`, then callback `itemId`), and only falls back to
   visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
   It then starts a short activation-block timer.
-- The left-button `TapHandler` also schedules `requestHierarchyChevronExpansionAtPosition(...)` after the tap turn. If
-  LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is skipped;
-  otherwise `SidebarHierarchyInteractionController.requestChevronExpansionForItem(...)` performs the single-row
-  fold/unfold and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible
-  row hides or reveals its descendants immediately. The same successful fallback commit forces
-  `syncDisplayedHierarchyModel(true)` and emits `requestViewHook("hierarchy.chevron.toggle")`.
+- The left-button `TapHandler` and the non-editable chevron pointer surface both remember the press-time
+  `HierarchyItem` and resolved index. Release-time fallback commits call
+  `requestHierarchyChevronExpansionForTarget(...)` for that same row only; they do not re-scan the hierarchy at the
+  release position and do not let the click affect another row that happens to be under the pointer later in the turn.
+- If LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is
+  skipped. Otherwise `SidebarHierarchyInteractionController.requestChevronExpansionForItem(...)` performs the
+  single-row fold/unfold and writes the committed state back into the live `LV.HierarchyItem.expanded` property so the
+  visible row hides or reveals its descendants immediately.
 - The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` across both the
   row root `children` and the LVRS `contentItem.children`, then tests that slot's mapped rectangle before falling back
   to the older right-edge geometry estimate. This keeps the app-side pointer arm aligned with the actual
@@ -262,9 +263,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Inline rename geometry is no longer derived only from the live LVRS row object. The view now keeps an
   `editingHierarchyPresentation` snapshot so the overlay stays attached to the selected row even if `LV.Hierarchy`
   regenerates items during a rename transaction.
-- Starting inline rename does not force a `displayedHierarchyModel` rebuild. The overlay uses the captured row
-  presentation directly, while commit and cancel still refresh the displayed model after the transaction state is
-  cleared.
+- Starting inline rename does not rebuild the rendered hierarchy model. The overlay uses the captured row presentation
+  directly, while commit and cancel only resynchronize expansion-state tracking and row presentation after the
+  transaction state is cleared.
 - Newly created folders do not open inline rename until the selected folder row is present in the live LVRS hierarchy
   and has a non-zero geometry snapshot. This prevents the input overlay from borrowing the previous active row, such as
   `All Library`, while LVRS is still rebuilding generated rows.
@@ -281,9 +282,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The note-drop `DropArea` is keyed to the note-list drag key (`whatson.library.note`). It must not accept unkeyed
   hierarchy-item drags, because those need to fall through to LVRS `Hierarchy` so tree reorder can emit
   `listItemMoved`.
-- `LV.Hierarchy.onListItemMoved` forwards LVRS' already-reordered `hierarchyTree.model` through
-  `HierarchyDragDropBridge.applyHierarchyReorder(...)`. The sidebar treats the LVRS depth-array snapshot as the
-  view-authoritative reorder result and lets the hierarchy controller persist and reparse the backing tree store.
+- `LV.Hierarchy.onListItemMoved` forwards `hierarchyReorderCommitModel()` through
+  `HierarchyDragDropBridge.applyHierarchyReorder(...)`. The helper snapshots the shared item model after LVRS has
+  performed its editable row move, and the sidebar lets the hierarchy controller persist and reparse the backing tree
+  store.
 - Dropping a note-list item on a concrete folder hierarchy row is a membership mutation: the view resolves the hovered
   row index, forwards the dragged note id array through `HierarchyDragDropBridge.assignNotesToFolder(...)`, and treats a
   successful commit as `hierarchy.noteDrop`.
@@ -341,12 +343,12 @@ This file should be read as a composed view, not as the place where hierarchy bu
   normalized-array return path.
 - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
   LVRS/Qt.
-- Folder tree drag/drop must keep using `applyHierarchyReorder(hierarchyTree.model, itemKey)` from
-  `LV.Hierarchy.onListItemMoved`; adding a second index-replay path can acknowledge a drag before the final LVRS
-  snapshot has been persisted.
-- `displayedHierarchyModel` must remain a JS array after expansion preservation. Letting the C++ preserved model remain
-  as a raw `QVariantList` can make LVRS treat the surface as editable but fail the release-time source write before
-  `listItemMoved` is emitted.
+- Folder tree drag/drop must keep using `applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(),
+  itemKey)` from `LV.Hierarchy.onListItemMoved`; adding a second index-replay path can acknowledge a drag before the
+  final LVRS snapshot has been persisted.
+- `LV.Hierarchy.model` must remain bound directly to `hierarchyController.hierarchyItemModel`. Reintroducing a
+  view-owned rendered array bypasses the shared `WhatSonHierarchyModel` contract and can make resource/library
+  hierarchy behavior diverge again.
 - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;
@@ -354,8 +356,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - Startup regression guard: inline helper objects must keep explicit dependency bindings, and the selection helper must
   point `view` at `sidebarHierarchyView`; otherwise QML reports uninitialized required properties during workspace
   route construction.
-- Periodic hierarchy refreshes with unchanged nodes must not visibly blink, because `displayedHierarchyModel` must
-  remain unchanged across equivalent `hierarchyNodesChanged` emissions.
+- Periodic hierarchy refreshes with unchanged nodes must not visibly blink, because equivalent
+  `hierarchyNodesChanged` emissions must not cause the view to replace the rendered model with a new QML snapshot.
 - Right-clicking a library folder row must open a context menu with `New Folder` and `Delete Folder`.
 - Triggering `New Folder` from that menu must reuse the existing folder-creation path and insert the new folder as a
   child of the clicked folder.

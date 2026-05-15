@@ -32,30 +32,22 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_bindsInlineHelperDependenci
     QVERIFY(!sidebarSource.contains(QStringLiteral("const normalizedModifiers = controller.")));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyView_preservesEditableJsArrayForLvrsDrag()
+void WhatSonCppRegressionTests::sidebarHierarchyView_bindsLvrsHierarchyDirectlyToSharedItemModel()
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
 
     QVERIFY(!sidebarSource.isEmpty());
 
-    const qsizetype syncIndex = sidebarSource.indexOf(QStringLiteral("function syncDisplayedHierarchyModel(forceRefresh)"));
-    QVERIFY(syncIndex >= 0);
-    const qsizetype preservedModelIndex = sidebarSource.indexOf(
-        QStringLiteral("const preservedModel = sidebarHierarchyView.hierarchyInteractionController.modelWithPreservedExpansion(hierarchyController ? hierarchyController.hierarchyNodes : []);"),
-        syncIndex);
-    const qsizetype normalizedModelIndex = sidebarSource.indexOf(
-        QStringLiteral("const nextModel = renameController.normalizeHierarchyModel(preservedModel);"),
-        preservedModelIndex);
-    const qsizetype assignmentIndex = sidebarSource.indexOf(
-        QStringLiteral("sidebarHierarchyView.displayedHierarchyModel = nextModel;"),
-        normalizedModelIndex);
-
-    QVERIFY(preservedModelIndex > syncIndex);
-    QVERIFY(normalizedModelIndex > preservedModelIndex);
-    QVERIFY(assignmentIndex > normalizedModelIndex);
-    QVERIFY(!sidebarSource.contains(QStringLiteral("const projectedModel = sidebarHierarchyView.projectedHierarchyModel")));
-    QVERIFY(!sidebarSource.contains(QStringLiteral("function projectedHierarchyModel(modelValue)")));
+    QVERIFY(sidebarSource.contains(
+        QStringLiteral("readonly property var hierarchyRenderModel: sidebarHierarchyView.hierarchyController ? sidebarHierarchyView.hierarchyController.hierarchyItemModel : []")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("model: sidebarHierarchyView.hierarchyRenderModel")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function hierarchyReorderCommitModel()")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("return itemModel.items();")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(), itemKey)")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("property var displayedHierarchyModel")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("property string displayedHierarchyModelSignature")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("sidebarHierarchyView.displayedHierarchyModel =")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename()
@@ -187,7 +179,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInter
 
     const qsizetype dropKeysIndex = sidebarSource.indexOf(QStringLiteral("keys: [\"whatson.library.note\"]"), noteDropSurfaceIndex);
     const qsizetype emptyPayloadGuardIndex = sidebarSource.indexOf(QStringLiteral("if (noteIds.length <= 0)"), noteDropSurfaceIndex);
-    const qsizetype hierarchyReorderIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"));
+    const qsizetype hierarchyReorderIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(), itemKey)"));
 
     QVERIFY(dropKeysIndex > noteDropSurfaceIndex);
     QVERIFY(emptyPayloadGuardIndex > noteDropSurfaceIndex);
@@ -230,7 +222,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNo
     QVERIFY(hierarchyTreeIndex >= 0);
     const qsizetype editableBindingIndex = sidebarSource.indexOf(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable"), hierarchyTreeIndex);
     const qsizetype movedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"), hierarchyTreeIndex);
-    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(hierarchyTree.model, itemKey)"), movedHandlerIndex);
+    const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(), itemKey)"), movedHandlerIndex);
     QVERIFY(editableBindingIndex > hierarchyTreeIndex);
     QVERIFY(movedHandlerIndex > editableBindingIndex);
     QVERIFY(reorderCallIndex > movedHandlerIndex);
@@ -243,6 +235,40 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNo
     QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("enabled: !sidebarHierarchyView.hierarchyEditable")));
     QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0")));
     QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress")));
+}
+
+void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceScopesCommitToPressedItem()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+    QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyChevronPointerPressItem: null")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("property int hierarchyChevronPointerPressIndex: -1")));
+
+    const qsizetype finishFunctionIndex = sidebarSource.indexOf(QStringLiteral("function finishHierarchyChevronPointerPress(x, y)"));
+    QVERIFY(finishFunctionIndex >= 0);
+    const qsizetype finishFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function hierarchyChevronExpansionTargetAtPosition"), finishFunctionIndex);
+    QVERIFY(finishFunctionEndIndex > finishFunctionIndex);
+    const QString finishFunctionBlock = sidebarSource.mid(finishFunctionIndex, finishFunctionEndIndex - finishFunctionIndex);
+
+    QVERIFY(finishFunctionBlock.contains(QStringLiteral("const pressedItem = sidebarHierarchyView.hierarchyChevronPointerPressItem;")));
+    QVERIFY(finishFunctionBlock.contains(QStringLiteral("const pressedIndex = sidebarHierarchyView.hierarchyChevronPointerPressIndex;")));
+    QVERIFY(finishFunctionBlock.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionForTarget(pressedItem, pressedIndex, pressedKey)")));
+    QVERIFY(!finishFunctionBlock.contains(QStringLiteral("hierarchyChevronExpansionTargetAtPosition(targetX, targetY)")));
+    QVERIFY(!finishFunctionBlock.contains(QStringLiteral("requestHierarchyChevronExpansionAtPosition(targetX, targetY, pressedKey)")));
+
+    const qsizetype targetFunctionIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionForTarget(targetItem, targetIndex, expectedKey)"));
+    QVERIFY(targetFunctionIndex >= 0);
+    const qsizetype targetFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionAtPosition"), targetFunctionIndex);
+    QVERIFY(targetFunctionEndIndex > targetFunctionIndex);
+    const QString targetFunctionBlock = sidebarSource.mid(targetFunctionIndex, targetFunctionEndIndex - targetFunctionIndex);
+    QVERIFY(!targetFunctionBlock.contains(QStringLiteral("syncDisplayedHierarchyModel(true)")));
+    QVERIFY(!targetFunctionBlock.contains(QStringLiteral("requestViewHook(\"hierarchy.chevron.toggle\")")));
+    QVERIFY(!targetFunctionBlock.contains(QStringLiteral("hierarchyChevronExpansionTargetAtPosition")));
 }
 
 void WhatSonCppRegressionTests::sidebarHierarchyView_routesFooterActionsDirectlyFromQml()

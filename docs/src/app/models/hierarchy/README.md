@@ -47,6 +47,9 @@
 ## Shared Expansion Policy
 - Every hierarchy domain exposes the same `WhatSonHierarchyModel` as its LVRS-facing `itemModel`. Domain-specific
   controllers keep typed mutation state internally, then publish `depthItems()` node maps into the shared model.
+- `LV.Hierarchy` must bind directly to that shared `WhatSonHierarchyModel`, not to a view-owned QML projection. The
+  model exposes editable item flags, role writes, `moveRows(...)`, and an `items()` snapshot so LVRS can perform row
+  reorder/edit interactions against the same contract for Library, Resources, and the other hierarchy domains.
 - Domain `*HierarchyModel.hpp` files are item-struct/helper headers only. They must not declare another
   `QAbstractListModel` subclass.
 - Concrete hierarchy controllers keep their domain-specific classes and stores, but their right-chevron
@@ -66,7 +69,8 @@
 - 역할: 이 파일은 독립 hierarchy model shard의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
 - 최신 책임: 모든 hierarchy domain은 표시용 item model로 `WhatSonHierarchyModel` 하나를 공유한다. right-chevron
   expand/collapse의 공통 validation/state flip은 `IHierarchyController` protected helper가 소유하고, 단일 row
-  갱신은 `WhatSonHierarchyModel::setItemExpanded(...)`로 처리한다.
+  갱신은 `WhatSonHierarchyModel::setItemExpanded(...)`로 처리한다. `LV.Hierarchy`는 이 공유 모델에 직접 바인딩해야
+  하며, QML view-owned projection array를 중간에 두지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 현재: hierarchy 구현은 `src/app/models/hierarchy`가 아니라 `src/app/models/hierarchy`에 둔다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

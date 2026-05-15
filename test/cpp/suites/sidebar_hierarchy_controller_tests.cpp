@@ -119,6 +119,18 @@ void WhatSonCppRegressionTests::hierarchyItemModel_usesSharedLvrsModelContract()
     QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::KeyRole).toString(), QStringLiteral("type:image"));
     QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::ItemKeyRole).toString(), QStringLiteral("type:image"));
     QCOMPARE(model.data(model.index(0, 0), WhatSonHierarchyModel::CountRole).toInt(), 3);
+
+    QVERIFY(model.flags(model.index(0, 0)).testFlag(Qt::ItemIsEditable));
+    QVERIFY(model.setData(model.index(1, 0), 2, WhatSonHierarchyModel::DepthRole));
+    QCOMPARE(model.data(model.index(1, 0), WhatSonHierarchyModel::DepthRole).toInt(), 2);
+    QVERIFY(model.setData(model.index(1, 0), QStringLiteral("type:image"), WhatSonHierarchyModel::ParentItemKeyRole));
+    QCOMPARE(model.data(model.index(1, 0), WhatSonHierarchyModel::ParentItemKeyRole).toString(), QStringLiteral("type:image"));
+
+    QSignalSpy rowsMovedSpy(&model, &QAbstractItemModel::rowsMoved);
+    QVERIFY(model.moveRows(QModelIndex(), 0, 1, QModelIndex(), 2));
+    QCOMPARE(rowsMovedSpy.count(), 1);
+    QCOMPARE(model.data(model.index(1, 0), WhatSonHierarchyModel::KeyRole).toString(), QStringLiteral("type:image"));
+    QCOMPARE(model.items().size(), 2);
 }
 
 void WhatSonCppRegressionTests::hierarchyControllers_exposeSharedLvrsHierarchyModel()
@@ -331,7 +343,7 @@ void WhatSonCppRegressionTests::hierarchyControllers_delegateChevronExpansionToP
     QVERIFY(!sidebarSource.contains(QStringLiteral("function hierarchyItemExpansionKey(item, fallbackIndex)")));
     QVERIFY(sidebarSource.contains(QStringLiteral("armExpansionForItem(target.item, target.index)")));
     QVERIFY(sidebarSource.contains(
-        QStringLiteral("requestChevronExpansionForItem(target.item, target.index, expectedKey)")));
+        QStringLiteral("requestChevronExpansionForItem(targetItem, resolvedIndex, expectedKey)")));
 
     const QStringList controllerSourcePaths{
         QStringLiteral("src/app/models/hierarchy/library/LibraryHierarchyController.cpp"),
@@ -375,17 +387,17 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExp
         sidebarSource.mid(directCommittedIndex, directHandlerEndIndex - directCommittedIndex);
     const qsizetype directSyncIndex =
         directHandlerBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncDisplayedHierarchyModel(true);"));
-    QVERIFY(directSyncIndex >= 0);
+    QVERIFY(directSyncIndex < 0);
     const qsizetype directHookIndex =
         directHandlerBlock.indexOf(
             QStringLiteral("sidebarHierarchyView.requestViewHook(\"hierarchy.chevron.toggle\");"));
-    QVERIFY(directHookIndex >= 0);
+    QVERIFY(directHookIndex < 0);
 
     const qsizetype fallbackFunctionIndex =
-        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionAtPosition"));
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionForTarget"));
     QVERIFY(fallbackFunctionIndex >= 0);
     const qsizetype fallbackFunctionEndIndex =
-        sidebarSource.indexOf(QStringLiteral("function requestHierarchyControllerReload"), fallbackFunctionIndex);
+        sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionAtPosition"), fallbackFunctionIndex);
     QVERIFY(fallbackFunctionEndIndex > fallbackFunctionIndex);
     const qsizetype fallbackCommittedIndex =
         sidebarSource.indexOf(QStringLiteral("if (result && result.committed)"), fallbackFunctionIndex);
@@ -394,11 +406,11 @@ void WhatSonCppRegressionTests::sidebarHierarchyInteractionController_commitsExp
         sidebarSource.mid(fallbackCommittedIndex, fallbackFunctionEndIndex - fallbackCommittedIndex);
     const qsizetype fallbackSyncIndex =
         fallbackFunctionBlock.indexOf(QStringLiteral("sidebarHierarchyView.syncDisplayedHierarchyModel(true);"));
-    QVERIFY(fallbackSyncIndex >= 0);
+    QVERIFY(fallbackSyncIndex < 0);
     const qsizetype fallbackHookIndex =
         fallbackFunctionBlock.indexOf(
             QStringLiteral("sidebarHierarchyView.requestViewHook(\"hierarchy.chevron.toggle\");"));
-    QVERIFY(fallbackHookIndex >= 0);
+    QVERIFY(fallbackHookIndex < 0);
 
     SidebarHierarchyInteractionController controller;
     FakeSidebarHierarchyInteractionBridge bridge;
