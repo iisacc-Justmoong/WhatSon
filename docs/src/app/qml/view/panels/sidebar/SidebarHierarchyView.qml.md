@@ -211,8 +211,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   (`item.itemId`, then `item.resolvedItemId`, then callback `itemId`), and only falls back to
   visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
   It then starts a short activation-block timer.
-- The left-button `TapHandler` and the non-editable chevron pointer surface both remember the press-time
-  `HierarchyItem` and resolved index. Release-time fallback commits call
+- The left-button `TapHandler` mounted on `LV.Hierarchy` remembers the press-time
+  `HierarchyItem` and resolved index without placing a blocking `MouseArea` above the LVRS chevron.
+  Release-time fallback commits call
   `requestHierarchyChevronExpansionForTarget(...)` for that same row only; they do not re-scan the hierarchy at the
   release position and do not let the click affect another row that happens to be under the pointer later in the turn.
 - If LVRS already emitted and committed `onListItemExpanded`, the armed key has been cleared and the fallback is
@@ -226,12 +227,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The hierarchy row locator walks both normal `children` and `contentItem.children`, because LVRS places generated
   hierarchy rows under the internal `Flickable.contentItem`. Chevron hit-testing, note-drop hit-testing, and resolved
   row lookup must therefore see rows that are not direct visual descendants of the outer `LV.Hierarchy` item.
-- `hierarchyChevronPointerSurface` is a view-layer pointer guard over the hierarchy body. It is disabled while
-  `hierarchyEditable` is true so LVRS row drag handlers own the initial left-button press used for folder
-  reorder/nesting. When it is enabled for non-editable surfaces, it accepts only left-button presses that hit the
-  resolved chevron slot; all other presses are rejected so row activation, selection, and flick behavior stay owned by
-  `LV.Hierarchy`. Accepted chevron taps still commit through
-  `SidebarHierarchyInteractionController.requestChevronExpansionForItem(...)`.
+- The sidebar must not place a full-body `MouseArea` above `LV.Hierarchy` to catch chevron taps. Read-only domains such
+  as Resources still need the LVRS chevron `MouseArea` to receive the click first, because that path toggles the visible
+  row immediately before the C++ expansion policy persists the row-local state.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `SidebarHierarchyInteractionController.shouldSuppressActivation()` before it can select the folder or emit
   `hierarchyItemActivated(...)`.

@@ -206,7 +206,7 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronHitTestUsesLvrsChevr
     QVERIFY(slotFunctionBlock.contains(QStringLiteral("appendChevronSlotChildren(item.contentItem && item.contentItem.children")));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface()
+void WhatSonCppRegressionTests::sidebarHierarchyView_doesNotOverlayLvrsChevronClicks()
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
@@ -221,23 +221,27 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNo
     const qsizetype hierarchyTreeIndex = sidebarSource.indexOf(QStringLiteral("LV.Hierarchy {"));
     QVERIFY(hierarchyTreeIndex >= 0);
     const qsizetype editableBindingIndex = sidebarSource.indexOf(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable"), hierarchyTreeIndex);
+    const qsizetype expandedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)"), hierarchyTreeIndex);
+    const qsizetype expansionCommitIndex = sidebarSource.indexOf(QStringLiteral("hierarchyInteractionController.handleExpansionSignal(item, resolvedExpansionIndex, expanded)"), expandedHandlerIndex);
+    const qsizetype leftTapHandlerIndex = sidebarSource.indexOf(QStringLiteral("id: hierarchyLeftPressTapHandler"), hierarchyTreeIndex);
     const qsizetype movedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)"), hierarchyTreeIndex);
     const qsizetype reorderCallIndex = sidebarSource.indexOf(QStringLiteral("applyHierarchyReorder(sidebarHierarchyView.hierarchyReorderCommitModel(), itemKey)"), movedHandlerIndex);
     QVERIFY(editableBindingIndex > hierarchyTreeIndex);
+    QVERIFY(expandedHandlerIndex > editableBindingIndex);
+    QVERIFY(expansionCommitIndex > expandedHandlerIndex);
+    QVERIFY(leftTapHandlerIndex > expandedHandlerIndex);
     QVERIFY(movedHandlerIndex > editableBindingIndex);
     QVERIFY(reorderCallIndex > movedHandlerIndex);
 
-    const qsizetype chevronSurfaceIndex = sidebarSource.indexOf(QStringLiteral("id: hierarchyChevronPointerSurface"));
-    QVERIFY(chevronSurfaceIndex >= 0);
-    const qsizetype chevronSurfaceEndIndex = sidebarSource.indexOf(QStringLiteral("Item {\n        id: hierarchySelectionOverlayLayer"), chevronSurfaceIndex);
-    QVERIFY(chevronSurfaceEndIndex > chevronSurfaceIndex);
-    const QString chevronSurfaceBlock = sidebarSource.mid(chevronSurfaceIndex, chevronSurfaceEndIndex - chevronSurfaceIndex);
-    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("enabled: !sidebarHierarchyView.hierarchyEditable")));
-    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0")));
-    QVERIFY(chevronSurfaceBlock.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress")));
+    QVERIFY(sidebarSource.contains(QStringLiteral("function armHierarchyUserExpansionAtPosition(x, y)")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("id: hierarchyChevronPointerSurface")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function beginHierarchyChevronPointerPress")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("function finishHierarchyChevronPointerPress")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress")));
+    QVERIFY(!sidebarSource.contains(QStringLiteral("preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0")));
 }
 
-void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceScopesCommitToPressedItem()
+void WhatSonCppRegressionTests::sidebarHierarchyView_chevronTapFallbackScopesCommitToPressedItem()
 {
     const QString sidebarSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
@@ -246,18 +250,28 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceScopes
     QVERIFY(sidebarSource.contains(QStringLiteral("property var hierarchyChevronPointerPressItem: null")));
     QVERIFY(sidebarSource.contains(QStringLiteral("property int hierarchyChevronPointerPressIndex: -1")));
 
-    const qsizetype finishFunctionIndex = sidebarSource.indexOf(QStringLiteral("function finishHierarchyChevronPointerPress(x, y)"));
-    QVERIFY(finishFunctionIndex >= 0);
-    const qsizetype finishFunctionEndIndex =
-        sidebarSource.indexOf(QStringLiteral("function hierarchyChevronExpansionTargetAtPosition"), finishFunctionIndex);
-    QVERIFY(finishFunctionEndIndex > finishFunctionIndex);
-    const QString finishFunctionBlock = sidebarSource.mid(finishFunctionIndex, finishFunctionEndIndex - finishFunctionIndex);
+    const qsizetype armFunctionIndex = sidebarSource.indexOf(QStringLiteral("function armHierarchyUserExpansionAtPosition(x, y)"));
+    QVERIFY(armFunctionIndex >= 0);
+    const qsizetype armFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function resolveHierarchyActivationIndex"), armFunctionIndex);
+    QVERIFY(armFunctionEndIndex > armFunctionIndex);
+    const QString armFunctionBlock = sidebarSource.mid(armFunctionIndex, armFunctionEndIndex - armFunctionIndex);
+    QVERIFY(armFunctionBlock.contains(QStringLiteral("const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(x, y);")));
+    QVERIFY(armFunctionBlock.contains(QStringLiteral("sidebarHierarchyView.hierarchyChevronPointerPressItem = target.item;")));
+    QVERIFY(armFunctionBlock.contains(QStringLiteral("sidebarHierarchyView.hierarchyChevronPointerPressIndex = target.index;")));
 
-    QVERIFY(finishFunctionBlock.contains(QStringLiteral("const pressedItem = sidebarHierarchyView.hierarchyChevronPointerPressItem;")));
-    QVERIFY(finishFunctionBlock.contains(QStringLiteral("const pressedIndex = sidebarHierarchyView.hierarchyChevronPointerPressIndex;")));
-    QVERIFY(finishFunctionBlock.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionForTarget(pressedItem, pressedIndex, pressedKey)")));
-    QVERIFY(!finishFunctionBlock.contains(QStringLiteral("hierarchyChevronExpansionTargetAtPosition(targetX, targetY)")));
-    QVERIFY(!finishFunctionBlock.contains(QStringLiteral("requestHierarchyChevronExpansionAtPosition(targetX, targetY, pressedKey)")));
+    const qsizetype tappedHandlerIndex = sidebarSource.indexOf(QStringLiteral("onTapped: function (eventPoint, button)"));
+    QVERIFY(tappedHandlerIndex >= 0);
+    const qsizetype tappedHandlerEndIndex =
+        sidebarSource.indexOf(QStringLiteral("TapHandler {\n            id: hierarchyContextMenuTapHandler"), tappedHandlerIndex);
+    QVERIFY(tappedHandlerEndIndex > tappedHandlerIndex);
+    const QString tappedHandlerBlock = sidebarSource.mid(tappedHandlerIndex, tappedHandlerEndIndex - tappedHandlerIndex);
+
+    QVERIFY(tappedHandlerBlock.contains(QStringLiteral("const pressedItem = sidebarHierarchyView.hierarchyChevronPointerPressItem;")));
+    QVERIFY(tappedHandlerBlock.contains(QStringLiteral("const pressedIndex = sidebarHierarchyView.hierarchyChevronPointerPressIndex;")));
+    QVERIFY(tappedHandlerBlock.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyChevronExpansionForTarget(pressedItem, pressedIndex, armedKey)")));
+    QVERIFY(!tappedHandlerBlock.contains(QStringLiteral("hierarchyChevronExpansionTargetAtPosition(tapX, tapY)")));
+    QVERIFY(!tappedHandlerBlock.contains(QStringLiteral("requestHierarchyChevronExpansionAtPosition(tapX, tapY, armedKey)")));
 
     const qsizetype targetFunctionIndex =
         sidebarSource.indexOf(QStringLiteral("function requestHierarchyChevronExpansionForTarget(targetItem, targetIndex, expectedKey)"));

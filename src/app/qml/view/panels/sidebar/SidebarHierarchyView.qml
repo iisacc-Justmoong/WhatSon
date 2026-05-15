@@ -233,9 +233,6 @@ Rectangle {
     property string hierarchyChevronPointerPressKey: ""
     property var hierarchyChevronPointerPressItem: null
     property int hierarchyChevronPointerPressIndex: -1
-    property real hierarchyChevronPointerPressX: 0
-    property real hierarchyChevronPointerPressY: 0
-    readonly property real hierarchyChevronPointerTapThreshold: Math.max(4, Number(LV.Theme.gap8) || 8)
     property string hierarchyFooterTriggerQueuedAction: ""
     property string hierarchyViewOptionsTriggerQueuedAction: ""
     readonly property var hierarchyTreeContextMenuItems: [
@@ -367,8 +364,6 @@ Rectangle {
         sidebarHierarchyView.hierarchyChevronPointerPressKey = "";
         sidebarHierarchyView.hierarchyChevronPointerPressItem = null;
         sidebarHierarchyView.hierarchyChevronPointerPressIndex = -1;
-        sidebarHierarchyView.hierarchyChevronPointerPressX = 0;
-        sidebarHierarchyView.hierarchyChevronPointerPressY = 0;
     }
     function clearNoteDropPreview() {
         noteDropController.clearNoteDropPreview();
@@ -549,49 +544,6 @@ Rectangle {
     }
     function hierarchySelectionToggleModifierPressed(modifiers) {
         return hierarchySelectionController.hierarchySelectionToggleModifierPressed(modifiers);
-    }
-    function beginHierarchyChevronPointerPress(x, y, modifiers) {
-        if (!sidebarHierarchyView.hierarchyInteractionController)
-            return false;
-        sidebarHierarchyView.clearHierarchyChevronPointerPress();
-        const targetX = Number(x) || 0;
-        const targetY = Number(y) || 0;
-        const target = sidebarHierarchyView.hierarchyChevronExpansionTargetAtPosition(targetX, targetY);
-        if (!target || !target.item || target.index < 0)
-            return false;
-        sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(modifiers !== undefined ? modifiers : Qt.NoModifier);
-        const pressKey = sidebarHierarchyView.hierarchyInteractionController.armExpansionForItem(target.item, target.index);
-        if (!pressKey.length)
-            return false;
-        sidebarHierarchyView.hierarchyChevronPointerPressKey = pressKey;
-        sidebarHierarchyView.hierarchyChevronPointerPressItem = target.item;
-        sidebarHierarchyView.hierarchyChevronPointerPressIndex = target.index;
-        sidebarHierarchyView.hierarchyChevronPointerPressX = targetX;
-        sidebarHierarchyView.hierarchyChevronPointerPressY = targetY;
-        return true;
-    }
-    function finishHierarchyChevronPointerPress(x, y) {
-        const pressedKey = sidebarHierarchyView.hierarchyChevronPointerPressKey;
-        if (!pressedKey.length)
-            return false;
-        const targetX = Number(x) || 0;
-        const targetY = Number(y) || 0;
-        const deltaX = targetX - sidebarHierarchyView.hierarchyChevronPointerPressX;
-        const deltaY = targetY - sidebarHierarchyView.hierarchyChevronPointerPressY;
-        const tapDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const pressedItem = sidebarHierarchyView.hierarchyChevronPointerPressItem;
-        const pressedIndex = sidebarHierarchyView.hierarchyChevronPointerPressIndex;
-        const releaseInsidePressedItem = pressedItem
-                && pressedIndex >= 0
-                && sidebarHierarchyView.hierarchyItemContainsPoint(pressedItem, targetX, targetY)
-                && sidebarHierarchyView.hierarchyItemChevronContainsPoint(pressedItem, targetX, targetY);
-        const releaseKey = releaseInsidePressedItem && sidebarHierarchyView.hierarchyInteractionController
-                ? sidebarHierarchyView.hierarchyInteractionController.itemExpansionKey(pressedItem, pressedIndex) : "";
-        const committed = tapDistance <= sidebarHierarchyView.hierarchyChevronPointerTapThreshold
-                && releaseKey === pressedKey
-                && sidebarHierarchyView.requestHierarchyChevronExpansionForTarget(pressedItem, pressedIndex, pressedKey);
-        sidebarHierarchyView.clearHierarchyChevronPointerPress();
-        return committed;
     }
     function hierarchyChevronExpansionTargetAtPosition(x, y) {
         const targetX = Number(x) || 0;
@@ -1070,8 +1022,6 @@ Rectangle {
         sidebarHierarchyView.hierarchyChevronPointerPressKey = pressKey;
         sidebarHierarchyView.hierarchyChevronPointerPressItem = target.item;
         sidebarHierarchyView.hierarchyChevronPointerPressIndex = target.index;
-        sidebarHierarchyView.hierarchyChevronPointerPressX = Number(x) || 0;
-        sidebarHierarchyView.hierarchyChevronPointerPressY = Number(y) || 0;
         return true;
     }
     function resolveHierarchyActivationIndex(item, itemId, index) {
@@ -2146,28 +2096,6 @@ Rectangle {
             onLongPressed: {
                 sidebarHierarchyView.openHierarchyFolderContextMenuFromPointer(hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.x : 0, hierarchyContextMenuTapHandler.point && hierarchyContextMenuTapHandler.point.position !== undefined ? hierarchyContextMenuTapHandler.point.position.y : 0, hierarchyTree, "longPress");
             }
-        }
-    }
-    MouseArea {
-        id: hierarchyChevronPointerSurface
-
-        acceptedButtons: Qt.LeftButton
-        anchors.fill: hierarchyTree
-        enabled: !sidebarHierarchyView.hierarchyEditable && sidebarHierarchyView.hierarchyInteractionController !== null
-        hoverEnabled: false
-        preventStealing: sidebarHierarchyView.hierarchyChevronPointerPressKey.length > 0
-        propagateComposedEvents: true
-        z: 1.1
-
-        onCanceled: {
-            sidebarHierarchyView.clearHierarchyChevronPointerPress();
-        }
-        onPressed: function (mouse) {
-            mouse.accepted = sidebarHierarchyView.beginHierarchyChevronPointerPress(mouse.x, mouse.y, mouse.modifiers);
-        }
-        onReleased: function (mouse) {
-            const accepted = sidebarHierarchyView.finishHierarchyChevronPointerPress(mouse.x, mouse.y);
-            mouse.accepted = accepted;
         }
     }
     Item {

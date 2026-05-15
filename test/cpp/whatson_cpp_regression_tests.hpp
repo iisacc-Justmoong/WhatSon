@@ -1363,8 +1363,8 @@ private slots:
     void sidebarHierarchyView_waitsForCreatedFolderRowBeforeInlineRename();
     void sidebarHierarchyView_noteDropSurfaceDoesNotInterceptHierarchyItemDrags();
     void sidebarHierarchyView_chevronHitTestUsesLvrsChevronSlotContentItem();
-    void sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface();
-    void sidebarHierarchyView_chevronPointerSurfaceScopesCommitToPressedItem();
+    void sidebarHierarchyView_doesNotOverlayLvrsChevronClicks();
+    void sidebarHierarchyView_chevronTapFallbackScopesCommitToPressedItem();
     void sidebarHierarchyView_routesFooterActionsDirectlyFromQml();
     void sidebarSelectionStore_normalizesIndicesAndSuppressesDuplicateSignals();
     void startupHubResolver_returnsEmptyWithoutPersistedSelection();
