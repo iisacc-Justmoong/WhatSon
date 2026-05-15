@@ -626,21 +626,29 @@ Rectangle {
         return localX >= itemWidth - chevronSize - LV.Theme.gap2 && localX <= itemWidth;
     }
     function hierarchyItemChevronSlot(item) {
-        if (!item || !item.children)
+        if (!item)
             return null;
         const queue = [];
-        for (let index = 0; index < item.children.length; ++index)
-            queue.push(item.children[index]);
+        function appendChevronSlotChildren(children) {
+            if (!children)
+                return;
+            for (let index = 0; index < children.length; ++index) {
+                const child = children[index];
+                if (!child || queue.indexOf(child) >= 0)
+                    continue;
+                queue.push(child);
+            }
+        }
+        appendChevronSlotChildren(item.children);
+        appendChevronSlotChildren(item.contentItem && item.contentItem.children !== undefined ? item.contentItem.children : null);
         while (queue.length > 0) {
             const child = queue.shift();
             if (!child)
                 continue;
             if (child.objectName === "hierarchyItemChevron")
                 return child;
-            if (!child.children)
-                continue;
-            for (let childIndex = 0; childIndex < child.children.length; ++childIndex)
-                queue.push(child.children[childIndex]);
+            appendChevronSlotChildren(child.children);
+            appendChevronSlotChildren(child.contentItem && child.contentItem.children !== undefined ? child.contentItem.children : null);
         }
         return null;
     }

@@ -218,9 +218,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   fold/unfold and then writes the committed state back into the live `LV.HierarchyItem.expanded` property so the visible
   row hides or reveals its descendants immediately. The same successful fallback commit forces
   `syncDisplayedHierarchyModel(true)` and emits `requestViewHook("hierarchy.chevron.toggle")`.
-- The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` and tests that
-  slot's mapped rectangle, then falls back to the older right-edge geometry estimate. This keeps the app-side pointer
-  arm aligned with the actual `HierarchyItem` chevron slot instead of an approximate row-width calculation.
+- The fallback hit-test first resolves the LVRS descendant with `objectName: "hierarchyItemChevron"` across both the
+  row root `children` and the LVRS `contentItem.children`, then tests that slot's mapped rectangle before falling back
+  to the older right-edge geometry estimate. This keeps the app-side pointer arm aligned with the actual
+  `HierarchyItem` chevron slot instead of an approximate row-width calculation.
 - The hierarchy row locator walks both normal `children` and `contentItem.children`, because LVRS places generated
   hierarchy rows under the internal `Flickable.contentItem`. Chevron hit-testing, note-drop hit-testing, and resolved
   row lookup must therefore see rows that are not direct visual descendants of the outer `LV.Hierarchy` item.

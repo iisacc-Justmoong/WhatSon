@@ -195,6 +195,25 @@ void WhatSonCppRegressionTests::sidebarHierarchyView_noteDropSurfaceDoesNotInter
     QVERIFY(!sidebarSource.contains(QStringLiteral("applyHierarchyMove(fromIndex, toIndex, depth, itemKey)")));
 }
 
+void WhatSonCppRegressionTests::sidebarHierarchyView_chevronHitTestUsesLvrsChevronSlotContentItem()
+{
+    const QString sidebarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!sidebarSource.isEmpty());
+
+    const qsizetype slotFunctionIndex = sidebarSource.indexOf(QStringLiteral("function hierarchyItemChevronSlot(item)"));
+    QVERIFY(slotFunctionIndex >= 0);
+    const qsizetype slotFunctionEndIndex =
+        sidebarSource.indexOf(QStringLiteral("function invalidateHierarchySelectionVisuals()"), slotFunctionIndex);
+    QVERIFY(slotFunctionEndIndex > slotFunctionIndex);
+    const QString slotFunctionBlock = sidebarSource.mid(slotFunctionIndex, slotFunctionEndIndex - slotFunctionIndex);
+
+    QVERIFY(slotFunctionBlock.contains(QStringLiteral("objectName === \"hierarchyItemChevron\"")));
+    QVERIFY(slotFunctionBlock.contains(QStringLiteral("item.contentItem")));
+    QVERIFY(slotFunctionBlock.contains(QStringLiteral("appendChevronSlotChildren(item.contentItem && item.contentItem.children")));
+}
+
 void WhatSonCppRegressionTests::sidebarHierarchyView_chevronPointerSurfaceDoesNotCoverEditableDragSurface()
 {
     const QString sidebarSource = readUtf8SourceFile(
