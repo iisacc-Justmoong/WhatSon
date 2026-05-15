@@ -117,6 +117,7 @@ private:
     {
         QString noteId;
         QString noteDirectoryPath;
+        QString loadedLastModifiedAt;
     };
 
     QString sessionRootPath() const;

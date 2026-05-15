@@ -1,6 +1,7 @@
 #include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
+#include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/note/hub/WhatSonHubNoteMutationSupport.hpp"
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
@@ -912,6 +913,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
     }
     const WhatSonLocalNoteDocument unchangedDocument = request.document;
     QString existingHeaderDocument;
+    WhatSonNoteHeaderStore existingHeaderStore;
     bool hadExistingHeaderDocument = false;
     if ((persistHeader || persistBody) && !headerPath.isEmpty() && QFileInfo(headerPath).isFile())
     {
@@ -925,6 +927,15 @@ bool WhatSonLocalNoteFileStore::updateNote(
             return false;
         }
         hadExistingHeaderDocument = true;
+        QString existingHeaderParseError;
+        if (!loadHeaderStore(headerPath, &existingHeaderStore, &existingHeaderParseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = existingHeaderParseError;
+            }
+            return false;
+        }
     }
 
     QString serializedBodyDocument;
@@ -974,6 +985,68 @@ bool WhatSonLocalNoteFileStore::updateNote(
         request.document.bodySourceText = bodyText;
         request.document.normalizeBodyFields();
         bodyDocumentForStats = serializedBodyDocument;
+
+        const QString incomingLastModifiedAt = request.incomingLastModifiedAt.trimmed().isEmpty()
+            ? currentNoteTimestamp()
+            : request.incomingLastModifiedAt.trimmed();
+        if (request.resolveTimestampConflicts
+            && hadExistingHeaderDocument
+            && hadExistingBodyDocument
+            && !request.baseLastModifiedAt.trimmed().isEmpty())
+        {
+            WhatSonTimestampConflictResolver conflictResolver;
+            WhatSonTimestampConflictResolver::MergeRequest mergeRequest;
+            mergeRequest.baseLastModifiedAt = request.baseLastModifiedAt;
+            mergeRequest.filesystemLastModifiedAt = existingHeaderStore.lastModifiedAt();
+            mergeRequest.incomingLastModifiedAt = incomingLastModifiedAt;
+            mergeRequest.filesystemBodySourceText =
+                WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(existingBodyDocument);
+            if (mergeRequest.filesystemBodySourceText.isEmpty())
+            {
+                mergeRequest.filesystemBodySourceText =
+                    WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(existingBodyDocument);
+            }
+            mergeRequest.incomingBodySourceText = request.document.bodySourceText;
+
+            const WhatSonTimestampConflictResolver::MergeResult mergeResult =
+                conflictResolver.mergeBodyByTimestamp(mergeRequest);
+            if (mergeResult.conflictDetected)
+            {
+                updateResult.conflictResolvedByTimestamp = true;
+                updateResult.conflictWinner = mergeResult.winner;
+                updateResult.conflictBaseLastModifiedAt = mergeRequest.baseLastModifiedAt.trimmed();
+                updateResult.conflictFilesystemLastModifiedAt = mergeRequest.filesystemLastModifiedAt.trimmed();
+                updateResult.conflictIncomingLastModifiedAt = mergeRequest.incomingLastModifiedAt.trimmed();
+
+                if (mergeResult.winner == QStringLiteral("filesystem"))
+                {
+                    WhatSonLocalNoteDocument filesystemDocument;
+                    ReadRequest readRequest;
+                    readRequest.noteId = resolvedNoteId;
+                    readRequest.noteDirectoryPath = noteDirectoryPath;
+                    readRequest.noteHeaderPath = headerPath;
+                    readRequest.noteBodyPath = bodyPath;
+                    if (!readNote(readRequest, &filesystemDocument, errorMessage))
+                    {
+                        return false;
+                    }
+                    if (outDocument != nullptr)
+                    {
+                        *outDocument = std::move(filesystemDocument);
+                    }
+                    if (outResult != nullptr)
+                    {
+                        *outResult = std::move(updateResult);
+                    }
+                    return true;
+                }
+
+                request.document.headerStore.setModifiedCount(
+                    qMax(
+                        request.document.headerStore.modifiedCount(),
+                        existingHeaderStore.modifiedCount()));
+            }
+        }
 
         if (!request.persistHeader
             && !existingBodyDocument.isEmpty()
@@ -1067,7 +1140,10 @@ bool WhatSonLocalNoteFileStore::updateNote(
     const int modifiedCountBeforeUpdate = request.document.headerStore.modifiedCount();
     if (shouldTouchLastModified)
     {
-        request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
+        request.document.headerStore.setLastModifiedAt(
+            request.incomingLastModifiedAt.trimmed().isEmpty()
+                ? currentNoteTimestamp()
+                : request.incomingLastModifiedAt.trimmed());
     }
     if (shouldWriteVersionDiff)
     {

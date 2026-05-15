@@ -27,6 +27,8 @@
   `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request. Direct
   changed-body writes opt in to `modifiedCount` advancement in the file-store transaction, while unchanged body saves
   still short-circuit before touching `.wsnhead`.
+- Direct editor persistence now forwards the editor pull base timestamp into `WhatSonLocalNoteFileStore`, so a body
+  save can resolve filesystem/editor divergence by comparing `lastModified` timestamps before writing.
 - When that direct persistence writes a timestamped `.wsnversion` diff, the coordinator emits
   `hubFilesystemMutated()` after the mounted/local filesystem sync step succeeds. This lets hub sync acknowledge the
   file watcher change as a local editor mutation instead of reloading it as an external hub edit.

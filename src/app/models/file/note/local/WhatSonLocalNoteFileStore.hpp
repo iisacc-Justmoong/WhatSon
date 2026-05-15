@@ -33,14 +33,22 @@ public:
         bool incrementModifiedCount = true;
         bool refreshIncomingBacklinkStatistics = true;
         bool refreshAffectedBacklinkTargets = true;
+        bool resolveTimestampConflicts = true;
+        QString baseLastModifiedAt;
+        QString incomingLastModifiedAt;
     };
 
     struct UpdateResult final
     {
         bool versionDiffPushedToFilesystem = false;
+        bool conflictResolvedByTimestamp = false;
         QString versionDiffFilePath;
         QString headerDiffGeneratedAtUtc;
         QString bodyDiffGeneratedAtUtc;
+        QString conflictWinner;
+        QString conflictBaseLastModifiedAt;
+        QString conflictFilesystemLastModifiedAt;
+        QString conflictIncomingLastModifiedAt;
     };
 
     struct DeleteRequest final

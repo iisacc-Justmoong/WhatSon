@@ -19,8 +19,9 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
 - `persistEditorTextForNote(noteId, text)`: accepts an already-approved body snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
-- `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text)`: direct worker-lane save path used when the caller
-  already captured the destination note directory.
+- `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text, baseLastModifiedAt = "")`: direct worker-lane save
+  path used when the caller already captured the destination note directory. The optional base timestamp lets the
+  file-store transaction resolve multi-device body conflicts by timestamp.
 - `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows note-id callers to snapshot the current
   direct persistence target before a later hierarchy transition can change the active view-model.
 - `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the

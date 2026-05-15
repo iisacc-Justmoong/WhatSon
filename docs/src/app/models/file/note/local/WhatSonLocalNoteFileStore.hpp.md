@@ -33,6 +33,12 @@
   recompute `backlinkByCount` for the edited note.
 - `refreshAffectedBacklinkTargets` decides whether changed backlink targets should have their own
   `backlinkByCount` refreshed immediately in the same transaction.
+- `baseLastModifiedAt` carries the timestamp observed when the editor pulled the note.
+- `incomingLastModifiedAt` can pin the editor-side save timestamp; when omitted, the store uses the current note
+  timestamp for a body save.
+- `resolveTimestampConflicts` enables the `file/conflict/WhatSonTimestampConflictResolver` policy. When the filesystem
+  note advanced after `baseLastModifiedAt`, the store keeps the newer body by timestamp instead of blindly overwriting
+  the other device's edit.
 - The intended split is:
   - explicit metadata / structural note writes: keep `incrementModifiedCount == true`
   - changed editor body saves: keep `incrementModifiedCount == true`
@@ -41,8 +47,9 @@
   - editor hot-path body writes that must stay latency-sensitive: set both backlink-refresh flags to `false` and let a
     higher-level owner trigger that hub scan later
 - `UpdateResult` reports whether the transaction pushed a timestamped version diff to `.wsnversion`, the version file
-  path that changed, and the generated UTC timestamps copied from the header/body diff segments. Higher-level owners
-  use this result to acknowledge the write as a local filesystem mutation for hub sync.
+  path that changed, the generated UTC timestamps copied from the header/body diff segments, and whether a timestamp
+  conflict was resolved by choosing `incoming` or `filesystem`. Higher-level owners use this result to acknowledge the
+  write as a local filesystem mutation for hub sync.
 
 ## Tests
 
@@ -58,6 +65,8 @@
     persisted `.wsnversion` path plus the generated diff timestamps
   - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,
     `includedResourceCount`, etc.) rewritten into `.wsnhead`
+  - stale editor saves with an older incoming timestamp must keep a newer filesystem body
+  - editor saves with a newer incoming timestamp may supersede a filesystem body that changed after the editor pull
 
 ### Enums
 - None detected during scaffold generation.

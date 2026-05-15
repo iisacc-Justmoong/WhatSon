@@ -6,6 +6,7 @@
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
@@ -1198,7 +1199,8 @@ bool NoteEditorDocumentSession::persistEditorDocumentText(
     const bool enqueued = m_noteManagementCoordinator.persistEditorTextForNoteAtPath(
         contextIterator->noteId,
         contextIterator->noteDirectoryPath,
-        sourceText);
+        sourceText,
+        contextIterator->loadedLastModifiedAt);
     if (!enqueued)
     {
         const QString error = QStringLiteral("Failed to enqueue note body persistence.");
@@ -1526,9 +1528,20 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
         return;
     }
 
+    QString loadedLastModifiedAt;
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument loadedDocument;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = loadedNoteId;
+    readRequest.noteDirectoryPath = loadedNoteDirectoryPath;
+    if (fileStore.readNote(readRequest, &loadedDocument, nullptr))
+    {
+        loadedLastModifiedAt = loadedDocument.headerStore.lastModifiedAt();
+    }
+
     m_editorFileContexts.insert(
         sessionFilePath,
-        {loadedNoteId, loadedNoteDirectoryPath});
+        {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt});
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
     m_activeBodySourceText = bodySourceText;
     setParsedLineCount(lineCountForEditorSource(bodySourceText));

@@ -27,7 +27,8 @@ public:
     bool persistEditorTextForNoteAtPath(
         const QString& noteId,
         const QString& noteDirectoryPath,
-        const QString& text);
+        const QString& text,
+        const QString& baseLastModifiedAt = QString());
     bool captureDirectPersistenceContextForNote(
         const QString& noteId,
         QString* noteDirectoryPath) const;
@@ -85,6 +86,8 @@ private:
         QString noteId;
         QString noteDirectoryPath;
         QString text;
+        QString baseLastModifiedAt;
+        QString incomingLastModifiedAt;
         bool incrementOpenCount = false;
         bool preferViewSessionOnMismatch = false;
     };

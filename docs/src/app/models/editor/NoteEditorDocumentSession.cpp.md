@@ -40,6 +40,9 @@ Implements the active note editor document session.
   the note that originally owned that file.
 - Note entry/open RAW pulls are routed through `file/sync/WhatSonEditorRawPullController`; the session remains the
   load callback and editor projection owner.
+- The loaded note's `lastModified` timestamp is kept with the editor session-file context. Later RAW pushes pass that
+  base timestamp into the note-management queue so timestamp conflict resolution can tell whether the filesystem
+  changed after this editor pull.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten

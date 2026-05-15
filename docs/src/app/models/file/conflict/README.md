@@ -7,13 +7,23 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/conflict`
 - Child directories: 0
-- Child files: 0
+- Child files: 2
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- No direct source files.
+- `WhatSonTimestampConflictResolver.cpp`
+- `WhatSonTimestampConflictResolver.hpp`
+
+## Current Notes
+
+- `WhatSonTimestampConflictResolver` owns timestamp-based note body conflict resolution.
+- The first supported policy is whole-body last-writer-wins by note timestamps:
+  - if the filesystem note has not advanced past the editor pull base timestamp, the incoming editor body wins
+  - if both sides changed after the editor pull base timestamp, the newer `lastModified` timestamp wins
+- The resolver does not read or write note packages. `WhatSonLocalNoteFileStore` supplies the base/filesystem/incoming
+  timestamps and persists the chosen body.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

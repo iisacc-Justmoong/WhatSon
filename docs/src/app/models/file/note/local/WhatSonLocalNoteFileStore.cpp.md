@@ -41,6 +41,10 @@ It creates notes, reads materialized note directories, updates persisted body/he
 ## Update Contract
 - `updateNote(...)` now canonicalizes body writes through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - This allows RichText editor payloads to be accepted while still writing canonical `.wsnbody` inline tags.
+- Before a changed body write is persisted, the store can resolve a timestamp conflict through
+  `file/conflict/WhatSonTimestampConflictResolver`. If the current filesystem note has a `lastModified` timestamp newer
+  than the editor pull base timestamp, the store compares that filesystem timestamp with the incoming editor save
+  timestamp and keeps the newer body.
 - During update, the store still recomputes `bodyPlainText` from the serialized `.wsnbody`, but it now keeps the
   incoming editor-authored `bodySourceText` as the authoritative RAW source instead of round-tripping that source back
   through another read-side projection first.
@@ -101,6 +105,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
     `.wsnbody` was reparsed
   - note selection with no effective body change must not touch `.wsnhead` / `.wsnbody`, must not advance
     `lastModifiedAt`, and must not reorder the note list
+  - timestamp conflict resolution must keep a newer filesystem body when a stale editor save arrives
+  - timestamp conflict resolution must allow a newer incoming editor save to advance from the current filesystem
+    modified counter and append the next version snapshot
   - a saved body hashtag such as `#label` must materialize in three places together:
     - `.wsnbody` as `<tag>label</tag>`
     - `.wsnhead` inside the note tag list

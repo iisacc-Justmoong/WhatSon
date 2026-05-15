@@ -2,6 +2,7 @@
 
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
+#include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 #include "app/models/clipboard/ClipboardEditorPaste.h"
@@ -1277,6 +1278,9 @@ private slots:
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void timestampConflictResolver_prefersNewestBodyAfterBaseDivergence();
+    void localNoteFileStore_keepsFilesystemBodyWhenTimestampConflictIsNewer();
+    void localNoteFileStore_acceptsIncomingBodyWhenTimestampConflictIsNewer();
     void editorRawPullController_requestsNoteEntryAndOpenPulls();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();

@@ -104,7 +104,8 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNote(const QString& 
 bool ContentsNoteManagementCoordinator::persistEditorTextForNoteAtPath(
     const QString& noteId,
     const QString& noteDirectoryPath,
-    const QString& text)
+    const QString& text,
+    const QString& baseLastModifiedAt)
 {
     const QString normalizedNoteId = noteId.trimmed();
     const QString normalizedNoteDirectoryPath = noteDirectoryPath.trimmed();
@@ -119,6 +120,7 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNoteAtPath(
     request.noteId = normalizedNoteId;
     request.noteDirectoryPath = normalizedNoteDirectoryPath;
     request.text = text;
+    request.baseLastModifiedAt = baseLastModifiedAt.trimmed();
     return enqueueRequest(std::move(request));
 }
 
@@ -677,6 +679,8 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
         updateRequest.incrementModifiedCount = true;
+        updateRequest.baseLastModifiedAt = request.baseLastModifiedAt;
+        updateRequest.incomingLastModifiedAt = request.incomingLastModifiedAt;
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
@@ -689,6 +693,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
             return result;
         }
 
+        result.text = result.persistedDocument.effectiveBodyText();
         result.success = true;
         return result;
     }

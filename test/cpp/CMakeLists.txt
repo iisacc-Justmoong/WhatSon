@@ -51,6 +51,8 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetProperty.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/SetTag.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/VersionLimitManager.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonLocalNoteVersionStore.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonNoteVersionDiffBuilder.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/diff/WhatSonNoteVersionFileGateway.cpp"

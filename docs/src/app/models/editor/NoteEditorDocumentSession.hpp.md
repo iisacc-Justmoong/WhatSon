@@ -18,6 +18,8 @@ Declares the active note editor document session object.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Routes note-entry/open RAW pulls through `file/sync/WhatSonEditorRawPullController`.
+- Carries the loaded note `lastModified` timestamp with the editor-file context so RAW pushes can resolve
+  multi-device conflicts by timestamp.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
   push triggers into `file/sync/WhatSonEditorRawPushController`.
