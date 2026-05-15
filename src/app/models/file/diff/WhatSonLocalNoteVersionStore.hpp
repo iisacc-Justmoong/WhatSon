@@ -12,6 +12,7 @@ struct WhatSonNoteVersionDiffSegment final
     QString removedText;
     QString insertedText;
     QString unifiedPatch;
+    QString generatedAtUtc;
 };
 
 struct WhatSonNoteVersionSnapshot final

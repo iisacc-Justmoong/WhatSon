@@ -31,6 +31,7 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
 - `WhatSonNoteVersionFileGateway` owns note path resolution plus UTF-8 read/write/materialization.
 - `WhatSonNoteVersionStateCodec` owns the `.wsnversion` JSON schema boundary.
 - `WhatSonNoteVersionDiffBuilder` owns in-memory diff segment and unified patch construction.
+  Diff segments are stamped with `generatedAtUtc` when the builder creates them.
 - `WhatSonNoteVersionSnapshotBuilder` owns snapshot lookup, parent resolution, ID generation, and snapshot payload
   assembly.
 - `VersionLimitManager` owns the retention policy for persisted snapshot history. `.wsnversion` keeps only the latest

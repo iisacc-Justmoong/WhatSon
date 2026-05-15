@@ -7,6 +7,7 @@ Implements diff segment construction for note version payloads.
 - Computes common prefix and suffix lengths between the previous and next text payloads.
 - Stores the removed and inserted text slices in the diff segment.
 - Emits a git-like unified patch using the caller-provided label, such as `header.wsnhead` or `body.wsnbody`.
+- Records `generatedAtUtc` with the current UTC time when the diff segment is built.
 
 ## Boundary
 - This file is deliberately stateless.

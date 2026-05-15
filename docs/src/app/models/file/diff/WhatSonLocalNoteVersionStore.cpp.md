@@ -33,12 +33,15 @@ The store keeps the public API stable while delegating focused responsibilities 
 
 ## Unified Patch Contract
 - Diff segments now include `unifiedPatch`.
+- Diff segments also include `generatedAtUtc`, captured when `WhatSonNoteVersionDiffBuilder` creates the segment.
 - Patch text uses a git-like unified format:
   - `--- a/<label>`
   - `+++ b/<label>`
   - `@@ -x,n +y,m @@`
   - removed (`-`) and inserted (`+`) lines
 - Body diffs are computed from `bodyDocumentText` so persisted `.wsnbody` deltas are trackable as file-level changes.
+- Timestamp text uses `Qt::ISODateWithMs` UTC format so persisted `.wsnversion` diff records can be sorted or audited
+  independently from the snapshot timestamp.
 
 ## Error Handling
 - Any parse/read/write failure returns `false` and surfaces a human-readable message through `errorMessage`.

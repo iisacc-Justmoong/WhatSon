@@ -29,6 +29,7 @@ contract consumed by the note file store and regression tests.
   - prefix/suffix lengths
   - removed/inserted text blocks
   - `unifiedPatch` (`git diff`-style unified text)
+  - `generatedAtUtc` (UTC timestamp captured when the diff segment is generated)
 
 ## Request Types
 - `CaptureRequest` includes `commitModifiedCount` so callers can bind snapshot capture to a specific note commit.

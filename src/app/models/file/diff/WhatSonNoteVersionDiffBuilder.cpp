@@ -1,5 +1,6 @@
 #include "app/models/file/diff/WhatSonNoteVersionDiffBuilder.hpp"
 
+#include <QDateTime>
 #include <QStringList>
 
 namespace
@@ -66,5 +67,6 @@ WhatSonNoteVersionDiffSegment WhatSonNoteVersionDiffBuilder::diffSegment(
     segment.removedText = before.mid(segment.prefixLength, removedLength);
     segment.insertedText = after.mid(segment.prefixLength, insertedLength);
     segment.unifiedPatch = unifiedPatch(label, before, after);
+    segment.generatedAtUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
     return segment;
 }

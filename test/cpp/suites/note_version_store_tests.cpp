@@ -117,6 +117,22 @@ void WhatSonCppRegressionTests::localNoteVersionStore_capturesCommitSnapshotWhen
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("--- a/body.wsnbody")));
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("+++ b/body.wsnbody")));
     QVERIFY(bodyDiff.value(QStringLiteral("unifiedPatch")).toString().contains(QStringLiteral("Beta")));
+
+    WhatSonLocalNoteVersionStore versionStore;
+    WhatSonNoteVersionState loadedState;
+    QString loadError;
+    QVERIFY2(
+        versionStore.loadState(updatedDocument.noteVersionPath, &loadedState, &loadError),
+        qPrintable(QStringLiteral("Failed to reload generated version state: %1").arg(loadError)));
+    QCOMPARE(loadedState.snapshots.size(), 1);
+    QVERIFY(QDateTime::fromString(
+                loadedState.snapshots.constFirst().headerDiff.generatedAtUtc,
+                Qt::ISODateWithMs)
+                .isValid());
+    QVERIFY(QDateTime::fromString(
+                loadedState.snapshots.constFirst().bodyDiff.generatedAtUtc,
+                Qt::ISODateWithMs)
+                .isValid());
 }
 
 void WhatSonCppRegressionTests::localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten()

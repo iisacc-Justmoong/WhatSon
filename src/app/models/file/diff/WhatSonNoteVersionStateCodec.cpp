@@ -30,6 +30,7 @@ namespace
         object.insert(QStringLiteral("removedText"), segment.removedText);
         object.insert(QStringLiteral("insertedText"), segment.insertedText);
         object.insert(QStringLiteral("unifiedPatch"), segment.unifiedPatch);
+        object.insert(QStringLiteral("generatedAtUtc"), segment.generatedAtUtc);
         return object;
     }
 
@@ -41,6 +42,7 @@ namespace
         segment.removedText = object.value(QStringLiteral("removedText")).toString();
         segment.insertedText = object.value(QStringLiteral("insertedText")).toString();
         segment.unifiedPatch = object.value(QStringLiteral("unifiedPatch")).toString();
+        segment.generatedAtUtc = object.value(QStringLiteral("generatedAtUtc")).toString();
         return segment;
     }
 

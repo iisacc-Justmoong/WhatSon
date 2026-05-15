@@ -6,6 +6,7 @@ Declares the in-memory diff builder for note version snapshots.
 ## Contract
 - Builds `WhatSonNoteVersionDiffSegment` from two text payloads and a file label.
 - Owns prefix/suffix range calculation and the unified patch text boundary through its implementation file.
+- Stamps each generated diff segment with `generatedAtUtc`.
 - Does not read or write note package files and does not parse `.wsnversion` JSON.
 
 ## Tests
