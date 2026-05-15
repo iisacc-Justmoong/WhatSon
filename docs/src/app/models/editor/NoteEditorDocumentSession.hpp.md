@@ -20,6 +20,11 @@ Declares the active note editor document session object.
 - Routes note-entry/open RAW pulls through `file/sync/WhatSonEditorRawPullController`.
 - Carries the loaded note `lastModified` timestamp with the editor-file context so RAW pushes can resolve
   multi-device conflicts by timestamp.
+- Provides `recordEditorUserActivity()` and `requestActiveNoteIdleRawPull()` for the active-note idle pull loop. The
+  idle loop pulls every 5000 ms while the editor surface is quiet, and the session only applies a filesystem body when
+  its `lastModified` timestamp is newer than the loaded session timestamp.
+- Emits `editorDocumentTextPulled(...)` when a newer filesystem body replaces the live editor document, and
+  `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
   push triggers into `file/sync/WhatSonEditorRawPushController`.
@@ -65,6 +70,9 @@ Declares the active note editor document session object.
 - LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
   note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
+- editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
+  다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다
+  최신일 때만 editor document를 교체한다. 오래된 pull은 `editorFilesystemPullIgnored(...)`로 무시된다.
 - 노트 진입/open 시 filesystem RAW pull 요청은 sync pull controller를 먼저 지나며, 실제 `.wsnbody` 읽기와 editor
   session file mount는 기존 C++ 세션/코디네이터 경로에 남는다.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해

@@ -3,6 +3,7 @@
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/SetTag.h"
+#include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
@@ -930,6 +931,27 @@ NoteEditorDocumentSession::NoteEditorDocumentSession(QObject* parent)
         });
 
     connect(
+        &m_rawPullController,
+        &WhatSonEditorRawPullController::rawPullFinished,
+        this,
+        [this](
+            const QString& noteId,
+            const QString& noteDirectoryPath,
+            const QString& reason,
+            const quint64 sequence,
+            const bool success,
+            const QString&)
+        {
+            if (reason != QStringLiteral("idle") || !success || sequence == 0)
+            {
+                return;
+            }
+
+            m_pendingIdlePullSequence = sequence;
+            m_pendingIdlePullNoteId = noteId.trimmed();
+            m_pendingIdlePullNoteDirectoryPath = normalizePath(noteDirectoryPath);
+        });
+    connect(
         &m_noteManagementCoordinator,
         &ContentsNoteManagementCoordinator::noteBodyTextLoaded,
         this,
@@ -1111,9 +1133,13 @@ bool NoteEditorDocumentSession::clearEditor()
         pushActiveEditorBeforeNoteDeparture();
     }
 
+    m_rawPullController.clearActiveNoteForIdlePull();
     m_pendingLoadSequence = 0;
     m_pendingLoadNoteId.clear();
     m_pendingLoadNoteDirectoryPath.clear();
+    m_pendingIdlePullSequence = 0;
+    m_pendingIdlePullNoteId.clear();
+    m_pendingIdlePullNoteDirectoryPath.clear();
     m_activeBodySourceText.clear();
     setActiveNoteContext(QString(), QString());
     setParsedLineCount(0);
@@ -1156,10 +1182,21 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
     const int modifiedCount,
     const QString& editorDocumentText)
 {
+    recordEditorUserActivity();
     m_rawPushController.requestModifiedCountPush(
         editorFilePath,
         modifiedCount,
         editorDocumentText);
+}
+
+void NoteEditorDocumentSession::recordEditorUserActivity()
+{
+    m_rawPullController.recordUserActivity();
+}
+
+quint64 NoteEditorDocumentSession::requestActiveNoteIdleRawPull()
+{
+    return m_rawPullController.requestActiveIdlePull();
 }
 
 bool NoteEditorDocumentSession::persistEditorDocumentText(
@@ -1483,9 +1520,27 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
     const QString& noteId,
     const QString& text,
     const bool success,
-    const QString& errorMessage)
+    const QString& errorMessage,
+    const QString& lastModifiedAt)
 {
-    if (sequence == 0 || sequence != m_pendingLoadSequence)
+    if (sequence == 0)
+    {
+        return;
+    }
+
+    if (sequence == m_pendingIdlePullSequence)
+    {
+        handleIdleNoteBodyTextLoaded(
+            sequence,
+            noteId,
+            text,
+            success,
+            errorMessage,
+            lastModifiedAt);
+        return;
+    }
+
+    if (sequence != m_pendingLoadSequence)
     {
         return;
     }
@@ -1510,46 +1565,126 @@ void NoteEditorDocumentSession::handleNoteBodyTextLoaded(
         return;
     }
 
-    const QString sessionFilePath = editorFilePathForNote(loadedNoteId, loadedNoteDirectoryPath);
-    QString writeError;
     const QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
-    const QString editorDocumentText = editorHtmlFromBodySourceForNoteContext(
-        loadedNoteId,
-        bodySourceText,
-        loadedNoteDirectoryPath,
-        m_editorViewportWidth);
-    if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
+    if (!applyLoadedBodyTextToEditorSession(
+            loadedNoteId,
+            loadedNoteDirectoryPath,
+            bodySourceText,
+            lastModifiedAt,
+            true,
+            false))
     {
         switchToBlankEditorFile();
         setActiveNoteContext(QString(), QString());
         m_activeBodySourceText.clear();
         setReadOnly(true);
-        setLastError(writeError);
         return;
     }
 
-    QString loadedLastModifiedAt;
-    WhatSonLocalNoteFileStore fileStore;
-    WhatSonLocalNoteDocument loadedDocument;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = loadedNoteId;
-    readRequest.noteDirectoryPath = loadedNoteDirectoryPath;
-    if (fileStore.readNote(readRequest, &loadedDocument, nullptr))
+    m_rawPullController.setActiveNoteForIdlePull(loadedNoteId, loadedNoteDirectoryPath);
+    m_rawPullController.recordUserActivity();
+}
+
+bool NoteEditorDocumentSession::applyLoadedBodyTextToEditorSession(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    const QString& bodySourceText,
+    const QString& loadedLastModifiedAt,
+    const bool bindSelectedNote,
+    const bool emitPulledDocumentText)
+{
+    const QString loadedNoteId = noteId.trimmed();
+    const QString loadedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+    const QString sessionFilePath = editorFilePathForNote(loadedNoteId, loadedNoteDirectoryPath);
+    QString writeError;
+    const QString normalizedBodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+    const QString editorDocumentText = editorHtmlFromBodySourceForNoteContext(
+        loadedNoteId,
+        normalizedBodySourceText,
+        loadedNoteDirectoryPath,
+        m_editorViewportWidth);
+    if (!writeEditorSourceFile(sessionFilePath, editorDocumentText, &writeError))
     {
-        loadedLastModifiedAt = loadedDocument.headerStore.lastModifiedAt();
+        setLastError(writeError);
+        return false;
     }
 
     m_editorFileContexts.insert(
         sessionFilePath,
-        {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt});
+        {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt.trimmed()});
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
-    m_activeBodySourceText = bodySourceText;
-    setParsedLineCount(lineCountForEditorSource(bodySourceText));
+    m_activeBodySourceText = normalizedBodySourceText;
+    setParsedLineCount(lineCountForEditorSource(normalizedBodySourceText));
     setLastError(QString());
     setReadOnly(false);
     setEditorFilePath(sessionFilePath);
-    m_noteManagementCoordinator.bindSelectedNote(loadedNoteId, loadedNoteDirectoryPath);
-    emit editorSourceLoaded(loadedNoteId, sessionFilePath);
+    if (bindSelectedNote)
+    {
+        m_noteManagementCoordinator.bindSelectedNote(loadedNoteId, loadedNoteDirectoryPath);
+    }
+    if (emitPulledDocumentText)
+    {
+        emit editorDocumentTextPulled(loadedNoteId, editorDocumentText);
+    }
+    else
+    {
+        emit editorSourceLoaded(loadedNoteId, sessionFilePath);
+    }
+    return true;
+}
+
+void NoteEditorDocumentSession::handleIdleNoteBodyTextLoaded(
+    const quint64 sequence,
+    const QString& noteId,
+    const QString& text,
+    const bool success,
+    const QString& errorMessage,
+    const QString& lastModifiedAt)
+{
+    if (sequence == 0 || sequence != m_pendingIdlePullSequence)
+    {
+        return;
+    }
+
+    const QString loadedNoteId = noteId.trimmed();
+    const QString loadedNoteDirectoryPath = m_pendingIdlePullNoteDirectoryPath;
+    m_pendingIdlePullSequence = 0;
+    m_pendingIdlePullNoteId.clear();
+    m_pendingIdlePullNoteDirectoryPath.clear();
+
+    if (!success)
+    {
+        setLastError(errorMessage.trimmed());
+        emit editorFilesystemPullIgnored(loadedNoteId, QStringLiteral("load-failed"));
+        return;
+    }
+
+    if (loadedNoteId != m_activeNoteId
+        || loadedNoteDirectoryPath != m_activeNoteDirectoryPath)
+    {
+        emit editorFilesystemPullIgnored(loadedNoteId, QStringLiteral("inactive-note"));
+        return;
+    }
+
+    const auto contextIterator = m_editorFileContexts.constFind(normalizePath(m_editorFilePath));
+    const QString loadedContextTimestamp =
+        contextIterator == m_editorFileContexts.constEnd()
+            ? QString()
+            : contextIterator->loadedLastModifiedAt;
+    WhatSonTimestampConflictResolver timestampResolver;
+    if (!timestampResolver.isTimestampNewer(lastModifiedAt, loadedContextTimestamp))
+    {
+        emit editorFilesystemPullIgnored(loadedNoteId, QStringLiteral("not-newer"));
+        return;
+    }
+
+    applyLoadedBodyTextToEditorSession(
+        loadedNoteId,
+        loadedNoteDirectoryPath,
+        text,
+        lastModifiedAt,
+        false,
+        true);
 }
 
 void NoteEditorDocumentSession::handleEditorTextPersistenceFinished(

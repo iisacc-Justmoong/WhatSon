@@ -24,6 +24,36 @@ namespace
         file.write(text.toUtf8());
         return true;
     }
+
+    bool writeFilesystemBodyForIdlePullSessionTest(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& bodySourceText,
+        const QString& lastModifiedAt,
+        QString* errorMessage)
+    {
+        WhatSonLocalNoteFileStore fileStore;
+        WhatSonLocalNoteDocument document;
+        WhatSonLocalNoteFileStore::ReadRequest readRequest;
+        readRequest.noteId = noteId;
+        readRequest.noteDirectoryPath = noteDirectoryPath;
+        if (!fileStore.readNote(readRequest, &document, errorMessage))
+        {
+            return false;
+        }
+
+        document.bodyPlainText = bodySourceText;
+        document.bodySourceText = bodySourceText;
+
+        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+        updateRequest.document = document;
+        updateRequest.persistHeader = false;
+        updateRequest.persistBody = true;
+        updateRequest.touchLastModified = true;
+        updateRequest.resolveTimestampConflicts = false;
+        updateRequest.incomingLastModifiedAt = lastModifiedAt;
+        return fileStore.updateNote(updateRequest, nullptr, errorMessage);
+    }
 } // namespace
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument()
@@ -245,8 +275,70 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_routesOpenPullThroughS
     QVERIFY(sessionHeader.contains(QStringLiteral("WhatSonEditorRawPullController")));
     QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.setRawPullCallback(")));
     QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.requestNoteOpenPull(")));
+    QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.setActiveNoteForIdlePull(")));
+    QVERIFY(sessionSource.contains(QStringLiteral("m_rawPullController.requestActiveIdlePull(")));
+    QVERIFY(sessionSource.contains(QStringLiteral("isTimestampNewer(lastModifiedAt")));
     QVERIFY(!sessionSource.contains(
         QStringLiteral("m_pendingLoadSequence = m_noteManagementCoordinator.loadNoteBodyTextForNote(")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_pullsOnlyNewerFilesystemBodyOnIdle()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("idle-pull-session-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Base body"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    const QString editorFilePath = session.editorFilePath();
+    QVERIFY(readUtf8FileForNoteEditorSessionTest(editorFilePath).contains(QStringLiteral("Base body")));
+
+    QString updateError;
+    QVERIFY2(
+        writeFilesystemBodyForIdlePullSessionTest(
+            noteId,
+            noteDirectoryPath,
+            QStringLiteral("Filesystem newer body"),
+            QStringLiteral("2099-05-01-12-00-00"),
+            &updateError),
+        qPrintable(updateError));
+
+    QSignalSpy pulledSpy(&session, &NoteEditorDocumentSession::editorDocumentTextPulled);
+    QVERIFY(session.requestActiveNoteIdleRawPull() != 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pulledSpy.count(), 1, 3000);
+    QVERIFY(readUtf8FileForNoteEditorSessionTest(editorFilePath).contains(
+        QStringLiteral("Filesystem newer body")));
+
+    QVERIFY2(
+        writeFilesystemBodyForIdlePullSessionTest(
+            noteId,
+            noteDirectoryPath,
+            QStringLiteral("Filesystem stale body"),
+            QStringLiteral("2000-05-01-12-00-00"),
+            &updateError),
+        qPrintable(updateError));
+
+    QSignalSpy ignoredSpy(&session, &NoteEditorDocumentSession::editorFilesystemPullIgnored);
+    QVERIFY(session.requestActiveNoteIdleRawPull() != 0);
+    QTRY_COMPARE_WITH_TIMEOUT(ignoredSpy.count(), 1, 3000);
+    QCOMPARE(ignoredSpy.takeFirst().at(1).toString(), QStringLiteral("not-newer"));
+    QCOMPARE(pulledSpy.count(), 1);
+    QVERIFY(readUtf8FileForNoteEditorSessionTest(editorFilePath).contains(
+        QStringLiteral("Filesystem newer body")));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected()

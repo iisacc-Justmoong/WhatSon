@@ -402,6 +402,7 @@ LV.TextEditor {
     }
 
     function requestEnsureCursorVisibleInViewport() {
+        textEditor.recordEditorUserActivity();
         if (textEditor.cursorViewportSyncQueued)
             return false;
 
@@ -411,6 +412,12 @@ LV.TextEditor {
             textEditor.ensureCursorVisibleInViewport();
         });
         return true;
+    }
+
+    function recordEditorUserActivity() {
+        if (textEditor.noteEditorSession
+                && textEditor.noteEditorSession.recordEditorUserActivity !== undefined)
+            textEditor.noteEditorSession.recordEditorUserActivity();
     }
 
     function boundedCursorPosition(value) {
@@ -699,6 +706,7 @@ LV.TextEditor {
     }
 
     onTextChanged: {
+        textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
     }

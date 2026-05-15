@@ -35,6 +35,27 @@ void WhatSonCppRegressionTests::timestampConflictResolver_prefersNewestBodyAfter
         QStringLiteral("incoming body"));
 }
 
+void WhatSonCppRegressionTests::timestampConflictResolver_reportsStrictlyNewerTimestamp()
+{
+    WhatSonTimestampConflictResolver resolver;
+
+    QVERIFY(resolver.isTimestampNewer(
+        QStringLiteral("2026-05-01-12-00-00"),
+        QStringLiteral("2026-05-01-10-00-00")));
+    QVERIFY(!resolver.isTimestampNewer(
+        QStringLiteral("2026-05-01-10-00-00"),
+        QStringLiteral("2026-05-01-12-00-00")));
+    QVERIFY(!resolver.isTimestampNewer(
+        QStringLiteral("2026-05-01-12-00-00"),
+        QStringLiteral("2026-05-01-12-00-00")));
+    QVERIFY(resolver.isTimestampNewer(
+        QStringLiteral("2026-05-01-12-00-00"),
+        QString()));
+    QVERIFY(!resolver.isTimestampNewer(
+        QString(),
+        QStringLiteral("2026-05-01-12-00-00")));
+}
+
 void WhatSonCppRegressionTests::localNoteFileStore_keepsFilesystemBodyWhenTimestampConflictIsNewer()
 {
     QTemporaryDir workspaceDir;

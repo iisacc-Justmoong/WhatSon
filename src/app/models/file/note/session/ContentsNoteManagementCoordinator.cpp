@@ -638,6 +638,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
     result.noteId = request.noteId;
     result.noteDirectoryPath = request.noteDirectoryPath;
     result.text = request.text;
+    result.lastModifiedAt = request.incomingLastModifiedAt;
     result.incrementOpenCount = request.incrementOpenCount;
 
     if (request.kind == RequestKind::LoadNoteBodyText)
@@ -655,6 +656,7 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
         // The selection/mount stack needs the canonical persisted source here so the parser-backed
         // document host can preserve structural tags instead of silently flattening them away.
         result.text = document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText;
+        result.lastModifiedAt = document.headerStore.lastModifiedAt();
         result.success = true;
         return result;
     }
@@ -846,7 +848,8 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
             result.noteId,
             result.text,
             result.success,
-            result.errorMessage);
+            result.errorMessage,
+            result.lastModifiedAt);
     }
     else if (result.kind == RequestKind::DirectPersistBody)
     {

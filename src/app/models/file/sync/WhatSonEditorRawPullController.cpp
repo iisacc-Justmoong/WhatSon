@@ -2,17 +2,50 @@
 
 #include <QDir>
 
+#include <algorithm>
 #include <utility>
 
 namespace
 {
     constexpr auto kNoteEntryReason = "note-entry";
     constexpr auto kNoteOpenReason = "note-open";
+    constexpr auto kIdleReason = "idle";
 }
 
 WhatSonEditorRawPullController::WhatSonEditorRawPullController(QObject* parent)
     : QObject(parent)
 {
+    m_idlePullTimer.setSingleShot(true);
+    m_idlePullTimer.setInterval(m_idlePullIntervalMs);
+    connect(
+        &m_idlePullTimer,
+        &QTimer::timeout,
+        this,
+        &WhatSonEditorRawPullController::requestActiveIdlePull);
+}
+
+int WhatSonEditorRawPullController::idlePullIntervalMs() const noexcept
+{
+    return m_idlePullIntervalMs;
+}
+
+void WhatSonEditorRawPullController::setIdlePullIntervalMs(const int idlePullIntervalMs)
+{
+    const int normalizedInterval = std::max(0, idlePullIntervalMs);
+    if (m_idlePullIntervalMs == normalizedInterval)
+    {
+        return;
+    }
+
+    m_idlePullIntervalMs = normalizedInterval;
+    m_idlePullTimer.setInterval(m_idlePullIntervalMs);
+    if (!m_activeIdlePullNoteId.isEmpty()
+        && !m_activeIdlePullNoteDirectoryPath.isEmpty()
+        && m_idlePullTimer.isActive())
+    {
+        m_idlePullTimer.start(m_idlePullIntervalMs);
+    }
+    emit idlePullIntervalMsChanged();
 }
 
 void WhatSonEditorRawPullController::setRawPullCallback(RawPullCallback callback)
@@ -38,6 +71,62 @@ quint64 WhatSonEditorRawPullController::requestNoteOpenPull(
         normalizedNoteId(noteId),
         normalizedPath(noteDirectoryPath),
         QString::fromLatin1(kNoteOpenReason));
+}
+
+void WhatSonEditorRawPullController::setActiveNoteForIdlePull(
+    const QString& noteId,
+    const QString& noteDirectoryPath)
+{
+    const QString normalizedId = normalizedNoteId(noteId);
+    const QString normalizedDirectoryPath = normalizedPath(noteDirectoryPath);
+    if (normalizedId.isEmpty() || normalizedDirectoryPath.isEmpty())
+    {
+        clearActiveNoteForIdlePull();
+        return;
+    }
+
+    const bool sameActiveNote =
+        m_activeIdlePullNoteId == normalizedId
+        && m_activeIdlePullNoteDirectoryPath == normalizedDirectoryPath;
+    m_activeIdlePullNoteId = normalizedId;
+    m_activeIdlePullNoteDirectoryPath = normalizedDirectoryPath;
+    if (!sameActiveNote || !m_idlePullTimer.isActive())
+    {
+        scheduleIdlePull();
+    }
+}
+
+void WhatSonEditorRawPullController::clearActiveNoteForIdlePull()
+{
+    m_idlePullTimer.stop();
+    m_activeIdlePullNoteId.clear();
+    m_activeIdlePullNoteDirectoryPath.clear();
+}
+
+void WhatSonEditorRawPullController::recordUserActivity()
+{
+    scheduleIdlePull();
+}
+
+quint64 WhatSonEditorRawPullController::requestActiveIdlePull()
+{
+    const QString noteId = m_activeIdlePullNoteId;
+    const QString noteDirectoryPath = m_activeIdlePullNoteDirectoryPath;
+    if (noteId.isEmpty() || noteDirectoryPath.isEmpty())
+    {
+        return 0;
+    }
+
+    const quint64 sequence = executePull(
+        noteId,
+        noteDirectoryPath,
+        QString::fromLatin1(kIdleReason));
+    if (m_activeIdlePullNoteId == noteId
+        && m_activeIdlePullNoteDirectoryPath == noteDirectoryPath)
+    {
+        scheduleIdlePull();
+    }
+    return sequence;
 }
 
 QString WhatSonEditorRawPullController::normalizedNoteId(const QString& noteId)
@@ -86,4 +175,15 @@ quint64 WhatSonEditorRawPullController::executePull(
         success,
         errorMessage);
     return sequence;
+}
+
+void WhatSonEditorRawPullController::scheduleIdlePull()
+{
+    if (m_activeIdlePullNoteId.isEmpty()
+        || m_activeIdlePullNoteDirectoryPath.isEmpty())
+    {
+        return;
+    }
+
+    m_idlePullTimer.start(m_idlePullIntervalMs);
 }

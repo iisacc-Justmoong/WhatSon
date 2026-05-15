@@ -325,4 +325,5 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_loadNoteBodyText_prefe
     QCOMPARE(arguments.at(2).toString(), QStringLiteral("Body from path B"));
     QVERIFY(arguments.at(3).toBool());
     QCOMPARE(arguments.at(4).toString(), QString());
+    QVERIFY(!arguments.at(5).toString().trimmed().isEmpty());
 }

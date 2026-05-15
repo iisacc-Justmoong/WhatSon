@@ -100,3 +100,22 @@ WhatSonTimestampConflictResolver::mergeBodyByTimestamp(const MergeRequest& reque
     }
     return result;
 }
+
+bool WhatSonTimestampConflictResolver::isTimestampNewer(
+    const QString& candidateLastModifiedAt,
+    const QString& baselineLastModifiedAt) const
+{
+    const QString candidate = candidateLastModifiedAt.trimmed();
+    if (candidate.isEmpty())
+    {
+        return false;
+    }
+
+    const QString baseline = baselineLastModifiedAt.trimmed();
+    if (baseline.isEmpty())
+    {
+        return true;
+    }
+
+    return compareTimestamps(candidate, baseline) > 0;
+}

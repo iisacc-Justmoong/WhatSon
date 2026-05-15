@@ -23,4 +23,7 @@ public:
     };
 
     MergeResult mergeBodyByTimestamp(const MergeRequest& request) const;
+    bool isTimestampNewer(
+        const QString& candidateLastModifiedAt,
+        const QString& baselineLastModifiedAt) const;
 };

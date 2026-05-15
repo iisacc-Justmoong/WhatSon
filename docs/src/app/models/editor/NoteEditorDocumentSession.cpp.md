@@ -14,10 +14,14 @@ Implements the active note editor document session.
 4. After the session file is mounted, the session binds that selected note through
    `ContentsNoteManagementCoordinator::bindSelectedNote(...)` so the same coordinator queue advances `openCount` and
    `lastOpenedAt` without letting the editor surface implement statistics policy.
-5. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
+5. The same mounted note becomes the active idle-pull target. User activity reported by the editor surface restarts the
+   pull timer; once the note remains idle for 5000 ms, `WhatSonEditorRawPullController` queues an `idle` pull.
+   The session compares the returned filesystem `lastModified` timestamp against the session-file context timestamp and
+   only applies the pull when the filesystem copy is newer.
+6. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
-6. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
+7. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
    `requestEditorIdleRawPush(...)`; when the editor surface modified count increases, QML sends the same surface
    payload to `requestEditorModifiedCountRawPush(...)`. Both routes pass through
    `WhatSonEditorRawPushController`, then the session converts the editor document HTML back into canonical source text
@@ -26,10 +30,10 @@ Implements the active note editor document session.
    If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
    Before note context changes or clears, the session asks the same push controller to flush the active surface.
-7. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
+8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
-8. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
+9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
 
@@ -43,6 +47,9 @@ Implements the active note editor document session.
 - The loaded note's `lastModified` timestamp is kept with the editor session-file context. Later RAW pushes pass that
   base timestamp into the note-management queue so timestamp conflict resolution can tell whether the filesystem
   changed after this editor pull.
+- Active-note idle RAW pulls reuse that same timestamp context in the opposite direction: a filesystem pull whose
+  `lastModified` is not strictly newer is ignored and reported through `editorFilesystemPullIgnored(...)`; a newer pull
+  rewrites the session file, emits `editorDocumentTextPulled(...)`, and updates the stored base timestamp.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten

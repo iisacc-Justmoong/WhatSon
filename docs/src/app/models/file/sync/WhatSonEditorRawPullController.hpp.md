@@ -10,6 +10,10 @@ Declares the RAW-from-filesystem pull request controller for the note editor ses
 - Accepts two trigger types:
   - note-entry pull
   - note-open pull
+  - idle pull for the active opened note
+- Exposes `idlePullIntervalMs`, defaulting to 5000 ms.
+- Exposes `setActiveNoteForIdlePull(...)`, `clearActiveNoteForIdlePull()`, and `recordUserActivity()` so the editor
+  session can treat a quiet active note as eligible for periodic filesystem refresh.
 - Exposes `setRawPullCallback(...)`; the callback performs the actual note-package read and returns the queued load
   sequence.
 - Emits `rawPullRequested(...)` and `rawPullFinished(...)` for regression and diagnostics.
@@ -20,6 +24,8 @@ Declares the RAW-from-filesystem pull request controller for the note editor ses
 - It must not parse `.wsnbody`, project editor HTML, update open-count statistics, or write session files.
 - `NoteEditorDocumentSession` remains the owner of editor projection and load-result application, while
   `ContentsNoteManagementCoordinator` remains the filesystem worker queue used by the callback.
+- It does not choose the timestamp winner; it only requests the active note body. The session compares the returned
+  filesystem timestamp against the loaded session timestamp before applying a pull.
 
 ## Tests
 

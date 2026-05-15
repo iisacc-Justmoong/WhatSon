@@ -30,7 +30,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
   note body and returns the resulting request sequence for `noteBodyTextLoaded(...)`.
   When `noteDirectoryPath` is present, that explicit `.wsnote` package is read directly instead of being rediscovered
   from `noteId`.
-  That completion payload is the canonical persisted note source text when available, not a plain-text projection.
+  That completion payload is the canonical persisted note source text when available, not a plain-text projection, and
+  includes the header `lastModified` timestamp so editor idle pulls can decide whether the filesystem copy is newer.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText, ..., noteDirectoryPath = "")`: reads the
   current note RAW body source from filesystem, compares it against the provided view-session text, and only requests
   snapshot refresh when they differ.
@@ -79,7 +80,7 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
 - Selected note body loads must preserve the same structured source contract that
   `noteBodySourceTextForNoteId(...)` exposes from hierarchy view-models, so downstream mount code can continue to
   parse canonical `.wsnbody` content instead of a flattened projection.
-- The selected-note body-read signal contract must preserve request sequencing so the selection bridge can ignore stale
-  completions.
+- The selected-note body-read signal contract must preserve request sequencing and return the package timestamp so the
+  editor session can ignore stale completions and stale idle pulls.
 - A caller-supplied note-directory path must remain authoritative for load/reconcile/bind requests; the coordinator
   must not silently redirect those operations through another package that happens to share the same `noteId`.

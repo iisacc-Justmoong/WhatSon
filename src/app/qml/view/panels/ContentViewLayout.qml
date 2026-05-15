@@ -93,6 +93,7 @@ Item {
             "valid": false
         })
     property bool editorFormatContextMenuPointerActive: false
+    property bool editorApplyingPulledDocumentText: false
     property var noteListModel: null
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
@@ -186,6 +187,22 @@ Item {
                 "selectedText": "",
                 "valid": false
             });
+    }
+    function applyPulledEditorDocumentText(noteId, editorDocumentText) {
+        if (!contentsTextEditor
+                || String(noteId).trim() !== contentViewLayout.editorActiveNoteId)
+            return false;
+
+        contentViewLayout.editorApplyingPulledDocumentText = true;
+        const replaced = contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText === undefined || editorDocumentText === null
+                    ? ""
+                    : String(editorDocumentText),
+                    contentsTextEditor.cursorPosition);
+        Qt.callLater(function () {
+            contentViewLayout.editorApplyingPulledDocumentText = false;
+        });
+        return replaced;
     }
     function editorFormatSelectionForCommand(allowSelectionSnapshot) {
         if (Boolean(allowSelectionSnapshot)
@@ -296,7 +313,8 @@ Item {
                     }
                 }
                 onEditorPlainTextRevisionChanged: {
-                    if (contentViewLayout.noteEditorSession
+                    if (!contentViewLayout.editorApplyingPulledDocumentText
+                            && contentViewLayout.noteEditorSession
                             && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
                             && contentViewLayout.editorSourceFilePath.length > 0) {
                         contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
@@ -455,6 +473,14 @@ Item {
             onClosed: {
                 contentViewLayout.editorFormatContextMenuPointerActive = false;
                 contentViewLayout.clearEditorFormatSelectionSnapshot();
+            }
+        }
+
+        Connections {
+            target: contentViewLayout.noteEditorSession
+
+            function onEditorDocumentTextPulled(noteId, editorDocumentText) {
+                contentViewLayout.applyPulledEditorDocumentText(noteId, editorDocumentText);
             }
         }
     }

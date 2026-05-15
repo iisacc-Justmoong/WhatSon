@@ -36,9 +36,10 @@
 - `WhatSonHubSyncObservationBuilder` owns recursive hub inspection, signature hashing, and watch-path discovery.
 - `WhatSonHubSyncWatcher` owns `QFileSystemWatcher` registration and watcher path diffs.
 - `WhatSonHubSyncScheduler` owns periodic and debounce timers.
-- `WhatSonEditorRawPullController` owns note-entry/open RAW pull requests from the editor session into the filesystem
-  load queue. The controller stays in `file/sync` because note editor sync is bidirectional; concrete `.wsnbody` reads,
-  editor projection, and session-file writes still remain in `ContentsNoteManagementCoordinator` and
+- `WhatSonEditorRawPullController` owns note-entry/open RAW pull requests and active-note idle RAW pull scheduling from
+  the editor session into the filesystem load queue. Its default idle interval is 5000 ms. The controller stays in
+  `file/sync` because note editor sync is bidirectional; concrete `.wsnbody` reads, timestamp winner checks, editor
+  projection, and session-file writes still remain in `ContentsNoteManagementCoordinator` and
   `NoteEditorDocumentSession`.
 - `WhatSonEditorRawPushController` owns editor-surface-to-RAW push triggers for idle turns, note departure, and editor
   modified-count increments. The controller stays in `file/sync` because it is sync orchestration; concrete

@@ -58,8 +58,9 @@
     so destroying an editor selection bridge while a lazy body read is still in flight drops the completion instead of
     dereferencing a destroyed coordinator
   - each load keeps its own request sequence
-  - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage)` returns canonical persisted note source text
-    back to the selection bridge, falling back to plain body text only when a note package has no separate RAW source
+  - `noteBodyTextLoaded(sequence, noteId, text, success, errorMessage, lastModifiedAt)` returns canonical persisted
+    note source text and the package header timestamp back to the selection bridge, falling back to plain body text only
+    when a note package has no separate RAW source
   - a newer same-note lazy read can therefore supersede an older in-flight read instead of being silently dropped
 
 ## Queue Semantics

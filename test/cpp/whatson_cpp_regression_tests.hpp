@@ -1279,9 +1279,11 @@ private slots:
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
     void timestampConflictResolver_prefersNewestBodyAfterBaseDivergence();
+    void timestampConflictResolver_reportsStrictlyNewerTimestamp();
     void localNoteFileStore_keepsFilesystemBodyWhenTimestampConflictIsNewer();
     void localNoteFileStore_acceptsIncomingBodyWhenTimestampConflictIsNewer();
     void editorRawPullController_requestsNoteEntryAndOpenPulls();
+    void editorRawPullController_pullsActiveNoteEveryIdleInterval();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
@@ -1313,6 +1315,7 @@ private slots:
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();
+    void noteEditorDocumentSession_pullsOnlyNewerFilesystemBodyOnIdle();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();

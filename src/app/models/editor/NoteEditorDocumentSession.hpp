@@ -60,6 +60,8 @@ public:
         const QString& editorFilePath,
         int modifiedCount,
         const QString& editorDocumentText);
+    Q_INVOKABLE void recordEditorUserActivity();
+    Q_INVOKABLE quint64 requestActiveNoteIdleRawPull();
     Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
         const QString& editorDocumentText,
         int cursorPosition,
@@ -95,6 +97,12 @@ signals:
         bool success,
         const QString& errorMessage);
     void hubFilesystemMutated();
+    void editorDocumentTextPulled(
+        const QString& noteId,
+        const QString& editorDocumentText);
+    void editorFilesystemPullIgnored(
+        const QString& noteId,
+        const QString& reason);
 
 private slots:
     void refreshFromActiveNoteState();
@@ -104,7 +112,8 @@ private slots:
         const QString& noteId,
         const QString& text,
         bool success,
-        const QString& errorMessage);
+        const QString& errorMessage,
+        const QString& lastModifiedAt);
     void handleEditorTextPersistenceFinished(
         const QString& noteId,
         const QString& text,
@@ -139,6 +148,20 @@ private:
         const QString& editorFilePath,
         const QString& editorDocumentText);
     bool pushActiveEditorBeforeNoteDeparture();
+    bool applyLoadedBodyTextToEditorSession(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& bodySourceText,
+        const QString& loadedLastModifiedAt,
+        bool bindSelectedNote,
+        bool emitPulledDocumentText);
+    void handleIdleNoteBodyTextLoaded(
+        quint64 sequence,
+        const QString& noteId,
+        const QString& text,
+        bool success,
+        const QString& errorMessage,
+        const QString& lastModifiedAt);
     QString bodySourceTextForEditorDocument(
         const QString& noteId,
         const QString& editorDocumentText) const;
@@ -164,8 +187,11 @@ private:
     QString m_activeNoteDirectoryPath;
     QString m_pendingLoadNoteId;
     QString m_pendingLoadNoteDirectoryPath;
+    QString m_pendingIdlePullNoteId;
+    QString m_pendingIdlePullNoteDirectoryPath;
     QString m_activeBodySourceText;
     quint64 m_pendingLoadSequence = 0;
+    quint64 m_pendingIdlePullSequence = 0;
     int m_parsedLineCount = 0;
     int m_editorViewportWidth = 0;
     bool m_loading = false;

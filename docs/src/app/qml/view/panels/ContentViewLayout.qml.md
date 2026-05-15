@@ -65,6 +65,9 @@ snapshot instead of the shifted live metadata.
 LVRS finishes syncing that session file, to forward editor modified-count increments for RAW push scheduling, and to
 insert already-imported resource metadata returned from `inAppClipboard`. Other restored-shell state must not be used
 to mount parser, projection, renderer, resource editor, or calendar page logic.
+When the session emits `editorDocumentTextPulled(...)` for a newer idle filesystem pull, the layout replaces the LVRS
+document text through the sibling editor's public wrapper hook and suppresses the resulting revision tick from being
+classified as a local modified-count push.
 
 `editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
@@ -126,3 +129,6 @@ to mount parser, projection, renderer, resource editor, or calendar page logic.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고
   `NoteEditorDocumentSession`의 RAW push 요청 함수로 넘긴다. 실제 debounce, note-departure flush, RAW 변환은
   C++ 쪽 책임이다.
+- C++ 세션이 idle filesystem pull에서 더 최신 본문을 찾으면 `editorDocumentTextPulled(...)`를 내보낸다. 이
+  layout은 공개 editor wrapper hook으로 문서를 교체하되, 그 교체로 발생한 revision tick은 로컬 수정 push로
+  분류하지 않는다.

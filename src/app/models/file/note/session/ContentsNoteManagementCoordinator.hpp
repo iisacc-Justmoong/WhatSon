@@ -58,7 +58,8 @@ signals:
         const QString& noteId,
         const QString& text,
         bool success,
-        const QString& errorMessage);
+        const QString& errorMessage,
+        const QString& lastModifiedAt);
     void viewSessionSnapshotReconciled(
         const QString& noteId,
         bool refreshed,
@@ -99,6 +100,7 @@ private:
         QString noteId;
         QString noteDirectoryPath;
         QString text;
+        QString lastModifiedAt;
         WhatSonLocalNoteDocument persistedDocument;
         WhatSonLocalNoteFileStore::UpdateResult updateResult;
         QString errorMessage;

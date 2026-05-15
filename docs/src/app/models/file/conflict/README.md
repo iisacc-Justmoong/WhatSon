@@ -22,6 +22,8 @@
 - The first supported policy is whole-body last-writer-wins by note timestamps:
   - if the filesystem note has not advanced past the editor pull base timestamp, the incoming editor body wins
   - if both sides changed after the editor pull base timestamp, the newer `lastModified` timestamp wins
+- The resolver also exposes strict newer-than comparison for read-side sync, allowing idle editor pulls to ignore
+  filesystem bodies whose `lastModified` timestamp is not newer than the currently loaded editor session.
 - The resolver does not read or write note packages. `WhatSonLocalNoteFileStore` supplies the base/filesystem/incoming
   timestamps and persists the chosen body.
 
