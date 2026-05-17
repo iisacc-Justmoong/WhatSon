@@ -390,7 +390,7 @@ WhatSon is an LVRS-based Qt Quick application.
   `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12` white text. The callout owns the whole editor source row,
   and the leading bar stretches with wrapped text while `.wsnbody` still stores the canonical source wrapper. Idle RAW
   push also recognizes Qt-serialized callout tables after comment/data markers are stripped, so callouts do not decay
-  into plain paragraphs over time.
+  into plain paragraphs over time or clone empty paragraphs around the callout during repeated saves.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

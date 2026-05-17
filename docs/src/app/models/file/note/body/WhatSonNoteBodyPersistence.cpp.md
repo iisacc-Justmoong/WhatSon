@@ -114,6 +114,9 @@ The current contract preserves editor-authored RAW source across save/load turns
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes the callout's distinctive `#262728` table, `3px` leading bar, and `12px` gap cell shape,
   extracts the content cell, and persists it as `<callout>...</callout>` instead of degrading it into a plain paragraph.
+- Recovered rendered callout content is trimmed, and renderer-owned blank padding rows around the recovered
+  `<callout>...</callout>` source line are removed before persistence. Repeated editor save/serialize cycles must
+  therefore keep the callout as one canonical source line instead of cloning empty paragraphs above or below it.
 - If the marker pair survives after the single resource image object has been deleted, the inverse boundary now drops
   that empty marker block instead of restoring the canonical resource source tag. This keeps backspace/delete behavior
   aligned with the editor's one-object frame contract.

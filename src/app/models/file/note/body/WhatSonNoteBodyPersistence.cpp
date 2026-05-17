@@ -810,7 +810,7 @@ namespace
             const QString originalSource =
                 QString::fromUtf8(QByteArray::fromHex(match.captured(1).toLatin1())).trimmed();
             const QString contentHtml = renderedCalloutContentHtml(match.captured(2));
-            const QString contentSource = sourceTextFromRichEditorDocument(contentHtml);
+            const QString contentSource = sourceTextFromRichEditorDocument(contentHtml).trimmed();
             const QString sourceText =
                 calloutOpeningTokenFromSource(originalSource)
                 + contentSource
@@ -851,7 +851,7 @@ namespace
             const QRegularExpressionMatch match = matchIterator.next();
             rewrittenHtml += editorHtml->mid(lastOffset, match.capturedStart(0) - lastOffset);
 
-            const QString contentSource = sourceTextFromRichEditorDocument(match.captured(1));
+            const QString contentSource = sourceTextFromRichEditorDocument(match.captured(1)).trimmed();
             const QString sourceText =
                 QStringLiteral("<callout>")
                 + contentSource
@@ -902,6 +902,40 @@ namespace
         return false;
     }
 
+    bool nearestPreviousNonEmptyLineIsRenderedCallout(
+        const QStringList& sourceLines,
+        int index,
+        const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        for (int previousIndex = index - 1; previousIndex >= 0; --previousIndex)
+        {
+            const QString& previousLine = sourceLines.at(previousIndex);
+            if (previousLine.trimmed().isEmpty())
+            {
+                continue;
+            }
+            return isRenderedCalloutSourceLine(previousLine, tokens);
+        }
+        return false;
+    }
+
+    bool nearestNextNonEmptyLineIsRenderedCallout(
+        const QStringList& sourceLines,
+        int index,
+        const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        for (int nextIndex = index + 1; nextIndex < sourceLines.size(); ++nextIndex)
+        {
+            const QString& nextLine = sourceLines.at(nextIndex);
+            if (nextLine.trimmed().isEmpty())
+            {
+                continue;
+            }
+            return isRenderedCalloutSourceLine(nextLine, tokens);
+        }
+        return false;
+    }
+
     QStringList removeRenderedCalloutPaddingLines(
         const QStringList& sourceLines,
         const QVector<RenderedCalloutSourceToken>& tokens)
@@ -918,11 +952,8 @@ namespace
             const QString& line = sourceLines.at(index);
             if (line.trimmed().isEmpty())
             {
-                const bool previousIsRenderedCallout =
-                    index > 0 && isRenderedCalloutSourceLine(sourceLines.at(index - 1), tokens);
-                const bool nextIsRenderedCallout =
-                    index + 1 < sourceLines.size() && isRenderedCalloutSourceLine(sourceLines.at(index + 1), tokens);
-                if (previousIsRenderedCallout || nextIsRenderedCallout)
+                if (nearestPreviousNonEmptyLineIsRenderedCallout(sourceLines, index, tokens)
+                    || nearestNextNonEmptyLineIsRenderedCallout(sourceLines, index, tokens))
                 {
                     continue;
                 }
@@ -930,6 +961,28 @@ namespace
             compacted.push_back(line);
         }
         return compacted;
+    }
+
+    QString removeRenderedCalloutPaddingText(
+        QString sourceText,
+        const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        for (const RenderedCalloutSourceToken& token : tokens)
+        {
+            while (sourceText.contains(QStringLiteral("\n\n") + token.sourceText))
+            {
+                sourceText.replace(
+                    QStringLiteral("\n\n") + token.sourceText,
+                    QLatin1Char('\n') + token.sourceText);
+            }
+            while (sourceText.contains(token.sourceText + QStringLiteral("\n\n")))
+            {
+                sourceText.replace(
+                    token.sourceText + QStringLiteral("\n\n"),
+                    token.sourceText + QLatin1Char('\n'));
+            }
+        }
+        return sourceText;
     }
 
     bool markerBodyContainsLiveRenderedResourceFrame(const QString& markerBody)
@@ -1224,9 +1277,11 @@ namespace
             removeRenderedCalloutPaddingLines(sourceLines, renderedCalloutTokens);
         const QStringList sourceLinesWithoutRenderedPadding =
             removeRenderedResourceFramePaddingLines(sourceLinesWithoutCalloutPadding, renderedResourceTokens);
-        return removeRenderedResourceFramePaddingText(
+        const QString normalizedSourceText =
             WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-                sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n'))),
+                sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n')));
+        return removeRenderedResourceFramePaddingText(
+            removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens),
             renderedResourceTokens);
     }
 }
