@@ -3,7 +3,7 @@
 namespace
 {
     constexpr int kFigmaNodeWidth = 295;
-    constexpr int kFramePaddingVertical = 16;
+    constexpr int kFramePaddingVertical = 4;
     constexpr int kFramePaddingRight = 4;
     constexpr int kFramePaddingLeft = 4;
     constexpr int kLeadingBarWidth = 3;
@@ -15,12 +15,11 @@ namespace
         "iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAACXBIWXMAAA9hAAAPYQGoP6dp"
         "AAAAC0lEQVQImWNgQAMAABEAAfYtn/gAAAAASUVORK5CYII=";
     constexpr auto kLeadingBarPng =
-        "iVBORw0KGgoAAAANSUhEUgAAAAMAAAAuCAYAAADtGqNXAAAACXBIWXMAAA9hAAAPYQGoP6dp"
-        "AAAAG0lEQVQokWNgGF6A8ebNm/9hHCZkmcHMGW4AAH2vA6bTz5UpAAAAAElFTkSuQmCC";
+        "iVBORw0KGgoAAAANSUhEUgAAAAMAAAAWCAYAAAAFMyaXAAAAFklEQVR42mNgIAPcvHnzPwwPHQ4ZAAAEPZSl4QZxvwAAAABJRU5ErkJggg==";
     constexpr auto kTransparentContentGapPng =
         "iVBORw0KGgoAAAANSUhEUgAAAAwAAAABCAYAAADq6085AAAACXBIWXMAAA9hAAAPYQGoP6dp"
         "AAAADElEQVQImWNgIBEAAAAxAAHiKCvqAAAAAElFTkSuQmCC";
-    constexpr auto kCalloutRenderVersion = "figma-280-7897-inline-frame-v2";
+    constexpr auto kCalloutRenderVersion = "figma-280-7897-inline-frame-v3";
 
     QString normalizedContentHtml(const QString& contentHtml)
     {

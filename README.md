@@ -391,7 +391,7 @@ WhatSon is an LVRS-based Qt Quick application.
   while being interpreted semantically in another.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
-  height through root `height:auto`, keeps WhatSon runtime `16px` top/bottom padding with `4px` left/right padding,
+  height through root `height:auto`, keeps `4px` top/bottom padding with `4px` left/right padding,
   renders the Figma `3px x 14px` `#d9d9d9` leading bar and `12px` content gap as inline frame chrome, and uses
   Pretendard Medium `12/12` white text. The callout owns the whole editor source row as a `whatson-callout` block frame
   instead of an inline text-fit span, while `.wsnbody` still stores only the canonical source wrapper. `TextEditor.qml`

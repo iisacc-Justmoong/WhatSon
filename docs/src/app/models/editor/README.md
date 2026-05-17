@@ -46,7 +46,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
-  `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, WhatSon runtime `16px` top/bottom
+  `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom
   padding, `4px` left/right padding, `3px x 14px` leading bar metadata, `12px` content gap metadata, inline
   frame-chrome images, and Pretendard Medium `12/12` white body text. The emitted root is a block `div`, not an inline
   span and not a table, so the rendered surface fills the QTextDocument row without QML chrome. The callout text itself is isolated in a
@@ -100,7 +100,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
-  row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `16px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
+  row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
   좌측 bar와 gap은 source content가 아닌 inline frame chrome으로 렌더링된다.
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `NoteEditorDocumentSession`이 `<callout>` 앞 source
