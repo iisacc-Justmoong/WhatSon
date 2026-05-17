@@ -47,11 +47,15 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
   `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom
-  padding, `4px` left/right padding, `3px x 14px` leading bar metadata, `12px` content gap metadata, inline
-  frame-chrome images, and Pretendard Medium `12/12` white body text. The emitted root is a block `div`, not an inline
-  span and not a table, so the rendered surface fills the QTextDocument row without QML chrome. The callout text itself is isolated in a
+  padding, `4px` left/right padding, `3px x 14px` leading bar metadata, `12px` content gap metadata, one generated
+  left-aligned frame-chrome image for the leading bar, and Pretendard Medium `12/12` white body text. The emitted root
+  is a block `div`, not an inline span and not a table, so the rendered surface fills the QTextDocument row without
+  QML chrome. The callout text itself is isolated in a
   `data-callout-content="true"` span, letting persistence ignore the frame chrome and restore the callout wrapper after
-  LVRS rich-text editing. Enter on the frame chrome immediately before content is treated as a source insertion before
+  LVRS rich-text editing. The bar image height is generated from the wrapped content height using the active editor
+  viewport width, and the bar starts at the content origin while the root frame owns the `4px` padding. The gap is its
+  right margin, so wrapped text is not pushed to a lower line by separate inline spacer images. Enter on the frame
+  chrome immediately before content is treated as a source insertion before
   `<callout>`, and explicit empty source lines adjacent to callouts render through an invisible placeholder so they
   count as editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
@@ -102,7 +106,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
   row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
-  좌측 bar와 gap은 source content가 아닌 inline frame chrome으로 렌더링된다.
+  좌측 bar는 wrap된 content 높이에 맞춘 단일 left-aligned frame chrome 이미지로 렌더링되고, 자체 상단 여백 없이
+  content 원점에서 시작해 첫 텍스트 라인과 세로 중심을 맞춘다. gap은 그 이미지의 우측 margin이다.
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `NoteEditorDocumentSession`이 `<callout>` 앞 source
   위치에 빈 줄을 삽입한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를
   실제로 하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.

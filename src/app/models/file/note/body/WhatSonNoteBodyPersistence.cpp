@@ -30,7 +30,7 @@ namespace
     namespace IiXml = WhatSon::IiXmlDocumentSupport;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
 
-    QString renderInlineSourceToHtml(const QString& sourceFragment);
+    QString renderInlineSourceToHtml(const QString& sourceFragment, int editorViewportWidth = 0);
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText);
 
     QString normalizePath(const QString& path)
@@ -270,7 +270,7 @@ namespace
         return SemanticTags::semanticTextClosingHtml(tagName);
     }
 
-    QString renderInlineSourceToHtml(const QString& sourceFragment)
+    QString renderInlineSourceToHtml(const QString& sourceFragment, const int editorViewportWidth)
     {
         if (WhatSon::EditorComponent::Break::isSourceLine(sourceFragment))
         {
@@ -305,7 +305,8 @@ namespace
                                 calloutRange.contentEnd - calloutRange.contentStart);
                             rendered += WhatSon::EditorComponent::Callout::renderHtml({
                                 calloutSource,
-                                renderInlineSourceToHtml(calloutContentSource)
+                                renderInlineSourceToHtml(calloutContentSource, editorViewportWidth),
+                                editorViewportWidth
                             });
                             cursor = calloutRange.closingEnd;
                             continue;
@@ -1479,7 +1480,7 @@ namespace WhatSon::NoteBodyPersistence
         return sourceTextFallback(plainTextFromBodyDocument(bodyDocumentText));
     }
 
-    QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText)
+    QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText, const int editorViewportWidth)
     {
         const QStringList lines = bodySourceLinesFromDocument(bodyDocumentText);
         const bool containsStandaloneCalloutLine = std::any_of(
@@ -1493,7 +1494,7 @@ namespace WhatSon::NoteBodyPersistence
         htmlLines.reserve(lines.size());
         for (const QString& line : lines)
         {
-            const QString renderedLine = renderInlineSourceToHtml(line);
+            const QString renderedLine = renderInlineSourceToHtml(line, editorViewportWidth);
             if (!containsStandaloneCalloutLine || isCanonicalCalloutSourceLine(line))
             {
                 htmlLines.push_back(renderedLine);
@@ -1508,9 +1509,12 @@ namespace WhatSon::NoteBodyPersistence
         return htmlLines.join(containsStandaloneCalloutLine ? QString() : QStringLiteral("<br/>"));
     }
 
-    QString editorHtmlFromBodySource(const QString& noteId, const QString& bodySourceText)
+    QString editorHtmlFromBodySource(
+        const QString& noteId,
+        const QString& bodySourceText,
+        const int editorViewportWidth)
     {
-        return htmlProjectionFromBodyDocument(serializeBodyDocument(noteId, bodySourceText));
+        return htmlProjectionFromBodyDocument(serializeBodyDocument(noteId, bodySourceText), editorViewportWidth);
     }
 
     QString sourceTextFromEditorDocument(const QString&, const QString& editorDocumentText)

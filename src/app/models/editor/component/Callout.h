@@ -8,6 +8,7 @@ namespace WhatSon::EditorComponent
     {
         QString sourceText;
         QString contentHtml;
+        int editorViewportWidth = 0;
     };
 
     class Callout final

@@ -111,12 +111,12 @@ The current contract preserves editor-authored RAW source across save/load turns
 - The inverse boundary also recognizes `<!--whatson-callout-source:...-->...<!--/whatson-callout-source-->` marker pairs,
   extracts the inner `<!--whatson-callout-content-->...<!--/whatson-callout-content-->` payload from the live rendered
   callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`
-  before persistence. The visual left inset, leading bar, and gap are frame chrome and are intentionally excluded from
-  this marker path.
+  before persistence. The generated leading-bar image is frame chrome and is intentionally excluded from this marker
+  path; the gap is its rendering margin rather than source content.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
   style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized
-  object replacement characters from the inline frame chrome are stripped before source reconstruction. A legacy
+  object replacement characters from the frame chrome are stripped before source reconstruction. A legacy
   fallback still recognizes the older `#262728` table, `3px` leading bar, and `12px` gap-cell shape so already-serialized
   editor sessions can be recovered.
 - Projection joins standalone callout block lines without inserting extra `<br/>` separators around them. Adjacent

@@ -841,7 +841,8 @@ namespace
             htmlLines.push_back(
                 WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
                     noteId,
-                    pendingSourceLines.join(QLatin1Char('\n'))));
+                    pendingSourceLines.join(QLatin1Char('\n')),
+                    editorViewportWidth));
             pendingSourceLines.clear();
         };
 

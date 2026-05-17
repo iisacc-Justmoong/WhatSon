@@ -392,12 +392,14 @@ WhatSon is an LVRS-based Qt Quick application.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
   height through root `height:auto`, keeps `4px` top/bottom padding with `4px` left/right padding,
-  renders the Figma `3px x 14px` `#d9d9d9` leading bar and `12px` content gap as inline frame chrome, and uses
-  Pretendard Medium `12/12` white text. The callout owns the whole editor source row as a `whatson-callout` block frame
+  renders the Figma `3px x 14px` `#d9d9d9` leading bar as one generated left-aligned frame-chrome image whose height
+  follows wrapped content at the active editor viewport width, starts painting at the content origin so it aligns with
+  the first text line, keeps the `12px` content gap as that image's right margin, and uses Pretendard Medium `12/12`
+  white text. The callout owns the whole editor source row as a `whatson-callout` block frame
   instead of an inline text-fit span, while `.wsnbody` still stores only the canonical source wrapper. `TextEditor.qml`
   does not draw callout chrome; the component HTML itself is responsible for the full-width frame, so no QML overlay,
   table cell, or extra gutter row is introduced. Idle RAW push recognizes Qt-serialized callout block backgrounds and
-  strips the inline frame-chrome object replacements before writing canonical source, so callouts do not decay into
+  strips the frame-chrome object replacement before writing canonical source, so callouts do not decay into
   plain paragraphs over time or clone empty paragraphs around the callout during repeated saves. Backspace/Enter
   boundary behavior is routed through `EditorInputCommandFilter` and handled by the C++ editor session from canonical
   RAW source, with decorated TextEdit cursor offsets mapped around the frame chrome. Explicit empty source lines next

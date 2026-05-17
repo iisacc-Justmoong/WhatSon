@@ -650,9 +650,8 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInit
     QCOMPARE(emptyResult.value(QStringLiteral("cursorPosition")).toInt(), calloutInitCursor);
 }
 
-void WhatSonCppRegressionTests::noteEditorDocumentSession_enterBeforeCalloutChromeInsertsLineBeforeCallout()
+void WhatSonCppRegressionTests::noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine()
 {
-    NoteEditorDocumentSession session;
     const QString sourceText =
         QStringLiteral("Before\n"
                        "<callout>Inside</callout>\n"
@@ -662,34 +661,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_enterBeforeCalloutChro
         sourceText);
     QTextDocument editorDocument;
     editorDocument.setHtml(editorHtml);
-    const QString editorPlainText = editorDocument.toPlainText();
-    const int renderedCalloutTextStartCursor = editorPlainText.indexOf(QStringLiteral("Inside"));
-    QVERIFY(renderedCalloutTextStartCursor > 0);
-    QCOMPARE(
-        editorPlainText.at(renderedCalloutTextStartCursor - 1),
-        QChar::ObjectReplacementCharacter);
-
-    const QVariantMap result = session.handleCalloutBoundaryKeyInSource(
-        editorHtml,
-        renderedCalloutTextStartCursor - 1,
-        0,
-        Qt::Key_Return);
-
-    QVERIFY(result.value(QStringLiteral("valid")).toBool());
-    QVERIFY(result.value(QStringLiteral("handled")).toBool());
-    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
-    QCOMPARE(
-        result.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral("Before\n\n<callout>Inside</callout>\nAfter"));
-    QTextDocument resultEditorDocument;
-    resultEditorDocument.setHtml(result.value(QStringLiteral("editorDocumentText")).toString());
-    QString resultVisiblePlainText = resultEditorDocument.toPlainText();
-    resultVisiblePlainText.remove(QChar::ObjectReplacementCharacter);
-    resultVisiblePlainText.remove(QChar(0x200B));
-    QCOMPARE(resultVisiblePlainText, QStringLiteral("Before\n\nInside\nAfter"));
-    QCOMPARE(
-        result.value(QStringLiteral("cursorPosition")).toInt(),
-        QStringLiteral("Before\n\n").size());
+    QString editorPlainText = editorDocument.toPlainText();
+    editorPlainText.remove(QChar::ObjectReplacementCharacter);
+    QCOMPARE(editorPlainText, QStringLiteral("Before\nInside\nAfter"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside()

@@ -13,15 +13,18 @@ namespace
             && actual.alpha() > 0;
     }
 
-    int renderedPixelCountNear(const QString& html, const QColor& expected)
+    int renderedPixelCountNear(
+        const QString& html,
+        const QColor& expected,
+        const int documentWidth = WhatSon::EditorComponent::Callout::designWidth())
     {
         QTextDocument editorDocument;
         editorDocument.setDocumentMargin(0);
-        editorDocument.setTextWidth(WhatSon::EditorComponent::Callout::designWidth());
+        editorDocument.setTextWidth(documentWidth);
         editorDocument.setHtml(html);
 
         const QSize imageSize(
-            WhatSon::EditorComponent::Callout::designWidth() + 16,
+            documentWidth + 16,
             qMax(48, static_cast<int>(std::ceil(editorDocument.size().height())) + 16));
         QImage rendered(imageSize, QImage::Format_ARGB32_Premultiplied);
         rendered.fill(Qt::transparent);
@@ -76,15 +79,19 @@ namespace
         return count;
     }
 
-    int renderedPixelCountNearInRect(const QString& html, const QColor& expected, const QRect& rect)
+    int renderedPixelCountNearInRect(
+        const QString& html,
+        const QColor& expected,
+        const QRect& rect,
+        const int documentWidth = WhatSon::EditorComponent::Callout::designWidth())
     {
         QTextDocument editorDocument;
         editorDocument.setDocumentMargin(0);
-        editorDocument.setTextWidth(WhatSon::EditorComponent::Callout::designWidth());
+        editorDocument.setTextWidth(documentWidth);
         editorDocument.setHtml(html);
 
         const QSize imageSize(
-            WhatSon::EditorComponent::Callout::designWidth() + 16,
+            documentWidth + 16,
             qMax(48, static_cast<int>(std::ceil(editorDocument.size().height())) + 16));
         QImage rendered(imageSize, QImage::Format_ARGB32_Premultiplied);
         rendered.fill(Qt::transparent);
@@ -108,13 +115,97 @@ namespace
         return count;
     }
 
-    int renderedDocumentHeight(const QString& html)
+    QRect renderedColorBoundsNearInRect(
+        const QString& html,
+        const QColor& expected,
+        const QRect& rect,
+        const int documentWidth = WhatSon::EditorComponent::Callout::designWidth(),
+        const int tolerance = 3)
     {
         QTextDocument editorDocument;
         editorDocument.setDocumentMargin(0);
-        editorDocument.setTextWidth(WhatSon::EditorComponent::Callout::designWidth());
+        editorDocument.setTextWidth(documentWidth);
+        editorDocument.setHtml(html);
+
+        const QSize imageSize(
+            documentWidth + 16,
+            qMax(48, static_cast<int>(std::ceil(editorDocument.size().height())) + 16));
+        QImage rendered(imageSize, QImage::Format_ARGB32_Premultiplied);
+        rendered.fill(Qt::transparent);
+
+        QPainter painter(&rendered);
+        editorDocument.drawContents(&painter);
+        painter.end();
+
+        QRect bounds;
+        const QRect boundedRect = rect.intersected(rendered.rect());
+        for (int y = boundedRect.top(); y <= boundedRect.bottom(); ++y)
+        {
+            for (int x = boundedRect.left(); x <= boundedRect.right(); ++x)
+            {
+                if (!colorNear(rendered.pixelColor(x, y), expected, tolerance))
+                {
+                    continue;
+                }
+
+                const QPoint point(x, y);
+                bounds = bounds.isValid() ? bounds.united(QRect(point, QSize(1, 1))) : QRect(point, QSize(1, 1));
+            }
+        }
+        return bounds;
+    }
+
+    int renderedDocumentHeight(
+        const QString& html,
+        const int documentWidth = WhatSon::EditorComponent::Callout::designWidth())
+    {
+        QTextDocument editorDocument;
+        editorDocument.setDocumentMargin(0);
+        editorDocument.setTextWidth(documentWidth);
         editorDocument.setHtml(html);
         return static_cast<int>(std::ceil(editorDocument.size().height()));
+    }
+
+    int renderedLongestVerticalRunNearInRect(
+        const QString& html,
+        const QColor& expected,
+        const QRect& rect,
+        const int documentWidth = WhatSon::EditorComponent::Callout::designWidth())
+    {
+        QTextDocument editorDocument;
+        editorDocument.setDocumentMargin(0);
+        editorDocument.setTextWidth(documentWidth);
+        editorDocument.setHtml(html);
+
+        const QSize imageSize(
+            documentWidth + 16,
+            qMax(48, static_cast<int>(std::ceil(editorDocument.size().height())) + 16));
+        QImage rendered(imageSize, QImage::Format_ARGB32_Premultiplied);
+        rendered.fill(Qt::transparent);
+
+        QPainter painter(&rendered);
+        editorDocument.drawContents(&painter);
+        painter.end();
+
+        int longestRun = 0;
+        const QRect boundedRect = rect.intersected(rendered.rect());
+        for (int x = boundedRect.left(); x <= boundedRect.right(); ++x)
+        {
+            int currentRun = 0;
+            for (int y = boundedRect.top(); y <= boundedRect.bottom(); ++y)
+            {
+                if (colorNear(rendered.pixelColor(x, y), expected, 3))
+                {
+                    ++currentRun;
+                    longestRun = qMax(longestRun, currentRun);
+                }
+                else
+                {
+                    currentRun = 0;
+                }
+            }
+        }
+        return longestRun;
     }
 
     int renderedLongestHorizontalRunNear(const QString& html, const QColor& expected)
@@ -182,12 +273,13 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
     QVERIFY(html.contains(QStringLiteral("data-frame-padding-bottom=\"4\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-padding-left=\"4\"")));
     QVERIFY(html.contains(QStringLiteral("data-callout-bar-width=\"3\"")));
-    QVERIFY(html.contains(QStringLiteral("data-callout-bar-height=\"14\"")));
+    QVERIFY(html.contains(QStringLiteral("data-callout-bar-design-height=\"14\"")));
+    QVERIFY(html.contains(QStringLiteral("data-callout-bar-height-mode=\"match-content\"")));
     QVERIFY(html.contains(QStringLiteral("data-callout-bar-radius=\"3\"")));
     QVERIFY(html.contains(QStringLiteral("data-callout-content-gap=\"12\"")));
-    QVERIFY(html.contains(QStringLiteral("data-callout-frame-chrome-height=\"22\"")));
+    QVERIFY(html.contains(QStringLiteral("data-callout-frame-min-height=\"22\"")));
+    QVERIFY(html.contains(QStringLiteral("data-callout-frame-chrome-height=\"")));
     QVERIFY(html.contains(QStringLiteral("width=\"100%\"")));
-    QVERIFY(html.contains(QStringLiteral("height=\"22\"")));
     QVERIFY(!html.contains(QStringLiteral("<div class=\"whatson-callout\" height=\"")));
     QVERIFY(html.contains(QStringLiteral("background-color:#262728")));
     QVERIFY(html.contains(QStringLiteral("padding:4px 4px")));
@@ -196,10 +288,11 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
     QVERIFY(!html.contains(QStringLiteral("height:22px")));
     QVERIFY(!html.contains(QStringLiteral("<table")));
     QVERIFY(!html.contains(QStringLiteral("<td")));
-    QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout-leading-bar\"")));
-    QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout-content-gap\"")));
-    QVERIFY(html.contains(QStringLiteral("data-callout-frame-chrome=\"true\"")));
     QVERIFY(!html.contains(QStringLiteral("<td width=\"3\"")));
+    QVERIFY(html.contains(QStringLiteral("<img class=\"whatson-callout-leading-bar\"")));
+    QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout-leading-bar\"")));
+    QVERIFY(!html.contains(QStringLiteral("class=\"whatson-callout-content-gap\"")));
+    QVERIFY(html.contains(QStringLiteral("data-callout-frame-chrome=\"true\"")));
     QVERIFY(!html.contains(QStringLiteral("<td width=\"12\"")));
     QVERIFY(!html.contains(QStringLiteral("&nbsp;")));
     QVERIFY(!html.contains(QStringLiteral("border-left:3px solid #d9d9d9")));
@@ -215,13 +308,34 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
         plainTextWithoutCalloutChrome(editorDocument.toPlainText()).trimmed(),
         QStringLiteral("This is callout text"));
     QCOMPARE(editorDocument.toPlainText().split(QLatin1Char('\n'), Qt::KeepEmptyParts).size(), 1);
+    QVERIFY(editorDocument.toPlainText().contains(QChar::ObjectReplacementCharacter));
     QVERIFY(!editorDocument.toPlainText().contains(QChar::Nbsp));
     QVERIFY2(
-        renderedDocumentHeight(html) >= 20,
-        "The callout's HTML frame must render the requested 4px vertical padding as real row height.");
+        renderedDocumentHeight(html) >= 14,
+        "The callout's HTML frame must render the callout row without collapsing below the Figma bar height.");
     QVERIFY2(
-        renderedPixelCountNearInRect(html, QColor(QStringLiteral("#d9d9d9")), QRect(4, 3, 3, 18)) >= 30,
-        "The callout's HTML frame must render the 3px leading bar after the 4px frame inset and 4px top padding.");
+        renderedPixelCountNearInRect(html, QColor(QStringLiteral("#d9d9d9")), QRect(0, 0, 16, 24)) >= 30,
+        "The callout's HTML frame must render the 3px leading bar as frame chrome.");
+    const int singleLineDocumentHeight = renderedDocumentHeight(html);
+    const QRect barBounds = renderedColorBoundsNearInRect(
+        html,
+        QColor(QStringLiteral("#d9d9d9")),
+        QRect(0, 0, 16, singleLineDocumentHeight));
+    const QRect textBounds = renderedColorBoundsNearInRect(
+        html,
+        QColor(QStringLiteral("#ffffff")),
+        QRect(8, 0, WhatSon::EditorComponent::Callout::designWidth() - 8, singleLineDocumentHeight),
+        WhatSon::EditorComponent::Callout::designWidth(),
+        64);
+    QVERIFY2(barBounds.isValid(), "The callout leading bar must paint into the rendered frame.");
+    QVERIFY2(textBounds.isValid(), "The callout text must paint into the rendered frame.");
+    QVERIFY2(
+        qAbs(barBounds.center().y() - textBounds.center().y()) <= 2,
+        qPrintable(QStringLiteral("The callout leading bar must stay vertically aligned with the text. bar=%1,%2 text=%3,%4")
+            .arg(barBounds.top())
+            .arg(barBounds.bottom())
+            .arg(textBounds.top())
+            .arg(textBounds.bottom())));
     QVERIFY2(
         renderedPixelCountNear(html, QColor(QStringLiteral("#262728"))) >= 100,
         "The callout HTML must render a surface without a QML overlay.");
@@ -232,4 +346,28 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
         renderedLongestHorizontalRunNear(html, QColor(QStringLiteral("#262728")))
             >= WhatSon::EditorComponent::Callout::designWidth() - 1,
         "The callout surface must render as a full-width frame row.");
+
+    WhatSon::EditorComponent::CalloutDescriptor wrappedDescriptor;
+    wrappedDescriptor.sourceText = QStringLiteral("<callout>Wrapped callout text</callout>");
+    wrappedDescriptor.contentHtml = QStringLiteral(
+        "Wrapped callout text should continue on the same visual row while the leading bar grows "
+        "with every wrapped line instead of staying as a fixed icon before the text. "
+        "A second sentence keeps this fixture long enough to wrap at the callout design width.");
+    constexpr int kNarrowDocumentWidth = 142;
+    wrappedDescriptor.editorViewportWidth = kNarrowDocumentWidth;
+    const QString wrappedHtml = WhatSon::EditorComponent::Callout::renderHtml(wrappedDescriptor);
+    const int wrappedDocumentHeight = renderedDocumentHeight(wrappedHtml, kNarrowDocumentWidth);
+    QVERIFY2(
+        wrappedDocumentHeight > 34,
+        "The narrow callout fixture must wrap across multiple visual lines.");
+    const int wrappedBarRun = renderedLongestVerticalRunNearInRect(
+        wrappedHtml,
+        QColor(QStringLiteral("#d9d9d9")),
+        QRect(0, 0, 16, wrappedDocumentHeight),
+        kNarrowDocumentWidth);
+    QVERIFY2(
+        wrappedBarRun >= wrappedDocumentHeight - 8,
+        qPrintable(QStringLiteral("The leading bar must stretch with the wrapped callout content height. run=%1 height=%2")
+            .arg(wrappedBarRun)
+            .arg(wrappedDocumentHeight)));
 }
