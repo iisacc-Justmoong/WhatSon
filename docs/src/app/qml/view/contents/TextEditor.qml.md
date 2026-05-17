@@ -14,9 +14,9 @@
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
 - `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width or text
-  changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)` hook. The hook keeps image resource frames at
-  `width:100%` while using an intrinsic media bitmap width that Qt rich text can lay out, and it regenerates callout
-  frame chrome when edited text wraps to more lines.
+  changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)` hook through a short debounce timer. The hook
+  keeps image resource frames at `width:100%` while using an intrinsic media bitmap width that Qt rich text can lay
+  out, and it regenerates callout frame chrome when edited text wraps to more lines.
 - `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
   LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - The wrapper also binds the public LVRS `editorItem.height` to the measured document end plus the same bottom padding.
@@ -33,8 +33,9 @@
   editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
 - Callouts remain ordinary editable rich text in the LVRS `TextEdit` surface. `TextEditor.qml` does not parse callout
   HTML or draw callout overlays; `component/Callout` emits the block frame HTML that QTextDocument renders directly.
-  The wrapper only schedules the shared C++ frame reproject hook after text changes so generated leading bars keep up
-  with edited wrapped content, and otherwise provides the existing source-line metrics for the sibling gutter.
+  The wrapper only schedules the shared C++ frame reproject hook after text changes with a short debounce, so generated
+  leading bars keep up with edited wrapped content without replacing the native document on every keystroke. It otherwise
+  provides the existing source-line metrics for the sibling gutter.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
 - Cursor movement stays visible by mapping the public LVRS `editorItem.positionToRectangle(cursorPosition)` result into
@@ -80,8 +81,9 @@
   then lets LVRS perform its automatic write-through sync.
 - Replacing the current document text for a C++ resource/callout frame reproject uses a separate public
   `LV.TextEditor.text`/cursor path that preserves the current selection and only restores focus if the editor already
-  had it. It must not call the command-result restore path that forces focus and deselects, because frame chrome refresh
-  can happen while the user is clicking or dragging in the native editor.
+  had it. It is guarded by `editorFrameViewportRefreshApplying` and delayed by `editorFrameViewportRefreshDelayMs`, and
+  it must not call the command-result restore path that forces focus and deselects because frame chrome refresh can
+  happen while the user is typing, clicking, dragging, or composing IME text in the native editor.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or
@@ -120,8 +122,9 @@
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
 - 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌거나 텍스트가
-  바뀌면 QML은 현재 editor HTML과 새 폭을 C++ `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이
-  resource frame 또는 callout frame chrome을 다시 렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
+  바뀌면 QML은 짧은 debounce timer 뒤 현재 editor HTML과 새 폭을 C++
+  `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이 resource frame 또는 callout frame chrome을 다시
+  렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
 - 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
   화면 상단 쪽까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
   계산에는 참여하지 않는다.
@@ -145,8 +148,9 @@
   공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. 지원
   리소스가 없는 일반 paste는 공개 `paste()` API와 native `TextEdit` 경로에 남긴다.
 - resource/callout frame chrome refresh는 별도 교체 경로를 사용해 현재 selection을 보존하고, 이미 editor focus가
-  있던 경우에만 focus를 유지한다. 따라서 생성형 frame chrome 갱신이 마우스 클릭이나 drag selection을 강제로
-  취소하지 않는다.
+  있던 경우에만 focus를 유지한다. 갱신은 `editorFrameViewportRefreshDelayMs` 이후에 debounce되며, 적용 중에는
+  `editorFrameViewportRefreshApplying`으로 재예약을 막고 IME composing 중이면 다시 미룬다. 따라서 생성형 frame
+  chrome 갱신이 문자열 입력, 삭제, 마우스 클릭, drag selection, IME 조합을 강제로 취소하지 않는다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

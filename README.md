@@ -398,8 +398,9 @@ WhatSon is an LVRS-based Qt Quick application.
   white text. The callout owns the whole editor source row as a `whatson-callout` block frame
   instead of an inline text-fit span, while `.wsnbody` still stores only the canonical source wrapper. `TextEditor.qml`
   does not draw callout chrome; the component HTML itself is responsible for the full-width frame, so no QML overlay,
-  table cell, or extra gutter row is introduced. Text changes schedule the shared frame reproject hook, so edited
-  callout content regenerates the leading-bar image on the next editor tick instead of waiting for idle persistence.
+  table cell, or extra gutter row is introduced. Text changes schedule a debounced shared frame reproject hook, so
+  edited callout content regenerates the leading-bar image shortly after the native editor goes quiet instead of
+  waiting for idle persistence or replacing the document on every keystroke.
   Idle RAW push recognizes Qt-serialized callout block backgrounds and strips the frame-chrome object replacement before
   writing canonical source, so callouts do not decay into plain paragraphs over time or clone empty paragraphs around
   the callout during repeated saves. Backspace/Enter

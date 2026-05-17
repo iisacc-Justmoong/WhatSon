@@ -18,6 +18,8 @@ LV.TextEditor {
     property real editorBottomViewportPaddingRatio: 0.75
     property bool cursorViewportSyncQueued: false
     property bool editorFrameViewportRefreshPending: false
+    property bool editorFrameViewportRefreshApplying: false
+    property int editorFrameViewportRefreshDelayMs: 120
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
@@ -492,16 +494,21 @@ LV.TextEditor {
         const hasSelection = selectionEnd > selectionStart;
         const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
 
-        textEditor.text = nextText === undefined || nextText === null
-                ? ""
-                : String(nextText);
+        textEditor.editorFrameViewportRefreshApplying = true;
+        try {
+            textEditor.text = nextText === undefined || nextText === null
+                    ? ""
+                    : String(nextText);
 
-        if (hasSelection)
-            textEditor.select(
-                        textEditor.boundedCursorPosition(selectionStart),
-                        textEditor.boundedCursorPosition(selectionEnd));
-        else
-            textEditor.cursorPosition = targetCursorPosition;
+            if (hasSelection)
+                textEditor.select(
+                            textEditor.boundedCursorPosition(selectionStart),
+                            textEditor.boundedCursorPosition(selectionEnd));
+            else
+                textEditor.cursorPosition = targetCursorPosition;
+        } finally {
+            textEditor.editorFrameViewportRefreshApplying = false;
+        }
 
         if (hadEditorFocus) {
             textEditor.forceEditorFocus();
@@ -514,6 +521,12 @@ LV.TextEditor {
         if (!textEditor.noteEditorSession
                 || textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth === undefined)
             return false;
+        if (textEditor.editorFrameViewportRefreshApplying)
+            return false;
+        if (textEditor.inputMethodComposing) {
+            textEditor.scheduleEditorFrameViewportRefresh();
+            return false;
+        }
 
         const editorWidth = Math.max(1, Math.round(textEditor.editorViewportWidth));
         const result = textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth(
@@ -527,14 +540,11 @@ LV.TextEditor {
     }
 
     function scheduleEditorFrameViewportRefresh() {
-        if (textEditor.editorFrameViewportRefreshPending)
+        if (textEditor.editorFrameViewportRefreshApplying)
             return false;
 
         textEditor.editorFrameViewportRefreshPending = true;
-        Qt.callLater(function () {
-            textEditor.refreshEditorResourceFrameViewportWidth();
-            textEditor.editorFrameViewportRefreshPending = false;
-        });
+        editorFrameViewportRefreshTimer.restart();
         return true;
     }
 
@@ -746,7 +756,8 @@ LV.TextEditor {
         textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        textEditor.scheduleEditorFrameViewportRefresh();
+        if (!textEditor.editorFrameViewportRefreshApplying)
+            textEditor.scheduleEditorFrameViewportRefresh();
     }
     onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
@@ -767,6 +778,18 @@ LV.TextEditor {
         trigger: "holdStarted"
         action: function(eventData) {
             textEditor.handleEditorHoldStarted(eventData);
+        }
+    }
+
+    Timer {
+        id: editorFrameViewportRefreshTimer
+
+        interval: textEditor.editorFrameViewportRefreshDelayMs
+        repeat: false
+
+        onTriggered: {
+            textEditor.editorFrameViewportRefreshPending = false;
+            textEditor.refreshEditorResourceFrameViewportWidth();
         }
     }
 

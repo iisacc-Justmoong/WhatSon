@@ -55,9 +55,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   LVRS rich-text editing. The bar image height is generated from the wrapped content height using the active editor
   viewport width, and the bar starts at the content origin while the root frame owns the `4px` padding. The gap is its
   right margin, so wrapped text is not pushed to a lower line by separate inline spacer images. The editor session's
-  frame reproject hook includes callouts, so edited callout text regenerates the leading-bar image on the next editor
-  tick instead of waiting for idle save/reload. Enter on the frame chrome immediately before content is treated as a
-  source insertion before
+  frame reproject hook includes callouts, and QML schedules it with a short debounce after text changes so edited
+  callout text regenerates the leading-bar image without replacing the document on every keystroke. Enter on the frame
+  chrome immediately before content is treated as a source insertion before
   `<callout>`, and explicit empty source lines adjacent to callouts render through an invisible placeholder so they
   count as editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
@@ -109,8 +109,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
   좌측 bar는 wrap된 content 높이에 맞춘 단일 left-aligned frame chrome 이미지로 렌더링되고, 자체 상단 여백 없이
-  content 원점에서 시작해 첫 텍스트 라인과 세로 중심을 맞춘다. 텍스트 편집으로 wrap 높이가 달라지면 editor session의
-  frame reproject 경로가 다음 tick에 이 이미지를 다시 만든다. gap은 그 이미지의 우측 margin이다.
+  content 원점에서 시작해 첫 텍스트 라인과 세로 중심을 맞춘다. 텍스트 편집으로 wrap 높이가 달라지면 QML이 짧은
+  debounce 뒤 editor session의 frame reproject 경로를 호출해 이 이미지를 다시 만든다. gap은 그 이미지의 우측
+  margin이다.
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `NoteEditorDocumentSession`이 `<callout>` 앞 source
   위치에 빈 줄을 삽입한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를
   실제로 하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.

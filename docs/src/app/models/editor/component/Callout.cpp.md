@@ -32,7 +32,8 @@ Implements the note editor callout HTML renderer.
   frame chrome, so nested inline spans such as italic/highlight remain intact.
 - The callout frame uses normal whitespace and `word-break:break-word`, keeping the component's core meaning as a
   text-wrapping region. Wrapped text grows the rendered frame height. Because the leading bar is a generated image, the
-  editor session reprojects callout frames after text changes so the image height follows edited content immediately.
+  editor session reprojects callout frames through a short QML debounce after text changes, so the image height follows
+  edited content without replacing the native document on every keystroke.
 - The block is surrounded by `<!--whatson-callout-source:...-->` comments. Persistence uses those markers to recognize
   live rendered callouts and recover the canonical `<callout>...</callout>` wrapper from edited rich text.
 
@@ -47,6 +48,7 @@ Implements the note editor callout HTML renderer.
 - 배경 면은 block frame 자체가 담당하고, 좌측 막대는 table이나 QML overlay가 아니라 left-aligned frame-chrome
   이미지로 렌더링된다. gap은 이 이미지의 우측 margin이며, 실제 콘텐츠는 `data-callout-content="true"` span 안에만 둔다.
 - callout은 line number 한 줄을 전부 점유하는 editor row이며, 텍스트가 wrap되면 프레임 높이도 함께 늘어난다.
-- 좌측 막대는 생성된 이미지이므로, 텍스트 변경 후 editor session의 frame reproject가 다시 실행되어 막대 높이가
-  편집된 content의 wrap 높이를 즉시 따라간다.
+- 좌측 막대는 생성된 이미지이므로, 텍스트 변경 후 QML의 짧은 debounce를 거쳐 editor session의 frame reproject가
+  다시 실행되어 막대 높이가 편집된 content의 wrap 높이를 따라간다. 이 갱신은 매 keystroke마다 native document를
+  즉시 교체하지 않는다.
 - `.wsnbody`에는 여전히 `<callout>...</callout>` source wrapper만 저장된다.

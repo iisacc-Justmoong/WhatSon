@@ -36,7 +36,8 @@ Declares the active note editor document session object.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
-  current edited content height so typing inside a wrapped callout does not wait for idle persistence to update chrome.
+  current edited content height. QML calls this through a short debounce after text changes so typing inside a wrapped
+  callout does not wait for idle persistence but also does not replace the native document on every keystroke.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
@@ -89,7 +90,8 @@ Declares the active note editor document session object.
   persistence는 이 세션의 책임이 아니다.
 - `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
-  초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 즉시 재생성된다.
+  초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트
+  변경 후 짧은 debounce를 두고 이 함수를 호출해 native document를 매 keystroke마다 교체하지 않는다.
 - `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
