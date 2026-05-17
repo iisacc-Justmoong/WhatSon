@@ -44,7 +44,9 @@
 - The wrapper attaches `ClipboardEditorPaste` to the public LVRS `editorItem` as the consumable editor paste owner.
   The owner handles only supported image resource paste and returns `true` from its C++ event filter after applying the
   C++-projected editor HTML, preventing the same `Cmd+V` event from reaching native `TextEdit` paste. Unsupported
-  clipboard data is left unconsumed so ordinary text paste remains native.
+  clipboard data is left unconsumed so ordinary text paste remains native. The same C++ event filter is also the native
+  key boundary hook for callouts: it forwards plain Backspace/Enter to `NoteEditorDocumentSession` and consumes the
+  event only when the session reports a handled callout operation.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's
@@ -131,7 +133,8 @@
   RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
   cursor API로 복원한다. 이미지 resource paste는 `ClipboardEditorPaste` C++ event filter가 공개 editor item에서
   실제 key event를 consume하는 방식으로 소유한다. 지원 리소스가 없는 일반 paste는 공개 `paste()` API와 native
-  `TextEdit` 경로에 남긴다.
+  `TextEdit` 경로에 남긴다. 같은 event filter가 콜아웃 경계 Backspace/Enter도 C++ 세션으로 전달하며, 세션이
+  처리한 콜아웃 동작일 때만 event를 consume한다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

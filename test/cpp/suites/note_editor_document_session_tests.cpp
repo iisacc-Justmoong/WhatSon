@@ -601,6 +601,98 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()
+{
+    NoteEditorDocumentSession session;
+    const QString sourceText =
+        QStringLiteral("Before\n"
+                       "<callout>Inside</callout>\n"
+                       "After");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("callout-boundary-note"),
+        sourceText);
+    const int calloutInitCursor = QStringLiteral("Before\n").size();
+
+    const QVariantMap result = session.handleCalloutBoundaryKeyInSource(
+        editorHtml,
+        calloutInitCursor,
+        0,
+        Qt::Key_Backspace);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QVERIFY(result.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Before\nInside\nAfter"));
+    QCOMPARE(result.value(QStringLiteral("cursorPosition")).toInt(), calloutInitCursor);
+    QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-callout")));
+
+    const QString emptySourceText =
+        QStringLiteral("Before\n"
+                       "<callout></callout>\n"
+                       "After");
+    const QString emptyEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("empty-callout-boundary-note"),
+        emptySourceText);
+    const QVariantMap emptyResult = session.handleCalloutBoundaryKeyInSource(
+        emptyEditorHtml,
+        calloutInitCursor,
+        0,
+        Qt::Key_Backspace);
+
+    QVERIFY(emptyResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(emptyResult.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(emptyResult.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        emptyResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Before\nAfter"));
+    QCOMPARE(emptyResult.value(QStringLiteral("cursorPosition")).toInt(), calloutInitCursor);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside()
+{
+    NoteEditorDocumentSession session;
+    const QString sourceText =
+        QStringLiteral("Before\n"
+                       "<callout>Inside</callout>\n"
+                       "After");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("callout-enter-note"),
+        sourceText);
+
+    const QVariantMap result = session.handleCalloutBoundaryKeyInSource(
+        editorHtml,
+        QStringLiteral("Before\nIns").size(),
+        0,
+        Qt::Key_Return);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QVERIFY(result.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), false);
+    QCOMPARE(result.value(QStringLiteral("bodySourceText")).toString(), sourceText);
+    QCOMPARE(result.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Before\nInside\n").size());
+
+    const QString trailingCalloutSourceText = QStringLiteral("<callout>Inside</callout>");
+    const QString trailingCalloutEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("trailing-callout-enter-note"),
+        trailingCalloutSourceText);
+    const QVariantMap trailingResult = session.handleCalloutBoundaryKeyInSource(
+        trailingCalloutEditorHtml,
+        QStringLiteral("Ins").size(),
+        0,
+        Qt::Key_Enter);
+
+    QVERIFY(trailingResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(trailingResult.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(trailingResult.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        trailingResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<callout>Inside</callout>\n"));
+    QCOMPARE(trailingResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Inside\n").size());
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText()
 {
     QTemporaryDir workspaceDir;

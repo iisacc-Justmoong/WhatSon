@@ -36,6 +36,10 @@ Implements the active note editor document session.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
+10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
+    Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, unwraps or
+    removes a callout at its content start, or moves the cursor to the line after the callout when Enter/Return is
+    pressed inside it.
 
 ## Guardrails
 
@@ -88,6 +92,10 @@ Implements the active note editor document session.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`.
+- Callout boundary keys are also source mutations owned by this class. Backspace at the callout content start removes
+  only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does not.
+  Enter/Return inside a callout never inserts text inside the wrapper; it places the cursor on the following source
+  line outside the wrapper, creating that following line for a trailing callout.
 - It must not expose the raw XML body file as the editor file path.
 
 ## 한국어
@@ -121,3 +129,6 @@ Implements the active note editor document session.
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
+- 콜아웃 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
+  제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지
+  않고 닫는 태그 뒤 다음 source line으로 커서를 옮긴다. trailing callout이면 그 다음 줄을 새로 만든다.

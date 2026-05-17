@@ -375,6 +375,160 @@ namespace
         return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
     }
 
+    struct CalloutSourceRange final
+    {
+        int openingStart = -1;
+        int openingEnd = -1;
+        int contentStart = -1;
+        int contentEnd = -1;
+        int closingStart = -1;
+        int closingEnd = -1;
+
+        bool isValid() const noexcept
+        {
+            return openingStart >= 0
+                && openingEnd >= openingStart
+                && contentStart == openingEnd
+                && contentEnd >= contentStart
+                && closingStart == contentEnd
+                && closingEnd >= closingStart;
+        }
+    };
+
+    QVector<CalloutSourceRange> calloutSourceRanges(const QString& bodySourceText)
+    {
+        struct OpeningCalloutTag final
+        {
+            int start = -1;
+            int end = -1;
+        };
+
+        static const QRegularExpression calloutTagPattern(
+            QStringLiteral(R"(<\s*(/?)\s*callout\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QVector<OpeningCalloutTag> openingStack;
+        QVector<CalloutSourceRange> ranges;
+        QRegularExpressionMatchIterator matchIterator = calloutTagPattern.globalMatch(bodySourceText);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            const QString token = match.captured(0).trimmed();
+            const bool closingTag = !match.captured(1).isEmpty();
+            const bool selfClosingTag = token.endsWith(QStringLiteral("/>"));
+            if (!closingTag && !selfClosingTag)
+            {
+                openingStack.push_back({
+                    static_cast<int>(match.capturedStart(0)),
+                    static_cast<int>(match.capturedEnd(0))
+                });
+                continue;
+            }
+            if (!closingTag || openingStack.isEmpty())
+            {
+                continue;
+            }
+
+            const OpeningCalloutTag opening = openingStack.takeLast();
+            ranges.push_back({
+                opening.start,
+                opening.end,
+                opening.end,
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedEnd(0))
+            });
+        }
+
+        std::sort(
+            ranges.begin(),
+            ranges.end(),
+            [](const CalloutSourceRange& left, const CalloutSourceRange& right)
+            {
+                return left.openingStart < right.openingStart;
+            });
+        return ranges;
+    }
+
+    bool calloutRangeContainsEditorCursor(
+        const QString& bodySourceText,
+        const CalloutSourceRange& range,
+        const int editorCursorPosition)
+    {
+        if (!range.isValid())
+        {
+            return false;
+        }
+
+        const int contentEditorStart = editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
+        const int contentEditorEnd = editorCursorPositionForSourcePosition(bodySourceText, range.contentEnd);
+        return editorCursorPosition >= contentEditorStart && editorCursorPosition <= contentEditorEnd;
+    }
+
+    bool calloutRangeStartsAtEditorCursor(
+        const QString& bodySourceText,
+        const CalloutSourceRange& range,
+        const int editorCursorPosition)
+    {
+        return range.isValid()
+            && editorCursorPosition == editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
+    }
+
+    bool findCalloutRangeForEditorCursor(
+        const QString& bodySourceText,
+        const int editorCursorPosition,
+        const bool requireInitCursor,
+        CalloutSourceRange* outRange)
+    {
+        const QVector<CalloutSourceRange> ranges = calloutSourceRanges(bodySourceText);
+        for (const CalloutSourceRange& range : ranges)
+        {
+            const bool matches = requireInitCursor
+                ? calloutRangeStartsAtEditorCursor(bodySourceText, range, editorCursorPosition)
+                : calloutRangeContainsEditorCursor(bodySourceText, range, editorCursorPosition);
+            if (!matches)
+            {
+                continue;
+            }
+            if (outRange != nullptr)
+            {
+                *outRange = range;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void expandEmptyCalloutRemovalToSourceLine(
+        const QString& bodySourceText,
+        int* removeStart,
+        int* removeEnd)
+    {
+        if (removeStart == nullptr || removeEnd == nullptr)
+        {
+            return;
+        }
+
+        const bool hasPreviousLineBreak =
+            *removeStart > 0 && bodySourceText.at(*removeStart - 1) == QLatin1Char('\n');
+        const bool hasNextLineBreak =
+            *removeEnd < bodySourceText.size() && bodySourceText.at(*removeEnd) == QLatin1Char('\n');
+        if (hasPreviousLineBreak && hasNextLineBreak)
+        {
+            ++(*removeEnd);
+            return;
+        }
+        if (hasPreviousLineBreak)
+        {
+            --(*removeStart);
+            return;
+        }
+        if (hasNextLineBreak)
+        {
+            ++(*removeEnd);
+        }
+    }
+
     bool isStandaloneResourceSourceLine(const QString& line)
     {
         static const QRegularExpression resourcePattern(
@@ -1494,6 +1648,153 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     }
     setLastError(QString());
     return result;
+}
+
+QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const int key)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const int boundedCursorPosition =
+        clampedPosition(cursorPosition, visibleCharactersForSourceText(sourceText).size());
+    const int boundedSelectionLength = qMax(0, selectionLength);
+
+    const auto buildResult =
+        [this, &noteId, &editorDocumentText](
+            const bool handled,
+            const bool changed,
+            const QString& bodySourceText,
+            const int sourceCursorPosition,
+            const int editorCursorPosition,
+            const QString& errorMessage = QString()) -> QVariantMap
+        {
+            const QString projectedEditorDocumentText = handled
+                ? editorHtmlFromBodySourceForNoteContext(
+                    noteId,
+                    bodySourceText,
+                    m_activeNoteDirectoryPath,
+                    m_editorViewportWidth)
+                : editorDocumentText;
+
+            QVariantMap result;
+            result.insert(QStringLiteral("valid"), errorMessage.isEmpty());
+            result.insert(QStringLiteral("handled"), handled);
+            result.insert(QStringLiteral("changed"), handled && changed);
+            result.insert(QStringLiteral("bodySourceText"), bodySourceText);
+            result.insert(QStringLiteral("editorDocumentText"), projectedEditorDocumentText);
+            result.insert(QStringLiteral("cursorPosition"), editorCursorPosition);
+            result.insert(QStringLiteral("sourceCursorPosition"), sourceCursorPosition);
+            result.insert(QStringLiteral("selectionStart"), sourceCursorPosition);
+            result.insert(QStringLiteral("selectionLength"), 0);
+            result.insert(QStringLiteral("editorSelectionStart"), editorCursorPosition);
+            result.insert(QStringLiteral("editorSelectionLength"), 0);
+            result.insert(QStringLiteral("errorMessage"), errorMessage);
+            return result;
+        };
+
+    if (boundedSelectionLength > 0
+        || (key != Qt::Key_Backspace && key != Qt::Key_Return && key != Qt::Key_Enter))
+    {
+        return buildResult(
+            false,
+            false,
+            sourceText,
+            sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+            boundedCursorPosition);
+    }
+
+    CalloutSourceRange range;
+    if (key == Qt::Key_Backspace)
+    {
+        if (!findCalloutRangeForEditorCursor(sourceText, boundedCursorPosition, true, &range))
+        {
+            return buildResult(
+                false,
+                false,
+                sourceText,
+                sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+                boundedCursorPosition);
+        }
+
+        QString mutatedSourceText;
+        int sourceCursorPosition = range.openingStart;
+        if (range.contentStart == range.contentEnd)
+        {
+            int removeStart = range.openingStart;
+            int removeEnd = range.closingEnd;
+            expandEmptyCalloutRemovalToSourceLine(sourceText, &removeStart, &removeEnd);
+            mutatedSourceText = sourceText.left(removeStart) + sourceText.mid(removeEnd);
+            sourceCursorPosition = removeStart;
+        }
+        else
+        {
+            mutatedSourceText =
+                sourceText.left(range.openingStart)
+                + sourceText.mid(range.contentStart, range.contentEnd - range.contentStart)
+                + sourceText.mid(range.closingEnd);
+        }
+
+        sourceCursorPosition = clampedPosition(sourceCursorPosition, mutatedSourceText.size());
+        const int editorCursorPosition = editorCursorPositionForSourcePosition(
+            mutatedSourceText,
+            sourceCursorPosition);
+        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
+        if (hasActiveNote())
+        {
+            m_activeBodySourceText = mutatedSourceText;
+        }
+        setLastError(QString());
+        return buildResult(true, mutatedSourceText != sourceText, mutatedSourceText, sourceCursorPosition, editorCursorPosition);
+    }
+
+    if (!findCalloutRangeForEditorCursor(sourceText, boundedCursorPosition, false, &range))
+    {
+        return buildResult(
+            false,
+            false,
+            sourceText,
+            sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+            boundedCursorPosition);
+    }
+
+    QString mutatedSourceText = sourceText;
+    int sourceCursorPosition = range.closingEnd;
+    if (sourceCursorPosition < mutatedSourceText.size()
+        && mutatedSourceText.at(sourceCursorPosition) == QLatin1Char('\n'))
+    {
+        ++sourceCursorPosition;
+    }
+    else
+    {
+        mutatedSourceText.insert(sourceCursorPosition, QLatin1Char('\n'));
+        ++sourceCursorPosition;
+    }
+
+    const bool changed = mutatedSourceText != sourceText;
+    if (changed)
+    {
+        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
+        if (hasActiveNote())
+        {
+            m_activeBodySourceText = mutatedSourceText;
+        }
+    }
+    setLastError(QString());
+    return buildResult(
+        true,
+        changed,
+        mutatedSourceText,
+        sourceCursorPosition,
+        editorCursorPositionForSourcePosition(mutatedSourceText, sourceCursorPosition));
 }
 
 void NoteEditorDocumentSession::refreshFromActiveNoteState()

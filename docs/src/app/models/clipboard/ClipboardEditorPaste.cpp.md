@@ -11,6 +11,9 @@ Implements image resource paste orchestration for the note editor.
 - Owns a C++ event filter attachment for the editor's public LVRS editor item. The event filter handles non-repeated
   `Cmd/Ctrl+V` key press events, runs image resource paste synchronously, and returns `true` only when the key event must
   be consumed.
+- The same event filter delegates plain Backspace/Enter key presses to
+  `NoteEditorDocumentSession.handleCalloutBoundaryKeyInSource(...)` before native `TextEdit` handling, so callout
+  wrapper removal and callout exit behavior can be applied from canonical RAW source instead of QML string parsing.
 - Returns a `stage` field for every handled result so QML can distinguish capture failure, unsupported resources,
   import failure, source insertion failure, reload failure, and completed paste without reaching into lower-level
   objects.
@@ -29,3 +32,5 @@ Implements image resource paste orchestration for the note editor.
 - QML은 반환된 `editorDocumentText`와 `cursorPosition`만 LVRS `TextEditor`에 반영한다.
 - C++ event filter가 적용을 완료한 image paste event는 consume한다. 지원 리소스가 없어 native paste fallback이
   필요한 경우에는 consume하지 않아 LVRS `TextEdit` 기본 paste가 계속 실행될 수 있다.
+- 같은 event filter는 plain Backspace/Enter도 먼저 세션에 위임한다. 세션이 콜아웃 경계 키로 처리한 경우에만
+  event를 consume하고, 콜아웃이 아닌 일반 텍스트 위치에서는 native `TextEdit` 처리를 그대로 남긴다.

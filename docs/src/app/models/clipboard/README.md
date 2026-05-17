@@ -25,7 +25,9 @@ macOS file import.
 - `ClipboardEditorPaste.*`
   Owns note-editor paste orchestration for clipboard resources. The first implemented path is image paste: capture the
   current resource snapshot, import it as a `.wsresource`, ask `NoteEditorDocumentSession` for the editor/body source
-  insertion, and report whether QML should fall back to native paste with a stage string for diagnostics.
+  insertion, and report whether QML should fall back to native paste with a stage string for diagnostics. Its editor
+  item event filter also forwards plain Backspace/Enter to the note editor session for callout boundary handling before
+  native text input runs.
 - `InAppClipboardStore.*`
   Stores one in-app clipboard resource snapshot at a time and emits `resourceChanged()` when the manager updates or
   clears that snapshot.
@@ -49,6 +51,8 @@ macOS file import.
   pipeline is part of `InAppClipboardManager`.
 - Editor paste must go through `ClipboardEditorPaste` so the `.wsresource` package is persisted before only returned
   metadata reaches `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
+- Callout boundary Backspace/Enter may share the same editor item event filter, but RAW source decisions must still
+  live in `NoteEditorDocumentSession`.
 
 ## Tests
 
@@ -69,3 +73,5 @@ macOS file import.
   package/asset 이름으로 바뀌며, duplicate preflight에서도 기본 임시 파일명 자체로 충돌하지 않는다.
 - QML은 `ClipboardEditorPaste`의 좁은 editor paste invokable 결과만 에디터에 반영하며, 실제 MIME 판별,
   패키지 생성, 충돌 처리, source 삽입 계획, `.wsresources` 갱신은 C++ 객체들이 수행한다.
+- 같은 editor item event filter가 콜아웃 경계 Backspace/Enter를 세션으로 전달할 수 있지만, `<callout>` RAW
+  판단과 source mutation은 `NoteEditorDocumentSession` 책임이다.

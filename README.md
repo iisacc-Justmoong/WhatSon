@@ -87,7 +87,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Editor callout creation now uses the note editor format command path: `Cmd+Shift+C` inserts only the canonical
   `<callout>...</callout>` RAW wrapper around the live selection, and the non-macOS companion `Ctrl+Shift+C` follows
   the same path. When there is no selection, the shortcut inserts an empty `<callout></callout>` wrapper with the cursor
-  inside it; `component/Callout` is the visual projection owner.
+  inside it; `component/Callout` is the visual projection owner. At the callout content start, plain Backspace removes
+  the callout wrapper, preserving existing contents as normal source and deleting an empty callout frame entirely.
+  Plain Enter/Return inside a callout moves the cursor to the next source line outside the wrapper.
 - Editor tag generation now lives in the shortcut-independent `ContentsEditorTagMutationBuilder`; shortcut handlers
   only resolve a canonical tag name before calling the shared RAW mutation builder, so future menu or toolbar commands
   can add the same tags without depending on key events.
@@ -390,7 +392,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12` white text. The callout owns the whole editor source row,
   and the leading bar stretches with wrapped text while `.wsnbody` still stores the canonical source wrapper. Idle RAW
   push also recognizes Qt-serialized callout tables after comment/data markers are stripped, so callouts do not decay
-  into plain paragraphs over time or clone empty paragraphs around the callout during repeated saves.
+  into plain paragraphs over time or clone empty paragraphs around the callout during repeated saves. Backspace/Enter
+  boundary behavior is handled by the C++ editor session from canonical RAW source, not by QML parsing rendered callout
+  chrome.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

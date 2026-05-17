@@ -1253,6 +1253,8 @@ private slots:
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
+    void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
+    void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
     void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();

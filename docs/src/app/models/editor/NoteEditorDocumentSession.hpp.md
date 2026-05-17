@@ -41,6 +41,10 @@ Declares the active note editor document session object.
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
   format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
   `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source.
+- Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
+  content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
+  callout frame entirely. Enter/Return inside a callout moves the cursor to the next source line outside the wrapper,
+  adding that line break when the callout is currently the trailing source node.
 
 ## Guardrails
 
@@ -52,6 +56,8 @@ Declares the active note editor document session object.
   the resulting metadata refresh.
 - Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name, current
   cursor/selection metadata, and selected visible text into this session boundary.
+- Callout boundary key behavior stays in this session boundary. QML and event filters may forward raw key/cursor
+  metadata, but they must not parse `<callout>` source or mutate wrapper text themselves.
 - Inline format mutation must not discard existing RAW wrapper tags just because the editor HTML projection no longer
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
@@ -88,3 +94,7 @@ Declares the active note editor document session object.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
   visible 범위를 다시 찾는다.
+- `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
+  Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
+  콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로 이동시키고, 뒤에
+  줄이 없으면 새 줄을 추가한다.

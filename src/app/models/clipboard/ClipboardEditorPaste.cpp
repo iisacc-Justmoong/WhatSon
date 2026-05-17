@@ -182,6 +182,11 @@ bool ClipboardEditorPaste::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_editorItem && event != nullptr && event->type() == QEvent::KeyPress)
     {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
+        if (handleEditorCalloutBoundaryKeyEvent(*keyEvent))
+        {
+            event->accept();
+            return true;
+        }
         if (handleEditorPasteKeyEvent(*keyEvent))
         {
             event->accept();
@@ -235,6 +240,70 @@ bool ClipboardEditorPaste::editorPasteKeyMatches(const QKeyEvent& event) const
     const bool disallowedModifiers =
         modifiers.testFlag(Qt::ShiftModifier) || modifiers.testFlag(Qt::AltModifier);
     return commandModifier && !disallowedModifiers;
+}
+
+bool ClipboardEditorPaste::editorCalloutBoundaryKeyMatches(const QKeyEvent& event) const
+{
+    if (event.isAutoRepeat())
+    {
+        return false;
+    }
+
+    const bool supportedKey =
+        event.key() == Qt::Key_Backspace
+        || event.key() == Qt::Key_Return
+        || event.key() == Qt::Key_Enter;
+    if (!supportedKey)
+    {
+        return false;
+    }
+
+    const Qt::KeyboardModifiers modifiers = event.modifiers();
+    return !modifiers.testFlag(Qt::ShiftModifier)
+        && !modifiers.testFlag(Qt::ControlModifier)
+        && !modifiers.testFlag(Qt::MetaModifier)
+        && !modifiers.testFlag(Qt::AltModifier);
+}
+
+bool ClipboardEditorPaste::handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event)
+{
+    if (!editorCalloutBoundaryKeyMatches(event)
+        || m_editorOwner.isNull()
+        || m_noteEditorSessionObject.isNull())
+    {
+        return false;
+    }
+
+    auto* noteEditorSession = qobject_cast<NoteEditorDocumentSession*>(m_noteEditorSessionObject.data());
+    if (noteEditorSession == nullptr)
+    {
+        return false;
+    }
+
+    const QString editorDocumentText =
+        m_editorOwner->property("editorDocumentText").toString();
+    const int selectionStart =
+        m_editorOwner->property("editorSelectionStart").toInt();
+    const int selectionLength =
+        m_editorOwner->property("editorSelectionLength").toInt();
+
+    const QVariantMap result = noteEditorSession->handleCalloutBoundaryKeyInSource(
+        editorDocumentText,
+        selectionStart,
+        selectionLength,
+        event.key());
+    if (!result.value(QStringLiteral("handled")).toBool())
+    {
+        return false;
+    }
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        return true;
+    }
+
+    applyEditorPasteResultToOwner(result);
+    event.accept();
+    return true;
 }
 
 bool ClipboardEditorPaste::handleEditorPasteKeyEvent(QKeyEvent& event)

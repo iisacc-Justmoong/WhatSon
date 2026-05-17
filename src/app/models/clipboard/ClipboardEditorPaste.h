@@ -47,7 +47,9 @@ private:
     void clearEditorPasteOwner();
     void clearDestroyedEditorPasteOwner();
     bool editorPasteKeyMatches(const QKeyEvent& event) const;
+    bool editorCalloutBoundaryKeyMatches(const QKeyEvent& event) const;
     bool handleEditorPasteKeyEvent(QKeyEvent& event);
+    bool handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event);
     bool applyEditorPasteResultToOwner(const QVariantMap& insertion);
 
     QPointer<QObject> m_editorItem;
