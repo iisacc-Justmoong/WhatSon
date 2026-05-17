@@ -394,15 +394,25 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
+        contentsRoot + QStringLiteral("/3DEditor.qml"),
+        contentsRoot + QStringLiteral("/AudioEditor.qml"),
+        contentsRoot + QStringLiteral("/BinEditor.qml"),
+        contentsRoot + QStringLiteral("/DocumentEditor.qml"),
         contentsRoot + QStringLiteral("/Gutter.qml"),
         contentsRoot + QStringLiteral("/ImageEditor.qml"),
         contentsRoot + QStringLiteral("/TextEditor.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
+        contentsRoot + QStringLiteral("/VideoEditor.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
+        docsContentsRoot + QStringLiteral("/3DEditor.qml.md"),
+        docsContentsRoot + QStringLiteral("/AudioEditor.qml.md"),
+        docsContentsRoot + QStringLiteral("/BinEditor.qml.md"),
+        docsContentsRoot + QStringLiteral("/DocumentEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/Gutter.qml.md"),
         docsContentsRoot + QStringLiteral("/ImageEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/TextEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/Minimap.qml.md")
+        docsContentsRoot + QStringLiteral("/Minimap.qml.md"),
+        docsContentsRoot + QStringLiteral("/VideoEditor.qml.md")
     };
     for (const QString& relativePath : requiredPaths)
     {
@@ -431,19 +441,29 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QStringList contentsQmlFiles =
         QDir(repositoryRoot.filePath(contentsRoot)).entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsQmlFiles, QStringList({
+        QStringLiteral("3DEditor.qml"),
+        QStringLiteral("AudioEditor.qml"),
+        QStringLiteral("BinEditor.qml"),
+        QStringLiteral("DocumentEditor.qml"),
         QStringLiteral("Gutter.qml"),
         QStringLiteral("ImageEditor.qml"),
         QStringLiteral("Minimap.qml"),
-        QStringLiteral("TextEditor.qml")
+        QStringLiteral("TextEditor.qml"),
+        QStringLiteral("VideoEditor.qml")
     }));
     const QStringList contentsDocsFiles =
         QDir(repositoryRoot.filePath(docsContentsRoot)).entryList(QStringList{QStringLiteral("*.md")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsDocsFiles, QStringList({
+        QStringLiteral("3DEditor.qml.md"),
+        QStringLiteral("AudioEditor.qml.md"),
+        QStringLiteral("BinEditor.qml.md"),
+        QStringLiteral("DocumentEditor.qml.md"),
         QStringLiteral("Gutter.qml.md"),
         QStringLiteral("ImageEditor.qml.md"),
         QStringLiteral("Minimap.qml.md"),
         QStringLiteral("README.md"),
-        QStringLiteral("TextEditor.qml.md")
+        QStringLiteral("TextEditor.qml.md"),
+        QStringLiteral("VideoEditor.qml.md")
     }));
 
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/ContentsView.qml"))));

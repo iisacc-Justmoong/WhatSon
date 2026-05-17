@@ -8,14 +8,26 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
     const QString contentViewLayoutSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QStringList placeholderEditorFiles{
+        QStringLiteral("3DEditor.qml"),
+        QStringLiteral("AudioEditor.qml"),
+        QStringLiteral("BinEditor.qml"),
+        QStringLiteral("DocumentEditor.qml"),
+        QStringLiteral("VideoEditor.qml")
+    };
 
     QVERIFY(contentsDir.exists());
     const QStringList contentQmlFiles = contentsDir.entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
     QCOMPARE(contentQmlFiles, QStringList({
+        QStringLiteral("3DEditor.qml"),
+        QStringLiteral("AudioEditor.qml"),
+        QStringLiteral("BinEditor.qml"),
+        QStringLiteral("DocumentEditor.qml"),
         QStringLiteral("Gutter.qml"),
         QStringLiteral("ImageEditor.qml"),
         QStringLiteral("Minimap.qml"),
-        QStringLiteral("TextEditor.qml")
+        QStringLiteral("TextEditor.qml"),
+        QStringLiteral("VideoEditor.qml")
     }));
     QVERIFY(!QDir(contentsDir.filePath(QStringLiteral("editor"))).exists());
 
@@ -24,6 +36,23 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!textEditorSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(!contentViewLayoutSource.isEmpty());
+    for (const QString& placeholderFileName : placeholderEditorFiles)
+    {
+        const QString placeholderSource =
+            readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/") + placeholderFileName);
+        QVERIFY2(
+            !placeholderSource.isEmpty(),
+            qPrintable(QStringLiteral("Empty placeholder contents view: %1").arg(placeholderFileName)));
+        QVERIFY(placeholderSource.contains(QStringLiteral("pragma ComponentBehavior: Bound")));
+        QVERIFY(placeholderSource.contains(QStringLiteral("import QtQuick")));
+        QVERIFY(placeholderSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+        QVERIFY(placeholderSource.contains(QStringLiteral("Item {")));
+        QVERIFY(placeholderSource.contains(QStringLiteral("objectName: \"contents")));
+        QVERIFY(!placeholderSource.contains(QStringLiteral("LV.TextEditor")));
+        QVERIFY(!placeholderSource.contains(QStringLiteral("Image {")));
+        QVERIFY(!placeholderSource.contains(QStringLiteral("property var resourceEntry")));
+        QVERIFY(!placeholderSource.contains(QStringLiteral("noteEditorSession")));
+    }
     QVERIFY(gutterSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(gutterSource.contains(QStringLiteral("property string sourceFilePath: \"\"")));
