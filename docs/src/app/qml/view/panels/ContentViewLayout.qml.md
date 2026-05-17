@@ -42,7 +42,7 @@ a supported image resource it consumes the underlying key event, so native `Text
 resource paste. Unsupported clipboard content remains unconsumed and continues through the LVRS native paste path.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
-`underline`, `strikethrough`, `highlight`, and `break` call
+`underline`, `strikethrough`, `highlight`, `break`, and `callout` call
 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, selection
 metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. Keyboard
 shortcuts read the sibling editor's live selection at command time, while the selected-text context menu explicitly opts
@@ -54,7 +54,9 @@ reports a drifted offset. The C++ session uses the loaded `.wsnbody` RAW source 
 lossy editor RichText projection cannot remove blank source rows before selection is mapped. Applying the same paired
 format to the exact text already enclosed by that format toggles it off in `SetTag`; QML does not special-case this.
 Highlight is bound to `Meta+Shift+E` /
-`Ctrl+Shift+E`, and break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`.
+`Ctrl+Shift+E`, break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`, and callout is bound to `Meta+Shift+C` /
+`Ctrl+Shift+C`. Callout uses the same insertion result as other format shortcuts: a selection becomes the rendered
+callout contents, while an empty selection inserts an empty visual callout frame with the cursor inside the RAW wrapper.
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
 `LV.ContextMenu` only when the sibling editor reports a non-empty selection. Menu entries for `bold`, `italic`,
@@ -129,7 +131,8 @@ classified as a local modified-count push.
   없으면 이벤트를 consume하지 않아 일반 텍스트 paste는 LVRS native 경로로 계속 흐른다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
-  브레이크는 `Cmd+Shift+B`를 기준으로 하고, 비 macOS 변형으로 같은 `Ctrl+Shift+E/B`도 받는다. 단축키는 명령
+  브레이크는 `Cmd+Shift+B`, 콜아웃은 `Cmd+Shift+C`를 기준으로 하고, 비 macOS 변형으로 같은
+  `Ctrl+Shift+E/B/C`도 받는다. 단축키는 명령
   시점의 live selection을 사용하고, 컨텍스트 메뉴만 우클릭 interaction 전에 저장한 snapshot을 명시적으로 사용한다.
   실제 포맷 mutation은 C++ 세션이 로드된 `.wsnbody` RAW source를 기준으로 수행하므로, editor RichText projection이
   빈 source row를 손실해도 보이는 selection이 하단 문자열로 밀리지 않아야 한다.
@@ -137,7 +140,8 @@ classified as a local modified-count push.
   `getText(selectionStart, selectionEnd)`로 읽어 C++ repair anchor로 넘긴다.
   컨텍스트 메뉴는 선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을
   같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
-  처리한다.
+  처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
+  콜아웃 시각 프레임을 즉시 만든다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고

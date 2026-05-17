@@ -197,6 +197,9 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"break\")")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+B\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+B\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"callout\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+C\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+C\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));

@@ -516,6 +516,24 @@ Item {
             onActivated: contentViewLayout.applyEditorFormatTag("break")
         }
 
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
+            sequence: "Ctrl+Shift+C"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("callout")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
+            sequence: "Meta+Shift+C"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("callout")
+        }
+
         LV.ContextMenu {
             id: editorFormatContextMenu
 

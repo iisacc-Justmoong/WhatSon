@@ -43,7 +43,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
-  Figma `280:7897` callout as a full-width editor row with a `#262728` surface, `4px` padding, `12px` content gap,
+  Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
+  `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` padding, `12px` content gap,
   Pretendard Medium `12/12` white body text, and a `3px` `#d9d9d9` leading bar whose table cell stretches with wrapped
   callout text. The component keeps source recovery marker-wrapped so persistence can restore the callout wrapper after
   LVRS rich-text editing.

@@ -470,6 +470,39 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         QStringLiteral("Alpha <highlight>Beta</highlight>\nGamma"),
         QStringLiteral("<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">Beta</span>"));
 
+    const QVariantMap selectedCalloutResult = session.insertFormatTagIntoSource(
+        QStringLiteral("callout"),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(selectedCalloutResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        selectedCalloutResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <callout>Beta</callout>\nGamma"));
+    QVERIFY(selectedCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("class=\"whatson-callout\"")));
+    QVERIFY(selectedCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("data-callout-content=\"true\"")));
+    QVERIFY(selectedCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("Beta")));
+    QVERIFY(!selectedCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<callout>")));
+    QCOMPARE(
+        selectedCalloutResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("Alpha <callout>Beta</callout>").size());
+
+    const QVariantMap emptyCalloutResult = session.insertFormatTagIntoSource(
+        QStringLiteral("callout"),
+        editorHtml,
+        5,
+        0);
+    QVERIFY(emptyCalloutResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        emptyCalloutResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha<callout></callout> Beta\nGamma"));
+    QVERIFY(emptyCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("class=\"whatson-callout\"")));
+    QVERIFY(emptyCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("data-callout-content=\"true\"")));
+    QVERIFY(!emptyCalloutResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<callout>")));
+    QCOMPARE(
+        emptyCalloutResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("Alpha<callout>").size());
+
     const QString formattedEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("format-note"),
         QStringLiteral("<bold>Alpha</bold> Beta Gamma"));

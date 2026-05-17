@@ -35,8 +35,10 @@ namespace WhatSon::EditorComponent
         html += QStringLiteral(
             "<table class=\"whatson-callout\" data-figma-node-id=\"280:7897\" "
             "data-frame-design-width=\"%1\" data-callout-render=\"%2\" "
+            "data-frame-width-mode=\"fill\" data-frame-height-mode=\"hug-contents\" "
             "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
-            "style=\"width:100%;max-width:100%;border-spacing:0;border-collapse:separate;"
+            "style=\"width:100%;max-width:100%;height:auto;min-height:0;"
+            "border-spacing:0;border-collapse:separate;"
             "background-color:#262728;padding:4px;\">"
             "<tr>"
             "<td width=\"3\" class=\"whatson-callout-bar\" "

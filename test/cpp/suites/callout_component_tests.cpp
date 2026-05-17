@@ -12,9 +12,15 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
     QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout\"")));
     QVERIFY(html.contains(QStringLiteral("data-figma-node-id=\"280:7897\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-design-width=\"295\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-width-mode=\"fill\"")));
+    QVERIFY(html.contains(QStringLiteral("data-frame-height-mode=\"hug-contents\"")));
     QVERIFY(html.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(!html.contains(QStringLiteral("height=\"")));
     QVERIFY(html.contains(QStringLiteral("background-color:#262728")));
     QVERIFY(html.contains(QStringLiteral("padding:4px")));
+    QVERIFY(html.contains(QStringLiteral("height:auto")));
+    QVERIFY(!html.contains(QStringLiteral("data-frame-design-height")));
+    QVERIFY(!html.contains(QStringLiteral("height:22px")));
     QVERIFY(html.contains(QStringLiteral("width=\"3\"")));
     QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
     QVERIFY(html.contains(QStringLiteral("background-color:#d9d9d9")));
