@@ -14,7 +14,7 @@ Declares the active note editor document session object.
   editor HTML or after synced editor HTML is converted back to source; QML uses this value as the gutter delegate
   count instead of LVRS rendered wrap-line count.
 - Exposes `editorViewportWidth`, which QML binds from the public LVRS editor item width so image resource frames can
-  render editor-width media inside the resource-frame container.
+  render editor-width media inside the resource-frame container and generated callout chrome can match wrapped text.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Routes note-entry/open RAW pulls through `file/sync/WhatSonEditorRawPullController`.
@@ -34,8 +34,9 @@ Declares the active note editor document session object.
   `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, and returns
   an editor HTML projection for the live LVRS surface.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
-  and re-renders only resource frames for a changed editor viewport width while preserving each frame's initial
-  `data-frame-display-height`.
+  and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
+  frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
+  current edited content height so typing inside a wrapped callout does not wait for idle persistence to update chrome.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
@@ -71,8 +72,8 @@ Declares the active note editor document session object.
   `openCount`와 `lastOpenedAt` 갱신을 C++ model/session queue가 처리한다.
 - `parsedLineCount`는 canonical RAW source line metadata이며 QML이 직접 파일을 읽거나 파싱하지 않게 한다.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
-- `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역이
-  editor 폭을 채우도록 C++ 렌더러에 전달된다.
+- `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
+  콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
 - LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
   note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
@@ -86,9 +87,9 @@ Declares the active note editor document session object.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
   canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입한다. clipboard MIME 판별과 package
   persistence는 이 세션의 책임이 아니다.
-- `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame이
-  있을 때만 새 viewport 폭으로 다시 렌더한다. 기존 `data-frame-display-height`는 초기 auto height로 보존되어,
-  리사이즈 중 frame height가 다시 계산되지 않는다.
+- `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
+  callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
+  초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 즉시 재생성된다.
 - `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리

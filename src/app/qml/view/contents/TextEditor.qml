@@ -17,6 +17,7 @@ LV.TextEditor {
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
     property bool cursorViewportSyncQueued: false
+    property bool editorFrameViewportRefreshPending: false
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
@@ -447,15 +448,6 @@ LV.TextEditor {
         });
     }
 
-    function focusEditorAtDocumentEnd() {
-        const editorSurface = textEditor.editorSurfaceObject();
-        const documentEnd = editorSurface && editorSurface.length !== undefined
-                ? Math.max(0, Math.floor(Number(editorSurface.length) || 0))
-                : textEditor.editorDocumentText.length;
-        textEditor.restoreEditorCursorPosition(documentEnd);
-        return true;
-    }
-
     function findDescendantByObjectName(root, objectName) {
         if (!root)
             return null;
@@ -491,6 +483,33 @@ LV.TextEditor {
         return true;
     }
 
+    function replaceEditorFrameDocumentText(nextText, nextCursorPosition) {
+        const editorSurface = textEditor.editorSurfaceObject();
+        const hadEditorFocus = Boolean(textEditor.activeFocus)
+                || Boolean(editorSurface && editorSurface.activeFocus);
+        const selectionStart = textEditor.normalizedSelectionStart();
+        const selectionEnd = textEditor.normalizedSelectionEnd();
+        const hasSelection = selectionEnd > selectionStart;
+        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
+
+        textEditor.text = nextText === undefined || nextText === null
+                ? ""
+                : String(nextText);
+
+        if (hasSelection)
+            textEditor.select(
+                        textEditor.boundedCursorPosition(selectionStart),
+                        textEditor.boundedCursorPosition(selectionEnd));
+        else
+            textEditor.cursorPosition = targetCursorPosition;
+
+        if (hadEditorFocus) {
+            textEditor.forceEditorFocus();
+            textEditor.ensureCursorVisibleInViewport();
+        }
+        return true;
+    }
+
     function refreshEditorResourceFrameViewportWidth() {
         if (!textEditor.noteEditorSession
                 || textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth === undefined)
@@ -503,7 +522,19 @@ LV.TextEditor {
         if (!result || !result.valid || !result.changed || result.editorDocumentText === undefined)
             return false;
 
-        textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition);
+        textEditor.replaceEditorFrameDocumentText(result.editorDocumentText, textEditor.cursorPosition);
+        return true;
+    }
+
+    function scheduleEditorFrameViewportRefresh() {
+        if (textEditor.editorFrameViewportRefreshPending)
+            return false;
+
+        textEditor.editorFrameViewportRefreshPending = true;
+        Qt.callLater(function () {
+            textEditor.refreshEditorResourceFrameViewportWidth();
+            textEditor.editorFrameViewportRefreshPending = false;
+        });
         return true;
     }
 
@@ -681,7 +712,9 @@ LV.TextEditor {
     objectName: "contentsTextEditor"
     preferNativeGestures: false
     readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0
+    selectByMouse: true
     showScrollBar: false
+    mouseSelectionMode: TextEdit.SelectCharacters
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor
 
@@ -690,7 +723,7 @@ LV.TextEditor {
     onEditorInputCommandFilterChanged: textEditor.refreshEditorInputCommandFilterOwner()
     onNoteEditorSessionChanged: {
         textEditor.refreshEditorInputCommandFilterOwner();
-        Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth);
+        textEditor.scheduleEditorFrameViewportRefresh();
     }
     onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()
 
@@ -713,10 +746,11 @@ LV.TextEditor {
         textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
+        textEditor.scheduleEditorFrameViewportRefresh();
     }
     onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
-    onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)
+    onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()
 
     LV.EventListener {
         enabled: LV.Theme.mobileTarget && !textEditor.readOnly
@@ -757,36 +791,6 @@ LV.TextEditor {
         value: Math.round(textEditor.editorViewportWidth)
         when: textEditor.noteEditorSession
               && textEditor.noteEditorSession.editorViewportWidth !== undefined
-    }
-
-    MouseArea {
-        id: editorBottomViewportPaddingHitArea
-
-        acceptedButtons: Qt.LeftButton
-        cursorShape: Qt.IBeamCursor
-        enabled: !textEditor.readOnly
-                 && textEditor.editorBottomViewportPadding > 0
-                 && textEditor.editorBottomViewportPaddingHitAreaHeight > 0
-        height: textEditor.editorBottomViewportPaddingHitAreaHeight
-        objectName: "contentsTextEditorBottomViewportPaddingHitArea"
-        preventStealing: false
-        visible: enabled
-        width: textEditor.editorItem
-               ? Math.max(1, Number(textEditor.editorItem.width) || textEditor.width)
-               : textEditor.width
-        x: textEditor.editorItem
-           ? Math.max(0, Number(textEditor.editorItem.x) || 0)
-           : 0
-        y: textEditor.editorBottomViewportPaddingHitAreaY
-
-        onClicked: function(mouse) {
-            if (mouse.button !== Qt.LeftButton) {
-                mouse.accepted = false;
-                return;
-            }
-            textEditor.focusEditorAtDocumentEnd();
-            mouse.accepted = true;
-        }
     }
 
     Connections {

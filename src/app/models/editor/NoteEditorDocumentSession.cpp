@@ -1541,7 +1541,10 @@ QVariantMap NoteEditorDocumentSession::reprojectResourceFramesForEditorWidth(
     const bool hasResourceFrame =
         editorDocumentText.contains(QStringLiteral("whatson-resource-frame"))
         || sourceText.contains(QRegularExpression(QStringLiteral("<\\s*resource\\b")));
-    if (!hasResourceFrame)
+    const bool hasCalloutFrame =
+        editorDocumentText.contains(QStringLiteral("whatson-callout"))
+        || sourceText.contains(QRegularExpression(QStringLiteral("<\\s*callout\\b")));
+    if (!hasResourceFrame && !hasCalloutFrame)
     {
         QVariantMap result;
         result.insert(QStringLiteral("valid"), true);

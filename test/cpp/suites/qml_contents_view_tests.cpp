@@ -161,7 +161,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function boundedCursorPosition(value)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorAtDocumentEnd()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorFrameDocumentText(nextText, nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
@@ -176,9 +176,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorPaddedEditorItemHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("objectName: \"contentsTextEditorBottomViewportPaddingHitArea\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("preventStealing: false")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("preventStealing: false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function pasteNativeClipboardText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var inAppClipboard: null")));
@@ -190,9 +191,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("target: textEditor.noteEditorSession")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Math.round(textEditor.editorViewportWidth)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorResourceFrameViewportWidth()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function scheduleEditorFrameViewportRefresh()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property bool editorFrameViewportRefreshPending: false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("reprojectResourceFramesForEditorWidth(")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.replaceEditorFrameDocumentText(result.editorDocumentText, textEditor.cursorPosition)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onTextChanged:")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.scheduleEditorFrameViewportRefresh();")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorInputCommandFilterOwner()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("attachEditorInputOwner(")));
@@ -203,6 +209,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.paste()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
     QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("selectByMouse: true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("mouseSelectionMode: TextEdit.SelectCharacters")));
     QVERIFY(textEditorSource.contains(QStringLiteral("enabled: LV.Theme.mobileTarget && !textEditor.readOnly")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorPressEnded(eventData)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorHoldStarted(eventData)")));
@@ -215,6 +223,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("maximumFingerCount > 1")));
     QVERIFY(textEditorSource.contains(QStringLiteral("eventData.scrollActive || eventData.dragActive")));
     QVERIFY(textEditorSource.contains(QStringLiteral("item.mapFromGlobal")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
     QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
@@ -383,7 +392,7 @@ void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
     QVERIFY(!textEditorSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorGestureMatchesEditor(eventData)")));

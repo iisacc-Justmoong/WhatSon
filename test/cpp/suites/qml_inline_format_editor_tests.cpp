@@ -78,14 +78,14 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutSurfaceColor")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarColor")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarWidth")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorAtDocumentEnd()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorPaddedEditorItemHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("objectName: \"contentsTextEditorBottomViewportPaddingHitArea\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("preventStealing: false")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("preventStealing: false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorSurface.lineCount")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function onContentHeightChanged()")));
@@ -275,6 +275,7 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndO
     QVERIFY(textEditorSource.contains(QStringLiteral("eventData.scrollActive || eventData.dragActive")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("item.mapFromGlobal")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("MouseArea {")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
     verifyNoTokens(textEditorSource, {
         QStringLiteral("Keys.onPressed"),

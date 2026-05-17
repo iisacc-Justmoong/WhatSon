@@ -25,6 +25,14 @@ namespace
         return true;
     }
 
+    int calloutChromeHeightForNoteEditorSessionTest(const QString& editorDocumentText)
+    {
+        static const QRegularExpression heightPattern(
+            QStringLiteral("data-callout-frame-chrome-height=\"(\\d+)\""));
+        const QRegularExpressionMatch match = heightPattern.match(editorDocumentText);
+        return match.hasMatch() ? match.captured(1).toInt() : 0;
+    }
+
     bool writeFilesystemBodyForIdlePullSessionTest(
         const QString& noteId,
         const QString& noteDirectoryPath,
@@ -1128,6 +1136,41 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         bodySourceText);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()
+{
+    const QString shortSource = QStringLiteral("<callout>Short callout</callout>");
+    const QString longContent = QStringLiteral(
+        "Callout text should grow the leading indicator as the user keeps typing inside the frame. "
+        "This deliberately long sentence wraps across several narrow editor rows.");
+    const QString shortEditorText = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("callout-reproject-note"),
+        shortSource,
+        142);
+    const int shortChromeHeight = calloutChromeHeightForNoteEditorSessionTest(shortEditorText);
+    QVERIFY(shortChromeHeight >= 14);
+
+    QString editedEditorText = shortEditorText;
+    QVERIFY(editedEditorText.replace(
+        QStringLiteral("Short callout<!--/whatson-callout-content-->"),
+        longContent + QStringLiteral("<!--/whatson-callout-content-->")) != shortEditorText);
+
+    NoteEditorDocumentSession session;
+    const QVariantMap result = session.reprojectResourceFramesForEditorWidth(editedEditorText, 142);
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QVERIFY(result.value(QStringLiteral("changed")).toBool());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<callout>") + longContent + QStringLiteral("</callout>"));
+
+    const QString reprojectedEditorText = result.value(QStringLiteral("editorDocumentText")).toString();
+    const int reprojectedChromeHeight = calloutChromeHeightForNoteEditorSessionTest(reprojectedEditorText);
+    QVERIFY2(
+        reprojectedChromeHeight >= shortChromeHeight + 24,
+        qPrintable(QStringLiteral("Callout chrome height must grow with edited wrapped text. before=%1 after=%2")
+            .arg(shortChromeHeight)
+            .arg(reprojectedChromeHeight)));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion()

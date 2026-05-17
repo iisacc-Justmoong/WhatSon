@@ -13,16 +13,18 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
-- `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width changes
-  call the C++ `reprojectResourceFramesForEditorWidth(...)` hook so image resource frames keep a `width:100%` editor
-  fill while using an intrinsic media bitmap width that Qt rich text can lay out.
+- `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width or text
+  changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)` hook. The hook keeps image resource frames at
+  `width:100%` while using an intrinsic media bitmap width that Qt rich text can lay out, and it regenerates callout
+  frame chrome when edited text wraps to more lines.
 - `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
   LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - The wrapper also binds the public LVRS `editorItem.height` to the measured document end plus the same bottom padding.
   This keeps the artificial bottom area in the Flickable content geometry even when the native `bottomPadding` no longer
   expands the viewport by itself.
-- The visible artificial bottom area owns a narrow `MouseArea` hit surface. Clicking it focuses the editor and moves the
-  cursor to the document end, while `preventStealing: false` leaves drag scrolling available to the LVRS viewport.
+- The wrapper must not place a local left-button `MouseArea` above the editor. The public LVRS `editorItem` keeps
+  `selectByMouse: true` and `mouseSelectionMode: TextEdit.SelectCharacters`, so mouse click, caret movement, and drag
+  selection stay owned by the native rich text surface.
 - `editorLogicalLineHeight` exposes the LVRS text line-height token used by the sibling gutter as its fallback metric.
 - `editorPlainText` reads the public LVRS editor item's plain-text range through `getText(...)`, so the wrapper can
   locate logical editor line starts without depending on RichText HTML markup. CRLF/CR and Qt line/paragraph separator
@@ -31,7 +33,8 @@
   editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
 - Callouts remain ordinary editable rich text in the LVRS `TextEdit` surface. `TextEditor.qml` does not parse callout
   HTML or draw callout overlays; `component/Callout` emits the block frame HTML that QTextDocument renders directly.
-  The wrapper only provides the existing source-line metrics for the sibling gutter.
+  The wrapper only schedules the shared C++ frame reproject hook after text changes so generated leading bars keep up
+  with edited wrapped content, and otherwise provides the existing source-line metrics for the sibling gutter.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
 - Cursor movement stays visible by mapping the public LVRS `editorItem.positionToRectangle(cursorPosition)` result into
@@ -67,16 +70,18 @@
   `finalInteractionKind` is `tap`, and `holdStarted` focuses for a deliberate long press before release.
 - The wrapper does not install a local `TapHandler`. The original pointer stream remains available to the LVRS viewport
   flick path and native editor surface, while cursor placement is applied from the classified global touch coordinates.
-  The only local pointer surface is the bottom-padding `MouseArea`, which exists solely to make the artificial blank
-  scroll area clickable and sends the cursor to document end.
+- It also does not install a local left-button `MouseArea`; blank bottom space is represented by the public editor item
+  height/bottom padding rather than by an overlay hit surface.
 - The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, input filter
   attachment, and paste forwarding.
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
   HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
   then lets LVRS perform its automatic write-through sync.
-- Replacing the current document text for a C++ resource-frame viewport reproject follows the same public
-  `LV.TextEditor.text`/cursor path and remains a thin view hook; source recovery and frame rendering stay in C++.
+- Replacing the current document text for a C++ resource/callout frame reproject uses a separate public
+  `LV.TextEditor.text`/cursor path that preserves the current selection and only restores focus if the editor already
+  had it. It must not call the command-result restore path that forces focus and deselects, because frame chrome refresh
+  can happen while the user is clicking or dragging in the native editor.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or
@@ -96,7 +101,8 @@
   source-aligned line start를 계산한다.
 - 콜아웃은 LVRS `TextEdit` 안의 일반 편집 가능한 rich text로 남긴다. `TextEditor.qml`은 callout HTML을 파싱하거나
   callout overlay를 그리지 않는다. 프레임 시각 구현은 `component/Callout`이 생성하는 block HTML의 책임이며, 이
-  wrapper는 기존처럼 거터가 사용할 source-line metric만 제공한다.
+  wrapper는 텍스트 변경 직후 C++ frame reproject만 예약해 생성형 좌측 막대가 wrap된 content 높이를 빠르게 따라가게
+  하고, 기존처럼 거터가 사용할 source-line metric만 제공한다.
 - parsed source line이 LVRS plain-text row보다 많은 경우에도 남은 source line은 document 끝 좌표 하나를
   재사용하지 않고 마지막 측정 rectangle 아래로 fallback line-height만큼 밀어 배치한다.
 - 현재 cursor line indicator를 위해 source-aligned plain-text cursor position으로 계산한 logical
@@ -113,16 +119,16 @@
   않게 한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
-- 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌면 QML은
-  현재 editor HTML과 새 폭을 C++ `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이 resource frame을
-  다시 렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
+- 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌거나 텍스트가
+  바뀌면 QML은 현재 editor HTML과 새 폭을 C++ `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이
+  resource frame 또는 callout frame chrome을 다시 렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
 - 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
   화면 상단 쪽까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
   계산에는 참여하지 않는다.
 - `bottomPadding`만으로 LVRS viewport content geometry가 늘어나지 않는 경우를 막기 위해, 공개
-  `editorItem.height`도 문서 끝 위치와 같은 하단 여백을 합친 높이로 묶는다. 보이는 하단 인공 여백에는
-  클릭 전용 `MouseArea`를 두어 클릭 시 커서를 문서 끝으로 보낸다. 이 hit area는 drag steal을 막지 않으므로
-  스크롤 제스처는 계속 LVRS viewport가 가져갈 수 있다.
+  `editorItem.height`도 문서 끝 위치와 같은 하단 여백을 합친 높이로 묶는다. 별도 좌클릭 `MouseArea`는 두지
+  않는다. 공개 LVRS editor item이 `selectByMouse: true`, `mouseSelectionMode: TextEdit.SelectCharacters`로 직접
+  마우스 클릭, caret 이동, drag selection을 처리한다.
 - `preferNativeGestures`는 WhatSon 노트 본문 wrapper에서 `false`로 고정한다. 포커스 중에도 LVRS viewport
   flick 경로가 살아 있어야 모바일 손가락 이동이 항상 커서 조작으로 소비되지 않고 본문 스크롤로 승격된다.
 - `autoFocusOnPress`는 `LV.Theme.mobileTarget`에서만 꺼진다. 모바일 에디터는 touch begin 시점에 곧바로
@@ -131,13 +137,16 @@
   별도로 포커스한다.
 - 이 wrapper에는 local `TapHandler`를 두지 않는다. 원래 pointer stream은 LVRS viewport flick 경로와 native
   editor surface가 그대로 받을 수 있고, WhatSon은 분류된 global touch 좌표만 커서 위치 계산에 사용한다.
-  단, 하단 인공 여백을 클릭 가능한 영역으로 만들기 위한 `MouseArea`는 예외적으로 view-local hit surface로
-  유지한다.
+  좌클릭 `MouseArea`도 두지 않는다. 하단 인공 여백은 overlay hit surface가 아니라 editor item의 height와
+  bottomPadding으로만 표현한다.
 - 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영한다.
   RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
   cursor API로 복원한다. 이미지 resource paste와 콜아웃 경계 키는 `EditorInputCommandFilter` C++ event filter가
   공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. 지원
   리소스가 없는 일반 paste는 공개 `paste()` API와 native `TextEdit` 경로에 남긴다.
+- resource/callout frame chrome refresh는 별도 교체 경로를 사용해 현재 selection을 보존하고, 이미 editor focus가
+  있던 경우에만 focus를 유지한다. 따라서 생성형 frame chrome 갱신이 마우스 클릭이나 drag selection을 강제로
+  취소하지 않는다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.
