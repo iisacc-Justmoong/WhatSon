@@ -111,6 +111,9 @@ The current contract preserves editor-authored RAW source across save/load turns
 - The inverse boundary also recognizes `<!--whatson-callout-source:...-->...<!--/whatson-callout-source-->` marker pairs,
   extracts the live rendered callout content cell, converts its rich text back to canonical source, and wraps that content
   in `<callout>...</callout>` before persistence.
+- If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
+  boundary still recognizes the callout's distinctive `#262728` table, `3px` leading bar, and `12px` gap cell shape,
+  extracts the content cell, and persists it as `<callout>...</callout>` instead of degrading it into a plain paragraph.
 - If the marker pair survives after the single resource image object has been deleted, the inverse boundary now drops
   that empty marker block instead of restoring the canonical resource source tag. This keeps backspace/delete behavior
   aligned with the editor's one-object frame contract.

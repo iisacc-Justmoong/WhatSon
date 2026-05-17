@@ -1267,6 +1267,7 @@ private slots:
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
+    void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
@@ -1315,6 +1316,7 @@ private slots:
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
+    void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();

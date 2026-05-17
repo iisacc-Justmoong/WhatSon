@@ -153,6 +153,54 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
         QStringLiteral("After idle push"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("idle-callout-raw-push-note"),
+        QStringLiteral("<callout>Before idle callout</callout>"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("idle-callout-raw-push-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("idle-callout-raw-push-note"),
+        QStringLiteral("<callout>After idle <bold>callout</bold></callout>"));
+    QTextDocument roundTrippedEditorDocument;
+    roundTrippedEditorDocument.setHtml(editorHtml);
+    const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
+    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("<table")));
+    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("whatson-callout-source:")));
+    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-callout-content")));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(
+        session.editorFilePath(),
+        roundTrippedEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QVERIFY(persistedBodyDocument.contains(
+        QStringLiteral("<paragraph><callout>After idle <bold>callout</bold></callout></paragraph>")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("<callout>After idle <bold>callout</bold></callout>"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease()
 {
     QTemporaryDir workspaceDir;

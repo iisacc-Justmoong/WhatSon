@@ -39,7 +39,7 @@ namespace WhatSon::EditorComponent
             "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
             "style=\"width:100%;max-width:100%;height:auto;min-height:0;"
             "border-spacing:0;border-collapse:separate;"
-            "background-color:#262728;padding:4px;\">"
+            "background-color:#262728;padding:16px 4px;\">"
             "<tr>"
             "<td width=\"3\" class=\"whatson-callout-bar\" "
             "style=\"width:3px;min-width:3px;max-width:3px;height:100%;min-height:14px;"

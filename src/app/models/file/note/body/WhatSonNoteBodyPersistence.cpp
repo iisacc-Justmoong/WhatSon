@@ -827,6 +827,46 @@ namespace
         return tokens;
     }
 
+    void replaceQtSerializedCalloutTablesWithSourceTokens(
+        QString* editorHtml,
+        QVector<RenderedCalloutSourceToken>* tokens)
+    {
+        if (editorHtml == nullptr || tokens == nullptr || editorHtml->isEmpty())
+        {
+            return;
+        }
+
+        static const QRegularExpression calloutTablePattern(
+            QStringLiteral(
+                R"(<table\b(?=[^>]*\bwidth\s*=\s*["']100%["'])(?=[^>]*\bbgcolor\s*=\s*["']#262728["'])[^>]*>\s*<tr>\s*<td\b(?=[^>]*\bwidth\s*=\s*["']3["'])(?=[^>]*\bbgcolor\s*=\s*["']#d9d9d9["'])[^>]*>[\s\S]*?</td>\s*<td\b(?=[^>]*\bwidth\s*=\s*["']12["'])[^>]*>[\s\S]*?</td>\s*<td\b[^>]*>([\s\S]*?)</td>\s*</tr>\s*</table>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QString rewrittenHtml;
+        rewrittenHtml.reserve(editorHtml->size());
+
+        int lastOffset = 0;
+        QRegularExpressionMatchIterator matchIterator = calloutTablePattern.globalMatch(*editorHtml);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            rewrittenHtml += editorHtml->mid(lastOffset, match.capturedStart(0) - lastOffset);
+
+            const QString contentSource = sourceTextFromRichEditorDocument(match.captured(1));
+            const QString sourceText =
+                QStringLiteral("<callout>")
+                + contentSource
+                + QStringLiteral("</callout>");
+            const QString token = QStringLiteral("__WHATSON_CALLOUT_SOURCE_TOKEN_%1__").arg(tokens->size());
+            tokens->push_back({token, sourceText});
+            rewrittenHtml += QStringLiteral("<p>%1</p>").arg(token);
+
+            lastOffset = match.capturedEnd(0);
+        }
+
+        rewrittenHtml += editorHtml->mid(lastOffset);
+        *editorHtml = rewrittenHtml;
+    }
+
     QString restoreRenderedCalloutSourceTokens(QString text, const QVector<RenderedCalloutSourceToken>& tokens)
     {
         for (const RenderedCalloutSourceToken& token : tokens)
@@ -847,6 +887,49 @@ namespace
             }
         }
         return line;
+    }
+
+    bool isRenderedCalloutSourceLine(const QString& line, const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        for (const RenderedCalloutSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceText)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    QStringList removeRenderedCalloutPaddingLines(
+        const QStringList& sourceLines,
+        const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        if (tokens.isEmpty())
+        {
+            return sourceLines;
+        }
+
+        QStringList compacted;
+        compacted.reserve(sourceLines.size());
+        for (int index = 0; index < sourceLines.size(); ++index)
+        {
+            const QString& line = sourceLines.at(index);
+            if (line.trimmed().isEmpty())
+            {
+                const bool previousIsRenderedCallout =
+                    index > 0 && isRenderedCalloutSourceLine(sourceLines.at(index - 1), tokens);
+                const bool nextIsRenderedCallout =
+                    index + 1 < sourceLines.size() && isRenderedCalloutSourceLine(sourceLines.at(index + 1), tokens);
+                if (previousIsRenderedCallout || nextIsRenderedCallout)
+                {
+                    continue;
+                }
+            }
+            compacted.push_back(line);
+        }
+        return compacted;
     }
 
     bool markerBodyContainsLiveRenderedResourceFrame(const QString& markerBody)
@@ -1089,8 +1172,11 @@ namespace
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
         QString normalizedEditorDocumentText = editorDocumentText;
-        const QVector<RenderedCalloutSourceToken> renderedCalloutTokens =
+        QVector<RenderedCalloutSourceToken> renderedCalloutTokens =
             replaceRenderedCalloutBlocksWithSourceTokens(&normalizedEditorDocumentText);
+        replaceQtSerializedCalloutTablesWithSourceTokens(
+            &normalizedEditorDocumentText,
+            &renderedCalloutTokens);
         const QVector<RenderedResourceSourceToken> renderedResourceTokens =
             replaceRenderedResourceBlocksWithSourceTokens(&normalizedEditorDocumentText);
 
@@ -1134,9 +1220,13 @@ namespace
         {
             return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.toPlainText());
         }
+        const QStringList sourceLinesWithoutCalloutPadding =
+            removeRenderedCalloutPaddingLines(sourceLines, renderedCalloutTokens);
+        const QStringList sourceLinesWithoutRenderedPadding =
+            removeRenderedResourceFramePaddingLines(sourceLinesWithoutCalloutPadding, renderedResourceTokens);
         return removeRenderedResourceFramePaddingText(
             WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-                removeRenderedResourceFramePaddingLines(sourceLines, renderedResourceTokens).join(QLatin1Char('\n'))),
+                sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n'))),
             renderedResourceTokens);
     }
 }

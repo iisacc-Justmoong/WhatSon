@@ -17,7 +17,8 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
     QVERIFY(html.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(!html.contains(QStringLiteral("height=\"")));
     QVERIFY(html.contains(QStringLiteral("background-color:#262728")));
-    QVERIFY(html.contains(QStringLiteral("padding:4px")));
+    QVERIFY(html.contains(QStringLiteral("padding:16px 4px")));
+    QVERIFY(!html.contains(QStringLiteral("padding:4px;")));
     QVERIFY(html.contains(QStringLiteral("height:auto")));
     QVERIFY(!html.contains(QStringLiteral("data-frame-design-height")));
     QVERIFY(!html.contains(QStringLiteral("height:22px")));

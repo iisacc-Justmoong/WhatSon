@@ -75,13 +75,16 @@ Item {
             required property int index
             readonly property var lineMetric: gutter.lineMetricAt(index)
             readonly property bool currentLineActive: gutter.hasCurrentLineIndicator && index === gutter.currentLineIndex
+            readonly property real lineNumberMetricHeight: Math.max(
+                    1,
+                    Number(lineMetric.height) || Number(gutter.fallbackLineHeight) || 1)
             readonly property real lineNumberBandHeight: Math.max(
                     1,
                     Math.min(
-                        lineNumberRow.height,
-                        Number(gutter.fallbackLineHeight) || lineNumberRow.height))
+                        lineNumberRow.lineNumberMetricHeight,
+                        Number(gutter.fallbackLineHeight) || lineNumberRow.lineNumberMetricHeight))
 
-            height: Math.max(1, Number(lineMetric.height) || gutter.fallbackLineHeight)
+            height: lineNumberRow.lineNumberBandHeight
             visible: gutter.showLineNumbers && gutter.hasSelectedSource
             width: gutter.width
             y: Math.round((Number(lineMetric.y) || 0) - gutter.contentY)

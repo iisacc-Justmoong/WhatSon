@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QTextDocument>
+
 void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks()
 {
     const QString sourceText =
@@ -116,14 +118,61 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
     QVERIFY(editorHtml.contains(QStringLiteral("height:auto")));
     QVERIFY(!editorHtml.contains(QStringLiteral("data-frame-design-height")));
     QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728")));
+    QVERIFY(editorHtml.contains(QStringLiteral("padding:16px 4px")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("padding:4px;")));
     QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("height:100%")));
     QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<callout>")));
 
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    const QString editorPlainText = editorDocument.toPlainText().trimmed();
+    QCOMPARE(editorPlainText.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size(), 1);
+    QVERIFY(editorPlainText.contains(QStringLiteral("Alpha Beta wraps into the callout body")));
+
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
         sourceText);
+
+    QTextDocument roundTrippedEditorDocument;
+    roundTrippedEditorDocument.setHtml(editorHtml);
+    const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
+    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("<table")));
+    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("whatson-callout-source:")));
+    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-callout-content")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), roundTrippedEditorHtml),
+        sourceText);
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves()
+{
+    const QString sourceText =
+        QStringLiteral("Before\n"
+                       "<callout>Inside <bold>callout</bold></callout>\n"
+                       "After");
+    QString editorHtml =
+        WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
+
+    for (int cycle = 0; cycle < 4; ++cycle)
+    {
+        QTextDocument editorDocument;
+        editorDocument.setHtml(editorHtml);
+        const QString qtSerializedEditorHtml = editorDocument.toHtml();
+        const QString recoveredSource =
+            WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+                QStringLiteral("note"),
+                qtSerializedEditorHtml);
+
+        QCOMPARE(recoveredSource, sourceText);
+        QCOMPARE(recoveredSource.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size(), 3);
+        QVERIFY(!recoveredSource.contains(QStringLiteral("\n\n<callout>")));
+        QVERIFY(!recoveredSource.contains(QStringLiteral("</callout>\n\n")));
+
+        editorHtml =
+            WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), recoveredSource);
+    }
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags()

@@ -84,9 +84,10 @@ WhatSon is an LVRS-based Qt Quick application.
   `windowInteractions.sidebarHierarchy`) so shortcut mutations no longer bypass the LVRS ownership registry.
 - The desktop `BodyLayout.qml` now also paints a thin top border from the shared splitter token so the transparent
   content HStack still reads as a separate surface below `NavigationBarLayout.qml`.
-- Editor callout creation now uses the note editor format command path: `Cmd+Shift+C` wraps the live selection in a
-  rendered `<callout>...</callout>` block, and the non-macOS companion `Ctrl+Shift+C` follows the same path. When there
-  is no selection, the shortcut inserts an empty visual callout frame with the cursor inside the RAW wrapper.
+- Editor callout creation now uses the note editor format command path: `Cmd+Shift+C` inserts only the canonical
+  `<callout>...</callout>` RAW wrapper around the live selection, and the non-macOS companion `Ctrl+Shift+C` follows
+  the same path. When there is no selection, the shortcut inserts an empty `<callout></callout>` wrapper with the cursor
+  inside it; `component/Callout` is the visual projection owner.
 - Editor tag generation now lives in the shortcut-independent `ContentsEditorTagMutationBuilder`; shortcut handlers
   only resolve a canonical tag name before calling the shared RAW mutation builder, so future menu or toolbar commands
   can add the same tags without depending on key events.
@@ -385,9 +386,11 @@ WhatSon is an LVRS-based Qt Quick application.
   while being interpreted semantically in another.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
-  height through root `height:auto`, keeps `4px` padding, a `12px` content gap, a `3px` `#d9d9d9` leading bar, and
-  Pretendard Medium `12/12` white text. The callout owns the whole editor source row, and the leading bar stretches with
-  wrapped text while `.wsnbody` still stores the canonical source wrapper.
+  height through root `height:auto`, keeps `16px` vertical padding, `4px` horizontal padding, a `12px` content gap, a
+  `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12` white text. The callout owns the whole editor source row,
+  and the leading bar stretches with wrapped text while `.wsnbody` still stores the canonical source wrapper. Idle RAW
+  push also recognizes Qt-serialized callout tables after comment/data markers are stripped, so callouts do not decay
+  into plain paragraphs over time.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

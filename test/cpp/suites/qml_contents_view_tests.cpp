@@ -75,8 +75,12 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(gutterSource.contains(QStringLiteral("lineMetric.height")));
     QVERIFY(gutterSource.contains(QStringLiteral("objectName: \"contentsGutterCurrentLineIndicator\"")));
     QVERIFY(gutterSource.contains(QStringLiteral("gutter.hasCurrentLineIndicator && index === gutter.currentLineIndex")));
+    QVERIFY(gutterSource.contains(QStringLiteral("readonly property real lineNumberMetricHeight")));
     QVERIFY(gutterSource.contains(QStringLiteral("readonly property real lineNumberBandHeight")));
+    QVERIFY(gutterSource.contains(QStringLiteral("Math.min(")));
+    QVERIFY(gutterSource.contains(QStringLiteral("lineNumberRow.lineNumberMetricHeight")));
     QVERIFY(gutterSource.contains(QStringLiteral("height: lineNumberRow.lineNumberBandHeight")));
+    QVERIFY(!gutterSource.contains(QStringLiteral("height: Math.max(1, Number(lineMetric.height) || gutter.fallbackLineHeight)")));
     QVERIFY(gutterSource.contains(QStringLiteral("(lineNumberRow.lineNumberBandHeight - height) / 2")));
     QVERIFY(!gutterSource.contains(QStringLiteral("height: parent.height")));
     QVERIFY(!gutterSource.contains(QStringLiteral("parent.width - width - LV.Theme.gap2")));
@@ -126,10 +130,15 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(0, safeLength)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorResourceObjectReplacementText: \"\\uFFFC\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorPlainTextLineRecords()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorDocumentLooksLikeRenderedCallout()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function lineRecordIsCalloutChrome(lineRecord)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function collapseRenderedCalloutLineRecords(lineRecords)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function sourceAlignedLineRecords()")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameHeader(lineText)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameFileName(lineText)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function resourceFrameSpanLengthAt(lineRecords, lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineStartPositions()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("const lineRecords = textEditor.editorPlainTextLineRecords();")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineIndexForPosition(position)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedOverflowMetricFor(lineIndex, lineStartPositions, fallbackMetric, fallbackHeight)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("return textEditor.sourceAlignedLineIndexForPosition(textEditor.cursorPosition);")));
@@ -175,6 +184,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("property var inAppClipboard: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var clipboardEditorPaste: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var noteEditorSession: null")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"editorViewportWidth\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("target: textEditor.noteEditorSession")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Math.round(textEditor.editorViewportWidth)")));
@@ -283,6 +293,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("inAppClipboard: contentViewLayout.inAppClipboard")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("clipboardEditorPaste: contentViewLayout.clipboardEditorPaste")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession: contentViewLayout.noteEditorSession")));
+    QVERIFY(!QRegularExpression(QStringLiteral(
+        R"(ContentsView\.TextEditor\s*\{[\s\S]*?parsedLineCount:\s*contentViewLayout\.editorParsedLineCount)"))
+                .match(contentViewLayoutSource)
+                .hasMatch());
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorCommandShortcutEnabled()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.focused")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorItem.activeFocus")));
@@ -362,6 +376,7 @@ void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorLogicalLineHeight")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForLogicalCursor()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.75")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
@@ -375,6 +390,8 @@ void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorPointFromGlobal(item, x, y)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorGestureUiMatchesEditor(eventData.originUi)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricFor(lineIndex)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function sourceAlignedLineRecords()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function collapseRenderedCalloutLineRecords(lineRecords)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricsFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function cursorLineIndexForLogicalCursor()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function ensureCursorVisibleInViewport()")));
