@@ -67,6 +67,17 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutVisualRecords()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutVisualMetricFor(record)")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutSurfaceColorHtmlToken()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("serializedCalloutExpression")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutVisualBackgroundOverlay")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutSurface")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutVisualOverlay")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutLeadingBar")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutSurfaceColor")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarColor")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarWidth")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorAtDocumentEnd()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));

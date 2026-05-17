@@ -23,6 +23,7 @@
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QTextDocument>
 #include <QVector>
 
 namespace
@@ -331,6 +332,68 @@ namespace
         return editorPosition;
     }
 
+    QString plainTextForEditorDocumentText(const QString& editorDocumentText)
+    {
+        QTextDocument document;
+        document.setHtml(editorDocumentText);
+        return document.toPlainText();
+    }
+
+    int visibleEditorCursorPositionForDecoratedCursor(
+        const QString& editorDocumentText,
+        const int decoratedCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const int boundedCursorPosition = clampedPosition(decoratedCursorPosition, plainText.size());
+
+        int visibleCursorPosition = 0;
+        for (int index = 0; index < boundedCursorPosition; ++index)
+        {
+            if (plainText.at(index) != QChar::ObjectReplacementCharacter)
+            {
+                ++visibleCursorPosition;
+            }
+        }
+        return visibleCursorPosition;
+    }
+
+    int decoratedEditorCursorPositionForVisibleCursor(
+        const QString& editorDocumentText,
+        const int visibleCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const int boundedVisibleCursorPosition = qMax(0, visibleCursorPosition);
+
+        int visibleIndex = 0;
+        for (int index = 0; index < plainText.size(); ++index)
+        {
+            if (visibleIndex >= boundedVisibleCursorPosition)
+            {
+                return index;
+            }
+            if (plainText.at(index) != QChar::ObjectReplacementCharacter)
+            {
+                ++visibleIndex;
+            }
+        }
+        return plainText.size();
+    }
+
+    int decoratedEditorContentStartForVisibleCursor(
+        const QString& editorDocumentText,
+        const int visibleCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        int decoratedPosition =
+            decoratedEditorCursorPositionForVisibleCursor(editorDocumentText, visibleCursorPosition);
+        while (decoratedPosition < plainText.size()
+               && plainText.at(decoratedPosition) == QChar::ObjectReplacementCharacter)
+        {
+            ++decoratedPosition;
+        }
+        return decoratedPosition;
+    }
+
     int sourcePositionForEditorSelectionStart(
         const QString& bodySourceText,
         const int editorPosition)
@@ -487,6 +550,54 @@ namespace
                 ? calloutRangeStartsAtEditorCursor(bodySourceText, range, editorCursorPosition)
                 : calloutRangeContainsEditorCursor(bodySourceText, range, editorCursorPosition);
             if (!matches)
+            {
+                continue;
+            }
+            if (outRange != nullptr)
+            {
+                *outRange = range;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool calloutChromeBeforeContentContainsDecoratedCursor(
+        const QString& editorDocumentText,
+        const QString& bodySourceText,
+        const CalloutSourceRange& range,
+        const int decoratedCursorPosition)
+    {
+        if (!range.isValid())
+        {
+            return false;
+        }
+
+        const int contentVisibleCursorPosition =
+            editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
+        const int decoratedFrameStart =
+            decoratedEditorCursorPositionForVisibleCursor(editorDocumentText, contentVisibleCursorPosition);
+        const int decoratedContentStart =
+            decoratedEditorContentStartForVisibleCursor(editorDocumentText, contentVisibleCursorPosition);
+        return decoratedContentStart > decoratedFrameStart
+            && decoratedCursorPosition >= decoratedFrameStart
+            && decoratedCursorPosition < decoratedContentStart;
+    }
+
+    bool findCalloutRangeForEditorChromeBeforeContent(
+        const QString& editorDocumentText,
+        const QString& bodySourceText,
+        const int decoratedCursorPosition,
+        CalloutSourceRange* outRange)
+    {
+        const QVector<CalloutSourceRange> ranges = calloutSourceRanges(bodySourceText);
+        for (const CalloutSourceRange& range : ranges)
+        {
+            if (!calloutChromeBeforeContentContainsDecoratedCursor(
+                    editorDocumentText,
+                    bodySourceText,
+                    range,
+                    decoratedCursorPosition))
             {
                 continue;
             }
@@ -1664,8 +1775,12 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
     const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
         ? activeSourceText
         : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const int boundedDecoratedCursorPosition =
+        clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
     const int boundedCursorPosition =
-        clampedPosition(cursorPosition, visibleCharactersForSourceText(sourceText).size());
+        clampedPosition(
+            visibleEditorCursorPositionForDecoratedCursor(editorDocumentText, cursorPosition),
+            visibleCharactersForSourceText(sourceText).size());
     const int boundedSelectionLength = qMax(0, selectionLength);
 
     const auto buildResult =
@@ -1684,6 +1799,11 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
                     m_activeNoteDirectoryPath,
                     m_editorViewportWidth)
                 : editorDocumentText;
+            const int resolvedEditorCursorPosition = handled
+                ? decoratedEditorCursorPositionForVisibleCursor(
+                    projectedEditorDocumentText,
+                    editorCursorPosition)
+                : editorCursorPosition;
 
             QVariantMap result;
             result.insert(QStringLiteral("valid"), errorMessage.isEmpty());
@@ -1691,11 +1811,11 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             result.insert(QStringLiteral("changed"), handled && changed);
             result.insert(QStringLiteral("bodySourceText"), bodySourceText);
             result.insert(QStringLiteral("editorDocumentText"), projectedEditorDocumentText);
-            result.insert(QStringLiteral("cursorPosition"), editorCursorPosition);
+            result.insert(QStringLiteral("cursorPosition"), resolvedEditorCursorPosition);
             result.insert(QStringLiteral("sourceCursorPosition"), sourceCursorPosition);
             result.insert(QStringLiteral("selectionStart"), sourceCursorPosition);
             result.insert(QStringLiteral("selectionLength"), 0);
-            result.insert(QStringLiteral("editorSelectionStart"), editorCursorPosition);
+            result.insert(QStringLiteral("editorSelectionStart"), resolvedEditorCursorPosition);
             result.insert(QStringLiteral("editorSelectionLength"), 0);
             result.insert(QStringLiteral("errorMessage"), errorMessage);
             return result;
@@ -1709,7 +1829,7 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             false,
             sourceText,
             sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
-            boundedCursorPosition);
+            boundedDecoratedCursorPosition);
     }
 
     CalloutSourceRange range;
@@ -1722,7 +1842,7 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
                 false,
                 sourceText,
                 sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
-                boundedCursorPosition);
+                boundedDecoratedCursorPosition);
         }
 
         QString mutatedSourceText;
@@ -1756,6 +1876,31 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
         return buildResult(true, mutatedSourceText != sourceText, mutatedSourceText, sourceCursorPosition, editorCursorPosition);
     }
 
+    if (findCalloutRangeForEditorChromeBeforeContent(
+            editorDocumentText,
+            sourceText,
+            boundedDecoratedCursorPosition,
+            &range))
+    {
+        QString mutatedSourceText = sourceText;
+        int sourceCursorPosition = range.openingStart;
+        mutatedSourceText.insert(sourceCursorPosition, QLatin1Char('\n'));
+        ++sourceCursorPosition;
+
+        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
+        if (hasActiveNote())
+        {
+            m_activeBodySourceText = mutatedSourceText;
+        }
+        setLastError(QString());
+        return buildResult(
+            true,
+            true,
+            mutatedSourceText,
+            sourceCursorPosition,
+            editorCursorPositionForSourcePosition(mutatedSourceText, sourceCursorPosition));
+    }
+
     if (!findCalloutRangeForEditorCursor(sourceText, boundedCursorPosition, false, &range))
     {
         return buildResult(
@@ -1763,7 +1908,7 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             false,
             sourceText,
             sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
-            boundedCursorPosition);
+            boundedDecoratedCursorPosition);
     }
 
     QString mutatedSourceText = sourceText;

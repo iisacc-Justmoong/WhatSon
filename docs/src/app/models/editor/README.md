@@ -46,11 +46,14 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
-  `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `16px` vertical padding, `4px`
-  right padding, `12px` content inset, Pretendard Medium `12/12` white body text, and a `3px` `#d9d9d9` leading border.
-  The border belongs to the editable text frame instead of a separate table cell, so the cursor stays in callout content
-  while wrapped text still grows the frame height. The component keeps source recovery marker-wrapped so persistence can
-  restore the callout wrapper after LVRS rich-text editing.
+  `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, WhatSon runtime `16px` top/bottom
+  padding, `4px` left/right padding, `3px x 14px` leading bar metadata, `12px` content gap metadata, inline
+  frame-chrome images, and Pretendard Medium `12/12` white body text. The emitted root is a block `div`, not an inline
+  span and not a table, so the rendered surface fills the QTextDocument row without QML chrome. The callout text itself is isolated in a
+  `data-callout-content="true"` span, letting persistence ignore the frame chrome and restore the callout wrapper after
+  LVRS rich-text editing. Enter on the frame chrome immediately before content is treated as a source insertion before
+  `<callout>`, and explicit empty source lines adjacent to callouts render through an invisible placeholder so they
+  count as editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
   callout boundary Backspace/Enter operations and handled `Cmd/Ctrl+V` image-resource paste operations, delegating RAW
   callout decisions to `NoteEditorDocumentSession` and clipboard package creation to `ClipboardEditorPaste`.
@@ -97,9 +100,12 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
-  row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `16px`, 우측 padding은 `4px`, 좌측 content inset은 `12px`,
-  텍스트는 Pretendard Medium `12/12`, 좌측 막대는 텍스트 프레임의 `3px` `#d9d9d9` border이며, 텍스트 wrap 높이에
-  맞춰 프레임이 함께 늘어난다.
+  row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `16px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
+  `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
+  좌측 bar와 gap은 source content가 아닌 inline frame chrome으로 렌더링된다.
+- 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `NoteEditorDocumentSession`이 `<callout>` 앞 source
+  위치에 빈 줄을 삽입한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를
+  실제로 하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
 - 현재: `EditorInputCommandFilter`는 공개 LVRS editor item에 설치되는 C++ event filter다. 콜아웃 경계
   Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
   위임하며, 처리된 경우에만 native editor event를 consume한다.

@@ -22,6 +22,7 @@
 #include <QTextFragment>
 #include <QVector>
 
+#include <algorithm>
 #include <utility>
 
 namespace
@@ -771,6 +772,14 @@ namespace
 
     QString renderedCalloutContentHtml(const QString& markerBody)
     {
+        static const QRegularExpression contentMarkerPattern(
+            QStringLiteral(R"(<!--whatson-callout-content-->([\s\S]*?)<!--\/whatson-callout-content-->)"));
+        const QRegularExpressionMatch contentMarkerMatch = contentMarkerPattern.match(markerBody);
+        if (contentMarkerMatch.hasMatch())
+        {
+            return contentMarkerMatch.captured(1);
+        }
+
         static const QRegularExpression contentPattern(
             QStringLiteral(
                 R"(<([a-zA-Z][\w:-]*)\b(?=[^>]*\bdata-callout-content\s*=\s*["']true["'])[^>]*>([\s\S]*?)</\1>)"),
@@ -889,9 +898,21 @@ namespace
         return line;
     }
 
+    bool isCanonicalCalloutSourceLine(const QString& line)
+    {
+        static const QRegularExpression calloutLinePattern(
+            QStringLiteral(R"(^\s*<\s*callout\b[^>]*>[\s\S]*</\s*callout\s*>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return calloutLinePattern.match(line).hasMatch();
+    }
+
     bool isRenderedCalloutSourceLine(const QString& line, const QVector<RenderedCalloutSourceToken>& tokens)
     {
         const QString trimmedLine = line.trimmed();
+        if (isCanonicalCalloutSourceLine(trimmedLine))
+        {
+            return true;
+        }
         for (const RenderedCalloutSourceToken& token : tokens)
         {
             if (trimmedLine == token.sourceText)
@@ -902,49 +923,59 @@ namespace
         return false;
     }
 
-    bool nearestPreviousNonEmptyLineIsRenderedCallout(
-        const QStringList& sourceLines,
-        int index,
-        const QVector<RenderedCalloutSourceToken>& tokens)
+    QChar explicitEmptySourceLinePlaceholder()
     {
-        for (int previousIndex = index - 1; previousIndex >= 0; --previousIndex)
-        {
-            const QString& previousLine = sourceLines.at(previousIndex);
-            if (previousLine.trimmed().isEmpty())
-            {
-                continue;
-            }
-            return isRenderedCalloutSourceLine(previousLine, tokens);
-        }
-        return false;
+        return QChar(0x200B);
     }
 
-    bool nearestNextNonEmptyLineIsRenderedCallout(
+    QString explicitEmptySourceLineHtml()
+    {
+        return QStringLiteral("&#8203;");
+    }
+
+    bool isExplicitEmptySourceLinePlaceholder(const QString& line)
+    {
+        QString withoutPlaceholder = line;
+        withoutPlaceholder.remove(explicitEmptySourceLinePlaceholder());
+        return withoutPlaceholder.trimmed().isEmpty()
+            && withoutPlaceholder.size() != line.size();
+    }
+
+    QString restoreExplicitEmptySourceLinePlaceholders(QString sourceText)
+    {
+        QStringList sourceLines = sourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        for (QString& sourceLine : sourceLines)
+        {
+            if (isExplicitEmptySourceLinePlaceholder(sourceLine))
+            {
+                sourceLine.clear();
+            }
+        }
+        return sourceLines.join(QLatin1Char('\n'));
+    }
+
+    bool previousLineIsRenderedCallout(
         const QStringList& sourceLines,
-        int index,
+        const int index,
         const QVector<RenderedCalloutSourceToken>& tokens)
     {
-        for (int nextIndex = index + 1; nextIndex < sourceLines.size(); ++nextIndex)
-        {
-            const QString& nextLine = sourceLines.at(nextIndex);
-            if (nextLine.trimmed().isEmpty())
-            {
-                continue;
-            }
-            return isRenderedCalloutSourceLine(nextLine, tokens);
-        }
-        return false;
+        return index > 0
+            && isRenderedCalloutSourceLine(sourceLines.at(index - 1), tokens);
+    }
+
+    bool nextLineIsRenderedCallout(
+        const QStringList& sourceLines,
+        const int index,
+        const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        return index + 1 < sourceLines.size()
+            && isRenderedCalloutSourceLine(sourceLines.at(index + 1), tokens);
     }
 
     QStringList removeRenderedCalloutPaddingLines(
         const QStringList& sourceLines,
         const QVector<RenderedCalloutSourceToken>& tokens)
     {
-        if (tokens.isEmpty())
-        {
-            return sourceLines;
-        }
-
         QStringList compacted;
         compacted.reserve(sourceLines.size());
         for (int index = 0; index < sourceLines.size(); ++index)
@@ -952,8 +983,8 @@ namespace
             const QString& line = sourceLines.at(index);
             if (line.trimmed().isEmpty())
             {
-                if (nearestPreviousNonEmptyLineIsRenderedCallout(sourceLines, index, tokens)
-                    || nearestNextNonEmptyLineIsRenderedCallout(sourceLines, index, tokens))
+                if (previousLineIsRenderedCallout(sourceLines, index, tokens)
+                    || nextLineIsRenderedCallout(sourceLines, index, tokens))
                 {
                     continue;
                 }
@@ -1202,9 +1233,8 @@ namespace
         return tags;
     }
 
-    bool formatLooksLikeSerializedCallout(const QTextCharFormat& format)
+    bool brushLooksLikeSerializedCallout(const QBrush& background)
     {
-        const QBrush background = format.background();
         if (background.style() != Qt::NoBrush
             && background.color().name(QColor::HexRgb).compare(QStringLiteral("#262728"), Qt::CaseInsensitive) == 0)
         {
@@ -1212,6 +1242,22 @@ namespace
         }
 
         return false;
+    }
+
+    bool formatLooksLikeSerializedCallout(const QTextCharFormat& format)
+    {
+        return brushLooksLikeSerializedCallout(format.background());
+    }
+
+    bool blockLooksLikeSerializedCallout(const QTextBlockFormat& format)
+    {
+        return brushLooksLikeSerializedCallout(format.background());
+    }
+
+    QString removeSerializedCalloutFrameChrome(QString text)
+    {
+        text.remove(QChar::ObjectReplacementCharacter);
+        return text;
     }
 
     QString wrapSourceTextWithInlineTags(const QString& text, const QStringList& tags)
@@ -1234,6 +1280,22 @@ namespace
         return wrapped;
     }
 
+    QString repairSerializedEmptyCalloutPrefix(QString sourceLine)
+    {
+        static const QRegularExpression emptyCalloutPrefixPattern(
+            QStringLiteral(R"(^\s*(<\s*callout\b[^>]*>)\s*</\s*callout\s*>(.+)$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = emptyCalloutPrefixPattern.match(sourceLine);
+        if (!match.hasMatch())
+        {
+            return sourceLine;
+        }
+
+        return match.captured(1)
+            + match.captured(2)
+            + QStringLiteral("</callout>");
+    }
+
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
         QString normalizedEditorDocumentText = editorDocumentText;
@@ -1252,7 +1314,13 @@ namespace
         for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
         {
             QString sourceLine;
-            bool serializedCalloutOpen = false;
+            const bool serializedCalloutBlock =
+                blockLooksLikeSerializedCallout(block.blockFormat());
+            bool serializedCalloutOpen = serializedCalloutBlock;
+            if (serializedCalloutBlock)
+            {
+                sourceLine += QStringLiteral("<callout>");
+            }
 
             for (QTextBlock::iterator fragmentIt = block.begin(); !fragmentIt.atEnd(); ++fragmentIt)
             {
@@ -1267,13 +1335,17 @@ namespace
                         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
                         renderedCalloutTokens),
                     renderedResourceTokens);
-                if (fragmentText.isEmpty())
+                const QString sourceFragmentText = serializedCalloutBlock
+                    ? removeSerializedCalloutFrameChrome(fragmentText)
+                    : fragmentText;
+                if (sourceFragmentText.isEmpty())
                 {
                     continue;
                 }
 
                 const bool serializedCalloutFragment =
-                    formatLooksLikeSerializedCallout(fragment.charFormat());
+                    !serializedCalloutBlock
+                    && formatLooksLikeSerializedCallout(fragment.charFormat());
                 if (serializedCalloutFragment && !serializedCalloutOpen)
                 {
                     sourceLine += QStringLiteral("<callout>");
@@ -1286,7 +1358,7 @@ namespace
                 }
 
                 sourceLine += wrapSourceTextWithInlineTags(
-                    fragmentText,
+                    sourceFragmentText,
                     sourceInlineTagsForEditorFormat(fragment.charFormat()));
             }
             if (serializedCalloutOpen)
@@ -1294,6 +1366,7 @@ namespace
                 sourceLine += QStringLiteral("</callout>");
             }
 
+            sourceLine = repairSerializedEmptyCalloutPrefix(sourceLine);
             sourceLine = compactRenderedCalloutSourceLine(
                 compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
                 renderedCalloutTokens);
@@ -1311,9 +1384,9 @@ namespace
         const QString normalizedSourceText =
             WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
                 sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n')));
-        return removeRenderedResourceFramePaddingText(
+        return restoreExplicitEmptySourceLinePlaceholders(removeRenderedResourceFramePaddingText(
             removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens),
-            renderedResourceTokens);
+            renderedResourceTokens));
     }
 }
 
@@ -1409,13 +1482,30 @@ namespace WhatSon::NoteBodyPersistence
     QString htmlProjectionFromBodyDocument(const QString& bodyDocumentText)
     {
         const QStringList lines = bodySourceLinesFromDocument(bodyDocumentText);
+        const bool containsStandaloneCalloutLine = std::any_of(
+            lines.cbegin(),
+            lines.cend(),
+            [](const QString& line)
+            {
+                return isCanonicalCalloutSourceLine(line);
+            });
         QStringList htmlLines;
         htmlLines.reserve(lines.size());
         for (const QString& line : lines)
         {
-            htmlLines.push_back(renderInlineSourceToHtml(line));
+            const QString renderedLine = renderInlineSourceToHtml(line);
+            if (!containsStandaloneCalloutLine || isCanonicalCalloutSourceLine(line))
+            {
+                htmlLines.push_back(renderedLine);
+                continue;
+            }
+
+            htmlLines.push_back(QStringLiteral(
+                "<p style=\"margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px;"
+                "-qt-block-indent:0;text-indent:0px;\">%1</p>")
+                .arg(line.isEmpty() ? explicitEmptySourceLineHtml() : renderedLine));
         }
-        return htmlLines.join(QStringLiteral("<br/>"));
+        return htmlLines.join(containsStandaloneCalloutLine ? QString() : QStringLiteral("<br/>"));
     }
 
     QString editorHtmlFromBodySource(const QString& noteId, const QString& bodySourceText)

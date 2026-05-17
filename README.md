@@ -89,8 +89,9 @@ WhatSon is an LVRS-based Qt Quick application.
   the same path. When there is no selection, the shortcut inserts an empty `<callout></callout>` wrapper with the cursor
   inside it; `component/Callout` is the visual projection owner. At the callout content start, plain Backspace removes
   the callout wrapper, preserving existing contents as normal source and deleting an empty callout frame entirely.
-  Plain Enter/Return inside a callout moves the cursor to the next source line outside the wrapper. Native key
-  interception for this behavior is owned by `EditorInputCommandFilter`, while RAW source decisions stay in
+  Plain Enter/Return inside a callout moves the cursor to the next source line outside the wrapper. Enter on the
+  frame chrome immediately before the callout content inserts a new source line before `<callout>` so the gutter grows
+  like a normal line insertion. Native key interception for this behavior is owned by `EditorInputCommandFilter`, while RAW source decisions stay in
   `NoteEditorDocumentSession`.
 - Editor tag generation now lives in the shortcut-independent `ContentsEditorTagMutationBuilder`; shortcut handlers
   only resolve a canonical tag name before calling the shared RAW mutation builder, so future menu or toolbar commands
@@ -390,14 +391,18 @@ WhatSon is an LVRS-based Qt Quick application.
   while being interpreted semantically in another.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
-  height through root `height:auto`, keeps `16px` vertical padding, `4px` right padding, a `12px` left content inset, a
-  `3px` `#d9d9d9` leading border, and Pretendard Medium `12/12` white text. The callout owns the whole editor source
-  row, and the leading border belongs to the text frame rather than a separate editable cell while `.wsnbody` still
-  stores the canonical source wrapper. Idle RAW push also recognizes Qt-serialized callout spans and legacy callout
-  tables after comment/data markers are stripped, so callouts do not decay into plain paragraphs over time or clone
-  empty paragraphs around the callout during repeated saves. Backspace/Enter boundary behavior is routed through
-  `EditorInputCommandFilter` and handled by the C++ editor session from canonical RAW source, not by QML parsing
-  rendered callout chrome.
+  height through root `height:auto`, keeps WhatSon runtime `16px` top/bottom padding with `4px` left/right padding,
+  renders the Figma `3px x 14px` `#d9d9d9` leading bar and `12px` content gap as inline frame chrome, and uses
+  Pretendard Medium `12/12` white text. The callout owns the whole editor source row as a `whatson-callout` block frame
+  instead of an inline text-fit span, while `.wsnbody` still stores only the canonical source wrapper. `TextEditor.qml`
+  does not draw callout chrome; the component HTML itself is responsible for the full-width frame, so no QML overlay,
+  table cell, or extra gutter row is introduced. Idle RAW push recognizes Qt-serialized callout block backgrounds and
+  strips the inline frame-chrome object replacements before writing canonical source, so callouts do not decay into
+  plain paragraphs over time or clone empty paragraphs around the callout during repeated saves. Backspace/Enter
+  boundary behavior is routed through `EditorInputCommandFilter` and handled by the C++ editor session from canonical
+  RAW source, with decorated TextEdit cursor offsets mapped around the frame chrome. Explicit empty source lines next
+  to a callout render through an invisible source-line placeholder so they count as real editor rows and round-trip back
+  to empty source lines.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

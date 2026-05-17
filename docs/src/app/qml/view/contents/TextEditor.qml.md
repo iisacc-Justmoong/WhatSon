@@ -29,6 +29,9 @@
   characters are normalized to `\n`.
 - Resource frames are rendered as one source line and the image-only frame exposes one object-replacement row in the
   editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
+- Callouts remain ordinary editable rich text in the LVRS `TextEdit` surface. `TextEditor.qml` does not parse callout
+  HTML or draw callout overlays; `component/Callout` emits the block frame HTML that QTextDocument renders directly.
+  The wrapper only provides the existing source-line metrics for the sibling gutter.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
 - Cursor movement stays visible by mapping the public LVRS `editorItem.positionToRectangle(cursorPosition)` result into
@@ -91,6 +94,9 @@
 - 리소스 프레임은 RAW source에서는 `<resource ... />` 한 줄이며, image-only frame은 editor plain text에서
   object replacement row 하나로 드러난다. `TextEditor.qml`은 별도 chrome row 접기 없이 공개 plain-text row에서
   source-aligned line start를 계산한다.
+- 콜아웃은 LVRS `TextEdit` 안의 일반 편집 가능한 rich text로 남긴다. `TextEditor.qml`은 callout HTML을 파싱하거나
+  callout overlay를 그리지 않는다. 프레임 시각 구현은 `component/Callout`이 생성하는 block HTML의 책임이며, 이
+  wrapper는 기존처럼 거터가 사용할 source-line metric만 제공한다.
 - parsed source line이 LVRS plain-text row보다 많은 경우에도 남은 source line은 document 끝 좌표 하나를
   재사용하지 않고 마지막 측정 rectangle 아래로 fallback line-height만큼 밀어 배치한다.
 - 현재 cursor line indicator를 위해 source-aligned plain-text cursor position으로 계산한 logical

@@ -109,16 +109,27 @@ The current contract preserves editor-authored RAW source across save/load turns
   This lets the editor display a rich resource frame while the `.wsnbody` source continues to store only the canonical
   resource reference.
 - The inverse boundary also recognizes `<!--whatson-callout-source:...-->...<!--/whatson-callout-source-->` marker pairs,
-  extracts the live rendered callout content frame, converts its rich text back to canonical source, and wraps that
-  content in `<callout>...</callout>` before persistence.
+  extracts the inner `<!--whatson-callout-content-->...<!--/whatson-callout-content-->` payload from the live rendered
+  callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`
+  before persistence. The visual left inset, leading bar, and gap are frame chrome and are intentionally excluded from
+  this marker path.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
-  boundary still recognizes fragments carrying the callout's distinctive `#262728` frame style and persists only those
-  text fragments as `<callout>...</callout>` instead of degrading them into plain paragraphs. A legacy fallback still
-  recognizes the older `#262728` table, `3px` leading bar, and `12px` gap-cell shape so already-serialized editor
-  sessions can be recovered.
+  boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
+  style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized
+  object replacement characters from the inline frame chrome are stripped before source reconstruction. A legacy
+  fallback still recognizes the older `#262728` table, `3px` leading bar, and `12px` gap-cell shape so already-serialized
+  editor sessions can be recovered.
+- Projection joins standalone callout block lines without inserting extra `<br/>` separators around them. Adjacent
+  ordinary source lines are wrapped as zero-margin paragraphs in that path, so QTextDocument exposes one plain-text row
+  for the callout instead of blank rows above or below it.
+- Explicit empty source lines adjacent to a standalone callout are rendered with an invisible source-line placeholder
+  so the editor still exposes a real plain-text row for the gutter. On save, that placeholder line is restored to an
+  empty source line before `.wsnbody` serialization.
 - Recovered rendered callout content is trimmed, and renderer-owned blank padding rows around the recovered
   `<callout>...</callout>` source line are removed before persistence. Repeated editor save/serialize cycles must
-  therefore keep the callout as one canonical source line instead of cloning empty paragraphs above or below it.
+  therefore keep the callout as one canonical source line instead of cloning empty paragraphs above or below it. The
+  padding cleanup only removes the immediate renderer-owned row next to a recovered callout, so intentional blank lines
+  inserted by the user are preserved.
 - If the marker pair survives after the single resource image object has been deleted, the inverse boundary now drops
   that empty marker block instead of restoring the canonical resource source tag. This keeps backspace/delete behavior
   aligned with the editor's one-object frame contract.

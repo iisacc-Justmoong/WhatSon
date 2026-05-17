@@ -1255,6 +1255,7 @@ private slots:
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
+    void noteEditorDocumentSession_enterBeforeCalloutChromeInsertsLineBeforeCallout();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
@@ -1270,6 +1271,7 @@ private slots:
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
+    void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();
     void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();

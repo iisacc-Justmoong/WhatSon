@@ -104,34 +104,46 @@ void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlin
 void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource()
 {
     const QString sourceText =
-        QStringLiteral("<callout>Alpha <bold>Beta</bold> wraps into the callout body</callout>");
+        QStringLiteral(
+            "<callout>Alpha <bold>Beta</bold> and <italic>Gamma</italic> wraps into the callout body</callout>");
 
     const QString editorHtml =
         WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
 
+    QVERIFY(editorHtml.contains(QStringLiteral("<div class=\"whatson-callout\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout\"")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("<span class=\"whatson-callout\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-figma-node-id=\"280:7897\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-callout-content=\"true\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("width=\"100%\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-frame-width-mode=\"fill\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-frame-height-mode=\"hug-contents\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-padding-left=\"4\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-padding-top=\"4\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-padding-bottom=\"4\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-bar-width=\"3\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-bar-height=\"14\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-bar-radius=\"3\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-content-gap=\"12\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-frame-chrome-height=\"22\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("height:auto")));
     QVERIFY(!editorHtml.contains(QStringLiteral("data-frame-design-height")));
     QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728")));
-    QVERIFY(editorHtml.contains(QStringLiteral("padding:16px 4px")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("padding:4px;")));
-    QVERIFY(editorHtml.contains(QStringLiteral("border-left:3px solid #d9d9d9")));
-    QVERIFY(editorHtml.contains(QStringLiteral("padding-left:12px")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-callout-gap\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("padding:4px 4px")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("border-left:3px solid #d9d9d9")));
+    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-leading-bar\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-content-gap\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-frame-chrome=\"true\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<span style=\"font-style:italic;\">Gamma</span>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<callout>")));
 
     QTextDocument editorDocument;
     editorDocument.setHtml(editorHtml);
-    const QString editorPlainText = editorDocument.toPlainText().trimmed();
+    QString editorPlainText = editorDocument.toPlainText().trimmed();
+    editorPlainText.remove(QChar::ObjectReplacementCharacter);
     QCOMPARE(editorPlainText.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size(), 1);
-    QVERIFY(editorPlainText.contains(QStringLiteral("Alpha Beta wraps into the callout body")));
+    QVERIFY(editorPlainText.contains(QStringLiteral("Alpha Beta and Gamma wraps into the callout body")));
 
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
@@ -144,6 +156,30 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
     QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-callout-content")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), roundTrippedEditorHtml),
+        sourceText);
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout()
+{
+    const QString sourceText =
+        QStringLiteral("Before\n"
+                       "\n"
+                       "<callout>Inside</callout>\n"
+                       "After");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("callout-explicit-blank-line-note"),
+        sourceText);
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    QString editorVisiblePlainText = editorDocument.toPlainText();
+    editorVisiblePlainText.remove(QChar::ObjectReplacementCharacter);
+    editorVisiblePlainText.remove(QChar(0x200B));
+    QCOMPARE(editorVisiblePlainText, QStringLiteral("Before\n\nInside\nAfter"));
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("callout-explicit-blank-line-note"),
+            editorHtml),
         sourceText);
 }
 
