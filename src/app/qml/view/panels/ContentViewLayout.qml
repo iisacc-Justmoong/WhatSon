@@ -116,6 +116,7 @@ Item {
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
+    property var editorInputCommandFilter: null
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -352,6 +353,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
+                editorInputCommandFilter: contentViewLayout.editorInputCommandFilter
                 enabled: contentViewLayout.noteEditorSurfaceVisible
                 editorReadOnly: contentViewLayout.editorReadOnly
                 inAppClipboard: contentViewLayout.inAppClipboard

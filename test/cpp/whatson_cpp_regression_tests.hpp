@@ -5,6 +5,7 @@
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
+#include "app/models/editor/EditorInputCommandFilter.hpp"
 #include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/clipboard/InAppClipboardManager.h"

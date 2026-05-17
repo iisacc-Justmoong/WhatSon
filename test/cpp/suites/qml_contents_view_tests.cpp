@@ -183,6 +183,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("function pasteNativeClipboardText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var inAppClipboard: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var clipboardEditorPaste: null")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property var editorInputCommandFilter: null")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property var noteEditorSession: null")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property: \"editorViewportWidth\"")));
@@ -193,10 +194,11 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.replaceEditorDocumentText(result.editorDocumentText, textEditor.cursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function refreshClipboardEditorPasteOwner()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("attachEditorPasteOwner(")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorInputCommandFilterOwner()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("attachEditorInputOwner(")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("attachEditorPasteOwner(")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(textEditor.refreshClipboardEditorPasteOwner)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(textEditor.refreshEditorInputCommandFilterOwner)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.restoreEditorCursorPosition(nextCursorPosition);")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.paste()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
@@ -266,6 +268,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("resourcesImportController")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var inAppClipboard: null")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var clipboardEditorPaste: null")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var editorInputCommandFilter: null")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("property string lastEditorPasteStage: \"\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("property string lastEditorPasteErrorMessage: \"\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("property bool lastEditorPasteNativeFallback: false")));
@@ -292,6 +295,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("pasteClipboardResourceIntoEditor")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("inAppClipboard: contentViewLayout.inAppClipboard")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("clipboardEditorPaste: contentViewLayout.clipboardEditorPaste")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorInputCommandFilter: contentViewLayout.editorInputCommandFilter")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession: contentViewLayout.noteEditorSession")));
     QVERIFY(!QRegularExpression(QStringLiteral(
         R"(ContentsView\.TextEditor\s*\{[\s\S]*?parsedLineCount:\s*contentViewLayout\.editorParsedLineCount)"))

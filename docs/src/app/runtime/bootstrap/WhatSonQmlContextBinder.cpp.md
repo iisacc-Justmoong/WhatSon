@@ -9,7 +9,8 @@ The implementation registers the root workspace objects under stable context-pro
 detail, navigation, import, scheduler, calendar, panel-runtime controllers, the app-wide `noteActiveState` tracker, and
 the `noteEditorSession` parsed-source bridge. It also registers `editorViewModeController` so navigation chrome can
 render the restored `Plain/Page/Print/Web/Presentation` combo while the workspace editor surface remains the LVRS
-`TextEditor` path.
+`TextEditor` path. `editorInputCommandFilter` is bound beside clipboard and note session objects so QML can attach one
+C++ filter to the public LVRS editor item.
 
 ## Test Coverage
 

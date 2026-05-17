@@ -55,6 +55,7 @@ Item {
     property var noteEditorSession: null
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
+    property var editorInputCommandFilter: null
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool detailPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.detailRoutePath
@@ -779,6 +780,7 @@ Item {
             noteListModel: mobileHierarchyPage.activeNoteListModel
             inAppClipboard: mobileHierarchyPage.inAppClipboard
             clipboardEditorPaste: mobileHierarchyPage.clipboardEditorPaste
+            editorInputCommandFilter: mobileHierarchyPage.editorInputCommandFilter
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
             agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
             agendaController: mobileHierarchyPage.agendaController

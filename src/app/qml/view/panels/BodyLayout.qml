@@ -42,6 +42,7 @@ Item {
     property var noteEditorSession: null
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
+    property var editorInputCommandFilter: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
         if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
@@ -266,6 +267,7 @@ Item {
                 panelControllerRegistry: null
                 inAppClipboard: hStack.inAppClipboard
                 clipboardEditorPaste: hStack.clipboardEditorPaste
+                editorInputCommandFilter: hStack.editorInputCommandFilter
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarController: hStack.dayCalendarController

@@ -10,6 +10,7 @@ LV.TextEditor {
     property string noteBodyFilePath: ""
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
+    property var editorInputCommandFilter: null
     property var noteEditorSession: null
     property var viewportFlickable: null
     property int editorPlainTextRevision: 0
@@ -512,16 +513,18 @@ LV.TextEditor {
         return true;
     }
 
-    function refreshClipboardEditorPasteOwner() {
-        if (!textEditor.clipboardEditorPaste
-                || textEditor.clipboardEditorPaste.attachEditorPasteOwner === undefined
+    function refreshEditorInputCommandFilterOwner() {
+        if (!textEditor.editorInputCommandFilter
+                || textEditor.editorInputCommandFilter.attachEditorInputOwner === undefined
                 || !textEditor.editorItem
+                || !textEditor.clipboardEditorPaste
                 || !textEditor.inAppClipboard
                 || !textEditor.noteEditorSession)
             return false;
-        return textEditor.clipboardEditorPaste.attachEditorPasteOwner(
+        return textEditor.editorInputCommandFilter.attachEditorInputOwner(
                     textEditor.editorItem,
                     textEditor,
+                    textEditor.clipboardEditorPaste,
                     textEditor.inAppClipboard,
                     textEditor.noteEditorSession);
     }
@@ -682,10 +685,11 @@ LV.TextEditor {
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor
 
-    onInAppClipboardChanged: textEditor.refreshClipboardEditorPasteOwner()
-    onClipboardEditorPasteChanged: textEditor.refreshClipboardEditorPasteOwner()
+    onInAppClipboardChanged: textEditor.refreshEditorInputCommandFilterOwner()
+    onClipboardEditorPasteChanged: textEditor.refreshEditorInputCommandFilterOwner()
+    onEditorInputCommandFilterChanged: textEditor.refreshEditorInputCommandFilterOwner()
     onNoteEditorSessionChanged: {
-        textEditor.refreshClipboardEditorPasteOwner();
+        textEditor.refreshEditorInputCommandFilterOwner();
         Qt.callLater(textEditor.refreshEditorResourceFrameViewportWidth);
     }
     onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()
@@ -696,13 +700,13 @@ LV.TextEditor {
                     "editorViewportFlickable");
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        Qt.callLater(textEditor.refreshClipboardEditorPasteOwner);
+        Qt.callLater(textEditor.refreshEditorInputCommandFilterOwner);
     }
     Component.onDestruction: {
-        if (textEditor.clipboardEditorPaste
-                && textEditor.clipboardEditorPaste.detachEditorPasteOwner !== undefined
+        if (textEditor.editorInputCommandFilter
+                && textEditor.editorInputCommandFilter.detachEditorInputOwner !== undefined
                 && textEditor.editorItem)
-            textEditor.clipboardEditorPaste.detachEditorPasteOwner(textEditor.editorItem);
+            textEditor.editorInputCommandFilter.detachEditorInputOwner(textEditor.editorItem);
     }
 
     onTextChanged: {

@@ -41,12 +41,10 @@
   wrapper. `editorSelectedText` is read from the live editor surface with
   `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
   available as the C++ RAW-source repair anchor.
-- The wrapper attaches `ClipboardEditorPaste` to the public LVRS `editorItem` as the consumable editor paste owner.
-  The owner handles only supported image resource paste and returns `true` from its C++ event filter after applying the
-  C++-projected editor HTML, preventing the same `Cmd+V` event from reaching native `TextEdit` paste. Unsupported
-  clipboard data is left unconsumed so ordinary text paste remains native. The same C++ event filter is also the native
-  key boundary hook for callouts: it forwards plain Backspace/Enter to `NoteEditorDocumentSession` and consumes the
-  event only when the session reports a handled callout operation.
+- The wrapper attaches `EditorInputCommandFilter` to the public LVRS `editorItem` as the editor-wide native key filter.
+  The filter delegates image paste shortcuts to `ClipboardEditorPaste`, delegates callout Backspace/Enter boundaries to
+  `NoteEditorDocumentSession`, and consumes the native event only when the delegated C++ command reports that it was
+  handled.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's
@@ -68,8 +66,8 @@
   flick path and native editor surface, while cursor placement is applied from the classified global touch coordinates.
   The only local pointer surface is the bottom-padding `MouseArea`, which exists solely to make the artificial blank
   scroll area clickable and sends the cursor to document end.
-- The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, paste owner attachment,
-  and paste forwarding.
+- The wrapper uses only public LVRS `TextEditor` surface APIs for editor text, cursor movement, input filter
+  attachment, and paste forwarding.
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
   HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
@@ -131,10 +129,9 @@
   유지한다.
 - 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영한다.
   RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
-  cursor API로 복원한다. 이미지 resource paste는 `ClipboardEditorPaste` C++ event filter가 공개 editor item에서
-  실제 key event를 consume하는 방식으로 소유한다. 지원 리소스가 없는 일반 paste는 공개 `paste()` API와 native
-  `TextEdit` 경로에 남긴다. 같은 event filter가 콜아웃 경계 Backspace/Enter도 C++ 세션으로 전달하며, 세션이
-  처리한 콜아웃 동작일 때만 event를 consume한다.
+  cursor API로 복원한다. 이미지 resource paste와 콜아웃 경계 키는 `EditorInputCommandFilter` C++ event filter가
+  공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. 지원
+  리소스가 없는 일반 paste는 공개 `paste()` API와 native `TextEdit` 경로에 남긴다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

@@ -15,6 +15,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   - `component/Callout.cpp`
   - `component/ResourceImageFrame.h`
   - `component/ResourceImageFrame.cpp`
+  - `EditorInputCommandFilter.hpp`
+  - `EditorInputCommandFilter.cpp`
   - `TagInsertionWriter.hpp`
   - `TagInsertionWriter.cpp`
   - `NoteEditorDocumentSession.hpp`
@@ -48,6 +50,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   horizontal padding, `12px` content gap, Pretendard Medium `12/12` white body text, and a `3px` `#d9d9d9` leading bar
   whose table cell stretches with wrapped callout text. The component keeps source recovery marker-wrapped so
   persistence can restore the callout wrapper after LVRS rich-text editing.
+- `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
+  callout boundary Backspace/Enter operations and handled `Cmd/Ctrl+V` image-resource paste operations, delegating RAW
+  callout decisions to `NoteEditorDocumentSession` and clipboard package creation to `ClipboardEditorPaste`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
@@ -93,6 +98,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
   row로 렌더링한다. 배경은 `#262728`, padding은 `4px`, content gap은 `12px`, 텍스트는 Pretendard Medium `12/12`,
   좌측 막대는 `3px` `#d9d9d9`이며, 텍스트 wrap 높이에 맞춰 table cell이 함께 늘어난다.
+- 현재: `EditorInputCommandFilter`는 공개 LVRS editor item에 설치되는 C++ event filter다. 콜아웃 경계
+  Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
+  위임하며, 처리된 경우에만 native editor event를 consume한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제

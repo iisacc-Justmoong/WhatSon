@@ -33,24 +33,36 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
         QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.h"));
     const QString editorPasteSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.cpp"));
+    const QString editorInputFilterHeader = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/EditorInputCommandFilter.hpp"));
+    const QString editorInputFilterSource = readUtf8SourceFile(
+        QStringLiteral("src/app/models/editor/EditorInputCommandFilter.cpp"));
 
     QVERIFY(!clipboardSource.isEmpty());
     QVERIFY(!editorPasteHeader.isEmpty());
     QVERIFY(!editorPasteSource.isEmpty());
+    QVERIFY(!editorInputFilterHeader.isEmpty());
+    QVERIFY(!editorInputFilterSource.isEmpty());
     QVERIFY(clipboardSource.count(QStringLiteral("writeResourcePackageAnnotationBitmap(")) >= 2);
     QVERIFY(clipboardSource.contains(QStringLiteral("entry.insert(QStringLiteral(\"annotationPath\")")));
-    QVERIFY(editorPasteHeader.contains(QStringLiteral("attachEditorPasteOwner")));
-    QVERIFY(editorPasteHeader.contains(QStringLiteral("bool eventFilter(QObject* watched, QEvent* event) override")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("QEvent::KeyPress")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("event->accept();")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("return true;")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("return false;")));
     QVERIFY(editorPasteSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
-    QVERIFY(editorPasteHeader.contains(QStringLiteral("handleEditorCalloutBoundaryKeyEvent")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("Qt::Key_Backspace")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("Qt::Key_Return")));
-    QVERIFY(editorPasteSource.contains(QStringLiteral("replaceEditorDocumentText")));
+    QVERIFY(!editorPasteHeader.contains(QStringLiteral("eventFilter")));
+    QVERIFY(!editorPasteHeader.contains(QStringLiteral("attachEditorPasteOwner")));
+    QVERIFY(!editorPasteHeader.contains(QStringLiteral("handleEditorCalloutBoundaryKeyEvent")));
+    QVERIFY(!editorPasteSource.contains(QStringLiteral("QEvent::KeyPress")));
+    QVERIFY(!editorPasteSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
+    QVERIFY(!editorPasteSource.contains(QStringLiteral("Qt::Key_Backspace")));
+    QVERIFY(!editorPasteSource.contains(QStringLiteral("Qt::Key_Return")));
+    QVERIFY(!editorPasteSource.contains(QStringLiteral("replaceEditorDocumentText")));
+    QVERIFY(editorInputFilterHeader.contains(QStringLiteral("attachEditorInputOwner")));
+    QVERIFY(editorInputFilterHeader.contains(QStringLiteral("bool eventFilter(QObject* watched, QEvent* event) override")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("QEvent::KeyPress")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("event->accept();")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("replaceEditorDocumentText")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")).exists());
