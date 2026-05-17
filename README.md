@@ -384,10 +384,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - Legacy `.wsnbody` semantic tags now resolve through one shared registry across persistence and editor HTML read paths,
   so tags such as `<next/>`, `<title>`, `<subTitle>`, and `<eventTitle>` no longer render as literal XML in one path
   while being interpreted semantically in another.
-- Editor callout presentation now treats RAW `<callout>...</callout>` as a renderer-only transparent tag and projects it
-  to the Figma `Callout` block: a `#262728` surface that fills the editor frame width, hugs rendered content height,
-  keeps `4px` vertical padding, a `12px` content gap, a `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12`
-  white text. The `.wsnbody` source remains unchanged.
+- Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
+  Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
+  height, keeps `4px` padding, a `12px` content gap, a `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12` white
+  text. The callout owns the whole editor source row, and the leading bar stretches with wrapped text while `.wsnbody`
+  still stores the canonical source wrapper.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

@@ -67,8 +67,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `.wsnbody` body XML stores `<break/>` (valid XML)
   - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
   - editor HTML renders the token through `component/Break` as a logical blank line, not literal tag text
-- Agenda/task and callout tags are ordinary transparent paired tags. They are preserved inside paragraph RAW source
-  instead of being promoted to direct body-format blocks.
+- Agenda/task tags are ordinary transparent paired tags. Callout tags are still preserved inside paragraph RAW source
+  instead of being promoted to direct body-format blocks, but the editor HTML projection renders paired
+  `<callout>...</callout>` fragments through `component/Callout` as full-width visual rows.
 - Resource/divider source blocks are normalized onto standalone editor lines before save/load projection. Adjacent text
   is split away from those proprietary body blocks so atomic slots do not remain embedded in ordinary paragraph text on
   round-trip.
@@ -93,6 +94,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
+  - `callout` -> `component/Callout` HTML block with the Figma `280:7897` full-width wrapping surface
   - divider block tags (`<break/>` and legacy `<hr/>`) -> logical editor break line
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
   `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
@@ -106,6 +108,9 @@ The current contract preserves editor-authored RAW source across save/load turns
   `<resource ... />` source tag, and removes renderer padding rows around that atomic frame before persistence.
   This lets the editor display a rich resource frame while the `.wsnbody` source continues to store only the canonical
   resource reference.
+- The inverse boundary also recognizes `<!--whatson-callout-source:...-->...<!--/whatson-callout-source-->` marker pairs,
+  extracts the live rendered callout content cell, converts its rich text back to canonical source, and wraps that content
+  in `<callout>...</callout>` before persistence.
 - If the marker pair survives after the single resource image object has been deleted, the inverse boundary now drops
   that empty marker block instead of restoring the canonical resource source tag. This keeps backspace/delete behavior
   aligned with the editor's one-object frame contract.
@@ -179,7 +184,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
 - A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled
   HTML in the read-side projection instead of displaying the RAW tags as text.
 - Typed `<agenda><task>todo</task></agenda>` and `<callout>message</callout>` wrappers must survive save/load inside
-  paragraph RAW source without escaping wrapper tags.
+  paragraph RAW source without escaping wrapper tags. Callout must also project to the editor as the Figma visual block
+  while recovering the same wrapper on rich-text save.
 - Standalone `<resource ... />` or `</break>` source lines must round-trip as direct `<body>` children instead of being
   rewrapped into `<paragraph>`. Standalone agenda/task and callout lines stay paragraph source lines.
 - A direct `<resource ... />` body child followed by an empty `<paragraph></paragraph>` must project back to editor

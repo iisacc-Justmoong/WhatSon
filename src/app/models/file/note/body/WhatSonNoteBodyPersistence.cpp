@@ -2,6 +2,7 @@
 
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/editor/component/Break.h"
+#include "app/models/editor/component/Callout.h"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
@@ -27,6 +28,9 @@ namespace
 {
     namespace IiXml = WhatSon::IiXmlDocumentSupport;
     namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
+    QString renderInlineSourceToHtml(const QString& sourceFragment);
+    QString sourceTextFromRichEditorDocument(const QString& editorDocumentText);
 
     QString normalizePath(const QString& path)
     {
@@ -120,6 +124,67 @@ namespace
         return trimmed.size() >= 2
             && trimmed.at(trimmed.size() - 2) == QLatin1Char('/')
             && trimmed.back() == QLatin1Char('>');
+    }
+
+    bool isCalloutTagName(const QString& tagName)
+    {
+        return tagName.trimmed().toCaseFolded() == QStringLiteral("callout");
+    }
+
+    struct PairedCalloutRange final
+    {
+        int contentStart = -1;
+        int contentEnd = -1;
+        int closingEnd = -1;
+
+        bool isValid() const noexcept
+        {
+            return contentStart >= 0 && contentEnd >= contentStart && closingEnd >= contentEnd;
+        }
+    };
+
+    PairedCalloutRange pairedCalloutRangeFromOpening(
+        const QString& sourceFragment,
+        const int openingTagEnd)
+    {
+        int depth = 1;
+        int cursor = openingTagEnd + 1;
+        while (cursor < sourceFragment.size())
+        {
+            const int tagStart = sourceFragment.indexOf(QLatin1Char('<'), cursor);
+            if (tagStart < 0)
+            {
+                break;
+            }
+
+            const int tagEnd = sourceFragment.indexOf(QLatin1Char('>'), tagStart + 1);
+            if (tagEnd <= tagStart)
+            {
+                break;
+            }
+
+            const QStringView tagToken(sourceFragment.constData() + tagStart, tagEnd - tagStart + 1);
+            const QString tagName = sourceTagName(tagToken);
+            if (isCalloutTagName(tagName))
+            {
+                if (isClosingTagToken(tagToken))
+                {
+                    --depth;
+                    if (depth == 0)
+                    {
+                        return {openingTagEnd + 1, tagStart, tagEnd + 1};
+                    }
+                }
+                else if (!isSelfClosingTagToken(tagToken))
+                {
+                    ++depth;
+                }
+            }
+
+            cursor = tagEnd + 1;
+        }
+
+        return {};
     }
 
     QString inlineStyleOpeningHtml(const QString& canonicalStyleTag)
@@ -224,6 +289,28 @@ namespace
                 {
                     const QStringView tagToken(sourceFragment.constData() + cursor, tagEnd - cursor + 1);
                     const QString tagName = sourceTagName(tagToken);
+                    if (isCalloutTagName(tagName)
+                        && !isClosingTagToken(tagToken)
+                        && !isSelfClosingTagToken(tagToken))
+                    {
+                        const PairedCalloutRange calloutRange =
+                            pairedCalloutRangeFromOpening(sourceFragment, tagEnd);
+                        if (calloutRange.isValid())
+                        {
+                            const QString calloutSource =
+                                sourceFragment.mid(cursor, calloutRange.closingEnd - cursor);
+                            const QString calloutContentSource = sourceFragment.mid(
+                                calloutRange.contentStart,
+                                calloutRange.contentEnd - calloutRange.contentStart);
+                            rendered += WhatSon::EditorComponent::Callout::renderHtml({
+                                calloutSource,
+                                renderInlineSourceToHtml(calloutContentSource)
+                            });
+                            cursor = calloutRange.closingEnd;
+                            continue;
+                        }
+                    }
+
                     const bool recognizedTag = !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
                         || SemanticTags::isWebLinkTagName(tagName)
                         || SemanticTags::isHashtagTagName(tagName)
@@ -660,6 +747,108 @@ namespace
         QString sourceTag;
     };
 
+    struct RenderedCalloutSourceToken final
+    {
+        QString token;
+        QString sourceText;
+    };
+
+    bool markerBodyContainsLiveRenderedCallout(const QString& markerBody)
+    {
+        const QString foldedMarkerBody = markerBody.trimmed().toCaseFolded();
+        return foldedMarkerBody.contains(QStringLiteral("whatson-callout"))
+            && foldedMarkerBody.contains(QStringLiteral("data-callout-content"));
+    }
+
+    QString calloutOpeningTokenFromSource(const QString& sourceText)
+    {
+        static const QRegularExpression openingPattern(
+            QStringLiteral(R"(^\s*(<\s*callout\b[^>]*>))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = openingPattern.match(sourceText);
+        return match.hasMatch() ? match.captured(1) : QStringLiteral("<callout>");
+    }
+
+    QString renderedCalloutContentHtml(const QString& markerBody)
+    {
+        static const QRegularExpression contentPattern(
+            QStringLiteral(
+                R"(<td\b(?=[^>]*\bdata-callout-content\s*=\s*["']true["'])[^>]*>([\s\S]*?)</td>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = contentPattern.match(markerBody);
+        return match.hasMatch() ? match.captured(1) : QString();
+    }
+
+    QVector<RenderedCalloutSourceToken> replaceRenderedCalloutBlocksWithSourceTokens(QString* editorHtml)
+    {
+        QVector<RenderedCalloutSourceToken> tokens;
+        if (editorHtml == nullptr || editorHtml->isEmpty())
+        {
+            return tokens;
+        }
+
+        static const QRegularExpression markerPattern(
+            QStringLiteral(
+                R"(<!--whatson-callout-source:([0-9a-fA-F]*)-->([\s\S]*?)<!--\/whatson-callout-source-->)"));
+
+        QString rewrittenHtml;
+        rewrittenHtml.reserve(editorHtml->size());
+
+        int lastOffset = 0;
+        QRegularExpressionMatchIterator matchIterator = markerPattern.globalMatch(*editorHtml);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            rewrittenHtml += editorHtml->mid(lastOffset, match.capturedStart(0) - lastOffset);
+
+            if (!markerBodyContainsLiveRenderedCallout(match.captured(2)))
+            {
+                lastOffset = match.capturedEnd(0);
+                continue;
+            }
+
+            const QString originalSource =
+                QString::fromUtf8(QByteArray::fromHex(match.captured(1).toLatin1())).trimmed();
+            const QString contentHtml = renderedCalloutContentHtml(match.captured(2));
+            const QString contentSource = sourceTextFromRichEditorDocument(contentHtml);
+            const QString sourceText =
+                calloutOpeningTokenFromSource(originalSource)
+                + contentSource
+                + QStringLiteral("</callout>");
+            const QString token = QStringLiteral("__WHATSON_CALLOUT_SOURCE_TOKEN_%1__").arg(tokens.size());
+            tokens.push_back({token, sourceText});
+            rewrittenHtml += QStringLiteral("<p>%1</p>").arg(token);
+
+            lastOffset = match.capturedEnd(0);
+        }
+
+        rewrittenHtml += editorHtml->mid(lastOffset);
+        *editorHtml = rewrittenHtml;
+        return tokens;
+    }
+
+    QString restoreRenderedCalloutSourceTokens(QString text, const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        for (const RenderedCalloutSourceToken& token : tokens)
+        {
+            text.replace(token.token, token.sourceText);
+        }
+        return text;
+    }
+
+    QString compactRenderedCalloutSourceLine(QString line, const QVector<RenderedCalloutSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        for (const RenderedCalloutSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceText)
+            {
+                return token.sourceText;
+            }
+        }
+        return line;
+    }
+
     bool markerBodyContainsLiveRenderedResourceFrame(const QString& markerBody)
     {
         const QString foldedMarkerBody = markerBody.trimmed().toCaseFolded();
@@ -835,6 +1024,8 @@ namespace
             || folded.contains(QStringLiteral("<div"))
             || folded.contains(QStringLiteral("</div>"))
             || folded.contains(QStringLiteral("<br"))
+            || folded.contains(QStringLiteral("<table"))
+            || folded.contains(QStringLiteral("</table>"))
             || folded.contains(QStringLiteral("<span"))
             || folded.contains(QStringLiteral("</span>"))
             || folded.contains(QStringLiteral("<strong"))
@@ -842,6 +1033,7 @@ namespace
             || folded.contains(QStringLiteral("<em"))
             || folded.contains(QStringLiteral("</em>"))
             || folded.contains(QStringLiteral("<a "))
+            || folded.contains(QStringLiteral("whatson-callout"))
             || folded.contains(QStringLiteral("<hr"));
     }
 
@@ -897,6 +1089,8 @@ namespace
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
         QString normalizedEditorDocumentText = editorDocumentText;
+        const QVector<RenderedCalloutSourceToken> renderedCalloutTokens =
+            replaceRenderedCalloutBlocksWithSourceTokens(&normalizedEditorDocumentText);
         const QVector<RenderedResourceSourceToken> renderedResourceTokens =
             replaceRenderedResourceBlocksWithSourceTokens(&normalizedEditorDocumentText);
 
@@ -917,7 +1111,9 @@ namespace
                 }
 
                 const QString fragmentText = restoreRenderedResourceSourceTokens(
-                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                    restoreRenderedCalloutSourceTokens(
+                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                        renderedCalloutTokens),
                     renderedResourceTokens);
                 if (fragmentText.isEmpty())
                 {
@@ -929,7 +1125,9 @@ namespace
                     sourceInlineTagsForEditorFormat(fragment.charFormat()));
             }
 
-            sourceLines.push_back(compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens));
+            sourceLines.push_back(compactRenderedCalloutSourceLine(
+                compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
+                renderedCalloutTokens));
         }
 
         if (sourceLines.isEmpty())

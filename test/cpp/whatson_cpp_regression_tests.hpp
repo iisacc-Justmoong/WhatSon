@@ -55,6 +55,7 @@
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
 #include "app/models/editor/component/Break.h"
+#include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
@@ -1246,6 +1247,7 @@ private slots:
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
     void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
+    void calloutComponent_rendersFigmaCalloutBlock();
     void resourceFrame_rendersImageOnlyContainer();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
@@ -1264,6 +1266,7 @@ private slots:
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
+    void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();

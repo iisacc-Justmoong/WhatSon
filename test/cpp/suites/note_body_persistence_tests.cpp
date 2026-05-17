@@ -99,6 +99,29 @@ void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlin
         crossedInlineSource);
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource()
+{
+    const QString sourceText =
+        QStringLiteral("<callout>Alpha <bold>Beta</bold> wraps into the callout body</callout>");
+
+    const QString editorHtml =
+        WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
+
+    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-figma-node-id=\"280:7897\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-callout-content=\"true\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728")));
+    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("height:100%")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("<callout>")));
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
+        sourceText);
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags()
 {
     const QString sourceText =
