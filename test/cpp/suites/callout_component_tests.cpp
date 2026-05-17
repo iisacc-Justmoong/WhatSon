@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QTextDocument>
+
 void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
 {
     WhatSon::EditorComponent::CalloutDescriptor descriptor;
@@ -22,15 +24,21 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
     QVERIFY(html.contains(QStringLiteral("height:auto")));
     QVERIFY(!html.contains(QStringLiteral("data-frame-design-height")));
     QVERIFY(!html.contains(QStringLiteral("height:22px")));
-    QVERIFY(html.contains(QStringLiteral("width=\"3\"")));
-    QVERIFY(html.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
-    QVERIFY(html.contains(QStringLiteral("background-color:#d9d9d9")));
-    QVERIFY(html.contains(QStringLiteral("height:100%")));
-    QVERIFY(html.contains(QStringLiteral("min-height:14px")));
-    QVERIFY(!html.contains(QStringLiteral("height=\"14\"")));
+    QVERIFY(!html.contains(QStringLiteral("<table")));
+    QVERIFY(!html.contains(QStringLiteral("<td")));
+    QVERIFY(!html.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
+    QVERIFY(!html.contains(QStringLiteral("class=\"whatson-callout-gap\"")));
+    QVERIFY(!html.contains(QStringLiteral("&nbsp;")));
+    QVERIFY(html.contains(QStringLiteral("border-left:3px solid #d9d9d9")));
+    QVERIFY(html.contains(QStringLiteral("padding-left:12px")));
     QVERIFY(html.contains(QStringLiteral("data-callout-content=\"true\"")));
     QVERIFY(html.contains(QStringLiteral("font-family:Pretendard")));
     QVERIFY(html.contains(QStringLiteral("font-size:12px")));
     QVERIFY(html.contains(QStringLiteral("line-height:12px")));
     QVERIFY(html.contains(QStringLiteral("This is callout text")));
+
+    QTextDocument editorDocument;
+    editorDocument.setHtml(html);
+    QCOMPARE(editorDocument.toPlainText().trimmed(), QStringLiteral("This is callout text"));
+    QVERIFY(!editorDocument.toPlainText().contains(QChar::Nbsp));
 }

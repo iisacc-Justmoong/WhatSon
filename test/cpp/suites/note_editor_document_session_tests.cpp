@@ -181,7 +181,6 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCall
     QTextDocument roundTrippedEditorDocument;
     roundTrippedEditorDocument.setHtml(editorHtml);
     const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
-    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("<table")));
     QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("whatson-callout-source:")));
     QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-callout-content")));
 
@@ -661,10 +660,16 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideCalloutMove
     const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("callout-enter-note"),
         sourceText);
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    const QString editorPlainText = editorDocument.toPlainText();
+    QCOMPARE(editorPlainText, QStringLiteral("Before\nInside\nAfter"));
+    const int renderedCalloutTextEndCursor =
+        editorPlainText.indexOf(QStringLiteral("Inside")) + QStringLiteral("Inside").size();
 
     const QVariantMap result = session.handleCalloutBoundaryKeyInSource(
         editorHtml,
-        QStringLiteral("Before\nIns").size(),
+        renderedCalloutTextEndCursor,
         0,
         Qt::Key_Return);
 
@@ -672,15 +677,23 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideCalloutMove
     QVERIFY(result.value(QStringLiteral("handled")).toBool());
     QCOMPARE(result.value(QStringLiteral("changed")).toBool(), false);
     QCOMPARE(result.value(QStringLiteral("bodySourceText")).toString(), sourceText);
-    QCOMPARE(result.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Before\nInside\n").size());
+    QTextDocument resultEditorDocument;
+    resultEditorDocument.setHtml(result.value(QStringLiteral("editorDocumentText")).toString());
+    QCOMPARE(
+        result.value(QStringLiteral("cursorPosition")).toInt(),
+        resultEditorDocument.toPlainText().indexOf(QStringLiteral("After")));
 
     const QString trailingCalloutSourceText = QStringLiteral("<callout>Inside</callout>");
     const QString trailingCalloutEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("trailing-callout-enter-note"),
         trailingCalloutSourceText);
+    QTextDocument trailingCalloutEditorDocument;
+    trailingCalloutEditorDocument.setHtml(trailingCalloutEditorHtml);
+    const QString trailingEditorPlainText = trailingCalloutEditorDocument.toPlainText();
+    QCOMPARE(trailingEditorPlainText, QStringLiteral("Inside"));
     const QVariantMap trailingResult = session.handleCalloutBoundaryKeyInSource(
         trailingCalloutEditorHtml,
-        QStringLiteral("Ins").size(),
+        trailingEditorPlainText.size(),
         0,
         Qt::Key_Enter);
 

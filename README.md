@@ -390,13 +390,14 @@ WhatSon is an LVRS-based Qt Quick application.
   while being interpreted semantically in another.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
-  height through root `height:auto`, keeps `16px` vertical padding, `4px` horizontal padding, a `12px` content gap, a
-  `3px` `#d9d9d9` leading bar, and Pretendard Medium `12/12` white text. The callout owns the whole editor source row,
-  and the leading bar stretches with wrapped text while `.wsnbody` still stores the canonical source wrapper. Idle RAW
-  push also recognizes Qt-serialized callout tables after comment/data markers are stripped, so callouts do not decay
-  into plain paragraphs over time or clone empty paragraphs around the callout during repeated saves. Backspace/Enter
-  boundary behavior is routed through `EditorInputCommandFilter` and handled by the C++ editor session from canonical
-  RAW source, not by QML parsing rendered callout chrome.
+  height through root `height:auto`, keeps `16px` vertical padding, `4px` right padding, a `12px` left content inset, a
+  `3px` `#d9d9d9` leading border, and Pretendard Medium `12/12` white text. The callout owns the whole editor source
+  row, and the leading border belongs to the text frame rather than a separate editable cell while `.wsnbody` still
+  stores the canonical source wrapper. Idle RAW push also recognizes Qt-serialized callout spans and legacy callout
+  tables after comment/data markers are stripped, so callouts do not decay into plain paragraphs over time or clone
+  empty paragraphs around the callout during repeated saves. Backspace/Enter boundary behavior is routed through
+  `EditorInputCommandFilter` and handled by the C++ editor session from canonical RAW source, not by QML parsing
+  rendered callout chrome.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

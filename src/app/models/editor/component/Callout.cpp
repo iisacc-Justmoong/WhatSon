@@ -28,36 +28,24 @@ namespace WhatSon::EditorComponent
         const QString contentHtml = normalizedContentHtml(descriptor.contentHtml);
 
         QString html;
-        html.reserve(contentHtml.size() + 1800);
+        html.reserve(contentHtml.size() + 1200);
         html += QStringLiteral("<!--whatson-callout-source:");
         html += sourceMarker(descriptor.sourceText);
         html += QStringLiteral("-->");
         html += QStringLiteral(
-            "<table class=\"whatson-callout\" data-figma-node-id=\"280:7897\" "
+            "<span class=\"whatson-callout\" data-figma-node-id=\"280:7897\" "
             "data-frame-design-width=\"%1\" data-callout-render=\"%2\" "
             "data-frame-width-mode=\"fill\" data-frame-height-mode=\"hug-contents\" "
-            "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
+            "data-callout-content=\"true\" width=\"100%\" "
             "style=\"width:100%;max-width:100%;height:auto;min-height:0;"
-            "border-spacing:0;border-collapse:separate;"
-            "background-color:#262728;padding:16px 4px;\">"
-            "<tr>"
-            "<td width=\"3\" class=\"whatson-callout-bar\" "
-            "style=\"width:3px;min-width:3px;max-width:3px;height:100%;min-height:14px;"
-            "background-color:#d9d9d9;border-radius:3px;padding:0;margin:0;"
-            "font-size:0;line-height:0;vertical-align:top;\">&nbsp;</td>"
-            "<td width=\"12\" class=\"whatson-callout-gap\" "
-            "style=\"width:12px;min-width:12px;max-width:12px;padding:0;margin:0;"
-            "font-size:0;line-height:0;\">&nbsp;</td>"
-            "<td class=\"whatson-callout-content\" data-callout-content=\"true\" "
-            "style=\"padding:0;margin:0;width:100%;font-family:Pretendard;"
-            "font-size:12px;font-weight:500;line-height:12px;color:#FFFFFF;"
-            "white-space:normal;word-break:break-word;vertical-align:middle;\">")
+            "box-sizing:border-box;background-color:#262728;"
+            "padding:16px 4px;padding-left:12px;border-left:3px solid #d9d9d9;"
+            "font-family:Pretendard;font-size:12px;font-weight:500;line-height:12px;"
+            "color:#FFFFFF;white-space:normal;word-break:break-word;\">")
             .arg(QString::number(kFigmaNodeWidth), QString::fromLatin1(kCalloutRenderVersion));
         html += contentHtml;
         html += QStringLiteral(
-            "</td>"
-            "</tr>"
-            "</table>"
+            "</span>"
             "<!--/whatson-callout-source-->");
         return html;
     }

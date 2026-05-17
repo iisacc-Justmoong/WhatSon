@@ -773,10 +773,10 @@ namespace
     {
         static const QRegularExpression contentPattern(
             QStringLiteral(
-                R"(<td\b(?=[^>]*\bdata-callout-content\s*=\s*["']true["'])[^>]*>([\s\S]*?)</td>)"),
+                R"(<([a-zA-Z][\w:-]*)\b(?=[^>]*\bdata-callout-content\s*=\s*["']true["'])[^>]*>([\s\S]*?)</\1>)"),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch match = contentPattern.match(markerBody);
-        return match.hasMatch() ? match.captured(1) : QString();
+        return match.hasMatch() ? match.captured(2) : QString();
     }
 
     QVector<RenderedCalloutSourceToken> replaceRenderedCalloutBlocksWithSourceTokens(QString* editorHtml)
@@ -1202,6 +1202,18 @@ namespace
         return tags;
     }
 
+    bool formatLooksLikeSerializedCallout(const QTextCharFormat& format)
+    {
+        const QBrush background = format.background();
+        if (background.style() != Qt::NoBrush
+            && background.color().name(QColor::HexRgb).compare(QStringLiteral("#262728"), Qt::CaseInsensitive) == 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     QString wrapSourceTextWithInlineTags(const QString& text, const QStringList& tags)
     {
         if (text.isEmpty() || tags.isEmpty())
@@ -1240,6 +1252,7 @@ namespace
         for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
         {
             QString sourceLine;
+            bool serializedCalloutOpen = false;
 
             for (QTextBlock::iterator fragmentIt = block.begin(); !fragmentIt.atEnd(); ++fragmentIt)
             {
@@ -1259,14 +1272,32 @@ namespace
                     continue;
                 }
 
+                const bool serializedCalloutFragment =
+                    formatLooksLikeSerializedCallout(fragment.charFormat());
+                if (serializedCalloutFragment && !serializedCalloutOpen)
+                {
+                    sourceLine += QStringLiteral("<callout>");
+                    serializedCalloutOpen = true;
+                }
+                else if (!serializedCalloutFragment && serializedCalloutOpen)
+                {
+                    sourceLine += QStringLiteral("</callout>");
+                    serializedCalloutOpen = false;
+                }
+
                 sourceLine += wrapSourceTextWithInlineTags(
                     fragmentText,
                     sourceInlineTagsForEditorFormat(fragment.charFormat()));
             }
+            if (serializedCalloutOpen)
+            {
+                sourceLine += QStringLiteral("</callout>");
+            }
 
-            sourceLines.push_back(compactRenderedCalloutSourceLine(
+            sourceLine = compactRenderedCalloutSourceLine(
                 compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
-                renderedCalloutTokens));
+                renderedCalloutTokens);
+            sourceLines.push_back(sourceLine);
         }
 
         if (sourceLines.isEmpty())

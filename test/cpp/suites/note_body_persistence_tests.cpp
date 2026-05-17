@@ -120,8 +120,10 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
     QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728")));
     QVERIFY(editorHtml.contains(QStringLiteral("padding:16px 4px")));
     QVERIFY(!editorHtml.contains(QStringLiteral("padding:4px;")));
-    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("height:100%")));
+    QVERIFY(editorHtml.contains(QStringLiteral("border-left:3px solid #d9d9d9")));
+    QVERIFY(editorHtml.contains(QStringLiteral("padding-left:12px")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-callout-bar\"")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-callout-gap\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<callout>")));
 
@@ -138,7 +140,6 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
     QTextDocument roundTrippedEditorDocument;
     roundTrippedEditorDocument.setHtml(editorHtml);
     const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
-    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("<table")));
     QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("whatson-callout-source:")));
     QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-callout-content")));
     QCOMPARE(
