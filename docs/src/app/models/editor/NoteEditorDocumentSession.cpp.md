@@ -39,8 +39,8 @@ Implements the active note editor document session.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, unwraps or
     removes a callout at its content start, or moves the cursor to the line after the callout when Enter/Return is
-    pressed inside it. The callout frame-chrome object replacement is skipped for source mapping and then re-applied when
-    returning the decorated TextEdit cursor position.
+    pressed inside it. The callout frame-chrome object replacement and renderer-only line characters are skipped for
+    source mapping and then re-applied when returning the decorated TextEdit cursor position.
 
 ## Guardrails
 

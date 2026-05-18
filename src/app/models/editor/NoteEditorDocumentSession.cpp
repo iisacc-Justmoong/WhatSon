@@ -339,20 +339,36 @@ namespace
         return document.toPlainText();
     }
 
-    int visibleEditorCursorPositionForDecoratedCursor(
+    int sourceVisibleCursorPositionForDecoratedCursor(
         const QString& editorDocumentText,
+        const QString& bodySourceText,
         const int decoratedCursorPosition)
     {
         const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        const QVector<SourceVisibleCharacter> visibleCharacters =
+            visibleCharactersForSourceText(normalizedSourceText);
         const int boundedCursorPosition = clampedPosition(decoratedCursorPosition, plainText.size());
 
         int visibleCursorPosition = 0;
-        for (int index = 0; index < boundedCursorPosition; ++index)
+        int editorPosition = 0;
+        while (editorPosition < boundedCursorPosition)
         {
-            if (plainText.at(index) != QChar::ObjectReplacementCharacter)
+            if (visibleCursorPosition >= visibleCharacters.size())
+            {
+                ++editorPosition;
+                continue;
+            }
+
+            const QString currentSourceText = visibleCharacters.at(visibleCursorPosition).logicalText;
+            const QChar editorCharacter = plainText.at(editorPosition);
+            const bool editorCharacterMatchesSource =
+                !currentSourceText.isEmpty() && currentSourceText.front() == editorCharacter;
+            if (editorCharacterMatchesSource)
             {
                 ++visibleCursorPosition;
             }
+            ++editorPosition;
         }
         return visibleCursorPosition;
     }
@@ -392,6 +408,59 @@ namespace
             ++decoratedPosition;
         }
         return decoratedPosition;
+    }
+
+    int decoratedEditorContentStartForSourcePosition(
+        const QString& editorDocumentText,
+        const QString& bodySourceText,
+        const int sourceCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        const QVector<SourceVisibleCharacter> visibleCharacters =
+            visibleCharactersForSourceText(normalizedSourceText);
+        const int targetVisiblePosition =
+            editorCursorPositionForSourcePosition(normalizedSourceText, sourceCursorPosition);
+
+        int editorPosition = 0;
+        int visiblePosition = 0;
+        while (editorPosition < plainText.size())
+        {
+            if (visiblePosition >= targetVisiblePosition)
+            {
+                const QString nextSourceText = visiblePosition < visibleCharacters.size()
+                    ? visibleCharacters.at(visiblePosition).logicalText
+                    : QString();
+                const QChar editorCharacter = plainText.at(editorPosition);
+                const bool editorCharacterMatchesSource =
+                    !nextSourceText.isEmpty() && nextSourceText.front() == editorCharacter;
+                if (!editorCharacterMatchesSource
+                    && nextSourceText != QString(QChar::ObjectReplacementCharacter))
+                {
+                    ++editorPosition;
+                    continue;
+                }
+                return editorPosition;
+            }
+
+            const QString currentSourceText = visiblePosition < visibleCharacters.size()
+                ? visibleCharacters.at(visiblePosition).logicalText
+                : QString();
+            const QChar editorCharacter = plainText.at(editorPosition);
+            const bool editorCharacterMatchesSource =
+                !currentSourceText.isEmpty() && currentSourceText.front() == editorCharacter;
+            if (!editorCharacterMatchesSource
+                && currentSourceText != QString(QChar::ObjectReplacementCharacter))
+            {
+                ++editorPosition;
+                continue;
+            }
+
+            ++editorPosition;
+            ++visiblePosition;
+        }
+
+        return plainText.size();
     }
 
     int sourcePositionForEditorSelectionStart(
@@ -1751,11 +1820,15 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
         return result;
     }
 
-    result.insert(
-        QStringLiteral("cursorPosition"),
-        editorCursorPositionForSourcePosition(
+    const int sourceCursorPosition = result.value(QStringLiteral("sourceCursorPosition")).toInt();
+    const QString normalizedTagName = tagName.trimmed().toCaseFolded();
+    const int editorCursorPosition = normalizedTagName == QStringLiteral("callout")
+        ? decoratedEditorContentStartForSourcePosition(
+            editorHtml,
             resultSourceText,
-            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+            sourceCursorPosition)
+        : editorCursorPositionForSourcePosition(resultSourceText, sourceCursorPosition);
+    result.insert(QStringLiteral("cursorPosition"), editorCursorPosition);
     setParsedLineCount(lineCountForEditorSource(resultSourceText));
     if (hasActiveNote())
     {
@@ -1783,7 +1856,7 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
         clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
     const int boundedCursorPosition =
         clampedPosition(
-            visibleEditorCursorPositionForDecoratedCursor(editorDocumentText, cursorPosition),
+            sourceVisibleCursorPositionForDecoratedCursor(editorDocumentText, sourceText, cursorPosition),
             visibleCharactersForSourceText(sourceText).size());
     const int boundedSelectionLength = qMax(0, selectionLength);
 

@@ -69,7 +69,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   format-tag source insertions for editor command flows, and persists LVRS sync-finished rich-text edits back through the note body
   persistence path after converting them to canonical source. The gutter uses the session's parsed source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
-  not let the LVRS rendered wrap-line count create additional gutter rows.
+  not let the LVRS rendered wrap-line count create additional gutter rows. When a new empty callout is inserted, the
+  session returns the cursor position in decorated LVRS rich-text coordinates after generated callout chrome so the
+  caret starts inside the callout content span. Backspace at that same decorated content start maps back to the loaded
+  RAW source content start and removes the callout wrapper instead of deleting neighboring source lines.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
   from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
@@ -122,7 +125,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. 거터의 실제
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
-  위치만 제공할 수 있다.
+  위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
+  커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면
+  loaded RAW source의 callout content 시작점으로 역매핑해 주변 줄이 아니라 callout wrapper를 제거한다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
   frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor

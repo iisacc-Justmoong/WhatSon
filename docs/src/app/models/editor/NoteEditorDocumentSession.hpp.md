@@ -42,11 +42,14 @@ Declares the active note editor document session object.
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
   format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
-  `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source.
+  `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source. Empty
+  callout insertion returns the LVRS rich-text cursor at the rendered callout content start, after generated frame
+  chrome images, so the caret lands inside the callout rather than on the neighboring source line.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
-  callout frame entirely. Enter/Return inside a callout moves the cursor to the next source line outside the wrapper,
-  adding that line break when the callout is currently the trailing source node.
+  callout frame entirely. That content-start test uses the loaded RAW source and skips generated frame chrome plus
+  renderer-only line characters in LVRS rich-text coordinates. Enter/Return inside a callout moves the cursor to the
+  next source line outside the wrapper, adding that line break when the callout is currently the trailing source node.
 
 ## Guardrails
 
@@ -96,8 +99,10 @@ Declares the active note editor document session object.
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
-  visible 범위를 다시 찾는다.
+  visible 범위를 다시 찾는다. 빈 callout 삽입은 생성된 frame chrome image를 건너뛴 LVRS rich-text content 시작
+  좌표를 반환해 커서가 주변 줄이 아니라 새 callout 내부에 놓이게 한다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
-  Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
-  콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로 이동시키고, 뒤에
-  줄이 없으면 새 줄을 추가한다.
+  Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다. 이
+  content 시작점 판정은 로드된 RAW source를 기준으로 하며 LVRS rich-text 좌표의 생성 frame chrome과 renderer 전용
+  줄 문자를 건너뛴다. 콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로
+  이동시키고, 뒤에 줄이 없으면 새 줄을 추가한다.

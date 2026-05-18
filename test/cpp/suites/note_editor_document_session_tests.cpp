@@ -541,6 +541,12 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QCOMPARE(
         selectedCalloutResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
         QStringLiteral("Alpha <callout>Beta</callout>").size());
+    QTextDocument selectedCalloutDocument;
+    selectedCalloutDocument.setHtml(selectedCalloutResult.value(QStringLiteral("editorDocumentText")).toString());
+    const QString selectedCalloutPlainText = selectedCalloutDocument.toPlainText();
+    QCOMPARE(
+        selectedCalloutResult.value(QStringLiteral("cursorPosition")).toInt(),
+        selectedCalloutPlainText.indexOf(QStringLiteral("Beta")) + QStringLiteral("Beta").size());
 
     const QVariantMap emptyCalloutResult = session.insertFormatTagIntoSource(
         QStringLiteral("callout"),
@@ -557,6 +563,18 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QCOMPARE(
         emptyCalloutResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
         QStringLiteral("Alpha<callout>").size());
+    QTextDocument emptyCalloutDocument;
+    emptyCalloutDocument.setHtml(emptyCalloutResult.value(QStringLiteral("editorDocumentText")).toString());
+    const QString emptyCalloutPlainText = emptyCalloutDocument.toPlainText();
+    const int emptyCalloutChromeIndex = emptyCalloutPlainText.indexOf(QChar::ObjectReplacementCharacter);
+    QVERIFY(emptyCalloutChromeIndex >= 0);
+    int emptyCalloutContentCursor = emptyCalloutChromeIndex;
+    while (emptyCalloutContentCursor < emptyCalloutPlainText.size()
+           && emptyCalloutPlainText.at(emptyCalloutContentCursor) == QChar::ObjectReplacementCharacter)
+    {
+        ++emptyCalloutContentCursor;
+    }
+    QCOMPARE(emptyCalloutResult.value(QStringLiteral("cursorPosition")).toInt(), emptyCalloutContentCursor);
 
     const QString formattedEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("format-note"),
@@ -656,6 +674,95 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInit
         emptyResult.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("Before\nAfter"));
     QCOMPARE(emptyResult.value(QStringLiteral("cursorPosition")).toInt(), calloutInitCursor);
+
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString insertedTextCalloutNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("inserted-text-callout-boundary-note"),
+        QStringLiteral("Alpha<callout>Inside</callout> Beta"),
+        &createError);
+    QVERIFY2(!insertedTextCalloutNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession activeTextSession;
+    activeTextSession.setSessionRootPathForTests(sessionRootDir.path());
+    QSignalSpy textLoadedSpy(&activeTextSession, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(activeTextSession.openNoteForEditing(
+        QStringLiteral("inserted-text-callout-boundary-note"),
+        insertedTextCalloutNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(textLoadedSpy.count(), 1, 3000);
+
+    const QString insertedTextCalloutEditorHtml =
+        readUtf8FileForNoteEditorSessionTest(activeTextSession.editorFilePath());
+    QTextDocument insertedTextCalloutDocument;
+    insertedTextCalloutDocument.setHtml(insertedTextCalloutEditorHtml);
+    const QString insertedTextCalloutPlainText = insertedTextCalloutDocument.toPlainText();
+    const int insertedTextCalloutContentCursor =
+        insertedTextCalloutPlainText.indexOf(QStringLiteral("Inside"));
+    QVERIFY(insertedTextCalloutContentCursor >= 0);
+    const QVariantMap insertedTextResult = activeTextSession.handleCalloutBoundaryKeyInSource(
+        insertedTextCalloutEditorHtml,
+        insertedTextCalloutContentCursor,
+        0,
+        Qt::Key_Backspace);
+
+    QVERIFY(insertedTextResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertedTextResult.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(insertedTextResult.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        insertedTextResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("AlphaInside Beta"));
+    QVERIFY(!insertedTextResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-callout")));
+
+    createError.clear();
+    const QString insertedEmptyCalloutNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("inserted-empty-callout-boundary-note"),
+        QStringLiteral("Alpha<callout></callout> Beta"),
+        &createError);
+    QVERIFY2(!insertedEmptyCalloutNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession activeEmptySession;
+    activeEmptySession.setSessionRootPathForTests(sessionRootDir.path());
+    QSignalSpy loadedSpy(&activeEmptySession, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(activeEmptySession.openNoteForEditing(
+        QStringLiteral("inserted-empty-callout-boundary-note"),
+        insertedEmptyCalloutNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString insertedEmptyCalloutEditorHtml =
+        readUtf8FileForNoteEditorSessionTest(activeEmptySession.editorFilePath());
+    QTextDocument insertedEmptyCalloutDocument;
+    insertedEmptyCalloutDocument.setHtml(insertedEmptyCalloutEditorHtml);
+    const QString insertedEmptyCalloutPlainText = insertedEmptyCalloutDocument.toPlainText();
+    const int insertedEmptyCalloutChromeIndex =
+        insertedEmptyCalloutPlainText.indexOf(QChar::ObjectReplacementCharacter);
+    QVERIFY(insertedEmptyCalloutChromeIndex >= 0);
+    int insertedEmptyCalloutContentCursor = insertedEmptyCalloutChromeIndex;
+    while (insertedEmptyCalloutContentCursor < insertedEmptyCalloutPlainText.size()
+           && insertedEmptyCalloutPlainText.at(insertedEmptyCalloutContentCursor) == QChar::ObjectReplacementCharacter)
+    {
+        ++insertedEmptyCalloutContentCursor;
+    }
+    const QVariantMap insertedEmptyResult = activeEmptySession.handleCalloutBoundaryKeyInSource(
+        insertedEmptyCalloutEditorHtml,
+        insertedEmptyCalloutContentCursor,
+        0,
+        Qt::Key_Backspace);
+
+    QVERIFY(insertedEmptyResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertedEmptyResult.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(insertedEmptyResult.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        insertedEmptyResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha Beta"));
+    QVERIFY(!insertedEmptyResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-callout")));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine()
