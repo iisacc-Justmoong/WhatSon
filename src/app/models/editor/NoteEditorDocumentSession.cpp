@@ -1,6 +1,7 @@
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 
 #include "app/models/editor/component/Break.h"
+#include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
@@ -227,6 +228,20 @@ namespace
         return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(visibleText);
     }
 
+    QString visibleCursorMappingTextForSourceText(const QString& bodySourceText)
+    {
+        const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(bodySourceText);
+        QString visibleText;
+        visibleText.reserve(visibleCharacters.size());
+        for (const SourceVisibleCharacter& visibleCharacter : visibleCharacters)
+        {
+            visibleText += visibleCharacter.logicalText.isEmpty()
+                ? QChar()
+                : visibleCharacter.logicalText.front();
+        }
+        return visibleText;
+    }
+
     int closestVisibleTextMatchStart(
         const QString& visibleText,
         const QString& selectedText,
@@ -339,40 +354,6 @@ namespace
         return document.toPlainText();
     }
 
-    int sourceVisibleCursorPositionForDecoratedCursor(
-        const QString& editorDocumentText,
-        const QString& bodySourceText,
-        const int decoratedCursorPosition)
-    {
-        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
-        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
-        const QVector<SourceVisibleCharacter> visibleCharacters =
-            visibleCharactersForSourceText(normalizedSourceText);
-        const int boundedCursorPosition = clampedPosition(decoratedCursorPosition, plainText.size());
-
-        int visibleCursorPosition = 0;
-        int editorPosition = 0;
-        while (editorPosition < boundedCursorPosition)
-        {
-            if (visibleCursorPosition >= visibleCharacters.size())
-            {
-                ++editorPosition;
-                continue;
-            }
-
-            const QString currentSourceText = visibleCharacters.at(visibleCursorPosition).logicalText;
-            const QChar editorCharacter = plainText.at(editorPosition);
-            const bool editorCharacterMatchesSource =
-                !currentSourceText.isEmpty() && currentSourceText.front() == editorCharacter;
-            if (editorCharacterMatchesSource)
-            {
-                ++visibleCursorPosition;
-            }
-            ++editorPosition;
-        }
-        return visibleCursorPosition;
-    }
-
     int decoratedEditorCursorPositionForVisibleCursor(
         const QString& editorDocumentText,
         const int visibleCursorPosition)
@@ -392,74 +373,6 @@ namespace
                 ++visibleIndex;
             }
         }
-        return plainText.size();
-    }
-
-    int decoratedEditorContentStartForVisibleCursor(
-        const QString& editorDocumentText,
-        const int visibleCursorPosition)
-    {
-        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
-        int decoratedPosition =
-            decoratedEditorCursorPositionForVisibleCursor(editorDocumentText, visibleCursorPosition);
-        while (decoratedPosition < plainText.size()
-               && plainText.at(decoratedPosition) == QChar::ObjectReplacementCharacter)
-        {
-            ++decoratedPosition;
-        }
-        return decoratedPosition;
-    }
-
-    int decoratedEditorContentStartForSourcePosition(
-        const QString& editorDocumentText,
-        const QString& bodySourceText,
-        const int sourceCursorPosition)
-    {
-        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
-        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
-        const QVector<SourceVisibleCharacter> visibleCharacters =
-            visibleCharactersForSourceText(normalizedSourceText);
-        const int targetVisiblePosition =
-            editorCursorPositionForSourcePosition(normalizedSourceText, sourceCursorPosition);
-
-        int editorPosition = 0;
-        int visiblePosition = 0;
-        while (editorPosition < plainText.size())
-        {
-            if (visiblePosition >= targetVisiblePosition)
-            {
-                const QString nextSourceText = visiblePosition < visibleCharacters.size()
-                    ? visibleCharacters.at(visiblePosition).logicalText
-                    : QString();
-                const QChar editorCharacter = plainText.at(editorPosition);
-                const bool editorCharacterMatchesSource =
-                    !nextSourceText.isEmpty() && nextSourceText.front() == editorCharacter;
-                if (!editorCharacterMatchesSource
-                    && nextSourceText != QString(QChar::ObjectReplacementCharacter))
-                {
-                    ++editorPosition;
-                    continue;
-                }
-                return editorPosition;
-            }
-
-            const QString currentSourceText = visiblePosition < visibleCharacters.size()
-                ? visibleCharacters.at(visiblePosition).logicalText
-                : QString();
-            const QChar editorCharacter = plainText.at(editorPosition);
-            const bool editorCharacterMatchesSource =
-                !currentSourceText.isEmpty() && currentSourceText.front() == editorCharacter;
-            if (!editorCharacterMatchesSource
-                && currentSourceText != QString(QChar::ObjectReplacementCharacter))
-            {
-                ++editorPosition;
-                continue;
-            }
-
-            ++editorPosition;
-            ++visiblePosition;
-        }
-
         return plainText.size();
     }
 
@@ -505,208 +418,6 @@ namespace
         }
 
         return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
-    }
-
-    struct CalloutSourceRange final
-    {
-        int openingStart = -1;
-        int openingEnd = -1;
-        int contentStart = -1;
-        int contentEnd = -1;
-        int closingStart = -1;
-        int closingEnd = -1;
-
-        bool isValid() const noexcept
-        {
-            return openingStart >= 0
-                && openingEnd >= openingStart
-                && contentStart == openingEnd
-                && contentEnd >= contentStart
-                && closingStart == contentEnd
-                && closingEnd >= closingStart;
-        }
-    };
-
-    QVector<CalloutSourceRange> calloutSourceRanges(const QString& bodySourceText)
-    {
-        struct OpeningCalloutTag final
-        {
-            int start = -1;
-            int end = -1;
-        };
-
-        static const QRegularExpression calloutTagPattern(
-            QStringLiteral(R"(<\s*(/?)\s*callout\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        QVector<OpeningCalloutTag> openingStack;
-        QVector<CalloutSourceRange> ranges;
-        QRegularExpressionMatchIterator matchIterator = calloutTagPattern.globalMatch(bodySourceText);
-        while (matchIterator.hasNext())
-        {
-            const QRegularExpressionMatch match = matchIterator.next();
-            const QString token = match.captured(0).trimmed();
-            const bool closingTag = !match.captured(1).isEmpty();
-            const bool selfClosingTag = token.endsWith(QStringLiteral("/>"));
-            if (!closingTag && !selfClosingTag)
-            {
-                openingStack.push_back({
-                    static_cast<int>(match.capturedStart(0)),
-                    static_cast<int>(match.capturedEnd(0))
-                });
-                continue;
-            }
-            if (!closingTag || openingStack.isEmpty())
-            {
-                continue;
-            }
-
-            const OpeningCalloutTag opening = openingStack.takeLast();
-            ranges.push_back({
-                opening.start,
-                opening.end,
-                opening.end,
-                static_cast<int>(match.capturedStart(0)),
-                static_cast<int>(match.capturedStart(0)),
-                static_cast<int>(match.capturedEnd(0))
-            });
-        }
-
-        std::sort(
-            ranges.begin(),
-            ranges.end(),
-            [](const CalloutSourceRange& left, const CalloutSourceRange& right)
-            {
-                return left.openingStart < right.openingStart;
-            });
-        return ranges;
-    }
-
-    bool calloutRangeContainsEditorCursor(
-        const QString& bodySourceText,
-        const CalloutSourceRange& range,
-        const int editorCursorPosition)
-    {
-        if (!range.isValid())
-        {
-            return false;
-        }
-
-        const int contentEditorStart = editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
-        const int contentEditorEnd = editorCursorPositionForSourcePosition(bodySourceText, range.contentEnd);
-        return editorCursorPosition >= contentEditorStart && editorCursorPosition <= contentEditorEnd;
-    }
-
-    bool calloutRangeStartsAtEditorCursor(
-        const QString& bodySourceText,
-        const CalloutSourceRange& range,
-        const int editorCursorPosition)
-    {
-        return range.isValid()
-            && editorCursorPosition == editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
-    }
-
-    bool findCalloutRangeForEditorCursor(
-        const QString& bodySourceText,
-        const int editorCursorPosition,
-        const bool requireInitCursor,
-        CalloutSourceRange* outRange)
-    {
-        const QVector<CalloutSourceRange> ranges = calloutSourceRanges(bodySourceText);
-        for (const CalloutSourceRange& range : ranges)
-        {
-            const bool matches = requireInitCursor
-                ? calloutRangeStartsAtEditorCursor(bodySourceText, range, editorCursorPosition)
-                : calloutRangeContainsEditorCursor(bodySourceText, range, editorCursorPosition);
-            if (!matches)
-            {
-                continue;
-            }
-            if (outRange != nullptr)
-            {
-                *outRange = range;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    bool calloutChromeBeforeContentContainsDecoratedCursor(
-        const QString& editorDocumentText,
-        const QString& bodySourceText,
-        const CalloutSourceRange& range,
-        const int decoratedCursorPosition)
-    {
-        if (!range.isValid())
-        {
-            return false;
-        }
-
-        const int contentVisibleCursorPosition =
-            editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
-        const int decoratedFrameStart =
-            decoratedEditorCursorPositionForVisibleCursor(editorDocumentText, contentVisibleCursorPosition);
-        const int decoratedContentStart =
-            decoratedEditorContentStartForVisibleCursor(editorDocumentText, contentVisibleCursorPosition);
-        return decoratedContentStart > decoratedFrameStart
-            && decoratedCursorPosition >= decoratedFrameStart
-            && decoratedCursorPosition < decoratedContentStart;
-    }
-
-    bool findCalloutRangeForEditorChromeBeforeContent(
-        const QString& editorDocumentText,
-        const QString& bodySourceText,
-        const int decoratedCursorPosition,
-        CalloutSourceRange* outRange)
-    {
-        const QVector<CalloutSourceRange> ranges = calloutSourceRanges(bodySourceText);
-        for (const CalloutSourceRange& range : ranges)
-        {
-            if (!calloutChromeBeforeContentContainsDecoratedCursor(
-                    editorDocumentText,
-                    bodySourceText,
-                    range,
-                    decoratedCursorPosition))
-            {
-                continue;
-            }
-            if (outRange != nullptr)
-            {
-                *outRange = range;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    void expandEmptyCalloutRemovalToSourceLine(
-        const QString& bodySourceText,
-        int* removeStart,
-        int* removeEnd)
-    {
-        if (removeStart == nullptr || removeEnd == nullptr)
-        {
-            return;
-        }
-
-        const bool hasPreviousLineBreak =
-            *removeStart > 0 && bodySourceText.at(*removeStart - 1) == QLatin1Char('\n');
-        const bool hasNextLineBreak =
-            *removeEnd < bodySourceText.size() && bodySourceText.at(*removeEnd) == QLatin1Char('\n');
-        if (hasPreviousLineBreak && hasNextLineBreak)
-        {
-            ++(*removeEnd);
-            return;
-        }
-        if (hasPreviousLineBreak)
-        {
-            --(*removeStart);
-            return;
-        }
-        if (hasNextLineBreak)
-        {
-            ++(*removeEnd);
-        }
     }
 
     bool isStandaloneResourceSourceLine(const QString& line)
@@ -1823,10 +1534,10 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     const int sourceCursorPosition = result.value(QStringLiteral("sourceCursorPosition")).toInt();
     const QString normalizedTagName = tagName.trimmed().toCaseFolded();
     const int editorCursorPosition = normalizedTagName == QStringLiteral("callout")
-        ? decoratedEditorContentStartForSourcePosition(
+        ? WhatSon::EditorComponent::Callout::decoratedContentStartForVisibleCursor(
             editorHtml,
-            resultSourceText,
-            sourceCursorPosition)
+            visibleCursorMappingTextForSourceText(resultSourceText),
+            editorCursorPositionForSourcePosition(resultSourceText, sourceCursorPosition))
         : editorCursorPositionForSourcePosition(resultSourceText, sourceCursorPosition);
     result.insert(QStringLiteral("cursorPosition"), editorCursorPosition);
     setParsedLineCount(lineCountForEditorSource(resultSourceText));
@@ -1852,13 +1563,22 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
     const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
         ? activeSourceText
         : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QString sourceVisibleText = visibleCursorMappingTextForSourceText(sourceText);
     const int boundedDecoratedCursorPosition =
         clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
     const int boundedCursorPosition =
         clampedPosition(
-            sourceVisibleCursorPositionForDecoratedCursor(editorDocumentText, sourceText, cursorPosition),
-            visibleCharactersForSourceText(sourceText).size());
+            WhatSon::EditorComponent::Callout::sourceVisibleCursorForDecoratedCursor(
+                editorDocumentText,
+                sourceVisibleText,
+                cursorPosition),
+            sourceVisibleText.size());
     const int boundedSelectionLength = qMax(0, selectionLength);
+    const auto sourceToVisibleCursor =
+        [&sourceText](const int sourcePosition) -> int
+        {
+            return editorCursorPositionForSourcePosition(sourceText, sourcePosition);
+        };
 
     const auto buildResult =
         [this, &noteId, &editorDocumentText](
@@ -1897,6 +1617,25 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             result.insert(QStringLiteral("errorMessage"), errorMessage);
             return result;
         };
+    const auto applyCalloutEdit =
+        [this, &buildResult](const WhatSon::EditorComponent::CalloutBoundaryEdit& edit) -> QVariantMap
+        {
+            if (edit.changed)
+            {
+                setParsedLineCount(lineCountForEditorSource(edit.bodySourceText));
+                if (hasActiveNote())
+                {
+                    m_activeBodySourceText = edit.bodySourceText;
+                }
+            }
+            setLastError(QString());
+            return buildResult(
+                true,
+                edit.changed,
+                edit.bodySourceText,
+                edit.sourceCursorPosition,
+                editorCursorPositionForSourcePosition(edit.bodySourceText, edit.sourceCursorPosition));
+        };
 
     if (boundedSelectionLength > 0
         || (key != Qt::Key_Backspace && key != Qt::Key_Return && key != Qt::Key_Enter))
@@ -1909,10 +1648,13 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             boundedDecoratedCursorPosition);
     }
 
-    CalloutSourceRange range;
     if (key == Qt::Key_Backspace)
     {
-        if (!findCalloutRangeForEditorCursor(sourceText, boundedCursorPosition, true, &range))
+        const auto edit = WhatSon::EditorComponent::Callout::backspaceAtVisibleContentStart(
+            sourceText,
+            boundedCursorPosition,
+            sourceToVisibleCursor);
+        if (!edit.has_value())
         {
             return buildResult(
                 false,
@@ -1921,64 +1663,25 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
                 sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
                 boundedDecoratedCursorPosition);
         }
-
-        QString mutatedSourceText;
-        int sourceCursorPosition = range.openingStart;
-        if (range.contentStart == range.contentEnd)
-        {
-            int removeStart = range.openingStart;
-            int removeEnd = range.closingEnd;
-            expandEmptyCalloutRemovalToSourceLine(sourceText, &removeStart, &removeEnd);
-            mutatedSourceText = sourceText.left(removeStart) + sourceText.mid(removeEnd);
-            sourceCursorPosition = removeStart;
-        }
-        else
-        {
-            mutatedSourceText =
-                sourceText.left(range.openingStart)
-                + sourceText.mid(range.contentStart, range.contentEnd - range.contentStart)
-                + sourceText.mid(range.closingEnd);
-        }
-
-        sourceCursorPosition = clampedPosition(sourceCursorPosition, mutatedSourceText.size());
-        const int editorCursorPosition = editorCursorPositionForSourcePosition(
-            mutatedSourceText,
-            sourceCursorPosition);
-        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
-        if (hasActiveNote())
-        {
-            m_activeBodySourceText = mutatedSourceText;
-        }
-        setLastError(QString());
-        return buildResult(true, mutatedSourceText != sourceText, mutatedSourceText, sourceCursorPosition, editorCursorPosition);
+        return applyCalloutEdit(*edit);
     }
 
-    if (findCalloutRangeForEditorChromeBeforeContent(
-            editorDocumentText,
-            sourceText,
-            boundedDecoratedCursorPosition,
-            &range))
+    const auto chromeBeforeContentEdit = WhatSon::EditorComponent::Callout::enterBeforeContentChrome(
+        sourceText,
+        editorDocumentText,
+        sourceVisibleText,
+        boundedDecoratedCursorPosition,
+        sourceToVisibleCursor);
+    if (chromeBeforeContentEdit.has_value())
     {
-        QString mutatedSourceText = sourceText;
-        int sourceCursorPosition = range.openingStart;
-        mutatedSourceText.insert(sourceCursorPosition, QLatin1Char('\n'));
-        ++sourceCursorPosition;
-
-        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
-        if (hasActiveNote())
-        {
-            m_activeBodySourceText = mutatedSourceText;
-        }
-        setLastError(QString());
-        return buildResult(
-            true,
-            true,
-            mutatedSourceText,
-            sourceCursorPosition,
-            editorCursorPositionForSourcePosition(mutatedSourceText, sourceCursorPosition));
+        return applyCalloutEdit(*chromeBeforeContentEdit);
     }
 
-    if (!findCalloutRangeForEditorCursor(sourceText, boundedCursorPosition, false, &range))
+    const auto enterEdit = WhatSon::EditorComponent::Callout::enterInsideVisibleCursor(
+        sourceText,
+        boundedCursorPosition,
+        sourceToVisibleCursor);
+    if (!enterEdit.has_value())
     {
         return buildResult(
             false,
@@ -1988,35 +1691,7 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
             boundedDecoratedCursorPosition);
     }
 
-    QString mutatedSourceText = sourceText;
-    int sourceCursorPosition = range.closingEnd;
-    if (sourceCursorPosition < mutatedSourceText.size()
-        && mutatedSourceText.at(sourceCursorPosition) == QLatin1Char('\n'))
-    {
-        ++sourceCursorPosition;
-    }
-    else
-    {
-        mutatedSourceText.insert(sourceCursorPosition, QLatin1Char('\n'));
-        ++sourceCursorPosition;
-    }
-
-    const bool changed = mutatedSourceText != sourceText;
-    if (changed)
-    {
-        setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
-        if (hasActiveNote())
-        {
-            m_activeBodySourceText = mutatedSourceText;
-        }
-    }
-    setLastError(QString());
-    return buildResult(
-        true,
-        changed,
-        mutatedSourceText,
-        sourceCursorPosition,
-        editorCursorPositionForSourcePosition(mutatedSourceText, sourceCursorPosition));
+    return applyCalloutEdit(*enterEdit);
 }
 
 void NoteEditorDocumentSession::refreshFromActiveNoteState()

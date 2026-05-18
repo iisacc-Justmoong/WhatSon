@@ -57,9 +57,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   right margin, so wrapped text is not pushed to a lower line by separate inline spacer images. The editor session's
   frame reproject hook includes callouts, and QML schedules it with a short debounce after text changes so edited
   callout text regenerates the leading-bar image without replacing the document on every keystroke. Enter on the frame
-  chrome immediately before content is treated as a source insertion before
-  `<callout>`, and explicit empty source lines adjacent to callouts render through an invisible placeholder so they
-  count as editor/gutter rows while still saving as empty source lines.
+  chrome immediately before content is planned here as a source insertion before `<callout>`, Backspace at content start
+  is planned here as wrapper removal or empty-line removal, and Enter inside content is planned here as a move after the
+  closing tag. Explicit empty source lines adjacent to callouts render through an invisible placeholder so they count as
+  editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
   callout boundary Backspace/Enter operations and handled `Cmd/Ctrl+V` image-resource paste operations, delegating RAW
   callout decisions to `NoteEditorDocumentSession` and clipboard package creation to `ClipboardEditorPaste`.
@@ -72,7 +73,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   not let the LVRS rendered wrap-line count create additional gutter rows. When a new empty callout is inserted, the
   session returns the cursor position in decorated LVRS rich-text coordinates after generated callout chrome so the
   caret starts inside the callout content span. Backspace at that same decorated content start maps back to the loaded
-  RAW source content start and removes the callout wrapper instead of deleting neighboring source lines.
+  RAW source content start and delegates the wrapper/empty-line edit plan to `component/Callout` instead of deleting
+  neighboring source lines.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
   from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
@@ -114,10 +116,11 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   좌측 bar는 wrap된 content 높이에 맞춘 단일 left-aligned frame chrome 이미지로 렌더링되고, 자체 상단 여백 없이
   content 원점에서 시작해 첫 텍스트 라인과 세로 중심을 맞춘다. 텍스트 편집으로 wrap 높이가 달라지면 QML이 짧은
   debounce 뒤 editor session의 frame reproject 경로를 호출해 이 이미지를 다시 만든다. gap은 그 이미지의 우측
-  margin이다.
-- 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `NoteEditorDocumentSession`이 `<callout>` 앞 source
-  위치에 빈 줄을 삽입한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를
-  실제로 하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
+  margin이다. 또한 `component/Callout`은 callout source range, decorated cursor mapping, Backspace/Enter boundary
+  edit 계획을 소유한다.
+- 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치의 빈
+  줄 삽입을 계획한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를 실제로
+  하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
 - 현재: `EditorInputCommandFilter`는 공개 LVRS editor item에 설치되는 C++ event filter다. 콜아웃 경계
   Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
   위임하며, 처리된 경우에만 native editor event를 consume한다.
@@ -127,7 +130,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
   커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면
-  loaded RAW source의 callout content 시작점으로 역매핑해 주변 줄이 아니라 callout wrapper를 제거한다.
+  loaded RAW source의 callout content 시작점으로 역매핑하고 `component/Callout`의 edit 계획을 적용해 주변 줄이
+  아니라 callout wrapper를 제거한다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
   frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor

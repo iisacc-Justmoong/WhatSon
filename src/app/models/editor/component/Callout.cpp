@@ -3,8 +3,10 @@
 #include <QBuffer>
 #include <QImage>
 #include <QIODevice>
+#include <QRegularExpression>
 #include <QTextDocument>
 
+#include <algorithm>
 #include <cmath>
 
 namespace
@@ -23,6 +25,13 @@ namespace
     QString normalizedContentHtml(const QString& contentHtml)
     {
         return contentHtml.trimmed().isEmpty() ? QStringLiteral("&nbsp;") : contentHtml;
+    }
+
+    QString plainTextForEditorDocumentText(const QString& editorDocumentText)
+    {
+        QTextDocument document;
+        document.setHtml(editorDocumentText);
+        return document.toPlainText();
     }
 
     int effectiveFrameWidth(const int editorViewportWidth)
@@ -70,10 +79,119 @@ namespace
         image.save(&buffer, "PNG");
         return QString::fromLatin1(bytes.toBase64());
     }
+
+    int clampedPosition(const int position, const int textSize)
+    {
+        return std::clamp(position, 0, textSize);
+    }
+
+    int decoratedCursorForVisibleCursor(
+        const QString& editorDocumentText,
+        const QString& sourceVisibleText,
+        const int sourceVisibleCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const int boundedVisibleCursor = clampedPosition(sourceVisibleCursorPosition, sourceVisibleText.size());
+
+        int visibleCursor = 0;
+        int editorCursor = 0;
+        while (editorCursor < plainText.size())
+        {
+            if (visibleCursor >= boundedVisibleCursor)
+            {
+                return editorCursor;
+            }
+            if (visibleCursor >= sourceVisibleText.size())
+            {
+                ++editorCursor;
+                continue;
+            }
+
+            if (sourceVisibleText.at(visibleCursor) == plainText.at(editorCursor))
+            {
+                ++visibleCursor;
+            }
+            ++editorCursor;
+        }
+        return plainText.size();
+    }
+
+    std::optional<WhatSon::EditorComponent::CalloutSourceRange> rangeForVisibleCursor(
+        const QString& bodySourceText,
+        const int visibleCursorPosition,
+        const WhatSon::EditorComponent::Callout::SourceToVisibleCursor& sourceToVisibleCursor,
+        const bool requireContentStart)
+    {
+        if (!sourceToVisibleCursor)
+        {
+            return std::nullopt;
+        }
+
+        const QVector<WhatSon::EditorComponent::CalloutSourceRange> ranges =
+            WhatSon::EditorComponent::Callout::sourceRanges(bodySourceText);
+        for (const WhatSon::EditorComponent::CalloutSourceRange& range : ranges)
+        {
+            if (!range.isValid())
+            {
+                continue;
+            }
+
+            const int contentVisibleStart = sourceToVisibleCursor(range.contentStart);
+            const int contentVisibleEnd = sourceToVisibleCursor(range.contentEnd);
+            const bool matches = requireContentStart
+                ? visibleCursorPosition == contentVisibleStart
+                : visibleCursorPosition >= contentVisibleStart && visibleCursorPosition <= contentVisibleEnd;
+            if (matches)
+            {
+                return range;
+            }
+        }
+        return std::nullopt;
+    }
+
+    void expandEmptyCalloutRemovalToSourceLine(
+        const QString& bodySourceText,
+        int* removeStart,
+        int* removeEnd)
+    {
+        if (removeStart == nullptr || removeEnd == nullptr)
+        {
+            return;
+        }
+
+        const bool hasPreviousLineBreak =
+            *removeStart > 0 && bodySourceText.at(*removeStart - 1) == QLatin1Char('\n');
+        const bool hasNextLineBreak =
+            *removeEnd < bodySourceText.size() && bodySourceText.at(*removeEnd) == QLatin1Char('\n');
+        if (hasPreviousLineBreak && hasNextLineBreak)
+        {
+            ++(*removeEnd);
+            return;
+        }
+        if (hasPreviousLineBreak)
+        {
+            --(*removeStart);
+            return;
+        }
+        if (hasNextLineBreak)
+        {
+            ++(*removeEnd);
+        }
+    }
 } // namespace
 
 namespace WhatSon::EditorComponent
 {
+    bool CalloutSourceRange::isValid() const noexcept
+    {
+        return openingStart >= 0
+            && openingEnd >= openingStart
+            && contentStart == openingEnd
+            && contentEnd >= contentStart
+            && closingStart == contentEnd
+            && closingEnd >= closingStart;
+    }
+
     int Callout::designWidth()
     {
         return kFigmaNodeWidth;
@@ -146,5 +264,246 @@ namespace WhatSon::EditorComponent
             "</div>"
             "<!--/whatson-callout-source-->");
         return html;
+    }
+
+    QVector<CalloutSourceRange> Callout::sourceRanges(const QString& bodySourceText)
+    {
+        struct OpeningCalloutTag final
+        {
+            int start = -1;
+            int end = -1;
+        };
+
+        static const QRegularExpression calloutTagPattern(
+            QStringLiteral(R"(<\s*(/?)\s*callout\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QVector<OpeningCalloutTag> openingStack;
+        QVector<CalloutSourceRange> ranges;
+        QRegularExpressionMatchIterator matchIterator = calloutTagPattern.globalMatch(bodySourceText);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            const QString token = match.captured(0).trimmed();
+            const bool closingTag = !match.captured(1).isEmpty();
+            const bool selfClosingTag = token.endsWith(QStringLiteral("/>"));
+            if (!closingTag && !selfClosingTag)
+            {
+                openingStack.push_back({
+                    static_cast<int>(match.capturedStart(0)),
+                    static_cast<int>(match.capturedEnd(0))
+                });
+                continue;
+            }
+            if (!closingTag || openingStack.isEmpty())
+            {
+                continue;
+            }
+
+            const OpeningCalloutTag opening = openingStack.takeLast();
+            ranges.push_back({
+                opening.start,
+                opening.end,
+                opening.end,
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedEnd(0))
+            });
+        }
+
+        std::sort(
+            ranges.begin(),
+            ranges.end(),
+            [](const CalloutSourceRange& left, const CalloutSourceRange& right)
+            {
+                return left.openingStart < right.openingStart;
+            });
+        return ranges;
+    }
+
+    int Callout::sourceVisibleCursorForDecoratedCursor(
+        const QString& editorDocumentText,
+        const QString& sourceVisibleText,
+        const int decoratedCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const int boundedCursorPosition = clampedPosition(decoratedCursorPosition, plainText.size());
+
+        int visibleCursor = 0;
+        int editorCursor = 0;
+        while (editorCursor < boundedCursorPosition)
+        {
+            if (visibleCursor >= sourceVisibleText.size())
+            {
+                ++editorCursor;
+                continue;
+            }
+
+            if (sourceVisibleText.at(visibleCursor) == plainText.at(editorCursor))
+            {
+                ++visibleCursor;
+            }
+            ++editorCursor;
+        }
+        return visibleCursor;
+    }
+
+    int Callout::decoratedContentStartForVisibleCursor(
+        const QString& editorDocumentText,
+        const QString& sourceVisibleText,
+        const int sourceVisibleCursorPosition)
+    {
+        const QString plainText = plainTextForEditorDocumentText(editorDocumentText);
+        const int boundedVisibleCursor = clampedPosition(sourceVisibleCursorPosition, sourceVisibleText.size());
+
+        int visibleCursor = 0;
+        int editorCursor = 0;
+        while (editorCursor < plainText.size())
+        {
+            if (visibleCursor >= boundedVisibleCursor)
+            {
+                if (visibleCursor >= sourceVisibleText.size())
+                {
+                    return editorCursor;
+                }
+
+                const QChar nextSourceCharacter = sourceVisibleText.at(visibleCursor);
+                if (plainText.at(editorCursor) != nextSourceCharacter
+                    && nextSourceCharacter != QChar::ObjectReplacementCharacter)
+                {
+                    ++editorCursor;
+                    continue;
+                }
+                return editorCursor;
+            }
+
+            if (visibleCursor >= sourceVisibleText.size())
+            {
+                ++editorCursor;
+                continue;
+            }
+
+            const QChar currentSourceCharacter = sourceVisibleText.at(visibleCursor);
+            if (plainText.at(editorCursor) != currentSourceCharacter
+                && currentSourceCharacter != QChar::ObjectReplacementCharacter)
+            {
+                ++editorCursor;
+                continue;
+            }
+
+            ++editorCursor;
+            ++visibleCursor;
+        }
+        return plainText.size();
+    }
+
+    std::optional<CalloutBoundaryEdit> Callout::backspaceAtVisibleContentStart(
+        const QString& bodySourceText,
+        const int visibleCursorPosition,
+        const SourceToVisibleCursor& sourceToVisibleCursor)
+    {
+        const std::optional<CalloutSourceRange> range =
+            rangeForVisibleCursor(bodySourceText, visibleCursorPosition, sourceToVisibleCursor, true);
+        if (!range.has_value())
+        {
+            return std::nullopt;
+        }
+
+        CalloutBoundaryEdit edit;
+        edit.sourceCursorPosition = range->openingStart;
+        if (range->contentStart == range->contentEnd)
+        {
+            int removeStart = range->openingStart;
+            int removeEnd = range->closingEnd;
+            expandEmptyCalloutRemovalToSourceLine(bodySourceText, &removeStart, &removeEnd);
+            edit.bodySourceText = bodySourceText.left(removeStart) + bodySourceText.mid(removeEnd);
+            edit.sourceCursorPosition = removeStart;
+        }
+        else
+        {
+            edit.bodySourceText =
+                bodySourceText.left(range->openingStart)
+                + bodySourceText.mid(range->contentStart, range->contentEnd - range->contentStart)
+                + bodySourceText.mid(range->closingEnd);
+        }
+        edit.sourceCursorPosition = clampedPosition(edit.sourceCursorPosition, edit.bodySourceText.size());
+        edit.changed = edit.bodySourceText != bodySourceText;
+        return edit;
+    }
+
+    std::optional<CalloutBoundaryEdit> Callout::enterBeforeContentChrome(
+        const QString& bodySourceText,
+        const QString& editorDocumentText,
+        const QString& sourceVisibleText,
+        const int decoratedCursorPosition,
+        const SourceToVisibleCursor& sourceToVisibleCursor)
+    {
+        if (!sourceToVisibleCursor)
+        {
+            return std::nullopt;
+        }
+
+        const QVector<CalloutSourceRange> ranges = sourceRanges(bodySourceText);
+        for (const CalloutSourceRange& range : ranges)
+        {
+            if (!range.isValid())
+            {
+                continue;
+            }
+
+            const int contentVisibleCursor = sourceToVisibleCursor(range.contentStart);
+            const int decoratedFrameStart = decoratedCursorForVisibleCursor(
+                editorDocumentText,
+                sourceVisibleText,
+                contentVisibleCursor);
+            const int decoratedContentStart = decoratedContentStartForVisibleCursor(
+                editorDocumentText,
+                sourceVisibleText,
+                contentVisibleCursor);
+            if (decoratedContentStart <= decoratedFrameStart
+                || decoratedCursorPosition < decoratedFrameStart
+                || decoratedCursorPosition >= decoratedContentStart)
+            {
+                continue;
+            }
+
+            CalloutBoundaryEdit edit;
+            edit.bodySourceText = bodySourceText;
+            edit.sourceCursorPosition = range.openingStart;
+            edit.bodySourceText.insert(edit.sourceCursorPosition, QLatin1Char('\n'));
+            ++edit.sourceCursorPosition;
+            edit.changed = true;
+            return edit;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<CalloutBoundaryEdit> Callout::enterInsideVisibleCursor(
+        const QString& bodySourceText,
+        const int visibleCursorPosition,
+        const SourceToVisibleCursor& sourceToVisibleCursor)
+    {
+        const std::optional<CalloutSourceRange> range =
+            rangeForVisibleCursor(bodySourceText, visibleCursorPosition, sourceToVisibleCursor, false);
+        if (!range.has_value())
+        {
+            return std::nullopt;
+        }
+
+        CalloutBoundaryEdit edit;
+        edit.bodySourceText = bodySourceText;
+        edit.sourceCursorPosition = range->closingEnd;
+        if (edit.sourceCursorPosition < edit.bodySourceText.size()
+            && edit.bodySourceText.at(edit.sourceCursorPosition) == QLatin1Char('\n'))
+        {
+            ++edit.sourceCursorPosition;
+        }
+        else
+        {
+            edit.bodySourceText.insert(edit.sourceCursorPosition, QLatin1Char('\n'));
+            ++edit.sourceCursorPosition;
+        }
+        edit.changed = edit.bodySourceText != bodySourceText;
+        return edit;
     }
 } // namespace WhatSon::EditorComponent

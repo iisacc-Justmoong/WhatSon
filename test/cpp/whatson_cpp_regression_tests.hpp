@@ -1249,6 +1249,7 @@ private slots:
     void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
     void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
     void calloutComponent_rendersFigmaCalloutBlock();
+    void calloutComponent_plansBoundaryEditsAgainstDecoratedCursor();
     void resourceFrame_rendersImageOnlyContainer();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();

@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Implements the note editor callout HTML renderer.
+Implements the note editor callout HTML renderer and source boundary-edit planner.
 
 ## Design Source
 
@@ -36,6 +36,12 @@ Implements the note editor callout HTML renderer.
   edited content without replacing the native document on every keystroke.
 - The block is surrounded by `<!--whatson-callout-source:...-->` comments. Persistence uses those markers to recognize
   live rendered callouts and recover the canonical `<callout>...</callout>` wrapper from edited rich text.
+- The component also parses paired callout source ranges and owns the callout-specific cursor rules that need knowledge
+  of generated frame chrome. Backspace at the visible content start unwraps a non-empty callout or removes the whole
+  empty callout source line. Enter on chrome immediately before content inserts a source line before the opening tag,
+  while Enter from inside content moves the source cursor after the closing tag and creates that following line when
+  needed. `NoteEditorDocumentSession` supplies the generic source-visible cursor mapper, applies the returned edit, and
+  reprojects the document.
 
 ## 한국어
 
@@ -52,3 +58,7 @@ Implements the note editor callout HTML renderer.
   다시 실행되어 막대 높이가 편집된 content의 wrap 높이를 따라간다. 이 갱신은 매 keystroke마다 native document를
   즉시 교체하지 않는다.
 - `.wsnbody`에는 여전히 `<callout>...</callout>` source wrapper만 저장된다.
+- 이 구현은 paired callout source range와 generated frame chrome을 고려한 cursor mapping도 맡는다. content 시작
+  지점 Backspace는 wrapper 제거 또는 빈 callout 줄 삭제로 계획되고, content 앞 chrome 위치 Enter는 opening tag
+  앞 줄 삽입으로 계획되며, content 내부 Enter는 closing tag 뒤 source 위치로 나가는 편집으로 계획된다. 세션은
+  이 계획을 적용하고 editor HTML을 다시 투영한다.

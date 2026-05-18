@@ -371,3 +371,155 @@ void WhatSonCppRegressionTests::calloutComponent_rendersFigmaCalloutBlock()
             .arg(wrappedBarRun)
             .arg(wrappedDocumentHeight)));
 }
+
+void WhatSonCppRegressionTests::calloutComponent_plansBoundaryEditsAgainstDecoratedCursor()
+{
+    const auto sourceToVisible =
+        [](const int sourcePosition) -> int
+        {
+            if (sourcePosition <= 5)
+            {
+                return sourcePosition;
+            }
+            if (sourcePosition <= 14)
+            {
+                return 5;
+            }
+            if (sourcePosition <= 20)
+            {
+                return 5 + (sourcePosition - 14);
+            }
+            if (sourcePosition <= 30)
+            {
+                return 11;
+            }
+            return sourcePosition - 19;
+        };
+
+    const QString sourceText = QStringLiteral("Alpha<callout>Inside</callout> Beta");
+    const QVector<WhatSon::EditorComponent::CalloutSourceRange> ranges =
+        WhatSon::EditorComponent::Callout::sourceRanges(sourceText);
+    QCOMPARE(ranges.size(), 1);
+    QCOMPARE(ranges.first().openingStart, 5);
+    QCOMPARE(ranges.first().contentStart, 14);
+    QCOMPARE(ranges.first().contentEnd, 20);
+    QVERIFY(ranges.first().isValid());
+
+    const std::optional<WhatSon::EditorComponent::CalloutBoundaryEdit> backspaceEdit =
+        WhatSon::EditorComponent::Callout::backspaceAtVisibleContentStart(
+            sourceText,
+            5,
+            sourceToVisible);
+    QVERIFY(backspaceEdit.has_value());
+    QCOMPARE(backspaceEdit->bodySourceText, QStringLiteral("AlphaInside Beta"));
+    QCOMPARE(backspaceEdit->sourceCursorPosition, 5);
+    QVERIFY(backspaceEdit->changed);
+
+    const std::optional<WhatSon::EditorComponent::CalloutBoundaryEdit> ignoredBackspace =
+        WhatSon::EditorComponent::Callout::backspaceAtVisibleContentStart(
+            sourceText,
+            6,
+            sourceToVisible);
+    QVERIFY(!ignoredBackspace.has_value());
+    QVERIFY(!WhatSon::EditorComponent::Callout::backspaceAtVisibleContentStart(
+        sourceText,
+        5,
+        WhatSon::EditorComponent::Callout::SourceToVisibleCursor()).has_value());
+
+    const QString emptySourceText = QStringLiteral("Alpha<callout></callout> Beta");
+    const auto emptySourceToVisible =
+        [](const int sourcePosition) -> int
+        {
+            if (sourcePosition <= 5)
+            {
+                return sourcePosition;
+            }
+            if (sourcePosition <= 24)
+            {
+                return 5;
+            }
+            return sourcePosition - 19;
+        };
+    const std::optional<WhatSon::EditorComponent::CalloutBoundaryEdit> emptyBackspaceEdit =
+        WhatSon::EditorComponent::Callout::backspaceAtVisibleContentStart(
+            emptySourceText,
+            5,
+            emptySourceToVisible);
+    QVERIFY(emptyBackspaceEdit.has_value());
+    QCOMPARE(emptyBackspaceEdit->bodySourceText, QStringLiteral("Alpha Beta"));
+    QCOMPARE(emptyBackspaceEdit->sourceCursorPosition, 5);
+
+    WhatSon::EditorComponent::CalloutDescriptor descriptor;
+    descriptor.sourceText = QStringLiteral("<callout>Inside</callout>");
+    descriptor.contentHtml = QStringLiteral("Inside");
+    const QString editorHtml = WhatSon::EditorComponent::Callout::renderHtml(descriptor);
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    const QString editorPlainText = editorDocument.toPlainText();
+    const int decoratedContentStart = editorPlainText.indexOf(QStringLiteral("Inside"));
+    QVERIFY(decoratedContentStart > 0);
+    QCOMPARE(
+        WhatSon::EditorComponent::Callout::sourceVisibleCursorForDecoratedCursor(
+            editorHtml,
+            QStringLiteral("Inside"),
+            decoratedContentStart),
+        0);
+    QCOMPARE(
+        WhatSon::EditorComponent::Callout::decoratedContentStartForVisibleCursor(
+            editorHtml,
+            QStringLiteral("Inside"),
+            0),
+        decoratedContentStart);
+
+    const std::optional<WhatSon::EditorComponent::CalloutBoundaryEdit> chromeEnterEdit =
+        WhatSon::EditorComponent::Callout::enterBeforeContentChrome(
+            QStringLiteral("<callout>Inside</callout>"),
+            editorHtml,
+            QStringLiteral("Inside"),
+            0,
+            [](const int sourcePosition) -> int
+            {
+                if (sourcePosition <= 9)
+                {
+                    return 0;
+                }
+                if (sourcePosition <= 15)
+                {
+                    return sourcePosition - 9;
+                }
+                return 6;
+            });
+    QVERIFY(chromeEnterEdit.has_value());
+    QCOMPARE(chromeEnterEdit->bodySourceText, QStringLiteral("\n<callout>Inside</callout>"));
+    QCOMPARE(chromeEnterEdit->sourceCursorPosition, 1);
+    QVERIFY(!WhatSon::EditorComponent::Callout::enterBeforeContentChrome(
+        QStringLiteral("<callout>Inside</callout>"),
+        editorHtml,
+        QStringLiteral("Inside"),
+        0,
+        WhatSon::EditorComponent::Callout::SourceToVisibleCursor()).has_value());
+
+    const std::optional<WhatSon::EditorComponent::CalloutBoundaryEdit> enterEdit =
+        WhatSon::EditorComponent::Callout::enterInsideVisibleCursor(
+            QStringLiteral("<callout>Inside</callout>"),
+            QStringLiteral("Inside").size(),
+            [](const int sourcePosition) -> int
+            {
+                if (sourcePosition <= 9)
+                {
+                    return 0;
+                }
+                if (sourcePosition <= 15)
+                {
+                    return sourcePosition - 9;
+                }
+                return 6;
+            });
+    QVERIFY(enterEdit.has_value());
+    QCOMPARE(enterEdit->bodySourceText, QStringLiteral("<callout>Inside</callout>\n"));
+    QCOMPARE(enterEdit->sourceCursorPosition, QStringLiteral("<callout>Inside</callout>\n").size());
+    QVERIFY(!WhatSon::EditorComponent::Callout::enterInsideVisibleCursor(
+        QStringLiteral("<callout>Inside</callout>"),
+        0,
+        WhatSon::EditorComponent::Callout::SourceToVisibleCursor()).has_value());
+}
