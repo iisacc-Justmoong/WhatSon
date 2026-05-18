@@ -1,5 +1,6 @@
 #include "app/models/editor/SetTag.h"
 
+#include "app/models/editor/component/Agenda.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include <algorithm>
@@ -51,20 +52,14 @@ namespace
                 QStringLiteral("</callout>")
             };
         }
-        if (normalized == QStringLiteral("agenda"))
+        const WhatSon::EditorComponent::AgendaStaticTag agendaTag =
+            WhatSon::EditorComponent::Agenda::staticTagFor(tagName);
+        if (agendaTag.isValid())
         {
             return {
-                QStringLiteral("agenda"),
-                QStringLiteral("<agenda><task>"),
-                QStringLiteral("</task></agenda>")
-            };
-        }
-        if (normalized == QStringLiteral("task"))
-        {
-            return {
-                QStringLiteral("task"),
-                QStringLiteral("<task>"),
-                QStringLiteral("</task>")
+                agendaTag.canonicalName,
+                agendaTag.openingToken,
+                agendaTag.closingToken
             };
         }
         if (normalized == QStringLiteral("event"))
@@ -203,10 +198,11 @@ namespace
 
     QStringList staticBodyTagNames()
     {
-        return {
+        QStringList tagNames{
             QStringLiteral("callout"),
-            QStringLiteral("agenda"),
-            QStringLiteral("task"),
+        };
+        tagNames.append(WhatSon::EditorComponent::Agenda::staticTagNames());
+        tagNames.append({
             QStringLiteral("event"),
             QStringLiteral("header"),
             QStringLiteral("subheader"),
@@ -222,7 +218,8 @@ namespace
             QStringLiteral("tag"),
             QStringLiteral("break"),
             QStringLiteral("resource")
-        };
+        });
+        return tagNames;
     }
 
     int clampedPosition(const int position, const int textSize)

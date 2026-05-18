@@ -9,6 +9,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
+  - `component/Agenda.h`
+  - `component/Agenda.cpp`
   - `component/Break.h`
   - `component/Break.cpp`
   - `component/Callout.h`
@@ -31,8 +33,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `add_subdirectory(models/editor)`.
 - Editor-domain C++ belongs here only when it is backend model/controller logic rather than view-local QML behavior.
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
-  including `header`, `subheader`, and standalone `resource`, and can insert them into editor source text or into a
-  serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`.
+  including `agenda`, `task`, `header`, `subheader`, and standalone `resource`, and can insert them into editor source
+  text or into a serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`. Component-specific template
+  definitions can live under `component/`; `SetTag` consumes those descriptors and owns the generic mutation result
+  shape.
 - `TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
   static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
   the actual `.wsnbody` document is updated.
@@ -44,6 +48,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
+- `component/Agenda` owns the agenda-family static insertion templates. It recognizes `agenda` and `task`, returns
+  their canonical source tokens, and leaves source mutation, toggle handling, and `.wsnbody` serialization to `SetTag`.
+  The `agenda` template inserts `<agenda><task>` / `</task></agenda>` so the empty insertion cursor starts inside the
+  nested task body, while `task` inserts a direct `<task>` / `</task>` wrapper.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
   `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom
@@ -86,9 +94,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 ## Verification Notes
 - Source-tree policy coverage verifies that this shard is present, documented, and registered through
   `src/app/models/editor/CMakeLists.txt` rather than direct file entries in `src/app/CMakeLists.txt`.
-- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `Break`
-  standalone source projection, `Callout` visual block rendering and source recovery, `ResourceImageFrame` image-only
-  container rendering, `SetProperty`
+- Runtime C++ coverage verifies `SetTag` source insertion, persisted `TagInsertionWriter` body writes, `Agenda` static
+  template lookup, `Break` standalone source projection, `Callout` visual block rendering and source recovery,
+  `ResourceImageFrame` image-only container rendering, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, resource-frame viewport reprojection with locked
   initial height, editor format-tag insertion, unsupported input rejection, and `.wsnbody`
@@ -102,14 +110,17 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 위치: `docs/src/app/models/editor`
 - 역할: 이 파일은 editor model shard의 구조, 책임, CMake 등록 계약, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체이며 `header`,
-  `subheader`, `resource`를 포함한다.
+- 현재: `SetTag`는 정적으로 허용된 `.wsnbody` RAW 태그만 삽입하는 C++ 입력 객체이며 `agenda`, `task`,
+  `header`, `subheader`, `resource`를 포함한다. 다만 `agenda`와 `task`의 토큰 정의는 `component/Agenda`가
+  소유하고, `SetTag`는 공통 source mutation과 결과 map 생성을 맡는다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
 - 현재: `component/Break`는 standalone editor source token `</break>`를 소유한다. `</break>`, `<break/>`, legacy
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.
+- 현재: `component/Agenda`는 `agenda`와 `task` 정적 삽입 템플릿을 소유한다. `agenda`는
+  `<agenda><task>` / `</task></agenda>` 토큰을 제공하고, `task`는 `<task>` / `</task>` 토큰을 제공한다.
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
   row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,

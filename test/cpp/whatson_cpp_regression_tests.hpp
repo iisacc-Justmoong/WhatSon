@@ -55,6 +55,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
+#include "app/models/editor/component/Agenda.h"
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
@@ -1196,6 +1197,7 @@ private slots:
     void editorSetProperty_setsDynamicAttributesWithInferredValueTypes();
     void editorSetProperty_updatesExistingAttributeAndRejectsInvalidNames();
     void editorSetProperty_serializesResourceAttributeIntoWsnbodyDocument();
+    void agendaComponent_providesStaticTagTemplates();
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
     void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();

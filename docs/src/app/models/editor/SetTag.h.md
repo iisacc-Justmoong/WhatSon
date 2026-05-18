@@ -4,14 +4,15 @@
 
 Declares the `SetTag` editor-domain input object.
 
-`SetTag` owns a fixed allow-list of `.wsnbody` RAW tag templates and exposes QML/Qt-friendly mutation methods for
-inserting those templates into editor source text or into a serialized body document.
+`SetTag` owns the fixed allow-list and generic mutation flow for `.wsnbody` RAW tag templates, while component-specific
+template definitions such as Agenda live in `src/app/models/editor/component`. It exposes QML/Qt-friendly mutation
+methods for inserting those templates into editor source text or into a serialized body document.
 
 ## Public Contract
 
 - Default tag: `callout`
-- `availableTagNames()` returns the static body-tag names that can be inserted, including `header`, `subheader`, and
-  `resource`.
+- `availableTagNames()` returns the static body-tag names that can be inserted, including `agenda`, `task`, `header`,
+  `subheader`, and `resource`.
 - `configureTagName(...)` changes the active tag only when the requested name resolves to a known static template.
 - `insertIntoSource(...)` inserts the active template into editor-facing body source text.
 - `insertNamedTagIntoSource(...)` performs the same mutation without changing the active tag.
