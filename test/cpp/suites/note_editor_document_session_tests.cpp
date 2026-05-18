@@ -650,6 +650,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_togglesAgendaTaskDoneF
     QCOMPARE(firstOverlay.value(QStringLiteral("done")).toBool(), false);
     QVERIFY(firstOverlay.value(QStringLiteral("editorPosition")).toInt() >= 0);
     QCOMPARE(firstOverlay.value(QStringLiteral("checkboxSize")).toInt(), 17);
+    QCOMPARE(firstOverlay.value(QStringLiteral("checkboxRadius")).toDouble(), 3.5);
     QCOMPARE(firstOverlay.value(QStringLiteral("checkboxTextGap")).toInt(), 6);
     QCOMPARE(secondOverlay.value(QStringLiteral("taskIndex")).toInt(), 1);
     QCOMPARE(secondOverlay.value(QStringLiteral("done")).toBool(), true);

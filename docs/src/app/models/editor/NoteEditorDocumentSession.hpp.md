@@ -48,8 +48,9 @@ Declares the active note editor document session object.
 - Provides `agendaTaskOverlayItemsForEditorDocument(...)` and `toggleAgendaTaskDoneInSource(...)` for the interactive
   agenda checkbox overlay. The HTML renderer carries only non-source checkbox slots for text layout; QML uses these
   APIs to position real `LV.CheckBox` controls over agenda task rows and to mutate canonical `<task done=...>`
-  attributes. Overlay position extraction is skipped for editor documents that do not contain agenda renderer/source
-  markers.
+  attributes. Overlay items include the checkbox slot size, radius, and text gap so QML can keep the real
+  `LV.CheckBox` shape aligned with the Figma frame. Overlay position extraction is skipped for editor documents that do
+  not contain agenda renderer/source markers.
 - Provides `normalizedEditableCursorPositionForEditorDocument(...)` so rendered agenda frames expose only task content
   spans as editable text positions. Header/date/chrome cursor placements are clamped back to the closest task body
   boundary.
@@ -116,7 +117,7 @@ Declares the active note editor document session object.
   좌표를 반환해 커서가 주변 줄이 아니라 새 callout 내부에 놓이게 한다.
 - agenda task checkbox는 rich-text HTML 이미지로 처리하지 않는다. editor HTML은 투명 slot만 보유하고 실제
   checkbox 시각과 클릭은 QML `LV.CheckBox`가 맡는다.
-  `agendaTaskOverlayItemsForEditorDocument(...)`가 task별 editor 좌표와 done 상태를 제공하고,
+  `agendaTaskOverlayItemsForEditorDocument(...)`가 task별 editor 좌표, done 상태, checkbox slot size/radius/gap을 제공하고,
   `toggleAgendaTaskDoneInSource(...)`가 `<task done=...>` 속성을 갱신한 editor HTML을 돌려준다.
 - `handleAgendaBoundaryKeyInSource(...)`는 agenda 내부 key boundary를 처리한다. 첫 task content 시작점의
   Backspace는 agenda block 전체를 제거한다. 마지막 task의 Enter/Return은 `component/Agenda`에 위임되어 내용이

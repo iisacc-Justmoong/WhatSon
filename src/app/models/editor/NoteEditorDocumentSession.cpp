@@ -1982,6 +1982,7 @@ QVariantList NoteEditorDocumentSession::agendaTaskOverlayItemsForEditorDocument(
         overlayItem.insert(QStringLiteral("done"), taskAddress.done);
         overlayItem.insert(QStringLiteral("editorPosition"), editorPosition);
         overlayItem.insert(QStringLiteral("checkboxSize"), 17);
+        overlayItem.insert(QStringLiteral("checkboxRadius"), 3.5);
         overlayItem.insert(QStringLiteral("checkboxTextGap"), 6);
         overlayItem.insert(QStringLiteral("contentText"), taskPlainText);
         overlayItems.push_back(overlayItem);

@@ -205,9 +205,11 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeFocusOnTab: false")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("checkable: false")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("focusPolicy: Qt.NoFocus")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: editorAgendaTaskCheckBox.controlWidth")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: editorAgendaTaskCheckBox.controlHeight")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("boxSize: Math.max")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property real checkboxSize: Math.max(1, editorAgendaTaskCheckBox.checkboxRect.width)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("boxSize: Math.max(1, Math.round(editorAgendaTaskCheckBox.checkboxSize))")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("boxRadius: Math.max(0, Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxRadius) || 3.5)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: editorAgendaTaskCheckBox.checkboxRect.width")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: editorAgendaTaskCheckBox.checkboxRect.height")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onClicked: contentViewLayout.toggleEditorAgendaTask(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.forceEditorFocus();")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextChanged: {")));

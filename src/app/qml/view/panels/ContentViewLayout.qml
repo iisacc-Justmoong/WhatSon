@@ -564,24 +564,23 @@ Item {
                         id: editorAgendaTaskCheckBox
 
                         readonly property var checkboxRect: contentViewLayout.editorAgendaTaskCheckboxRect(editorAgendaTaskCheckBox.modelData)
-                        readonly property real controlHeight: Math.max(1, editorAgendaTaskCheckBox.implicitHeight)
-                        readonly property real controlWidth: Math.max(1, editorAgendaTaskCheckBox.implicitWidth)
+                        readonly property real checkboxSize: Math.max(1, editorAgendaTaskCheckBox.checkboxRect.width)
                         readonly property bool nextDone: !(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true)
 
                         activeFocusOnTab: false
+                        boxRadius: Math.max(0, Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxRadius) || 3.5)
+                        boxSize: Math.max(1, Math.round(editorAgendaTaskCheckBox.checkboxSize))
                         checkable: false
                         checked: editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true
                         enabled: contentViewLayout.noteEditorSurfaceVisible && !contentViewLayout.editorReadOnly
                         focusPolicy: Qt.NoFocus
-                        height: editorAgendaTaskCheckBox.controlHeight
+                        height: editorAgendaTaskCheckBox.checkboxRect.height
                         objectName: "editorAgendaTaskCheckBox"
                         text: ""
                         visible: contentViewLayout.editorAgendaTaskCheckboxVisible(editorAgendaTaskCheckBox.modelData)
-                        width: editorAgendaTaskCheckBox.controlWidth
+                        width: editorAgendaTaskCheckBox.checkboxRect.width
                         x: editorAgendaTaskCheckBox.checkboxRect.x
-                           + (editorAgendaTaskCheckBox.checkboxRect.width - editorAgendaTaskCheckBox.controlWidth) / 2
                         y: editorAgendaTaskCheckBox.checkboxRect.y
-                           + (editorAgendaTaskCheckBox.checkboxRect.height - editorAgendaTaskCheckBox.controlHeight) / 2
                         z: 20
 
                         onClicked: contentViewLayout.toggleEditorAgendaTask(

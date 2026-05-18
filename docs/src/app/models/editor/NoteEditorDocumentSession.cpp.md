@@ -37,7 +37,8 @@ Implements the active note editor document session.
    `toggleAgendaTaskDoneInSource(...)` for click handling. Overlay extraction first checks for agenda renderer/source
    markers so ordinary notes do not pay the canonical source recovery cost. The click path restores canonical source
    from the current editor document, updates the selected `<task done=...>` opening tag, and returns a reprojected
-   agenda frame.
+   agenda frame. Overlay items also carry checkbox size, radius, and text gap so QML can draw the real `LV.CheckBox`
+   with the same shape as the reserved agenda slot.
 10. Agenda cursor placement calls `normalizedEditableCursorPositionForEditorDocument(...)`. Inside a rendered agenda
     frame, only task content spans are treated as editable text; header/date text, checkbox chrome, and row gaps are
     normalized to the nearest task content boundary.
