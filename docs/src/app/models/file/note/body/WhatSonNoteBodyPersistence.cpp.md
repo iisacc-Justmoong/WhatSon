@@ -113,6 +113,10 @@ The current contract preserves editor-authored RAW source across save/load turns
   callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`
   before persistence. The generated leading-bar image is frame chrome and is intentionally excluded from this marker
   path; the gap is its rendering margin rather than source content.
+- Agenda frames use the analogous `<!--whatson-agenda-source:...-->...<!--/whatson-agenda-source-->` marker pair while
+  rendered as a table-backed rich-text surface. The inverse path extracts each task marker, restores
+  `<agenda>/<task>` source, and removes the renderer-owned blank row Qt may emit before the hidden serialized agenda
+  marker after `QTextDocument::toHtml()`.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
   style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized

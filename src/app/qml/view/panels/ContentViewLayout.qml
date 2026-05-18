@@ -49,6 +49,16 @@ Item {
             && !contentViewLayout.editorReadOnly
             && contentsTextEditor
             && contentsTextEditor.editorSelectionLength > 0
+    readonly property var editorAgendaTaskOverlayItems: {
+        if (!contentViewLayout.noteEditorSurfaceVisible
+                || !contentViewLayout.noteEditorSession
+                || !contentsTextEditor
+                || contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument === undefined)
+            return [];
+        contentsTextEditor.editorPlainTextRevision;
+        contentsTextEditor.editorDocumentText;
+        return contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument(contentsTextEditor.editorDocumentText);
+    }
     readonly property var editorFormatContextMenuItems: [
         {
             "label": "Bold",
@@ -213,6 +223,72 @@ Item {
         const replaced = contentsTextEditor.replaceEditorDocumentText(
                     editorDocumentText,
                     Number(formatResult.cursorPosition) || 0);
+        if (replaced)
+            contentViewLayout.clearEditorFormatSelectionSnapshot();
+        return replaced;
+    }
+    function editorAgendaTaskCheckboxRect(agendaTaskItem) {
+        const fallbackRect = {
+            "height": 0,
+            "valid": false,
+            "width": 0,
+            "x": 0,
+            "y": -contentsTextEditor.height
+        };
+        if (!agendaTaskItem || !contentsTextEditor)
+            return fallbackRect;
+        contentsTextEditor.editorLineMetricsRevision;
+
+        const editorSurface = contentsTextEditor.editorSurfaceObject();
+        if (!editorSurface || editorSurface.positionToRectangle === undefined)
+            return fallbackRect;
+
+        const editorPosition = Math.max(0, Math.floor(Number(agendaTaskItem.editorPosition) || 0));
+        const textRectangle = editorSurface.positionToRectangle(editorPosition);
+        if (!textRectangle)
+            return fallbackRect;
+
+        const checkboxSize = Math.max(1, Math.floor(Number(agendaTaskItem.checkboxSize) || 17));
+        const checkboxTextGap = Math.max(0, Math.floor(Number(agendaTaskItem.checkboxTextGap) || 6));
+        const rectangleHeight = Math.max(1, contentsTextEditor.numberOrFallback(textRectangle.height, checkboxSize));
+        return {
+            "height": checkboxSize,
+            "valid": true,
+            "width": checkboxSize,
+            "x": contentsTextEditor.numberOrFallback(editorSurface.x, 0)
+                 + contentsTextEditor.numberOrFallback(textRectangle.x, checkboxSize + checkboxTextGap)
+                 - checkboxSize
+                 - checkboxTextGap,
+            "y": contentsTextEditor.numberOrFallback(editorSurface.y, 0)
+                 + contentsTextEditor.numberOrFallback(textRectangle.y, 0)
+                 + (rectangleHeight - checkboxSize) / 2
+                 - contentsTextEditor.viewportContentY
+        };
+    }
+    function editorAgendaTaskCheckboxVisible(agendaTaskItem) {
+        const checkboxRect = contentViewLayout.editorAgendaTaskCheckboxRect(agendaTaskItem);
+        return checkboxRect.valid
+                && checkboxRect.y + checkboxRect.height >= 0
+                && checkboxRect.y <= contentsTextEditor.height;
+    }
+    function toggleEditorAgendaTask(taskIndex, done) {
+        if (!contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || !contentsTextEditor
+                || contentViewLayout.noteEditorSession.toggleAgendaTaskDoneInSource === undefined)
+            return false;
+
+        const result = contentViewLayout.noteEditorSession.toggleAgendaTaskDoneInSource(
+                    contentsTextEditor.editorDocumentText,
+                    Math.max(0, Math.floor(Number(taskIndex) || 0)),
+                    Boolean(done),
+                    Math.max(0, Math.floor(Number(contentsTextEditor.cursorPosition) || 0)));
+        if (!result || !Boolean(result.valid) || result.editorDocumentText === undefined)
+            return false;
+
+        const replaced = contentsTextEditor.replaceEditorFrameDocumentText(
+                    String(result.editorDocumentText),
+                    Math.max(0, Math.floor(Number(result.cursorPosition) || 0)));
         if (replaced)
             contentViewLayout.clearEditorFormatSelectionSnapshot();
         return replaced;
@@ -416,6 +492,33 @@ Item {
                                     eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
                                     eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
                                     "rightClick");
+                    }
+                }
+
+                Repeater {
+                    model: contentViewLayout.editorAgendaTaskOverlayItems
+
+                    delegate: LV.CheckBox {
+                        id: editorAgendaTaskCheckBox
+
+                        readonly property var checkboxRect: contentViewLayout.editorAgendaTaskCheckboxRect(editorAgendaTaskCheckBox.modelData)
+                        readonly property bool nextDone: !(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true)
+
+                        boxSize: Math.max(1, Math.floor(Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxSize) || 17))
+                        checked: editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true
+                        enabled: contentViewLayout.noteEditorSurfaceVisible && !contentViewLayout.editorReadOnly
+                        height: editorAgendaTaskCheckBox.checkboxRect.height
+                        objectName: "editorAgendaTaskCheckBox"
+                        text: ""
+                        visible: contentViewLayout.editorAgendaTaskCheckboxVisible(editorAgendaTaskCheckBox.modelData)
+                        width: editorAgendaTaskCheckBox.checkboxRect.width
+                        x: editorAgendaTaskCheckBox.checkboxRect.x
+                        y: editorAgendaTaskCheckBox.checkboxRect.y
+                        z: 20
+
+                        onClicked: contentViewLayout.toggleEditorAgendaTask(
+                            Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.taskIndex) || 0,
+                            editorAgendaTaskCheckBox.nextDone)
                     }
                 }
             }

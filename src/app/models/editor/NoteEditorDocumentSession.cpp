@@ -2,6 +2,7 @@
 
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
+#include "app/models/editor/component/Agenda.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
@@ -86,6 +87,15 @@ namespace
     {
         int editorStart = 0;
         int editorEnd = 0;
+    };
+
+    struct AgendaTaskAddress final
+    {
+        int taskIndex = -1;
+        int openingStart = -1;
+        int openingEnd = -1;
+        bool done = false;
+        QString contentSourceText;
     };
 
     QString sourceTagName(QStringView tagToken)
@@ -352,6 +362,79 @@ namespace
         QTextDocument document;
         document.setHtml(editorDocumentText);
         return document.toPlainText();
+    }
+
+    QString plainTextForSourceFragment(const QString& sourceFragment)
+    {
+        QTextDocument document;
+        document.setHtml(WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+            QStringLiteral("agenda-task-fragment"),
+            sourceFragment));
+        QString plainText = document.toPlainText();
+        plainText.remove(QChar::ObjectReplacementCharacter);
+        return plainText;
+    }
+
+    QVector<AgendaTaskAddress> agendaTaskAddressesForSourceText(const QString& sourceText)
+    {
+        QVector<AgendaTaskAddress> addresses;
+        const QVector<WhatSon::EditorComponent::AgendaSourceRange> agendaRanges =
+            WhatSon::EditorComponent::Agenda::sourceRanges(sourceText);
+        int taskIndex = 0;
+        for (const WhatSon::EditorComponent::AgendaSourceRange& agendaRange : agendaRanges)
+        {
+            if (!agendaRange.isValid())
+            {
+                continue;
+            }
+
+            const QString agendaSource =
+                sourceText.mid(agendaRange.openingStart, agendaRange.closingEnd - agendaRange.openingStart);
+            const QVector<WhatSon::EditorComponent::AgendaTaskSourceRange> taskRanges =
+                WhatSon::EditorComponent::Agenda::taskSourceRanges(agendaSource);
+            for (const WhatSon::EditorComponent::AgendaTaskSourceRange& taskRange : taskRanges)
+            {
+                if (!taskRange.isValid())
+                {
+                    continue;
+                }
+
+                addresses.push_back({
+                    taskIndex,
+                    agendaRange.openingStart + taskRange.openingStart,
+                    agendaRange.openingStart + taskRange.openingEnd,
+                    taskRange.done,
+                    agendaSource.mid(taskRange.contentStart, taskRange.contentEnd - taskRange.contentStart)
+                });
+                ++taskIndex;
+            }
+        }
+        return addresses;
+    }
+
+    QString taskOpeningTokenWithDoneState(QString openingToken, const bool done)
+    {
+        const QString doneText = done ? QStringLiteral("true") : QStringLiteral("false");
+        static const QRegularExpression doneAttributePattern(
+            QStringLiteral(R"(\bdone\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch doneAttributeMatch = doneAttributePattern.match(openingToken);
+        if (doneAttributeMatch.hasMatch())
+        {
+            openingToken.replace(
+                doneAttributeMatch.capturedStart(0),
+                doneAttributeMatch.capturedLength(0),
+                QStringLiteral("done=%1").arg(doneText));
+            return openingToken;
+        }
+
+        const int insertPosition = openingToken.lastIndexOf(QLatin1Char('>'));
+        if (insertPosition < 0)
+        {
+            return openingToken;
+        }
+        openingToken.insert(insertPosition, QStringLiteral(" done=%1").arg(doneText));
+        return openingToken;
     }
 
     int decoratedEditorCursorPositionForVisibleCursor(
@@ -1544,6 +1627,131 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     if (hasActiveNote())
     {
         m_activeBodySourceText = resultSourceText;
+    }
+    setLastError(QString());
+    return result;
+}
+
+QVariantList NoteEditorDocumentSession::agendaTaskOverlayItemsForEditorDocument(
+    const QString& editorDocumentText)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QVector<AgendaTaskAddress> taskAddresses = agendaTaskAddressesForSourceText(sourceText);
+    if (taskAddresses.isEmpty())
+    {
+        return {};
+    }
+
+    const QString editorPlainText = plainTextForEditorDocumentText(editorDocumentText);
+    QVariantList overlayItems;
+    overlayItems.reserve(taskAddresses.size());
+
+    int searchFrom = 0;
+    for (const AgendaTaskAddress& taskAddress : taskAddresses)
+    {
+        QString taskPlainText = plainTextForSourceFragment(taskAddress.contentSourceText);
+        QString searchText = taskPlainText;
+        if (searchText.isEmpty())
+        {
+            searchText = QString(QChar::Nbsp);
+        }
+
+        int editorPosition = searchText.isEmpty()
+            ? -1
+            : editorPlainText.indexOf(searchText, searchFrom);
+        if (editorPosition < 0 && !taskPlainText.trimmed().isEmpty())
+        {
+            searchText = taskPlainText.trimmed();
+            editorPosition = editorPlainText.indexOf(searchText, searchFrom);
+        }
+        if (editorPosition < 0)
+        {
+            editorPosition = qMin(searchFrom, editorPlainText.size());
+        }
+
+        QVariantMap overlayItem;
+        overlayItem.insert(QStringLiteral("taskIndex"), taskAddress.taskIndex);
+        overlayItem.insert(QStringLiteral("done"), taskAddress.done);
+        overlayItem.insert(QStringLiteral("editorPosition"), editorPosition);
+        overlayItem.insert(QStringLiteral("checkboxSize"), 17);
+        overlayItem.insert(QStringLiteral("checkboxTextGap"), 6);
+        overlayItem.insert(QStringLiteral("contentText"), taskPlainText);
+        overlayItems.push_back(overlayItem);
+
+        searchFrom = qMin(
+            editorPlainText.size(),
+            qMax(searchFrom, editorPosition + qMax(1, searchText.size())));
+    }
+
+    return overlayItems;
+}
+
+QVariantMap NoteEditorDocumentSession::toggleAgendaTaskDoneInSource(
+    const QString& editorDocumentText,
+    const int taskIndex,
+    const bool done,
+    const int cursorPosition)
+{
+    QVariantMap result;
+    result.insert(QStringLiteral("valid"), false);
+    result.insert(QStringLiteral("changed"), false);
+    result.insert(QStringLiteral("handled"), false);
+    result.insert(QStringLiteral("cursorPosition"), qMax(0, cursorPosition));
+    result.insert(QStringLiteral("errorMessage"), QString());
+
+    if (taskIndex < 0)
+    {
+        const QString errorMessage = QStringLiteral("Invalid agenda task index.");
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QVector<AgendaTaskAddress> taskAddresses = agendaTaskAddressesForSourceText(sourceText);
+    if (taskIndex >= taskAddresses.size())
+    {
+        const QString errorMessage = QStringLiteral("Agenda task index is out of range.");
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    const AgendaTaskAddress taskAddress = taskAddresses.at(taskIndex);
+    const QString openingToken =
+        sourceText.mid(taskAddress.openingStart, taskAddress.openingEnd - taskAddress.openingStart);
+    const QString nextOpeningToken = taskOpeningTokenWithDoneState(openingToken, done);
+    sourceText.replace(
+        taskAddress.openingStart,
+        taskAddress.openingEnd - taskAddress.openingStart,
+        nextOpeningToken);
+
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        sourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+
+    result.insert(QStringLiteral("valid"), true);
+    result.insert(QStringLiteral("changed"), nextOpeningToken != openingToken);
+    result.insert(QStringLiteral("handled"), true);
+    result.insert(QStringLiteral("bodySourceText"), sourceText);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("taskIndex"), taskIndex);
+    result.insert(QStringLiteral("done"), done);
+    result.insert(QStringLiteral("cursorPosition"), qMax(0, cursorPosition));
+    result.insert(QStringLiteral("errorMessage"), QString());
+
+    setParsedLineCount(lineCountForEditorSource(sourceText));
+    if (hasActiveNote())
+    {
+        m_activeBodySourceText = sourceText;
     }
     setLastError(QString());
     return result;

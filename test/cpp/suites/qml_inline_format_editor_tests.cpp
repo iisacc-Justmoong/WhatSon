@@ -190,6 +190,13 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectedText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var editorAgendaTaskOverlayItems")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function toggleEditorAgendaTask(taskIndex, done)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("agendaTaskOverlayItemsForEditorDocument(contentsTextEditor.editorDocumentText)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("toggleAgendaTaskDoneInSource(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"editorAgendaTaskCheckBox\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.CheckBox {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onClicked: contentViewLayout.toggleEditorAgendaTask(")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.forceEditorFocus();")));

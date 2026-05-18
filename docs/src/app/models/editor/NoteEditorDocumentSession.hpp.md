@@ -45,6 +45,10 @@ Declares the active note editor document session object.
   `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source. Empty
   callout insertion returns the LVRS rich-text cursor at the rendered callout content start, after generated frame
   chrome images, so the caret lands inside the callout rather than on the neighboring source line.
+- Provides `agendaTaskOverlayItemsForEditorDocument(...)` and `toggleAgendaTaskDoneInSource(...)` for the interactive
+  agenda checkbox overlay. The HTML renderer still carries non-source checkbox chrome for text layout, but QML uses
+  these APIs to position real `LV.CheckBox` controls over agenda task rows and to mutate canonical `<task done=...>`
+  attributes.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. That content-start test uses the loaded RAW source and skips generated frame chrome plus
@@ -101,6 +105,9 @@ Declares the active note editor document session object.
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
   visible 범위를 다시 찾는다. 빈 callout 삽입은 생성된 frame chrome image를 건너뛴 LVRS rich-text content 시작
   좌표를 반환해 커서가 주변 줄이 아니라 새 callout 내부에 놓이게 한다.
+- agenda task checkbox는 rich-text HTML의 이미지 chrome만으로 처리하지 않는다.
+  `agendaTaskOverlayItemsForEditorDocument(...)`가 task별 editor 좌표와 done 상태를 제공하고,
+  `toggleAgendaTaskDoneInSource(...)`가 `<task done=...>` 속성을 갱신한 editor HTML을 돌려준다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다. 이
   content 시작점 판정은 로드된 RAW source를 기준으로 하며 LVRS rich-text 좌표의 생성 frame chrome과 renderer 전용

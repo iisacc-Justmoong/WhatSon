@@ -56,7 +56,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   direct `<task done=false>` / `</task>` wrapper. One agenda wrapper can contain any integer number of task children.
   The editor projection renders paired agenda source as the Figma `279:7854` frame with checkbox task rows while
   preserving canonical `<agenda>/<task>` source on save. Its root frame fills the editor width and uses `height:auto`
-  / `hug-contents`; Figma node width/height are not static agenda frame dimensions.
+  / `hug-contents`; Figma node width/height are not static agenda frame dimensions. The projection is table-backed in
+  editor HTML so Qt paints one continuous frame surface and keeps the header date right-aligned instead of collapsing it
+  next to the `Agenda` label.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
   `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom

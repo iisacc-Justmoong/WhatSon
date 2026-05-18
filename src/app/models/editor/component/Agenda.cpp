@@ -19,7 +19,7 @@ namespace
     constexpr int kCheckboxSize = 17;
     constexpr double kCheckboxRadius = 3.5;
     constexpr int kCheckboxTextGap = 6;
-    constexpr auto kAgendaRenderVersion = "figma-279-7854-frame-v1";
+    constexpr auto kAgendaRenderVersion = "figma-279-7854-table-frame-v2";
 
     QString normalizedTagName(const QString& tagName)
     {
@@ -225,18 +225,23 @@ namespace WhatSon::EditorComponent
         html += sourceMarker(sourceText);
         html += QStringLiteral("-->");
         html += QStringLiteral(
-            "<div class=\"whatson-agenda\" data-figma-node-id=\"279:7854\" "
+            "<table class=\"whatson-agenda\" data-figma-node-id=\"279:7854\" "
             "data-agenda-render=\"%1\" data-frame-width-mode=\"fill\" "
             "data-frame-height-mode=\"hug-contents\" data-frame-padding=\"%2\" "
             "data-agenda-header-gap=\"%3\" data-agenda-task-gap=\"%4\" "
             "data-agenda-task-inset=\"%5\" data-agenda-checkbox-size=\"%6\" "
             "data-agenda-checkbox-radius=\"%7\" data-agenda-checkbox-text-gap=\"%8\" "
             "data-agenda-task-component=\"LV.CheckBox\" data-agenda-date=\"%9\" "
-            "data-agenda-time=\"%10\" width=\"100%\" "
+            "data-agenda-time=\"%10\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" "
+            "bgcolor=\"#262728\" "
             "style=\"width:100%;max-width:100%;height:auto;min-height:0;box-sizing:border-box;"
             "background-color:#262728;border:1px solid #343536;border-radius:12px;"
-            "padding:8px;font-family:Pretendard;color:rgba(255,255,255,0.8);"
-            "white-space:normal;word-break:break-word;\">")
+            "padding:8px;border-collapse:separate;border-spacing:0;"
+            "font-family:Pretendard;color:rgba(255,255,255,0.8);"
+            "white-space:normal;word-break:break-word;\">"
+            "<tr><td bgcolor=\"#262728\" "
+            "style=\"background-color:#262728;padding:8px;"
+            "font-family:Pretendard;color:rgba(255,255,255,0.8);\">")
             .arg(
                 QString::fromLatin1(kAgendaRenderVersion),
                 QString::number(kFramePadding),
@@ -254,17 +259,26 @@ namespace WhatSon::EditorComponent
             "</span>")
             .arg(sourceMarker(sourceText));
         html += QStringLiteral(
-            "<div class=\"whatson-agenda-header\" "
-            "style=\"font-family:Pretendard;font-size:11px;font-weight:400;"
+            "<table class=\"whatson-agenda-header\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" "
+            "style=\"width:100%;height:auto;border-collapse:collapse;border-spacing:0;"
+            "font-family:Pretendard;font-size:11px;font-weight:400;"
             "line-height:11px;color:rgba(255,255,255,0.5);white-space:nowrap;\">"
-            "<span>Agenda</span>"
-            "<span style=\"float:right;\">");
+            "<tr>"
+            "<td class=\"whatson-agenda-title\" width=\"50%\" "
+            "style=\"font-family:Pretendard;font-size:11px;font-weight:400;"
+            "line-height:11px;color:rgba(255,255,255,0.5);padding:0;white-space:nowrap;\">Agenda</td>"
+            "<td class=\"whatson-agenda-date\" align=\"right\" width=\"50%\" "
+            "style=\"font-family:Pretendard;font-size:11px;font-weight:400;text-align:right;"
+            "line-height:11px;color:rgba(255,255,255,0.5);padding:0;white-space:nowrap;\">");
         html += displayDateText;
-        html += QStringLiteral("</span></div>");
+        html += QStringLiteral("</td></tr></table>");
 
         html += QStringLiteral(
-            "<div class=\"whatson-agenda-tasks\" "
-            "style=\"margin-top:8px;margin-left:8px;margin-right:8px;\">");
+            "<table class=\"whatson-agenda-tasks\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" "
+            "style=\"width:100%;height:auto;margin-top:8px;border-collapse:collapse;border-spacing:0;"
+            "font-family:Pretendard;color:rgba(255,255,255,0.8);\">"
+            "<tr><td colspan=\"2\" height=\"8\" "
+            "style=\"height:8px;font-size:1px;line-height:8px;padding:0;\">&nbsp;</td></tr>");
 
         for (int index = 0; index < descriptor.tasks.size(); ++index)
         {
@@ -273,16 +287,25 @@ namespace WhatSon::EditorComponent
             const QString doneText = task.done ? QStringLiteral("true") : QStringLiteral("false");
             if (index > 0)
             {
-                html += QStringLiteral("<div style=\"height:4px;font-size:1px;line-height:4px;\">&nbsp;</div>");
+                html += QStringLiteral(
+                    "<tr><td colspan=\"2\" height=\"4\" "
+                    "style=\"height:4px;font-size:1px;line-height:4px;padding:0;\">&nbsp;</td></tr>");
             }
             html += QStringLiteral(
-                "<div class=\"whatson-agenda-task\" data-agenda-task-done=\"%1\" "
-                "style=\"font-family:Pretendard;font-size:12px;font-weight:500;"
+                "<tr class=\"whatson-agenda-task\" data-agenda-task-done=\"%1\" "
+                "style=\"height:17px;font-family:Pretendard;font-size:12px;font-weight:500;"
+                "line-height:12px;color:rgba(255,255,255,0.8);white-space:nowrap;\">"
+                "<td width=\"31\" valign=\"middle\" "
+                "style=\"width:31px;height:17px;padding:0 0 0 8px;vertical-align:middle;\">"
+                "<img class=\"whatson-agenda-checkbox\" data-agenda-frame-chrome=\"true\" "
+                "src=\"data:image/png;base64,%2\" width=\"17\" height=\"17\" "
+                "style=\"border:0;width:17px;height:17px;\"/>"
+                "</td>"
+                "<td class=\"whatson-agenda-task-label\" valign=\"middle\" "
+                "style=\"height:17px;padding:0;vertical-align:middle;"
+                "font-family:Pretendard;font-size:12px;font-weight:500;"
                 "line-height:12px;color:rgba(255,255,255,0.8);white-space:nowrap;\">"
                 "<!--whatson-agenda-task:done=%1-->"
-                "<img class=\"whatson-agenda-checkbox\" data-agenda-frame-chrome=\"true\" "
-                "src=\"data:image/png;base64,%2\" width=\"17\" height=\"17\" align=\"left\" "
-                "style=\"border:0;float:left;margin-right:6px;\"/>"
                 "<span data-agenda-task-content=\"true\" "
                 "style=\"font-family:Pretendard;font-size:12px;font-weight:500;"
                 "line-height:12px;color:rgba(255,255,255,0.8);white-space:nowrap;\">"
@@ -292,10 +315,10 @@ namespace WhatSon::EditorComponent
             html += QStringLiteral(
                 "<!--/whatson-agenda-task-content--></span>"
                 "<!--/whatson-agenda-task-->"
-                "</div>");
+                "</td></tr>");
         }
 
-        html += QStringLiteral("</div></div><!--/whatson-agenda-source-->");
+        html += QStringLiteral("</table></td></tr></table><!--/whatson-agenda-source-->");
         return html;
     }
 

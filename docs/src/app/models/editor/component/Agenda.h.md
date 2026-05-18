@@ -16,7 +16,8 @@ Declares the agenda editor component contract for static RAW tag insertion and F
 - `Agenda::staticTagNames()` returns the agenda-owned static tag names in insertion-menu order: `agenda`, then `task`.
 - `Agenda::staticTagFor(...)` normalizes requested names and returns the paired source tokens for `agenda` and `task`.
 - `Agenda::renderHtml(...)` projects `<agenda>` source to the editor's Figma frame (`279:7854`), with task items
-  rendered as checkbox rows.
+  rendered as checkbox rows. The rich-text projection is table-backed so Qt paints one continuous fill-width frame
+  surface rather than separate nested block backgrounds.
 - `agenda` inserts `<agenda date="<current yyyy-MM-dd>" time="<current HH-mm>"><task done=false>` and
   `</task></agenda>` so an empty Agenda insertion places the cursor inside the first nested task body.
 - `task` inserts `<task done=false>` and `</task>` for direct task wrapper edits.
@@ -28,4 +29,4 @@ Declares the agenda editor component contract for static RAW tag insertion and F
 - `SetTag`는 전체 정적 태그 입력 흐름과 source mutation을 계속 맡지만, `agenda`와 `task`의 이름/토큰 정의는
   이 컴포넌트를 통해 얻는다.
 - editor projection에서는 같은 컴포넌트가 Figma `279:7854` 프레임과 task checkbox row 렌더링 계약도 함께
-  제공한다.
+  제공한다. 실제 rich-text 출력은 Qt 렌더러에 맞춘 table frame으로, 배경이 줄 단위로 쪼개지지 않아야 한다.

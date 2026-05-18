@@ -173,7 +173,11 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsAgendaAsFigmaFrameAn
     const QString editorHtml =
         WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
 
-    QVERIFY(editorHtml.contains(QStringLiteral("<div class=\"whatson-agenda\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda\"")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("<div class=\"whatson-agenda\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda-header\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<td class=\"whatson-agenda-date\" align=\"right\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda-tasks\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-figma-node-id=\"279:7854\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-frame-width-mode=\"fill\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-frame-height-mode=\"hug-contents\"")));

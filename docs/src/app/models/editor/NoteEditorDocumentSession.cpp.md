@@ -33,10 +33,13 @@ Implements the active note editor document session.
 8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
-9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
+9. Agenda task checkbox overlays call `agendaTaskOverlayItemsForEditorDocument(...)` for rendered task positions and
+   `toggleAgendaTaskDoneInSource(...)` for click handling. The click path restores canonical source from the current
+   editor document, updates the selected `<task done=...>` opening tag, and returns a reprojected agenda frame.
+10. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
-10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
+11. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
     callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
     document. The callout frame-chrome object replacement and renderer-only line characters are skipped for source

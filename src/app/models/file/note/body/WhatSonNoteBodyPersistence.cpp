@@ -1100,6 +1100,10 @@ namespace
                 recoveredLines.push_back(sourceLine);
                 continue;
             }
+            if (!recoveredLines.isEmpty() && recoveredLines.last().trimmed().isEmpty())
+            {
+                recoveredLines.removeLast();
+            }
 
             QStringList taskContents;
             int cursor = index + 1;

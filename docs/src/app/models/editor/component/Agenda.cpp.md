@@ -17,6 +17,9 @@ Implements the agenda-family static RAW tag template lookup and editor HTML rend
   width/height as static frame dimensions. The emitted root is `width="100%"`, `height:auto`,
   `data-frame-width-mode="fill"`, and `data-frame-height-mode="hug-contents"` so the agenda fills the editor width
   and grows only to contain its task children.
+- The editor renderer uses a table-backed rich-text frame instead of nested block `div` rows because Qt rich text
+  paints nested block backgrounds as separate text-line strips. The table root keeps the full-width surface continuous,
+  and the header uses two cells so the date remains right-aligned like the Figma auto-layout `space-between` row.
 - The visual values retained from Figma are `#262728` surface, `#343536` stroke, `12px` radius, `8px` padding, `8px`
   header/task gap, and `4px` task gap.
 - Rendered task items use checkbox chrome matching the LVRS `CheckBox` defaults (`17px` box, `3.5px` radius, `6px`
@@ -32,3 +35,5 @@ Implements the agenda-family static RAW tag template lookup and editor HTML rend
   `time` 값과 첫 `<task done=false>` child를 포함한다.
 - Figma `279:7854` editor frame 렌더링도 여기서 담당한다. source text 변형, selection 처리,
   `.wsnbody` 재직렬화는 각각 `SetTag`와 note-body persistence 경계가 담당한다.
+- Qt rich text에서 nested block `div`가 줄별 배경처럼 쪼개져 보이지 않도록, editor projection은 table 기반
+  프레임을 사용한다. header는 좌측 `Agenda`와 우측 날짜 셀로 분리해 Figma의 `space-between` 배치를 보존한다.

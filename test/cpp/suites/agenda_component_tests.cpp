@@ -1,6 +1,88 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QPainter>
 #include <QTextDocument>
+
+#include <cmath>
+
+namespace
+{
+    constexpr int kAgendaFigmaWidth = 307;
+
+    bool agendaColorNear(const QColor& actual, const QColor& expected, const int tolerance = 3)
+    {
+        return std::abs(actual.red() - expected.red()) <= tolerance
+            && std::abs(actual.green() - expected.green()) <= tolerance
+            && std::abs(actual.blue() - expected.blue()) <= tolerance
+            && actual.alpha() > 0;
+    }
+
+    QImage renderedAgendaImage(const QString& html, const int documentWidth = kAgendaFigmaWidth)
+    {
+        QTextDocument editorDocument;
+        editorDocument.setDocumentMargin(0);
+        editorDocument.setTextWidth(documentWidth);
+        editorDocument.setHtml(html);
+
+        const QSize imageSize(
+            documentWidth + 16,
+            qMax(48, static_cast<int>(std::ceil(editorDocument.size().height())) + 16));
+        QImage rendered(imageSize, QImage::Format_ARGB32_Premultiplied);
+        rendered.fill(Qt::transparent);
+
+        QPainter painter(&rendered);
+        editorDocument.drawContents(&painter);
+        painter.end();
+        return rendered;
+    }
+
+    int renderedAgendaRightEdgePixelCountNear(
+        const QString& html,
+        const QColor& expected,
+        const int documentWidth = kAgendaFigmaWidth)
+    {
+        const QImage rendered = renderedAgendaImage(html, documentWidth);
+        int count = 0;
+        const int rightStripStart = qMax(0, documentWidth - 24);
+        for (int y = 0; y < rendered.height(); ++y)
+        {
+            for (int x = rightStripStart; x < documentWidth; ++x)
+            {
+                if (agendaColorNear(rendered.pixelColor(x, y), expected))
+                {
+                    ++count;
+                }
+            }
+        }
+        return count;
+    }
+
+    int renderedAgendaLongestHorizontalRunNear(
+        const QString& html,
+        const QColor& expected,
+        const int documentWidth = kAgendaFigmaWidth)
+    {
+        const QImage rendered = renderedAgendaImage(html, documentWidth);
+        int longestRun = 0;
+        for (int y = 0; y < rendered.height(); ++y)
+        {
+            int currentRun = 0;
+            for (int x = 0; x < documentWidth; ++x)
+            {
+                if (agendaColorNear(rendered.pixelColor(x, y), expected))
+                {
+                    ++currentRun;
+                    longestRun = qMax(longestRun, currentRun);
+                }
+                else
+                {
+                    currentRun = 0;
+                }
+            }
+        }
+        return longestRun;
+    }
+} // namespace
 
 void WhatSonCppRegressionTests::agendaComponent_providesStaticTagTemplates()
 {
@@ -61,7 +143,11 @@ void WhatSonCppRegressionTests::agendaComponent_rendersFigmaAgendaFrame()
     const QString html = WhatSon::EditorComponent::Agenda::renderHtml(descriptor);
 
     QVERIFY(html.contains(QStringLiteral("<!--whatson-agenda-source:")));
-    QVERIFY(html.contains(QStringLiteral("<div class=\"whatson-agenda\"")));
+    QVERIFY(html.contains(QStringLiteral("<table class=\"whatson-agenda\"")));
+    QVERIFY(!html.contains(QStringLiteral("<div class=\"whatson-agenda\"")));
+    QVERIFY(html.contains(QStringLiteral("<table class=\"whatson-agenda-header\"")));
+    QVERIFY(html.contains(QStringLiteral("<td class=\"whatson-agenda-date\" align=\"right\"")));
+    QVERIFY(html.contains(QStringLiteral("<table class=\"whatson-agenda-tasks\"")));
     QVERIFY(html.contains(QStringLiteral("data-figma-node-id=\"279:7854\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-width-mode=\"fill\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-height-mode=\"hug-contents\"")));
@@ -73,6 +159,8 @@ void WhatSonCppRegressionTests::agendaComponent_rendersFigmaAgendaFrame()
     QVERIFY(!html.contains(QStringLiteral("data-frame-design-height")));
     QVERIFY(!html.contains(QStringLiteral("width=\"307\"")));
     QVERIFY(!html.contains(QStringLiteral("height=\"136\"")));
+    QVERIFY(html.contains(QStringLiteral("cellpadding=\"0\"")));
+    QVERIFY(html.contains(QStringLiteral("cellspacing=\"0\"")));
     QVERIFY(html.contains(QStringLiteral("data-frame-padding=\"8\"")));
     QVERIFY(html.contains(QStringLiteral("data-agenda-header-gap=\"8\"")));
     QVERIFY(html.contains(QStringLiteral("data-agenda-task-gap=\"4\"")));
@@ -98,6 +186,16 @@ void WhatSonCppRegressionTests::agendaComponent_rendersFigmaAgendaFrame()
     QVERIFY(html.contains(QStringLiteral("data:image/png;base64,")));
     QVERIFY(!html.contains(QStringLiteral("<agenda")));
     QVERIFY(!html.contains(QStringLiteral("<task done")));
+    QVERIFY2(
+        renderedAgendaRightEdgePixelCountNear(html, QColor(QStringLiteral("#262728"))) >= 48,
+        "The agenda surface must reach the editor frame's right edge instead of fitting only to text rows.");
+    const int agendaSurfaceRun =
+        renderedAgendaLongestHorizontalRunNear(html, QColor(QStringLiteral("#262728")));
+    QVERIFY2(
+        agendaSurfaceRun >= kAgendaFigmaWidth - 4,
+        qPrintable(QStringLiteral(
+            "The agenda HTML must render as one full-width Figma surface, not as separate line backgrounds. run=%1")
+            .arg(agendaSurfaceRun)));
 
     QTextDocument editorDocument;
     editorDocument.setHtml(html);

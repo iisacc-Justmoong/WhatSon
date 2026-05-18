@@ -626,6 +626,68 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_togglesAgendaTaskDoneFromEditorOverlay()
+{
+    NoteEditorDocumentSession session;
+    const QString sourceText =
+        QStringLiteral(
+            "<agenda date=\"2026-05-18\" time=\"09-30\">"
+            "<task done=false>Draft <bold>outline</bold></task>"
+            "<task done=true>Ship patch</task>"
+            "</agenda>");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("agenda-overlay-note"),
+        sourceText);
+
+    const QVariantList overlayItems = session.agendaTaskOverlayItemsForEditorDocument(editorHtml);
+    QCOMPARE(overlayItems.size(), 2);
+    const QVariantMap firstOverlay = overlayItems.at(0).toMap();
+    const QVariantMap secondOverlay = overlayItems.at(1).toMap();
+    QCOMPARE(firstOverlay.value(QStringLiteral("taskIndex")).toInt(), 0);
+    QCOMPARE(firstOverlay.value(QStringLiteral("done")).toBool(), false);
+    QVERIFY(firstOverlay.value(QStringLiteral("editorPosition")).toInt() >= 0);
+    QCOMPARE(firstOverlay.value(QStringLiteral("checkboxSize")).toInt(), 17);
+    QCOMPARE(firstOverlay.value(QStringLiteral("checkboxTextGap")).toInt(), 6);
+    QCOMPARE(secondOverlay.value(QStringLiteral("taskIndex")).toInt(), 1);
+    QCOMPARE(secondOverlay.value(QStringLiteral("done")).toBool(), true);
+    QVERIFY(secondOverlay.value(QStringLiteral("editorPosition")).toInt()
+            > firstOverlay.value(QStringLiteral("editorPosition")).toInt());
+
+    const QVariantMap checkedResult = session.toggleAgendaTaskDoneInSource(editorHtml, 0, true, 11);
+    QVERIFY(checkedResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(checkedResult.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(checkedResult.value(QStringLiteral("cursorPosition")).toInt(), 11);
+    QCOMPARE(
+        checkedResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral(
+            "<agenda date=\"2026-05-18\" time=\"09-30\">"
+            "<task done=true>Draft <bold>outline</bold></task>"
+            "<task done=true>Ship patch</task>"
+            "</agenda>"));
+    QVERIFY(checkedResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("data-agenda-task-done=\"true\"")));
+
+    const QVariantList checkedOverlayItems =
+        session.agendaTaskOverlayItemsForEditorDocument(checkedResult.value(QStringLiteral("editorDocumentText")).toString());
+    QCOMPARE(checkedOverlayItems.size(), 2);
+    QCOMPARE(checkedOverlayItems.at(0).toMap().value(QStringLiteral("done")).toBool(), true);
+    QCOMPARE(checkedOverlayItems.at(1).toMap().value(QStringLiteral("done")).toBool(), true);
+
+    const QVariantMap uncheckedResult = session.toggleAgendaTaskDoneInSource(
+        checkedResult.value(QStringLiteral("editorDocumentText")).toString(),
+        1,
+        false,
+        7);
+    QVERIFY(uncheckedResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        uncheckedResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral(
+            "<agenda date=\"2026-05-18\" time=\"09-30\">"
+            "<task done=true>Draft <bold>outline</bold></task>"
+            "<task done=false>Ship patch</task>"
+            "</agenda>"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()
 {
     NoteEditorDocumentSession session;

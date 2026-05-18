@@ -1204,6 +1204,7 @@ private slots:
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
     void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
+    void noteEditorDocumentSession_togglesAgendaTaskDoneFromEditorOverlay();
     void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
     void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
     void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
