@@ -39,9 +39,9 @@ Declares the active note editor document session object.
   current edited content height. QML calls this through a short debounce after text changes so typing inside a wrapped
   callout does not wait for idle persistence but also does not replace the native document on every keystroke.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
-  `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
-  an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the
-  format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
+  `underline`, `strikethrough`, `highlight`, `break`, or `agenda` through `SetTag`, then returns both canonical RAW
+  source and an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as
+  the format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
   `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source. Empty
   callout insertion returns the LVRS rich-text cursor at the rendered callout content start, after generated frame
   chrome images, so the caret lands inside the callout rather than on the neighboring source line.
@@ -95,7 +95,7 @@ Declares the active note editor document session object.
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트
   변경 후 짧은 debounce를 두고 이 함수를 호출해 native document를 매 keystroke마다 교체하지 않는다.
-- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 포맷 태그는
+- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break`, `agenda` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW

@@ -36,6 +36,9 @@
 - Day/week/month/year pages now consume the shared calendar backend through dedicated calendar controllers.
 - `AgendaPage.qml` consumes `AgendaController` and renders date header, location summary, all-day events,
   timed events, and agenda-item completion rows inside the content-surface calendar route.
+- The Agenda section now follows Figma node `279:7854`: `panelBackground06` frame, `panelBackground10` stroke,
+  `radiusLg`, `gap8` padding/header gap, and `gap4` task spacing. Its task rows are `LV.CheckBox` items rather than
+  page-local Rectangle toggles.
 - `AgendaPage.qml` no longer includes any weather card; the header is limited to date navigation and location context.
 - Shared Figma-aligned calendar navigation control (`Prev/Today/Next`) is centralized in `CalendarTodayControl.qml`;
   it now follows node `238:7843` as a three-icon button group.

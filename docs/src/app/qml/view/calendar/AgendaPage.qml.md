@@ -19,12 +19,14 @@ timed events, and agenda-item completion rows.
 - Body sections:
   - `All day`
   - `Timed`
-  - `Agenda` (checkbox-like agenda-item toggle interactions)
+  - `Agenda` rendered as the Figma `279:7854` frame: `LV.Theme.panelBackground06` surface, `panelBackground10`
+    border, `radiusLg`, `gap8` padding/header gap, and `gap4` task spacing.
+  - Agenda task rows use `LV.CheckBox`; the page no longer owns a custom Rectangle/checkmark toggle.
 
 ## Interaction Flow
 1. `Component.onCompleted` requests `page-open`.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
-3. Agenda-item toggles call `agendaController.toggleAgendaItemCompleted(...)`.
+3. Agenda-item `LV.CheckBox` rows call `agendaController.toggleAgendaItemCompleted(...)`.
 4. Note lifecycle projections from the shared calendar board flow into the `All day` / `Timed` sections as ordinary
    event rows, while tasks remain in `Agenda`.
 5. Tapping a projected note row in `All day` or `Timed` emits `noteOpenRequested(noteId)` so the host can reopen that
@@ -32,14 +34,15 @@ timed events, and agenda-item completion rows.
 6. Empty sections show dedicated placeholder labels.
 
 ## LVRS Token Notes
-- The page background and small agenda checkmark text now use `LV.Theme.accentTransparent` and
-  `LV.Theme.textCaption` instead of direct visual literals.
+- The page background uses `LV.Theme.accentTransparent`.
+- The agenda frame consumes LVRS panel/radius/gap tokens and delegates task checkbox metrics to `LV.CheckBox` defaults.
 
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
     - Agenda header must keep date navigation and the location caption without rendering a secondary weather card.
-    - Agenda-item toggles must continue to call `agendaController.toggleAgendaItemCompleted(...)`.
+    - Agenda-item rows must remain `LV.CheckBox` instances and must continue to call
+      `agendaController.toggleAgendaItemCompleted(...)`.
     - Projected note entries with `allDay == true` must stay in the `All day` section instead of disappearing from the
       Agenda route.
     - Clicking or tapping a projected note row in `All day` or `Timed` must emit `noteOpenRequested(...)`.

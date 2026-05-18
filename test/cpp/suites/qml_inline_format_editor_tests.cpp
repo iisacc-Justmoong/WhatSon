@@ -211,6 +211,15 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"callout\")")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+C\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+C\"")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"agenda\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "sequence: \"Ctrl+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"agenda\")")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
+        "sequence: \"Meta+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"agenda\")")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
+        "sequence: \"Ctrl+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"task\")")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
+        "sequence: \"Meta+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"task\")")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));

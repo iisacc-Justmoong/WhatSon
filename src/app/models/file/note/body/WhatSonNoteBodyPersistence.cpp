@@ -1,6 +1,7 @@
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
+#include "app/models/editor/component/Agenda.h"
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
@@ -132,6 +133,11 @@ namespace
         return tagName.trimmed().toCaseFolded() == QStringLiteral("callout");
     }
 
+    bool isAgendaTagName(const QString& tagName)
+    {
+        return tagName.trimmed().toCaseFolded() == QStringLiteral("agenda");
+    }
+
     struct PairedCalloutRange final
     {
         int contentStart = -1;
@@ -186,6 +192,39 @@ namespace
         }
 
         return {};
+    }
+
+    WhatSon::EditorComponent::AgendaDescriptor agendaDescriptorFromSource(
+        const QString& agendaSource,
+        const int editorViewportWidth)
+    {
+        WhatSon::EditorComponent::AgendaDescriptor descriptor;
+        descriptor.sourceText = agendaSource;
+        descriptor.dateText = WhatSon::EditorComponent::Agenda::dateTextFromSource(agendaSource);
+        descriptor.timeText = WhatSon::EditorComponent::Agenda::timeTextFromSource(agendaSource);
+        descriptor.editorViewportWidth = editorViewportWidth;
+
+        const QVector<WhatSon::EditorComponent::AgendaTaskSourceRange> taskRanges =
+            WhatSon::EditorComponent::Agenda::taskSourceRanges(agendaSource);
+        descriptor.tasks.reserve(taskRanges.size());
+        for (const WhatSon::EditorComponent::AgendaTaskSourceRange& taskRange : taskRanges)
+        {
+            if (!taskRange.isValid())
+            {
+                continue;
+            }
+
+            const QString taskSource =
+                agendaSource.mid(taskRange.openingStart, taskRange.closingEnd - taskRange.openingStart);
+            const QString taskContentSource =
+                agendaSource.mid(taskRange.contentStart, taskRange.contentEnd - taskRange.contentStart);
+            descriptor.tasks.push_back({
+                taskSource,
+                renderInlineSourceToHtml(taskContentSource, editorViewportWidth),
+                taskRange.done
+            });
+        }
+        return descriptor;
     }
 
     QString inlineStyleOpeningHtml(const QString& canonicalStyleTag)
@@ -310,6 +349,26 @@ namespace
                             });
                             cursor = calloutRange.closingEnd;
                             continue;
+                        }
+                    }
+                    if (isAgendaTagName(tagName)
+                        && !isClosingTagToken(tagToken)
+                        && !isSelfClosingTagToken(tagToken))
+                    {
+                        const QString remainingSource = sourceFragment.mid(cursor);
+                        const QVector<WhatSon::EditorComponent::AgendaSourceRange> agendaRanges =
+                            WhatSon::EditorComponent::Agenda::sourceRanges(remainingSource);
+                        if (!agendaRanges.isEmpty())
+                        {
+                            const WhatSon::EditorComponent::AgendaSourceRange agendaRange = agendaRanges.constFirst();
+                            if (agendaRange.isValid() && agendaRange.openingStart == 0)
+                            {
+                                const QString agendaSource = remainingSource.mid(0, agendaRange.closingEnd);
+                                rendered += WhatSon::EditorComponent::Agenda::renderHtml(
+                                    agendaDescriptorFromSource(agendaSource, editorViewportWidth));
+                                cursor += agendaRange.closingEnd;
+                                continue;
+                            }
                         }
                     }
 
@@ -754,6 +813,323 @@ namespace
         QString token;
         QString sourceText;
     };
+
+    struct RenderedAgendaSourceToken final
+    {
+        QString token;
+        QString sourceText;
+    };
+
+    bool markerBodyContainsLiveRenderedAgenda(const QString& markerBody)
+    {
+        const QString foldedMarkerBody = markerBody.trimmed().toCaseFolded();
+        return foldedMarkerBody.contains(QStringLiteral("whatson-agenda"))
+            && foldedMarkerBody.contains(QStringLiteral("data-agenda-task-component"));
+    }
+
+    QString agendaOpeningTokenFromSource(const QString& sourceText)
+    {
+        static const QRegularExpression openingPattern(
+            QStringLiteral(R"(^\s*(<\s*agenda\b[^>]*>))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = openingPattern.match(sourceText);
+        return match.hasMatch() ? match.captured(1) : QStringLiteral("<agenda>");
+    }
+
+    QString renderedAgendaTaskContentHtml(const QString& markerBody)
+    {
+        static const QRegularExpression contentMarkerPattern(
+            QStringLiteral(R"(<!--whatson-agenda-task-content-->([\s\S]*?)<!--\/whatson-agenda-task-content-->)"));
+        const QRegularExpressionMatch contentMarkerMatch = contentMarkerPattern.match(markerBody);
+        if (contentMarkerMatch.hasMatch())
+        {
+            return contentMarkerMatch.captured(1);
+        }
+
+        static const QRegularExpression contentPattern(
+            QStringLiteral(
+                R"(<([a-zA-Z][\w:-]*)\b(?=[^>]*\bdata-agenda-task-content\s*=\s*["']true["'])[^>]*>([\s\S]*?)</\1>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = contentPattern.match(markerBody);
+        return match.hasMatch() ? match.captured(2) : QString();
+    }
+
+    QString renderedAgendaSourceText(const QString& originalSource, const QString& markerBody)
+    {
+        static const QRegularExpression taskMarkerPattern(
+            QStringLiteral(R"(<!--whatson-agenda-task:done=(true|false)-->([\s\S]*?)<!--\/whatson-agenda-task-->)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QString sourceText = agendaOpeningTokenFromSource(originalSource);
+        bool sawTask = false;
+        QRegularExpressionMatchIterator matchIterator = taskMarkerPattern.globalMatch(markerBody);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            const QString doneText = match.captured(1).trimmed().toCaseFolded() == QStringLiteral("true")
+                                         ? QStringLiteral("true")
+                                         : QStringLiteral("false");
+            const QString contentHtml = renderedAgendaTaskContentHtml(match.captured(2));
+            const QString contentSource = sourceTextFromRichEditorDocument(contentHtml).trimmed();
+            sourceText += QStringLiteral("<task done=%1>").arg(doneText);
+            sourceText += contentSource;
+            sourceText += QStringLiteral("</task>");
+            sawTask = true;
+        }
+
+        if (!sawTask)
+        {
+            return originalSource;
+        }
+
+        sourceText += QStringLiteral("</agenda>");
+        return sourceText;
+    }
+
+    QVector<RenderedAgendaSourceToken> replaceRenderedAgendaBlocksWithSourceTokens(QString* editorHtml)
+    {
+        QVector<RenderedAgendaSourceToken> tokens;
+        if (editorHtml == nullptr || editorHtml->isEmpty())
+        {
+            return tokens;
+        }
+
+        static const QRegularExpression markerPattern(
+            QStringLiteral(
+                R"(<!--whatson-agenda-source:([0-9a-fA-F]*)-->([\s\S]*?)<!--\/whatson-agenda-source-->)"));
+
+        QString rewrittenHtml;
+        rewrittenHtml.reserve(editorHtml->size());
+
+        int lastOffset = 0;
+        QRegularExpressionMatchIterator matchIterator = markerPattern.globalMatch(*editorHtml);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            rewrittenHtml += editorHtml->mid(lastOffset, match.capturedStart(0) - lastOffset);
+
+            if (!markerBodyContainsLiveRenderedAgenda(match.captured(2)))
+            {
+                lastOffset = match.capturedEnd(0);
+                continue;
+            }
+
+            const QString originalSource =
+                QString::fromUtf8(QByteArray::fromHex(match.captured(1).toLatin1())).trimmed();
+            const QString sourceText = renderedAgendaSourceText(originalSource, match.captured(2));
+            const QString token = QStringLiteral("__WHATSON_AGENDA_SOURCE_TOKEN_%1__").arg(tokens.size());
+            tokens.push_back({token, sourceText});
+            rewrittenHtml += QStringLiteral("<p>%1</p>").arg(token);
+
+            lastOffset = match.capturedEnd(0);
+        }
+
+        rewrittenHtml += editorHtml->mid(lastOffset);
+        *editorHtml = rewrittenHtml;
+        return tokens;
+    }
+
+    QString restoreRenderedAgendaSourceTokens(QString text, const QVector<RenderedAgendaSourceToken>& tokens)
+    {
+        for (const RenderedAgendaSourceToken& token : tokens)
+        {
+            text.replace(token.token, token.sourceText);
+        }
+        return text;
+    }
+
+    QString compactRenderedAgendaSourceLine(QString line, const QVector<RenderedAgendaSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        for (const RenderedAgendaSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceText)
+            {
+                return token.sourceText;
+            }
+        }
+        return line;
+    }
+
+    bool isCanonicalAgendaSourceLine(const QString& line)
+    {
+        static const QRegularExpression agendaLinePattern(
+            QStringLiteral(R"(^\s*<\s*agenda\b[^>]*>[\s\S]*</\s*agenda\s*>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return agendaLinePattern.match(line).hasMatch();
+    }
+
+    bool isRenderedAgendaSourceLine(const QString& line, const QVector<RenderedAgendaSourceToken>& tokens)
+    {
+        const QString trimmedLine = line.trimmed();
+        if (isCanonicalAgendaSourceLine(trimmedLine))
+        {
+            return true;
+        }
+        for (const RenderedAgendaSourceToken& token : tokens)
+        {
+            if (trimmedLine == token.sourceText)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    QStringList removeRenderedAgendaPaddingLines(
+        const QStringList& sourceLines,
+        const QVector<RenderedAgendaSourceToken>& tokens)
+    {
+        if (tokens.isEmpty())
+        {
+            return sourceLines;
+        }
+
+        QStringList compacted;
+        compacted.reserve(sourceLines.size());
+        for (int index = 0; index < sourceLines.size(); ++index)
+        {
+            const QString& line = sourceLines.at(index);
+            if (line.trimmed().isEmpty())
+            {
+                const bool previousIsRenderedAgenda =
+                    index > 0 && isRenderedAgendaSourceLine(sourceLines.at(index - 1), tokens);
+                const bool nextIsRenderedAgenda =
+                    index + 1 < sourceLines.size() && isRenderedAgendaSourceLine(sourceLines.at(index + 1), tokens);
+                if (previousIsRenderedAgenda || nextIsRenderedAgenda)
+                {
+                    continue;
+                }
+            }
+            compacted.push_back(line);
+        }
+        return compacted;
+    }
+
+    QString removeRenderedAgendaPaddingText(
+        QString sourceText,
+        const QVector<RenderedAgendaSourceToken>& tokens)
+    {
+        for (const RenderedAgendaSourceToken& token : tokens)
+        {
+            while (sourceText.contains(QStringLiteral("\n\n") + token.sourceText))
+            {
+                sourceText.replace(
+                    QStringLiteral("\n\n") + token.sourceText,
+                    QLatin1Char('\n') + token.sourceText);
+            }
+            while (sourceText.contains(token.sourceText + QStringLiteral("\n\n")))
+            {
+                sourceText.replace(
+                    token.sourceText + QStringLiteral("\n\n"),
+                    token.sourceText + QLatin1Char('\n'));
+            }
+        }
+        return sourceText;
+    }
+
+    QString calloutLineContent(const QString& sourceLine)
+    {
+        static const QRegularExpression calloutLinePattern(
+            QStringLiteral(R"(^\s*<\s*callout\b[^>]*>([\s\S]*)</\s*callout\s*>\s*$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = calloutLinePattern.match(sourceLine);
+        return match.hasMatch() ? match.captured(1) : QString();
+    }
+
+    QString taskOpeningTokenForSerializedAgendaRecovery(const bool done)
+    {
+        return done
+                   ? QStringLiteral("<task done=true>")
+                   : QStringLiteral("<task done=false>");
+    }
+
+    QString recoveredSerializedAgendaSource(
+        const QString& originalSource,
+        const QStringList& recoveredTaskContents)
+    {
+        const QVector<WhatSon::EditorComponent::AgendaTaskSourceRange> taskRanges =
+            WhatSon::EditorComponent::Agenda::taskSourceRanges(originalSource);
+        if (taskRanges.isEmpty() || recoveredTaskContents.size() < taskRanges.size())
+        {
+            return originalSource;
+        }
+
+        QString sourceText = agendaOpeningTokenFromSource(originalSource);
+        for (int index = 0; index < taskRanges.size(); ++index)
+        {
+            sourceText += taskOpeningTokenForSerializedAgendaRecovery(taskRanges.at(index).done);
+            sourceText += recoveredTaskContents.at(index).trimmed();
+            sourceText += QStringLiteral("</task>");
+        }
+        sourceText += QStringLiteral("</agenda>");
+        return sourceText;
+    }
+
+    bool isSerializedAgendaHeaderContent(QString content, const QString& originalSource)
+    {
+        content.remove(QRegularExpression(QStringLiteral(R"(\s+)")));
+        const QString dateText = WhatSon::EditorComponent::Agenda::dateTextFromSource(originalSource);
+        return content.startsWith(QStringLiteral("Agenda") + dateText, Qt::CaseInsensitive)
+            || content.compare(QStringLiteral("Agenda"), Qt::CaseInsensitive) == 0;
+    }
+
+    QStringList recoverSerializedAgendaSourceLines(const QStringList& sourceLines)
+    {
+        static const QRegularExpression markerPattern(
+            QStringLiteral(R"(__WHATSON_AGENDA_SERIALIZED_SOURCE_([0-9a-fA-F]+)__)"));
+
+        QStringList recoveredLines;
+        recoveredLines.reserve(sourceLines.size());
+        for (int index = 0; index < sourceLines.size(); ++index)
+        {
+            const QString& sourceLine = sourceLines.at(index);
+            const QRegularExpressionMatch markerMatch = markerPattern.match(sourceLine);
+            if (!markerMatch.hasMatch())
+            {
+                recoveredLines.push_back(sourceLine);
+                continue;
+            }
+
+            const QString originalSource =
+                QString::fromUtf8(QByteArray::fromHex(markerMatch.captured(1).toLatin1())).trimmed();
+            const QVector<WhatSon::EditorComponent::AgendaTaskSourceRange> taskRanges =
+                WhatSon::EditorComponent::Agenda::taskSourceRanges(originalSource);
+            if (originalSource.isEmpty() || taskRanges.isEmpty())
+            {
+                recoveredLines.push_back(sourceLine);
+                continue;
+            }
+
+            QStringList taskContents;
+            int cursor = index + 1;
+            bool skippedHeaderLine = false;
+            while (cursor < sourceLines.size() && taskContents.size() < taskRanges.size())
+            {
+                const QString content = calloutLineContent(sourceLines.at(cursor)).trimmed();
+                if (content.isEmpty())
+                {
+                    ++cursor;
+                    continue;
+                }
+                if (!skippedHeaderLine)
+                {
+                    skippedHeaderLine = true;
+                    if (isSerializedAgendaHeaderContent(content, originalSource))
+                    {
+                        ++cursor;
+                        continue;
+                    }
+                }
+                taskContents.push_back(content);
+                ++cursor;
+            }
+
+            recoveredLines.push_back(recoveredSerializedAgendaSource(originalSource, taskContents));
+            index = qMax(index, cursor - 1);
+        }
+        return recoveredLines;
+    }
 
     bool markerBodyContainsLiveRenderedCallout(const QString& markerBody)
     {
@@ -1201,6 +1577,7 @@ namespace
             || folded.contains(QStringLiteral("<em"))
             || folded.contains(QStringLiteral("</em>"))
             || folded.contains(QStringLiteral("<a "))
+            || folded.contains(QStringLiteral("whatson-agenda"))
             || folded.contains(QStringLiteral("whatson-callout"))
             || folded.contains(QStringLiteral("<hr"));
     }
@@ -1300,6 +1677,8 @@ namespace
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
         QString normalizedEditorDocumentText = editorDocumentText;
+        QVector<RenderedAgendaSourceToken> renderedAgendaTokens =
+            replaceRenderedAgendaBlocksWithSourceTokens(&normalizedEditorDocumentText);
         QVector<RenderedCalloutSourceToken> renderedCalloutTokens =
             replaceRenderedCalloutBlocksWithSourceTokens(&normalizedEditorDocumentText);
         replaceQtSerializedCalloutTablesWithSourceTokens(
@@ -1333,7 +1712,9 @@ namespace
 
                 const QString fragmentText = restoreRenderedResourceSourceTokens(
                     restoreRenderedCalloutSourceTokens(
-                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                        restoreRenderedAgendaSourceTokens(
+                            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                            renderedAgendaTokens),
                         renderedCalloutTokens),
                     renderedResourceTokens);
                 const QString sourceFragmentText = serializedCalloutBlock
@@ -1368,9 +1749,11 @@ namespace
             }
 
             sourceLine = repairSerializedEmptyCalloutPrefix(sourceLine);
-            sourceLine = compactRenderedCalloutSourceLine(
-                compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
-                renderedCalloutTokens);
+            sourceLine = compactRenderedAgendaSourceLine(
+                compactRenderedCalloutSourceLine(
+                    compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
+                    renderedCalloutTokens),
+                renderedAgendaTokens);
             sourceLines.push_back(sourceLine);
         }
 
@@ -1378,15 +1761,21 @@ namespace
         {
             return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.toPlainText());
         }
+        const QStringList sourceLinesWithSerializedAgendaRecovered =
+            recoverSerializedAgendaSourceLines(sourceLines);
         const QStringList sourceLinesWithoutCalloutPadding =
-            removeRenderedCalloutPaddingLines(sourceLines, renderedCalloutTokens);
+            removeRenderedCalloutPaddingLines(sourceLinesWithSerializedAgendaRecovered, renderedCalloutTokens);
+        const QStringList sourceLinesWithoutAgendaPadding =
+            removeRenderedAgendaPaddingLines(sourceLinesWithoutCalloutPadding, renderedAgendaTokens);
         const QStringList sourceLinesWithoutRenderedPadding =
-            removeRenderedResourceFramePaddingLines(sourceLinesWithoutCalloutPadding, renderedResourceTokens);
+            removeRenderedResourceFramePaddingLines(sourceLinesWithoutAgendaPadding, renderedResourceTokens);
         const QString normalizedSourceText =
             WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
                 sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n')));
         return restoreExplicitEmptySourceLinePlaceholders(removeRenderedResourceFramePaddingText(
-            removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens),
+            removeRenderedAgendaPaddingText(
+                removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens),
+                renderedAgendaTokens),
             renderedResourceTokens));
     }
 }

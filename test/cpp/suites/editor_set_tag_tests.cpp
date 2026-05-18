@@ -40,12 +40,17 @@ void WhatSonCppRegressionTests::editorSetTag_usesStaticAgendaTemplateAndRejectsU
         6,
         0);
     QVERIFY(agendaResult.value(QStringLiteral("valid")).toBool());
-    QCOMPARE(
-        agendaResult.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral("Plan: <agenda><task></task></agenda>"));
+    const QString agendaSourceText = agendaResult.value(QStringLiteral("bodySourceText")).toString();
+    QVERIFY(QRegularExpression(
+        QStringLiteral(
+            R"(^Plan: <agenda date="\d{4}-\d{2}-\d{2}" time="\d{2}-\d{2}"><task done=false></task></agenda>$)"))
+        .match(agendaSourceText)
+        .hasMatch());
+    QVERIFY(!agendaSourceText.contains(QStringLiteral("yyyy-mm-dd")));
+    QVERIFY(!agendaSourceText.contains(QStringLiteral("hh-mm")));
     QCOMPARE(
         agendaResult.value(QStringLiteral("cursorPosition")).toInt(),
-        QStringLiteral("Plan: <agenda><task>").size());
+        agendaSourceText.indexOf(QStringLiteral("</task>")));
 
     QVERIFY(!input.configureTagName(QStringLiteral("script")));
     QCOMPARE(input.tagName(), QStringLiteral("agenda"));

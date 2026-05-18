@@ -1198,6 +1198,7 @@ private slots:
     void editorSetProperty_updatesExistingAttributeAndRejectsInvalidNames();
     void editorSetProperty_serializesResourceAttributeIntoWsnbodyDocument();
     void agendaComponent_providesStaticTagTemplates();
+    void agendaComponent_rendersFigmaAgendaFrame();
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
     void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
@@ -1275,6 +1276,7 @@ private slots:
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
+    void noteBodyPersistence_projectsAgendaAsFigmaFrameAndRecoversSource();
     void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();
     void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
     void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
@@ -1320,6 +1322,7 @@ private slots:
     void qmlContentsView_keepsOnlyAllowedContentsViews();
     void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
+    void qmlAgendaPage_usesLvrsCheckBoxForFigmaTaskItems();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();

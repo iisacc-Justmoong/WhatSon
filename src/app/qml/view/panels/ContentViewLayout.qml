@@ -536,6 +536,24 @@ Item {
             onActivated: contentViewLayout.applyEditorFormatTag("callout")
         }
 
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
+            sequence: "Ctrl+Shift+T"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("agenda")
+        }
+
+        Shortcut {
+            autoRepeat: false
+            context: Qt.WindowShortcut
+            enabled: contentViewLayout.editorCommandShortcutEnabled()
+            sequence: "Meta+Shift+T"
+
+            onActivated: contentViewLayout.applyEditorFormatTag("agenda")
+        }
+
         LV.ContextMenu {
             id: editorFormatContextMenu
 

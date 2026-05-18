@@ -277,29 +277,37 @@ Rectangle {
                     }
                 }
                 Rectangle {
-                    color: LV.Theme.panelBackground10
-                    height: agendaItemColumn.implicitHeight + LV.Theme.gap6
-                    radius: LV.Theme.radiusSm
+                    id: agendaFrame
+
+                    border.color: LV.Theme.panelBackground10
+                    border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+                    color: LV.Theme.panelBackground06
+                    height: agendaItemColumn.implicitHeight + (LV.Theme.gap8 * 2)
+                    radius: LV.Theme.radiusLg
                     width: parent.width
 
                     Column {
                         id: agendaItemColumn
 
                         anchors.fill: parent
-                        anchors.margins: LV.Theme.gap4
-                        spacing: LV.Theme.gap3
+                        anchors.margins: LV.Theme.gap8
+                        spacing: LV.Theme.gap8
 
                         LV.HStack {
-                            spacing: LV.Theme.gap3
+                            width: parent.width
 
                             LV.Label {
-                                color: LV.Theme.titleHeaderColor
-                                font.weight: Font.Medium
+                                color: LV.Theme.captionColor
+                                style: caption
                                 text: "Agenda"
                             }
+                            Item {
+                                Layout.fillWidth: true
+                            }
                             LV.Label {
-                                color: LV.Theme.descriptionColor
-                                text: String(agendaPage.summaryCountValue("completedAgendaItemCount")) + "/" + String(agendaPage.summaryCountValue("agendaItemCount"))
+                                color: LV.Theme.captionColor
+                                style: caption
+                                text: agendaPage.agendaRuntimeController && agendaPage.agendaRuntimeController.displayedDateIso ? String(agendaPage.agendaRuntimeController.displayedDateIso) : ""
                             }
                         }
                         LV.Label {
@@ -307,64 +315,26 @@ Rectangle {
                             text: "No agenda items"
                             visible: agendaPage.agendaItemModels.length === 0
                         }
-                        Repeater {
-                            model: agendaPage.agendaItemModels
+                        Column {
+                            id: agendaTaskColumn
 
-                            Rectangle {
-                                id: agendaItem
+                            spacing: LV.Theme.gap4
+                            width: parent.width
 
-                                required property var modelData
-                                readonly property bool completed: agendaItem.modelData && agendaItem.modelData.completed === true
+                            Repeater {
+                                model: agendaPage.agendaItemModels
 
-                                color: agendaItem.completed ? LV.Theme.panelBackground08 : LV.Theme.panelBackground11
-                                height: agendaItemRow.implicitHeight + LV.Theme.gap4
-                                radius: LV.Theme.radiusSm
-                                width: parent.width
+                                LV.CheckBox {
+                                    id: agendaTaskItem
 
-                                LV.HStack {
-                                    id: agendaItemRow
+                                    required property var modelData
+                                    readonly property bool completed: agendaTaskItem.modelData && agendaTaskItem.modelData.completed === true
 
-                                    anchors.fill: parent
-                                    anchors.margins: LV.Theme.gap3
-                                    spacing: LV.Theme.gap3
+                                    checked: agendaTaskItem.completed
+                                    text: agendaPage.stringValue(agendaTaskItem.modelData && agendaTaskItem.modelData.title, "Untitled")
+                                    width: agendaTaskColumn.width
 
-                                    Rectangle {
-                                        id: agendaItemToggle
-
-                                        border.color: LV.Theme.descriptionColor
-                                        border.width: Math.max(1, LV.Theme.strokeThin)
-                                        color: agendaItem.completed ? LV.Theme.primary : "transparent"
-                                        height: LV.Theme.gap8
-                                        radius: height / 2
-                                        width: LV.Theme.gap8
-
-                                        LV.Label {
-                                            anchors.centerIn: parent
-                                            color: LV.Theme.panelBackground01
-                                            font.pixelSize: LV.Theme.textCaption
-                                            text: agendaItem.completed ? "\u2713" : ""
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-
-                                            onClicked: {
-                                                agendaPage.toggleAgendaItem(agendaItem.modelData);
-                                            }
-                                        }
-                                    }
-                                    LV.VStack {
-                                        spacing: LV.Theme.gapNone
-
-                                        LV.Label {
-                                            color: LV.Theme.titleHeaderColor
-                                            text: agendaPage.stringValue(agendaItem.modelData && agendaItem.modelData.title, "Untitled")
-                                            wrapMode: Text.WordWrap
-                                        }
-                                        LV.Label {
-                                            color: LV.Theme.descriptionColor
-                                            text: agendaPage.stringValue(agendaItem.modelData && agendaItem.modelData.time, "")
-                                        }
-                                    }
+                                    onClicked: agendaPage.toggleAgendaItem(agendaTaskItem.modelData)
                                 }
                             }
                         }

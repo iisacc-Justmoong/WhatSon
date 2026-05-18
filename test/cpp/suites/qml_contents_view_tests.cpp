@@ -476,6 +476,31 @@ void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDi
     QVERIFY(onboardingSource.contains(QStringLiteral("root.createHubDialogInstance = createHubDialogComponent.createObject(root);")));
 }
 
+void WhatSonCppRegressionTests::qmlAgendaPage_usesLvrsCheckBoxForFigmaTaskItems()
+{
+    const QString agendaSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/calendar/AgendaPage.qml"));
+
+    QVERIFY(!agendaSource.isEmpty());
+    QVERIFY(agendaSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaFrame")));
+    QVERIFY(agendaSource.contains(QStringLiteral("color: LV.Theme.panelBackground06")));
+    QVERIFY(agendaSource.contains(QStringLiteral("border.color: LV.Theme.panelBackground10")));
+    QVERIFY(agendaSource.contains(QStringLiteral("radius: LV.Theme.radiusLg")));
+    QVERIFY(agendaSource.contains(QStringLiteral("anchors.margins: LV.Theme.gap8")));
+    QVERIFY(agendaSource.contains(QStringLiteral("spacing: LV.Theme.gap8")));
+    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaTaskColumn")));
+    QVERIFY(agendaSource.contains(QStringLiteral("spacing: LV.Theme.gap4")));
+    QVERIFY(agendaSource.contains(QStringLiteral("LV.CheckBox {")));
+    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaTaskItem")));
+    QVERIFY(agendaSource.contains(QStringLiteral("text: agendaPage.stringValue(agendaTaskItem.modelData && agendaTaskItem.modelData.title, \"Untitled\")")));
+    QVERIFY(agendaSource.contains(QStringLiteral("checked: agendaTaskItem.completed")));
+    QVERIFY(agendaSource.contains(QStringLiteral("onClicked: agendaPage.toggleAgendaItem(agendaTaskItem.modelData)")));
+    QVERIFY(!agendaSource.contains(QStringLiteral("scaleMetric(")));
+    QVERIFY(!agendaSource.contains(QStringLiteral("id: agendaItemToggle")));
+    QVERIFY(!agendaSource.contains(QStringLiteral("\\u2713")));
+}
+
 void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents()
 {
     const QList<QString> tokenizedFiles = {

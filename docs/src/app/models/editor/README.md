@@ -48,10 +48,15 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
-- `component/Agenda` owns the agenda-family static insertion templates. It recognizes `agenda` and `task`, returns
-  their canonical source tokens, and leaves source mutation, toggle handling, and `.wsnbody` serialization to `SetTag`.
-  The `agenda` template inserts `<agenda><task>` / `</task></agenda>` so the empty insertion cursor starts inside the
-  nested task body, while `task` inserts a direct `<task>` / `</task>` wrapper.
+- `component/Agenda` owns the agenda-family static insertion templates and editor frame projection. It recognizes
+  `agenda` and `task`, returns their canonical source tokens, and leaves source mutation, toggle handling, and
+  `.wsnbody` serialization to `SetTag`.
+  The `agenda` template inserts `<agenda date="<current yyyy-MM-dd>" time="<current HH-mm>"><task done=false>` /
+  `</task></agenda>` so the empty insertion cursor starts inside the first nested task body, while `task` inserts a
+  direct `<task done=false>` / `</task>` wrapper. One agenda wrapper can contain any integer number of task children.
+  The editor projection renders paired agenda source as the Figma `279:7854` frame with checkbox task rows while
+  preserving canonical `<agenda>/<task>` source on save. Its root frame fills the editor width and uses `height:auto`
+  / `hug-contents`; Figma node width/height are not static agenda frame dimensions.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
   `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom
@@ -119,8 +124,12 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `component/Break`는 standalone editor source token `</break>`를 소유한다. `</break>`, `<break/>`, legacy
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.
-- 현재: `component/Agenda`는 `agenda`와 `task` 정적 삽입 템플릿을 소유한다. `agenda`는
-  `<agenda><task>` / `</task></agenda>` 토큰을 제공하고, `task`는 `<task>` / `</task>` 토큰을 제공한다.
+- 현재: `component/Agenda`는 `agenda`와 `task` 정적 삽입 템플릿과 editor frame projection을 소유한다. `agenda`는
+  삽입 시점의 실제 `date`, `time` 값을 담은 `<agenda ...><task done=false>` / `</task></agenda>` 토큰을 제공하고, `task`는
+  `<task done=false>` / `</task>` 토큰을 제공한다. 하나의 agenda 안에는 정수 개수의 task child가 들어갈 수 있다.
+  editor projection은 Figma `279:7854` 프레임과 checkbox task row로 보이지만 save 경계에서는 canonical
+  `<agenda>/<task>` source로 복구된다. root frame은 editor 폭을 채우고 높이는 task content에 맞춘 auto/hug이며,
+  Figma node의 width/height를 정적 프레임 치수로 쓰지 않는다.
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
   row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
