@@ -86,7 +86,9 @@
   `LV.TextEditor.text`/cursor path that preserves the current selection and only restores focus if the editor already
   had it. It is guarded by `editorFrameViewportRefreshApplying` and delayed by `editorFrameViewportRefreshDelayMs`, and
   it must not call the command-result restore path that forces focus and deselects because frame chrome refresh can
-  happen while the user is typing, clicking, dragging, or composing IME text in the native editor.
+  happen while the user is typing, clicking, dragging, or composing IME text in the native editor. The cursor request is
+  bounded only after the refreshed document text is assigned, so a Return key that creates a new line is not clamped back
+  to the previous document length.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or
@@ -154,7 +156,9 @@
 - resource/callout frame chrome refresh는 별도 교체 경로를 사용해 현재 selection을 보존하고, 이미 editor focus가
   있던 경우에만 focus를 유지한다. 갱신은 `editorFrameViewportRefreshDelayMs` 이후에 debounce되며, 적용 중에는
   `editorFrameViewportRefreshApplying`으로 재예약을 막고 IME composing 중이면 다시 미룬다. 따라서 생성형 frame
-  chrome 갱신이 문자열 입력, 삭제, 마우스 클릭, drag selection, IME 조합을 강제로 취소하지 않는다.
+  chrome 갱신이 문자열 입력, 삭제, 마우스 클릭, drag selection, IME 조합을 강제로 취소하지 않는다. 커서 요청값은
+  갱신된 문서를 먼저 넣은 뒤 bound하므로, Return으로 새 줄이 생긴 직후 커서가 이전 문서 길이로 잘려 윗줄에
+  남지 않는다.
 - 내부 `TextDocumentModel`이나 제거된 `editorImeAdapter` objectName에는 의존하지 않는다.
 - `.wsnbody` XML 컨테이너 자체를 이 파일에 직접 연결하지 않는다.
 - `LV.CodeEditor`, raw `TextEdit`, RichText overlay, parser/projection/rendering bridge를 추가하지 않는다.

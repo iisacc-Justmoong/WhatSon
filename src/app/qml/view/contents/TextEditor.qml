@@ -493,13 +493,14 @@ LV.TextEditor {
         const selectionStart = textEditor.normalizedSelectionStart();
         const selectionEnd = textEditor.normalizedSelectionEnd();
         const hasSelection = selectionEnd > selectionStart;
-        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
+        const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));
 
         textEditor.editorFrameViewportRefreshApplying = true;
         try {
             textEditor.text = nextText === undefined || nextText === null
                     ? ""
                     : String(nextText);
+            const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);
 
             if (hasSelection)
                 textEditor.select(
