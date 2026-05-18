@@ -1205,6 +1205,7 @@ private slots:
     void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
     void noteEditorDocumentSession_togglesAgendaTaskDoneFromEditorOverlay();
+    void noteEditorDocumentSession_handlesAgendaBoundaryKeys();
     void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
     void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
     void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
@@ -1259,6 +1260,7 @@ private slots:
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
+    void noteEditorDocumentSession_limitsAgendaEditableCursorToTaskContent();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();

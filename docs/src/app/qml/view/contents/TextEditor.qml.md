@@ -41,6 +41,9 @@
 - Cursor movement stays visible by mapping the public LVRS `editorItem.positionToRectangle(cursorPosition)` result into
   the LVRS viewport `Flickable` content coordinates and adjusting `contentY` only when the cursor leaves the visible
   top/bottom range. Command/Home/End jumps therefore move the viewport without adding key handlers to the wrapper.
+- Cursor placement is also normalized through `NoteEditorDocumentSession.normalizedEditableCursorPositionForEditorDocument(...)`.
+  For rendered agenda frames, the wrapper lets LVRS own the native click/selection stream but immediately moves any
+  caret placed on header/date text, checkbox chrome, or row gaps back to the nearest editable task body position.
 - Cursor and text changes also report user activity to `NoteEditorDocumentSession.recordEditorUserActivity()`, letting
   the C++ sync layer delay active-note idle pulls until the editor surface has been quiet for the configured interval.
 - `editorSelectionStart`, `editorSelectionLength`, and `editorSelectedText` expose normalized public LVRS selection

@@ -34,12 +34,21 @@ Implements the active note editor document session.
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
 9. Agenda task checkbox overlays call `agendaTaskOverlayItemsForEditorDocument(...)` for rendered task positions and
-   `toggleAgendaTaskDoneInSource(...)` for click handling. The click path restores canonical source from the current
-   editor document, updates the selected `<task done=...>` opening tag, and returns a reprojected agenda frame.
-10. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
+   `toggleAgendaTaskDoneInSource(...)` for click handling. Overlay extraction first checks for agenda renderer/source
+   markers so ordinary notes do not pay the canonical source recovery cost. The click path restores canonical source
+   from the current editor document, updates the selected `<task done=...>` opening tag, and returns a reprojected
+   agenda frame.
+10. Agenda cursor placement calls `normalizedEditableCursorPositionForEditorDocument(...)`. Inside a rendered agenda
+    frame, only task content spans are treated as editable text; header/date text, checkbox chrome, and row gaps are
+    normalized to the nearest task content boundary.
+11. Editor key filters call `handleAgendaBoundaryKeyInSource(...)` before native text handling for plain
+    Backspace/Enter on agenda task boundaries. The session first normalizes the decorated editor cursor into the task
+    content span, then delegates agenda-local source edits to `component/Agenda`: first-task-start Backspace removes the
+    agenda, last-task Enter appends a task, and empty-last-task Enter exits below the agenda.
+12. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
-11. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
+13. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
     callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
     document. The callout frame-chrome object replacement and renderer-only line characters are skipped for source
@@ -99,6 +108,11 @@ Implements the active note editor document session.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`.
+- Agenda boundary keys are source mutations applied by this class, but agenda/task paired-source parsing and edit
+  planning live in `component/Agenda`. Backspace is consumed only at the rendered first task content start; that edit
+  removes the whole agenda block and cleans adjacent source line breaks. Enter/Return is consumed only for the last task
+  in an agenda. A non-empty last task inserts `<task done=false></task>` before `</agenda>` and returns the cursor to the
+  new task body; an empty last task is removed and the cursor is mapped to the first rendered position below the agenda.
 - Callout boundary keys are source mutations applied by this class, but the callout-specific range parsing and edit
   planning live in `component/Callout`. Backspace at the callout content start removes only the `<callout>` wrapper when
   content exists, or removes the whole empty callout source line when it does not. Enter/Return inside a callout never
@@ -142,6 +156,11 @@ Implements the active note editor document session.
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
+- agenda 경계 키는 이 세션이 적용하지만, agenda/task source range 탐색과 edit 계획은 `component/Agenda`가 맡는다.
+  첫 task content 시작점의 Backspace만 agenda 삭제로 소비되고, 마지막 task의 Enter/Return만 task 추가나 agenda
+  밖으로의 이동으로 소비된다. 마지막 task에 내용이 있으면 `</agenda>` 앞에 새 빈 `<task done=false></task>`를
+  만들고 cursor를 그 task body로 돌려준다. 마지막 task가 비어 있으면 그 task를 제거하고 cursor를 agenda 아래
+  첫 렌더링 위치로 매핑한다.
 - 콜아웃 경계 키는 이 세션이 적용하지만, 콜아웃 source range 탐색과 boundary edit 계획은 `component/Callout`이
   맡는다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만 제거하고, 내용이 없으면 빈 콜아웃 줄
   전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지 않고 닫는 태그 뒤 다음 source line으로

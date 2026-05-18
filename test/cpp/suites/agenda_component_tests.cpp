@@ -182,8 +182,10 @@ void WhatSonCppRegressionTests::agendaComponent_rendersFigmaAgendaFrame()
     QVERIFY(html.contains(QStringLiteral("Ship patch")));
     QVERIFY(html.contains(QStringLiteral("data-agenda-task-done=\"false\"")));
     QVERIFY(html.contains(QStringLiteral("data-agenda-task-done=\"true\"")));
-    QVERIFY(html.contains(QStringLiteral("class=\"whatson-agenda-checkbox\"")));
-    QVERIFY(html.contains(QStringLiteral("data:image/png;base64,")));
+    QVERIFY(html.contains(QStringLiteral("class=\"whatson-agenda-checkbox-slot\"")));
+    QVERIFY(html.contains(QStringLiteral("data-agenda-checkbox-control=\"LV.CheckBox\"")));
+    QVERIFY(!html.contains(QStringLiteral("class=\"whatson-agenda-checkbox\"")));
+    QVERIFY(!html.contains(QStringLiteral("data:image/png;base64,")));
     QVERIFY(!html.contains(QStringLiteral("<agenda")));
     QVERIFY(!html.contains(QStringLiteral("<task done")));
     QVERIFY2(

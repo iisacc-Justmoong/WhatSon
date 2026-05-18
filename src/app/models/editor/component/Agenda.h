@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -56,6 +57,15 @@ namespace WhatSon::EditorComponent
         bool isValid() const noexcept;
     };
 
+    struct AgendaBoundaryEdit final
+    {
+        QString bodySourceText;
+        int sourceCursorPosition = 0;
+        int targetTaskIndex = -1;
+        bool cursorAfterAgenda = false;
+        bool changed = false;
+    };
+
     class Agenda final
     {
     public:
@@ -65,6 +75,14 @@ namespace WhatSon::EditorComponent
         static QString renderHtml(const AgendaDescriptor& descriptor);
         static QVector<AgendaSourceRange> sourceRanges(const QString& bodySourceText);
         static QVector<AgendaTaskSourceRange> taskSourceRanges(const QString& agendaSourceText);
+        static std::optional<AgendaBoundaryEdit> backspaceAtFirstTaskContentStart(
+            const QString& bodySourceText,
+            int globalTaskIndex,
+            int sourceCursorPosition);
+        static std::optional<AgendaBoundaryEdit> enterInLastTask(
+            const QString& bodySourceText,
+            int globalTaskIndex,
+            int sourceCursorPosition);
         static QString dateTextFromSource(const QString& agendaSourceText);
         static QString timeTextFromSource(const QString& agendaSourceText);
     };

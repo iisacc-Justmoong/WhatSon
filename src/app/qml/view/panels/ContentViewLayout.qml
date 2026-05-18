@@ -49,16 +49,9 @@ Item {
             && !contentViewLayout.editorReadOnly
             && contentsTextEditor
             && contentsTextEditor.editorSelectionLength > 0
-    readonly property var editorAgendaTaskOverlayItems: {
-        if (!contentViewLayout.noteEditorSurfaceVisible
-                || !contentViewLayout.noteEditorSession
-                || !contentsTextEditor
-                || contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument === undefined)
-            return [];
-        contentsTextEditor.editorPlainTextRevision;
-        contentsTextEditor.editorDocumentText;
-        return contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument(contentsTextEditor.editorDocumentText);
-    }
+    property var editorAgendaTaskOverlayItems: []
+    property bool editorAgendaTaskOverlayRefreshPending: false
+    property int editorAgendaTaskOverlayRefreshDelayMs: 80
     readonly property var editorFormatContextMenuItems: [
         {
             "label": "Bold",
@@ -223,8 +216,10 @@ Item {
         const replaced = contentsTextEditor.replaceEditorDocumentText(
                     editorDocumentText,
                     Number(formatResult.cursorPosition) || 0);
-        if (replaced)
+        if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+        }
         return replaced;
     }
     function editorAgendaTaskCheckboxRect(agendaTaskItem) {
@@ -233,7 +228,7 @@ Item {
             "valid": false,
             "width": 0,
             "x": 0,
-            "y": -contentsTextEditor.height
+            "y": contentsTextEditor ? -contentsTextEditor.height : -1
         };
         if (!agendaTaskItem || !contentsTextEditor)
             return fallbackRect;
@@ -271,6 +266,53 @@ Item {
                 && checkboxRect.y + checkboxRect.height >= 0
                 && checkboxRect.y <= contentsTextEditor.height;
     }
+    function editorDocumentMayContainAgendaTasks(editorDocumentText) {
+        const documentText = editorDocumentText === undefined || editorDocumentText === null
+                ? ""
+                : String(editorDocumentText);
+        return documentText.indexOf("whatson-agenda") >= 0
+                || documentText.indexOf("__WHATSON_AGENDA_SERIALIZED_SOURCE_") >= 0
+                || documentText.indexOf("<agenda") >= 0;
+    }
+    function refreshEditorAgendaTaskOverlayItems() {
+        if (!contentViewLayout.noteEditorSurfaceVisible
+                || !contentViewLayout.noteEditorSession
+                || !contentsTextEditor
+                || contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument === undefined) {
+            contentViewLayout.editorAgendaTaskOverlayItems = [];
+            return false;
+        }
+        if ((contentViewLayout.noteEditorSession.loading !== undefined && Boolean(contentViewLayout.noteEditorSession.loading))
+                || (contentsTextEditor.reading !== undefined && Boolean(contentsTextEditor.reading))) {
+            contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+            return false;
+        }
+
+        const editorDocumentText = contentsTextEditor.editorDocumentText;
+        if (!contentViewLayout.editorDocumentMayContainAgendaTasks(editorDocumentText)) {
+            contentViewLayout.editorAgendaTaskOverlayItems = [];
+            return false;
+        }
+
+        const overlayItems = contentViewLayout.noteEditorSession.agendaTaskOverlayItemsForEditorDocument(editorDocumentText);
+        contentViewLayout.editorAgendaTaskOverlayItems = overlayItems || [];
+        return true;
+    }
+    function clearEditorAgendaTaskOverlayItems() {
+        contentViewLayout.editorAgendaTaskOverlayItems = [];
+        contentViewLayout.editorAgendaTaskOverlayRefreshPending = false;
+        editorAgendaTaskOverlayRefreshTimer.stop();
+    }
+    function scheduleEditorAgendaTaskOverlayRefresh() {
+        if (!contentViewLayout.noteEditorSurfaceVisible || !contentsTextEditor) {
+            contentViewLayout.clearEditorAgendaTaskOverlayItems();
+            return false;
+        }
+
+        contentViewLayout.editorAgendaTaskOverlayRefreshPending = true;
+        editorAgendaTaskOverlayRefreshTimer.restart();
+        return true;
+    }
     function toggleEditorAgendaTask(taskIndex, done) {
         if (!contentViewLayout.noteEditorSession
                 || contentViewLayout.editorReadOnly
@@ -289,8 +331,11 @@ Item {
         const replaced = contentsTextEditor.replaceEditorFrameDocumentText(
                     String(result.editorDocumentText),
                     Math.max(0, Math.floor(Number(result.cursorPosition) || 0)));
-        if (replaced)
+        if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentsTextEditor.forceEditorFocus();
+            contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+        }
         return replaced;
     }
     function rememberEditorFormatSelectionSnapshot() {
@@ -390,6 +435,18 @@ Item {
     Layout.fillHeight: true
     Layout.fillWidth: true
 
+    Timer {
+        id: editorAgendaTaskOverlayRefreshTimer
+
+        interval: contentViewLayout.editorAgendaTaskOverlayRefreshDelayMs
+        repeat: false
+
+        onTriggered: {
+            contentViewLayout.editorAgendaTaskOverlayRefreshPending = false;
+            contentViewLayout.refreshEditorAgendaTaskOverlayItems();
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: contentViewLayout.displayColor
@@ -458,8 +515,13 @@ Item {
                                     contentsTextEditor.editorPlainTextRevision,
                                     contentsTextEditor.editorDocumentText);
                     }
+                    contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
                 }
-                onEditorDocumentTextChanged: contentViewLayout.clearEditorFormatSelectionSnapshot()
+                onEditorDocumentTextChanged: {
+                    contentViewLayout.clearEditorFormatSelectionSnapshot();
+                    contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+                }
+                onEditorLineMetricsRevisionChanged: contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh()
                 onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                 onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                 onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
@@ -502,18 +564,24 @@ Item {
                         id: editorAgendaTaskCheckBox
 
                         readonly property var checkboxRect: contentViewLayout.editorAgendaTaskCheckboxRect(editorAgendaTaskCheckBox.modelData)
+                        readonly property real controlHeight: Math.max(1, editorAgendaTaskCheckBox.implicitHeight)
+                        readonly property real controlWidth: Math.max(1, editorAgendaTaskCheckBox.implicitWidth)
                         readonly property bool nextDone: !(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true)
 
-                        boxSize: Math.max(1, Math.floor(Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxSize) || 17))
+                        activeFocusOnTab: false
+                        checkable: false
                         checked: editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true
                         enabled: contentViewLayout.noteEditorSurfaceVisible && !contentViewLayout.editorReadOnly
-                        height: editorAgendaTaskCheckBox.checkboxRect.height
+                        focusPolicy: Qt.NoFocus
+                        height: editorAgendaTaskCheckBox.controlHeight
                         objectName: "editorAgendaTaskCheckBox"
                         text: ""
                         visible: contentViewLayout.editorAgendaTaskCheckboxVisible(editorAgendaTaskCheckBox.modelData)
-                        width: editorAgendaTaskCheckBox.checkboxRect.width
+                        width: editorAgendaTaskCheckBox.controlWidth
                         x: editorAgendaTaskCheckBox.checkboxRect.x
+                           + (editorAgendaTaskCheckBox.checkboxRect.width - editorAgendaTaskCheckBox.controlWidth) / 2
                         y: editorAgendaTaskCheckBox.checkboxRect.y
+                           + (editorAgendaTaskCheckBox.checkboxRect.height - editorAgendaTaskCheckBox.controlHeight) / 2
                         z: 20
 
                         onClicked: contentViewLayout.toggleEditorAgendaTask(

@@ -83,6 +83,14 @@ public:
         int taskIndex,
         bool done,
         int cursorPosition);
+    Q_INVOKABLE QVariantMap normalizedEditableCursorPositionForEditorDocument(
+        const QString& editorDocumentText,
+        int cursorPosition);
+    Q_INVOKABLE QVariantMap handleAgendaBoundaryKeyInSource(
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength,
+        int key);
     Q_INVOKABLE QVariantMap handleCalloutBoundaryKeyInSource(
         const QString& editorDocumentText,
         int cursorPosition,

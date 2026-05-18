@@ -48,17 +48,21 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
-- `component/Agenda` owns the agenda-family static insertion templates and editor frame projection. It recognizes
-  `agenda` and `task`, returns their canonical source tokens, and leaves source mutation, toggle handling, and
-  `.wsnbody` serialization to `SetTag`.
+- `component/Agenda` owns the agenda-family static insertion templates, editor frame projection, and agenda-local
+  boundary key edit planning. It recognizes `agenda` and `task`, returns their canonical source tokens, and leaves
+  generic insertion wrapping, checkbox toggle handling, and `.wsnbody` serialization to the session/`SetTag`/
+  persistence boundaries.
   The `agenda` template inserts `<agenda date="<current yyyy-MM-dd>" time="<current HH-mm>"><task done=false>` /
   `</task></agenda>` so the empty insertion cursor starts inside the first nested task body, while `task` inserts a
   direct `<task done=false>` / `</task>` wrapper. One agenda wrapper can contain any integer number of task children.
   The editor projection renders paired agenda source as the Figma `279:7854` frame with checkbox task rows while
-  preserving canonical `<agenda>/<task>` source on save. Its root frame fills the editor width and uses `height:auto`
-  / `hug-contents`; Figma node width/height are not static agenda frame dimensions. The projection is table-backed in
-  editor HTML so Qt paints one continuous frame surface and keeps the header date right-aligned instead of collapsing it
-  next to the `Agenda` label.
+  preserving canonical `<agenda>/<task>` source on save. The rich-text HTML reserves transparent checkbox slots; the
+  actual checkbox visuals and clicks are QML `LV.CheckBox` overlays. Its root frame fills the editor width and uses
+  `height:auto` / `hug-contents`; Figma node width/height are not static agenda frame dimensions. The projection is
+  table-backed in editor HTML so Qt paints one continuous frame surface and keeps the header date right-aligned instead
+  of collapsing it next to the `Agenda` label. Backspace at the first task content start removes the whole agenda
+  block. Enter in the last non-empty task appends a new empty task, and Enter in an empty last task removes that task
+  and exits the cursor below the agenda.
 - `component/Callout` owns the visual editor projection for paired `<callout>...</callout>` source. It renders the
   Figma `280:7897` callout as a full-width editor row with `data-frame-width-mode="fill"`,
   `data-frame-height-mode="hug-contents"`, root `height:auto`, a `#262728` surface, `4px` top/bottom
@@ -77,8 +81,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   closing tag. Explicit empty source lines adjacent to callouts render through an invisible placeholder so they count as
   editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
-  callout boundary Backspace/Enter operations and handled `Cmd/Ctrl+V` image-resource paste operations, delegating RAW
-  callout decisions to `NoteEditorDocumentSession` and clipboard package creation to `ClipboardEditorPaste`.
+  agenda/callout boundary Backspace/Enter operations and handled `Cmd/Ctrl+V` image-resource paste operations,
+  delegating RAW semantic-boundary decisions to `NoteEditorDocumentSession` and clipboard package creation to
+  `ClipboardEditorPaste`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
@@ -89,7 +94,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   session returns the cursor position in decorated LVRS rich-text coordinates after generated callout chrome so the
   caret starts inside the callout content span. Backspace at that same decorated content start maps back to the loaded
   RAW source content start and delegates the wrapper/empty-line edit plan to `component/Callout` instead of deleting
-  neighboring source lines.
+  neighboring source lines. Agenda task boundary keys follow the same session-owned command route while delegating the
+  agenda-specific edit plan to `component/Agenda`.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
   from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
@@ -106,7 +112,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `ResourceImageFrame` image-only container rendering, `SetProperty`
   dynamic attribute mutation, `GetProperty` key/value capture, `NoteEditorDocumentSession` editor-HTML mounting,
   parsed line-count reporting, imported resource source insertion, resource-frame viewport reprojection with locked
-  initial height, editor format-tag insertion, unsupported input rejection, and `.wsnbody`
+  initial height, editor format-tag insertion, agenda/callout boundary key handling, unsupported input rejection, and `.wsnbody`
   reserialization.
 
 ## 한국어
@@ -131,7 +137,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `<task done=false>` / `</task>` 토큰을 제공한다. 하나의 agenda 안에는 정수 개수의 task child가 들어갈 수 있다.
   editor projection은 Figma `279:7854` 프레임과 checkbox task row로 보이지만 save 경계에서는 canonical
   `<agenda>/<task>` source로 복구된다. root frame은 editor 폭을 채우고 높이는 task content에 맞춘 auto/hug이며,
-  Figma node의 width/height를 정적 프레임 치수로 쓰지 않는다.
+  Figma node의 width/height를 정적 프레임 치수로 쓰지 않는다. 첫 task body 시작점 Backspace는 agenda 전체
+  삭제로, 마지막 task Enter는 다음 task 생성 또는 빈 trailing task 삭제 후 agenda 아래 cursor 이동으로 계획된다.
 - 현재: `component/Callout`은 `<callout>...</callout>` paired source를 Figma `280:7897` 기준의 full-width editor
   row로 렌더링한다. 배경은 `#262728`, 상하 padding은 `4px`, 좌우 padding은 `4px`, bar는 `3px x 14px`, gap은
   `12px`, 텍스트는 Pretendard Medium `12/12`이다. 루트는 inline span이 아니라 block `div`이고 table도 아니며,
@@ -143,8 +150,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치의 빈
   줄 삽입을 계획한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를 실제로
   하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
-- 현재: `EditorInputCommandFilter`는 공개 LVRS editor item에 설치되는 C++ event filter다. 콜아웃 경계
-  Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
+- 현재: `EditorInputCommandFilter`는 공개 LVRS editor item에 설치되는 C++ event filter다. agenda task 및 콜아웃
+  경계 Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
   위임하며, 처리된 경우에만 native editor event를 consume한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
@@ -153,7 +160,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
   커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면
   loaded RAW source의 callout content 시작점으로 역매핑하고 `component/Callout`의 edit 계획을 적용해 주변 줄이
-  아니라 callout wrapper를 제거한다.
+  아니라 callout wrapper를 제거한다. agenda task 경계 키도 같은 세션 경로에서 처리하되, source edit 계획은
+  `component/Agenda`에 위임한다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
   frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor

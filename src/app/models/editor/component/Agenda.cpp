@@ -1,14 +1,10 @@
 #include "app/models/editor/component/Agenda.h"
 
-#include <QBuffer>
 #include <QDateTime>
-#include <QImage>
-#include <QIODevice>
-#include <QPainter>
-#include <QPainterPath>
 #include <QRegularExpression>
 
 #include <algorithm>
+#include <optional>
 
 namespace
 {
@@ -19,7 +15,7 @@ namespace
     constexpr int kCheckboxSize = 17;
     constexpr double kCheckboxRadius = 3.5;
     constexpr int kCheckboxTextGap = 6;
-    constexpr auto kAgendaRenderVersion = "figma-279-7854-table-frame-v2";
+    constexpr auto kAgendaRenderVersion = "figma-279-7854-lv-checkbox-slot-v3";
 
     QString normalizedTagName(const QString& tagName)
     {
@@ -82,52 +78,6 @@ namespace
         return contentHtml.trimmed().isEmpty() ? QStringLiteral("&nbsp;") : contentHtml;
     }
 
-    QString checkboxPngBase64(const bool done)
-    {
-        QImage image(kCheckboxSize, kCheckboxSize, QImage::Format_ARGB32_Premultiplied);
-        image.fill(Qt::transparent);
-
-        QPainter painter(&image);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-
-        const QColor bodyColor(255, 255, 255, 204);
-        const QColor checkedFillColor(10, 132, 255);
-        const QColor fillColor = done ? checkedFillColor : bodyColor;
-        const QRectF boxRect(0.5, 0.5, kCheckboxSize - 1.0, kCheckboxSize - 1.0);
-
-        painter.setPen(QPen(bodyColor, 0.5));
-        painter.setBrush(fillColor);
-        painter.drawRoundedRect(boxRect, kCheckboxRadius, kCheckboxRadius);
-
-        if (!done)
-        {
-            painter.setPen(QPen(QColor(0, 0, 0, 26), 1.0));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRoundedRect(QRectF(1.0, 1.0, kCheckboxSize - 2.0, kCheckboxSize - 2.0), kCheckboxRadius, kCheckboxRadius);
-        }
-        else
-        {
-            QPen checkPen(bodyColor, 2.0);
-            checkPen.setCapStyle(Qt::RoundCap);
-            checkPen.setJoinStyle(Qt::RoundJoin);
-            painter.setPen(checkPen);
-            painter.setBrush(Qt::NoBrush);
-            QPainterPath checkPath;
-            checkPath.moveTo(kCheckboxSize * 0.25, kCheckboxSize * 0.52);
-            checkPath.lineTo(kCheckboxSize * 0.43, kCheckboxSize * 0.70);
-            checkPath.lineTo(kCheckboxSize * 0.69, kCheckboxSize * 0.34);
-            painter.drawPath(checkPath);
-        }
-
-        painter.end();
-
-        QByteArray bytes;
-        QBuffer buffer(&bytes);
-        buffer.open(QIODevice::WriteOnly);
-        image.save(&buffer, "PNG");
-        return QString::fromLatin1(bytes.toBase64());
-    }
-
     QString openingTokenFromSource(const QString& sourceText, const QString& fallback)
     {
         const int tagStart = sourceText.indexOf(QLatin1Char('<'));
@@ -141,6 +91,41 @@ namespace
             return fallback;
         }
         return sourceText.mid(tagStart, tagEnd - tagStart + 1).trimmed();
+    }
+
+    int clampedPosition(const int position, const int textSize)
+    {
+        return std::clamp(position, 0, textSize);
+    }
+
+    void expandRemovalToSourceLine(
+        const QString& bodySourceText,
+        int* removeStart,
+        int* removeEnd)
+    {
+        if (removeStart == nullptr || removeEnd == nullptr)
+        {
+            return;
+        }
+
+        const bool hasPreviousLineBreak =
+            *removeStart > 0 && bodySourceText.at(*removeStart - 1) == QLatin1Char('\n');
+        const bool hasNextLineBreak =
+            *removeEnd < bodySourceText.size() && bodySourceText.at(*removeEnd) == QLatin1Char('\n');
+        if (hasPreviousLineBreak && hasNextLineBreak)
+        {
+            ++(*removeEnd);
+            return;
+        }
+        if (hasPreviousLineBreak)
+        {
+            --(*removeStart);
+            return;
+        }
+        if (hasNextLineBreak)
+        {
+            ++(*removeEnd);
+        }
     }
 } // namespace
 
@@ -297,9 +282,10 @@ namespace WhatSon::EditorComponent
                 "line-height:12px;color:rgba(255,255,255,0.8);white-space:nowrap;\">"
                 "<td width=\"31\" valign=\"middle\" "
                 "style=\"width:31px;height:17px;padding:0 0 0 8px;vertical-align:middle;\">"
-                "<img class=\"whatson-agenda-checkbox\" data-agenda-frame-chrome=\"true\" "
-                "src=\"data:image/png;base64,%2\" width=\"17\" height=\"17\" "
-                "style=\"border:0;width:17px;height:17px;\"/>"
+                "<span class=\"whatson-agenda-checkbox-slot\" "
+                "data-agenda-frame-chrome=\"true\" data-agenda-checkbox-control=\"LV.CheckBox\" "
+                "style=\"display:inline-block;width:17px;height:17px;font-size:1px;"
+                "line-height:17px;color:transparent;\">&nbsp;</span>"
                 "</td>"
                 "<td class=\"whatson-agenda-task-label\" valign=\"middle\" "
                 "style=\"height:17px;padding:0;vertical-align:middle;"
@@ -310,7 +296,7 @@ namespace WhatSon::EditorComponent
                 "style=\"font-family:Pretendard;font-size:12px;font-weight:500;"
                 "line-height:12px;color:rgba(255,255,255,0.8);white-space:nowrap;\">"
                 "<!--whatson-agenda-task-content-->")
-                .arg(doneText, checkboxPngBase64(task.done));
+                .arg(doneText);
             html += taskContentHtml;
             html += QStringLiteral(
                 "<!--/whatson-agenda-task-content--></span>"
@@ -433,6 +419,135 @@ namespace WhatSon::EditorComponent
                 return left.openingStart < right.openingStart;
             });
         return ranges;
+    }
+
+    std::optional<AgendaBoundaryEdit> Agenda::backspaceAtFirstTaskContentStart(
+        const QString& bodySourceText,
+        const int globalTaskIndex,
+        const int sourceCursorPosition)
+    {
+        if (globalTaskIndex < 0)
+        {
+            return std::nullopt;
+        }
+
+        const QVector<AgendaSourceRange> agendaRanges = sourceRanges(bodySourceText);
+        int taskIndex = 0;
+        for (const AgendaSourceRange& agendaRange : agendaRanges)
+        {
+            if (!agendaRange.isValid())
+            {
+                continue;
+            }
+
+            const QString agendaSource =
+                bodySourceText.mid(agendaRange.openingStart, agendaRange.closingEnd - agendaRange.openingStart);
+            const QVector<AgendaTaskSourceRange> taskRanges = taskSourceRanges(agendaSource);
+            if (taskRanges.isEmpty())
+            {
+                continue;
+            }
+
+            const AgendaTaskSourceRange firstTask = taskRanges.constFirst();
+            const int firstTaskGlobalIndex = taskIndex;
+            taskIndex += taskRanges.size();
+
+            Q_UNUSED(sourceCursorPosition);
+            if (globalTaskIndex != firstTaskGlobalIndex)
+            {
+                continue;
+            }
+
+            int removeStart = agendaRange.openingStart;
+            int removeEnd = agendaRange.closingEnd;
+            expandRemovalToSourceLine(bodySourceText, &removeStart, &removeEnd);
+
+            AgendaBoundaryEdit edit;
+            edit.bodySourceText = bodySourceText.left(removeStart) + bodySourceText.mid(removeEnd);
+            edit.sourceCursorPosition = clampedPosition(removeStart, edit.bodySourceText.size());
+            edit.changed = edit.bodySourceText != bodySourceText;
+            return edit;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<AgendaBoundaryEdit> Agenda::enterInLastTask(
+        const QString& bodySourceText,
+        const int globalTaskIndex,
+        const int sourceCursorPosition)
+    {
+        if (globalTaskIndex < 0)
+        {
+            return std::nullopt;
+        }
+
+        const QVector<AgendaSourceRange> agendaRanges = sourceRanges(bodySourceText);
+        int taskIndex = 0;
+        for (const AgendaSourceRange& agendaRange : agendaRanges)
+        {
+            if (!agendaRange.isValid())
+            {
+                continue;
+            }
+
+            const QString agendaSource =
+                bodySourceText.mid(agendaRange.openingStart, agendaRange.closingEnd - agendaRange.openingStart);
+            const QVector<AgendaTaskSourceRange> taskRanges = taskSourceRanges(agendaSource);
+            if (taskRanges.isEmpty())
+            {
+                continue;
+            }
+
+            const int firstTaskIndex = taskIndex;
+            const int lastTaskIndex = firstTaskIndex + taskRanges.size() - 1;
+            taskIndex += taskRanges.size();
+            if (globalTaskIndex != lastTaskIndex)
+            {
+                continue;
+            }
+
+            const AgendaTaskSourceRange lastTask = taskRanges.constLast();
+            const QString lastTaskContent =
+                agendaSource.mid(lastTask.contentStart, lastTask.contentEnd - lastTask.contentStart);
+            const bool lastTaskEmpty = lastTaskContent.trimmed().isEmpty();
+            Q_UNUSED(sourceCursorPosition);
+            AgendaBoundaryEdit edit;
+            if (lastTaskEmpty)
+            {
+                const int removeStart = agendaRange.openingStart + lastTask.openingStart;
+                const int removeEnd = agendaRange.openingStart + lastTask.closingEnd;
+                edit.bodySourceText = bodySourceText.left(removeStart) + bodySourceText.mid(removeEnd);
+
+                const int agendaClosingEndAfterRemoval = agendaRange.closingEnd - (removeEnd - removeStart);
+                int nextCursorPosition = clampedPosition(agendaClosingEndAfterRemoval, edit.bodySourceText.size());
+                if (nextCursorPosition < edit.bodySourceText.size()
+                    && edit.bodySourceText.at(nextCursorPosition) == QLatin1Char('\n'))
+                {
+                    ++nextCursorPosition;
+                }
+                else
+                {
+                    edit.bodySourceText.insert(nextCursorPosition, QLatin1Char('\n'));
+                    ++nextCursorPosition;
+                }
+
+                edit.sourceCursorPosition = clampedPosition(nextCursorPosition, edit.bodySourceText.size());
+                edit.cursorAfterAgenda = true;
+                edit.changed = edit.bodySourceText != bodySourceText;
+                return edit;
+            }
+
+            const QString insertedTask = QStringLiteral("<task done=false></task>");
+            const int insertPosition = agendaRange.closingStart;
+            edit.bodySourceText = bodySourceText.left(insertPosition)
+                + insertedTask
+                + bodySourceText.mid(insertPosition);
+            edit.sourceCursorPosition = insertPosition + QStringLiteral("<task done=false>").size();
+            edit.targetTaskIndex = lastTaskIndex + 1;
+            edit.changed = true;
+            return edit;
+        }
+        return std::nullopt;
     }
 
     QString Agenda::dateTextFromSource(const QString& agendaSourceText)

@@ -61,10 +61,16 @@ format shortcuts: a selection becomes the rendered callout contents, while an em
 callout frame with the cursor inside the RAW wrapper. Agenda inserts the full agenda wrapper, including the first
 nested task item, rather than a standalone task wrapper.
 
-Rendered agenda task checkboxes are interactive QML controls, not only rich-text image chrome. The layout asks
+Rendered agenda task checkboxes are interactive QML controls, not rich-text image chrome. The agenda renderer reserves
+only a transparent checkbox slot for layout. The layout asks
 `NoteEditorDocumentSession.agendaTaskOverlayItemsForEditorDocument(...)` for task row positions, places an
-`LV.CheckBox` over each agenda checkbox slot, and sends clicks to
+actual `LV.CheckBox` over each agenda checkbox slot, and sends clicks to
 `NoteEditorDocumentSession.toggleAgendaTaskDoneInSource(...)` so the canonical `<task done=...>` attribute changes.
+The overlay is cached and refreshed through a short timer after document or line-metric changes; it is not computed as
+a synchronous rich-text binding while a note is opening. These checkboxes also opt out of tab and item focus, so they
+can be clicked without stealing the LVRS editor caret or hiding the text cursor during initial note load.
+The editor itself treats only the task body text next to each checkbox as an editable agenda text position; checkbox
+chrome remains an interactive completion control rather than a text input region.
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
 `LV.ContextMenu` only when the sibling editor reports a non-empty selection. Menu entries for `bold`, `italic`,
@@ -151,9 +157,9 @@ classified as a local modified-count push.
   처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
   콜아웃 시각 프레임을 즉시 만든다. 아젠다 단축키는 독립 `task`가 아니라 첫 task child를 포함한 전체
   `<agenda>` wrapper를 삽입한다.
-- 아젠다 task checkbox는 editor HTML의 이미지 chrome만으로 두지 않는다. 이 layout이 각 task row 위에 실제
-  `LV.CheckBox` overlay를 올리고, 클릭은 `toggleAgendaTaskDoneInSource(...)`로 보내 canonical `<task done=...>`
-  속성을 갱신한다.
+- 아젠다 task checkbox는 editor HTML의 이미지 chrome으로 그리지 않는다. renderer는 투명 checkbox slot만 남기고,
+  이 layout이 각 task row 위에 실제 `LV.CheckBox` overlay를 올린다. 클릭은
+  `toggleAgendaTaskDoneInSource(...)`로 보내 canonical `<task done=...>` 속성을 갱신한다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고

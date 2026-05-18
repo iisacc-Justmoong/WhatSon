@@ -60,6 +60,7 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("event->accept();")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleAgendaBoundaryKeyInSource(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("replaceEditorDocumentText")));

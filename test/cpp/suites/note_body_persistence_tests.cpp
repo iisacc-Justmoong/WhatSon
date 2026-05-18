@@ -191,7 +191,10 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsAgendaAsFigmaFrameAn
     QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-component=\"LV.CheckBox\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-done=\"false\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-done=\"true\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-agenda-checkbox\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-agenda-checkbox-slot\"")));
+    QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-checkbox-control=\"LV.CheckBox\"")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-agenda-checkbox\"")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("data:image/png;base64,")));
     QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">outline</strong>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<agenda")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<task done")));

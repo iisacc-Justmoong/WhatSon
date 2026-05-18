@@ -17,6 +17,7 @@ LV.TextEditor {
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
     property bool cursorViewportSyncQueued: false
+    property bool editorEditableCursorNormalizationApplying: false
     property bool editorFrameViewportRefreshPending: false
     property bool editorFrameViewportRefreshApplying: false
     property int editorFrameViewportRefreshDelayMs: 120
@@ -450,6 +451,38 @@ LV.TextEditor {
         });
     }
 
+    function normalizeEditorEditableCursorPosition() {
+        if (textEditor.editorEditableCursorNormalizationApplying
+                || textEditor.readOnly
+                || !textEditor.noteEditorSession
+                || textEditor.noteEditorSession.normalizedEditableCursorPositionForEditorDocument === undefined
+                || textEditor.editorSelectionLength > 0)
+            return false;
+
+        const result = textEditor.noteEditorSession.normalizedEditableCursorPositionForEditorDocument(
+                    textEditor.editorDocumentText,
+                    textEditor.boundedCursorPosition(textEditor.cursorPosition));
+        if (!result
+                || !Boolean(result.valid)
+                || !Boolean(result.changed)
+                || result.cursorPosition === undefined)
+            return false;
+
+        const normalizedCursorPosition = textEditor.boundedCursorPosition(result.cursorPosition);
+        if (normalizedCursorPosition === textEditor.boundedCursorPosition(textEditor.cursorPosition))
+            return false;
+
+        textEditor.editorEditableCursorNormalizationApplying = true;
+        try {
+            textEditor.cursorPosition = normalizedCursorPosition;
+            textEditor.deselect();
+        } finally {
+            textEditor.editorEditableCursorNormalizationApplying = false;
+        }
+        textEditor.requestEnsureCursorVisibleInViewport();
+        return true;
+    }
+
     function findDescendantByObjectName(root, objectName) {
         if (!root)
             return null;
@@ -759,7 +792,10 @@ LV.TextEditor {
         if (!textEditor.editorFrameViewportRefreshApplying)
             textEditor.scheduleEditorFrameViewportRefresh();
     }
-    onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()
+    onCursorPositionChanged: {
+        if (!textEditor.normalizeEditorEditableCursorPosition())
+            textEditor.requestEnsureCursorVisibleInViewport();
+    }
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
     onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()
 
