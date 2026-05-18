@@ -31,7 +31,7 @@ The Figma node mapping is:
 - Compact menu mirrors full-mode default tools:
   - View options (`Read Only`, `Wrap Text`, `Center View`, `Text To Speech`, `Paper Options`)
   - View modes (`Center View Mode`, `Focus Mode`, `Presentation`)
-  - Agenda / Daily / Weekly / Monthly / Yearly calendar entries
+  - Task and calendar entries (`Task`, `Daily Calendar`, `Weekly Calendar`, `Monthly Calendar`, `Yearly Calendar`)
   - New File
   - Preferences
 
@@ -43,8 +43,7 @@ The Figma node mapping is:
 - Full-mode child frames now split the view-only Figma slices into dedicated local files under
   `navigation/view/`, while `AddNewBar` and `PreferenceBar` stay shared under `navigation/`.
 - The view-only calendar cluster no longer reuses the shared root `NavigationCalendarBar.qml`, because
-  Figma `149:4001` changed the first icon from `toolWindowCheckDetails` to `validator` only for the
-  view-mode `ApplicationViewBar`.
+  Figma `149:4001` uses `validator` for the restored task button only in the view-mode `ApplicationViewBar`.
 - On mobile compact shell, this menu button is rendered alongside (not instead of) the shared
   `nodesnewFolder` add-folder button from `NavigationBarLayout.qml`.
 - Compact trigger icon now matches control mode (`toolwindowtodo`) so mobile mode bars keep one
@@ -66,6 +65,6 @@ The Figma node mapping is:
 
 ## Regression Checklist
 - Keep the child-frame order `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`.
-- Keep the first calendar compact-menu entry on `validator`, matching Figma `TodoListButton`.
+- Keep the first calendar compact-menu entry on `validator` and label it `Task`.
 - Keep the `Center View` option icon on `recursiveMethod`; do not collapse it back onto the mode-level `singleRecordView` glyph.
 - Keep the compact-menu section ordering aligned with the full desktop bar ordering.

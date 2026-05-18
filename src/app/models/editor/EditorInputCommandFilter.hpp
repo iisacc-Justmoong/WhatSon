@@ -32,7 +32,6 @@ private:
     bool editorPasteKeyMatches(const QKeyEvent& event) const;
     bool editorCalloutBoundaryKeyMatches(const QKeyEvent& event) const;
     bool handleEditorPasteKeyEvent(QKeyEvent& event);
-    bool handleEditorAgendaBoundaryKeyEvent(QKeyEvent& event);
     bool handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event);
     bool applyEditorCommandResultToOwner(const QVariantMap& result);
 

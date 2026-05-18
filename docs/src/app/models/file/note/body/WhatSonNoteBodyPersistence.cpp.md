@@ -33,7 +33,6 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `eventTitle`
   - `eventDescription`
   - `callout`
-  - `agenda`
   - `task`
 - Standalone `event` wrapper lines now stay direct `<body>` children during serialization, so nested legacy semantic
   blocks do not reopen as stray blank paragraphs on the next read.
@@ -67,9 +66,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `.wsnbody` body XML stores `<break/>` (valid XML)
   - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
   - editor HTML renders the token through `component/Break` as a logical blank line, not literal tag text
-- Agenda/task and callout tags are still preserved inside paragraph RAW source instead of being promoted to direct
   body-format blocks. The editor HTML projection renders paired `<callout>...</callout>` fragments through
-  `component/Callout` and paired `<agenda>...</agenda>` fragments through `component/Agenda` as Figma visual rows.
 - Resource/divider source blocks are normalized onto standalone editor lines before save/load projection. Adjacent text
   is split away from those proprietary body blocks so atomic slots do not remain embedded in ordinary paragraph text on
   round-trip.
@@ -113,9 +110,7 @@ The current contract preserves editor-authored RAW source across save/load turns
   callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`
   before persistence. The generated leading-bar image is frame chrome and is intentionally excluded from this marker
   path; the gap is its rendering margin rather than source content.
-- Agenda frames use the analogous `<!--whatson-agenda-source:...-->...<!--/whatson-agenda-source-->` marker pair while
   rendered as a table-backed rich-text surface. The inverse path extracts each task marker, restores
-  `<agenda>/<task>` source, and removes the renderer-owned blank row Qt may emit before the hidden serialized agenda
   marker after `QTextDocument::toHtml()`.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
@@ -206,13 +201,9 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   rich-text projection as one active hyperlink instead of escaping back into literal XML.
 - A typed inline style run such as `<bold>Al<italic>pha</italic></bold><italic> Beta</italic>` must project to styled
   HTML in the read-side projection instead of displaying the RAW tags as text.
-- Typed `<agenda date="yyyy-mm-dd" time="hh-mm"><task done=false>todo</task></agenda>` and
   `<callout>message</callout>` wrappers must survive save/load inside paragraph RAW source without escaping wrapper
-  tags or dropping agenda/task attributes. Callout projects to its Figma visual block, and agenda projects to the
-  Figma `279:7854` frame with checkbox task rows while recovering the same wrapper on rich-text save. Agenda frame
   width is editor fill and height is content hug; neither axis is recovered from a static Figma node dimension.
 - Standalone `<resource ... />` or `</break>` source lines must round-trip as direct `<body>` children instead of being
-  rewrapped into `<paragraph>`. Standalone agenda/task and callout lines stay paragraph source lines.
 - A direct `<resource ... />` body child followed by an empty `<paragraph></paragraph>` must project back to editor
   source with a trailing newline, not to a resource-only source string, so the post-resource caret target is preserved
   on note reopen.
@@ -222,7 +213,6 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   `<resource ... />` body child on the next read/write turn instead of staying escaped forever.
 - A saved legacy semantic body block such as `<title>`, `<subTitle>`, `<eventTitle>`, `<eventDescription>`, or
   `<next/>` must not degrade into escaped literal text on the next autosave.
-- Legacy notes that already embedded agenda/task or callout markup inside paragraph content must keep that markup as
   paragraph RAW source on load.
 - Legacy/self-closing/non-canonical structured tags may still be normalized by the serializer/parser projection that
   the editor explicitly invoked, but passive load/save turns must not introduce an extra RAW rewrite layer on top of

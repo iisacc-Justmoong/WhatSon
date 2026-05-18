@@ -20,7 +20,6 @@
 - The projected title now uses the same top-line preview text rule as `NoteListItem.primaryText`, instead of adding
   `Created note` / `Modified note` lifecycle prefixes to the chip label.
 - Projected note entries stay on the shared `entriesForDate(...)` / `countsForDate(...)` path, so day/week/month/year
-  controllers and Agenda all receive note items alongside manual calendar events.
 
 ## Tests
 - Automated test files are not currently present in this repository.

@@ -53,7 +53,6 @@ namespace
         appendContextObjectBinding(plan, QStringLiteral("calendarBoardStore"), objects.calendarBoardStore);
         appendContextObjectBinding(plan, QStringLiteral("systemCalendarStore"), objects.systemCalendarStore);
         appendContextObjectBinding(plan, QStringLiteral("dayCalendarController"), objects.dayCalendarController);
-        appendContextObjectBinding(plan, QStringLiteral("agendaController"), objects.agendaController);
         appendContextObjectBinding(plan, QStringLiteral("monthCalendarController"), objects.monthCalendarController);
         appendContextObjectBinding(plan, QStringLiteral("weekCalendarController"), objects.weekCalendarController);
         appendContextObjectBinding(plan, QStringLiteral("yearCalendarController"), objects.yearCalendarController);

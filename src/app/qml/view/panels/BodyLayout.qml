@@ -65,8 +65,6 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarController: null
-    property bool agendaOverlayVisible: false
-    property var agendaController: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
@@ -81,7 +79,6 @@ Item {
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
     signal dayCalendarOverlayDismissRequested
-    signal agendaOverlayDismissRequested
     signal monthCalendarOverlayOpenRequested
     signal monthCalendarOverlayDismissRequested
     signal weekCalendarOverlayDismissRequested
@@ -271,8 +268,6 @@ Item {
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarController: hStack.dayCalendarController
-                agendaOverlayVisible: hStack.agendaOverlayVisible
-                agendaController: hStack.agendaController
                 monthCalendarOverlayVisible: hStack.monthCalendarOverlayVisible
                 monthCalendarController: hStack.monthCalendarController
                 weekCalendarOverlayVisible: hStack.weekCalendarOverlayVisible
@@ -281,7 +276,6 @@ Item {
                 yearCalendarController: hStack.yearCalendarController
 
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
-                onAgendaOverlayCloseRequested: hStack.agendaOverlayDismissRequested()
                 onMonthCalendarOverlayOpenRequested: hStack.monthCalendarOverlayOpenRequested()
                 onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()
                 onWeekCalendarOverlayCloseRequested: hStack.weekCalendarOverlayDismissRequested()

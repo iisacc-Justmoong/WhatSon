@@ -161,67 +161,6 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
         sourceText);
 }
 
-void WhatSonCppRegressionTests::noteBodyPersistence_projectsAgendaAsFigmaFrameAndRecoversSource()
-{
-    const QString sourceText =
-        QStringLiteral(
-            "<agenda date=\"2026-05-18\" time=\"09-30\">"
-            "<task done=false>Draft <bold>outline</bold></task>"
-            "<task done=true>Ship patch</task>"
-            "</agenda>");
-
-    const QString editorHtml =
-        WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
-
-    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda\"")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("<div class=\"whatson-agenda\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda-header\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<td class=\"whatson-agenda-date\" align=\"right\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<table class=\"whatson-agenda-tasks\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-figma-node-id=\"279:7854\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-width-mode=\"fill\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-height-mode=\"hug-contents\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("width=\"100%\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("width:100%")));
-    QVERIFY(editorHtml.contains(QStringLiteral("max-width:100%")));
-    QVERIFY(editorHtml.contains(QStringLiteral("height:auto")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("data-frame-design-width")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("data-frame-design-height")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-frame-padding=\"8\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-component=\"LV.CheckBox\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-done=\"false\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-task-done=\"true\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-agenda-checkbox-slot\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("data-agenda-checkbox-control=\"LV.CheckBox\"")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-agenda-checkbox\"")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("data:image/png;base64,")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">outline</strong>")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("<agenda")));
-    QVERIFY(!editorHtml.contains(QStringLiteral("<task done")));
-
-    QTextDocument editorDocument;
-    editorDocument.setHtml(editorHtml);
-    QString editorPlainText = editorDocument.toPlainText();
-    editorPlainText.remove(QChar::ObjectReplacementCharacter);
-    QVERIFY(editorPlainText.contains(QStringLiteral("Agenda")));
-    QVERIFY(editorPlainText.contains(QStringLiteral("2026-05-18")));
-    QVERIFY(editorPlainText.contains(QStringLiteral("Draft outline")));
-    QVERIFY(editorPlainText.contains(QStringLiteral("Ship patch")));
-
-    QCOMPARE(
-        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
-        sourceText);
-
-    QTextDocument roundTrippedEditorDocument;
-    roundTrippedEditorDocument.setHtml(editorHtml);
-    const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
-    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("whatson-agenda-source:")));
-    QVERIFY(!roundTrippedEditorHtml.contains(QStringLiteral("data-agenda-task-content")));
-    QCOMPARE(
-        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), roundTrippedEditorHtml),
-        sourceText);
-}
-
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout()
 {
     const QString sourceText =
@@ -275,29 +214,24 @@ void WhatSonCppRegressionTests::noteBodyPersistence_doesNotReplicateParagraphsAr
     }
 }
 
-void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags()
+void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAsParagraphTag()
 {
     const QString sourceText =
-        QStringLiteral("<callout>Alpha & <bold>Beta</bold></callout>\n"
-                       "<agenda date=\"2026-05-18\" time=\"09-30\"><task done=false>Draft & review</task></agenda>");
+        QStringLiteral("<callout>Alpha & <bold>Beta</bold></callout>");
     const QString bodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
 
     QVERIFY(bodyDocument.contains(
         QStringLiteral("    <paragraph><callout>Alpha &amp; <bold>Beta</bold></callout></paragraph>\n")));
-    QVERIFY(bodyDocument.contains(
-        QStringLiteral("    <paragraph><agenda date=\"2026-05-18\" time=\"09-30\"><task done=false>Draft &amp; review</task></agenda></paragraph>\n")));
     QVERIFY(!bodyDocument.contains(QStringLiteral("    <callout>")));
-    QVERIFY(!bodyDocument.contains(QStringLiteral("    <agenda>")));
     QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;callout")));
-    QVERIFY(!bodyDocument.contains(QStringLiteral("&lt;agenda")));
 
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument),
         sourceText);
     QCOMPARE(
         WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocument),
-        QStringLiteral("Alpha & Beta\nDraft & review"));
+        QStringLiteral("Alpha & Beta"));
 
     const QString legacyParagraphWrappedBodyDocument = QStringLiteral(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"

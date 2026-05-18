@@ -149,9 +149,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle(textEditor.boundedCursorPosition(textEditor.cursorPosition))")));
     QVERIFY(textEditorSource.contains(QStringLiteral("if (cursorTop < visibleTop + cursorMargin)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("viewport.contentY = Math.max(0, Math.min(maxContentY, nextContentY));")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("if (!textEditor.normalizeEditorEditableCursorPosition())")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.requestEnsureCursorVisibleInViewport();")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("normalizeEditorEditableCursorPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const nextLineStartPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const nextRectangle")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const missingLineOffset")));
@@ -163,6 +162,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function boundedCursorPosition(value)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("const deferredCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorFrameDocumentText(nextText, nextCursorPosition)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
@@ -422,9 +425,8 @@ void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
     QVERIFY(!textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricsFor(lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function cursorLineIndexForLogicalCursor()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function ensureCursorVisibleInViewport()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("if (!textEditor.normalizeEditorEditableCursorPosition())")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.requestEnsureCursorVisibleInViewport();")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("normalizeEditorEditableCursorPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
     QVERIFY(gutterSource.contains(QStringLiteral("property int parsedLineCount: 0")));
     QVERIFY(gutterSource.contains(QStringLiteral("property var lineMetricProvider: null")));
@@ -462,6 +464,63 @@ void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
     QVERIFY(mainSource.contains(QStringLiteral("editorViewModeController: applicationWindow.rootEditorViewModeController")));
 }
 
+void WhatSonCppRegressionTests::qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks()
+{
+    const QString sharedCalendarBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/navigation/NavigationCalendarBar.qml"));
+    const QString viewCalendarBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/navigation/view/NavigationApplicationViewCalendarBar.qml"));
+    const QString viewApplicationBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/navigation/view/NavigationApplicationViewBar.qml"));
+    const QString editApplicationBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
+    const QString combinedSource = sharedCalendarBarSource
+        + viewCalendarBarSource
+        + viewApplicationBarSource
+        + editApplicationBarSource;
+
+    QVERIFY(!sharedCalendarBarSource.isEmpty());
+    QVERIFY(!viewCalendarBarSource.isEmpty());
+    QVERIFY(!viewApplicationBarSource.isEmpty());
+    QVERIFY(!editApplicationBarSource.isEmpty());
+    const QString removedHookName = QStringLiteral("ag") + QStringLiteral("enda");
+    const QString removedTitleHookName = QStringLiteral("Ag") + QStringLiteral("enda");
+    QVERIFY(!combinedSource.contains(removedHookName));
+    QVERIFY(!combinedSource.contains(removedTitleHookName));
+
+    const qsizetype sharedTaskButtonIndex = sharedCalendarBarSource.indexOf(QStringLiteral("id: taskButton"));
+    const qsizetype sharedDailyButtonIndex = sharedCalendarBarSource.indexOf(QStringLiteral("id: dailyCalButton"));
+    QVERIFY(sharedTaskButtonIndex >= 0);
+    QVERIFY(sharedDailyButtonIndex > sharedTaskButtonIndex);
+    QVERIFY(sharedCalendarBarSource.contains(QStringLiteral("iconName: \"toolWindowCheckDetails\"")));
+    QVERIFY(sharedCalendarBarSource.contains(QStringLiteral("onClicked: calendarBar.requestViewHook(\"open-task\")")));
+    QVERIFY(!sharedCalendarBarSource.contains(removedHookName + QStringLiteral("Button")));
+    QVERIFY(!sharedCalendarBarSource.contains(QStringLiteral("open-") + removedHookName));
+
+    const qsizetype viewTaskButtonIndex = viewCalendarBarSource.indexOf(QStringLiteral("id: taskButton"));
+    const qsizetype viewDailyButtonIndex = viewCalendarBarSource.indexOf(QStringLiteral("id: dailyCalButton"));
+    QVERIFY(viewTaskButtonIndex >= 0);
+    QVERIFY(viewDailyButtonIndex > viewTaskButtonIndex);
+    QVERIFY(viewCalendarBarSource.contains(QStringLiteral("iconName: \"validator\"")));
+    QVERIFY(viewCalendarBarSource.contains(QStringLiteral("onClicked: calendarBar.requestViewHook(\"view-open-task\")")));
+    QVERIFY(!viewCalendarBarSource.contains(QStringLiteral("todoListButton")));
+    QVERIFY(!viewCalendarBarSource.contains(QStringLiteral("view-open-") + removedHookName));
+
+    const qsizetype viewTaskMenuIndex = viewApplicationBarSource.indexOf(QStringLiteral("\"label\": \"Task\""));
+    const qsizetype viewDailyMenuIndex = viewApplicationBarSource.indexOf(QStringLiteral("\"label\": \"Daily Calendar\""));
+    QVERIFY(viewTaskMenuIndex >= 0);
+    QVERIFY(viewDailyMenuIndex > viewTaskMenuIndex);
+    QVERIFY(viewApplicationBarSource.contains(QStringLiteral("\"iconName\": \"validator\"")));
+    QVERIFY(viewApplicationBarSource.contains(QStringLiteral("applicationViewBar.requestViewHook(\"view-open-task\");")));
+
+    const qsizetype editTaskMenuIndex = editApplicationBarSource.indexOf(QStringLiteral("\"label\": \"Task\""));
+    const qsizetype editDailyMenuIndex = editApplicationBarSource.indexOf(QStringLiteral("\"label\": \"Daily Calendar\""));
+    QVERIFY(editTaskMenuIndex >= 0);
+    QVERIFY(editDailyMenuIndex > editTaskMenuIndex);
+    QVERIFY(editApplicationBarSource.contains(QStringLiteral("\"iconName\": \"toolWindowCheckDetails\"")));
+    QVERIFY(editApplicationBarSource.contains(QStringLiteral("applicationEditBar.requestViewHook(\"edit-open-task\");")));
+}
+
 void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog()
 {
     const QString onboardingSource = readUtf8SourceFile(
@@ -480,36 +539,10 @@ void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDi
     QVERIFY(onboardingSource.contains(QStringLiteral("root.createHubDialogInstance = createHubDialogComponent.createObject(root);")));
 }
 
-void WhatSonCppRegressionTests::qmlAgendaPage_usesLvrsCheckBoxForFigmaTaskItems()
-{
-    const QString agendaSource = readUtf8SourceFile(
-        QStringLiteral("src/app/qml/view/calendar/AgendaPage.qml"));
-
-    QVERIFY(!agendaSource.isEmpty());
-    QVERIFY(agendaSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
-    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaFrame")));
-    QVERIFY(agendaSource.contains(QStringLiteral("color: LV.Theme.panelBackground06")));
-    QVERIFY(agendaSource.contains(QStringLiteral("border.color: LV.Theme.panelBackground10")));
-    QVERIFY(agendaSource.contains(QStringLiteral("radius: LV.Theme.radiusLg")));
-    QVERIFY(agendaSource.contains(QStringLiteral("anchors.margins: LV.Theme.gap8")));
-    QVERIFY(agendaSource.contains(QStringLiteral("spacing: LV.Theme.gap8")));
-    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaTaskColumn")));
-    QVERIFY(agendaSource.contains(QStringLiteral("spacing: LV.Theme.gap4")));
-    QVERIFY(agendaSource.contains(QStringLiteral("LV.CheckBox {")));
-    QVERIFY(agendaSource.contains(QStringLiteral("id: agendaTaskItem")));
-    QVERIFY(agendaSource.contains(QStringLiteral("text: agendaPage.stringValue(agendaTaskItem.modelData && agendaTaskItem.modelData.title, \"Untitled\")")));
-    QVERIFY(agendaSource.contains(QStringLiteral("checked: agendaTaskItem.completed")));
-    QVERIFY(agendaSource.contains(QStringLiteral("onClicked: agendaPage.toggleAgendaItem(agendaTaskItem.modelData)")));
-    QVERIFY(!agendaSource.contains(QStringLiteral("scaleMetric(")));
-    QVERIFY(!agendaSource.contains(QStringLiteral("id: agendaItemToggle")));
-    QVERIFY(!agendaSource.contains(QStringLiteral("\\u2713")));
-}
-
 void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents()
 {
     const QList<QString> tokenizedFiles = {
         QStringLiteral("src/app/qml/Main.qml"),
-        QStringLiteral("src/app/qml/view/calendar/AgendaPage.qml"),
         QStringLiteral("src/app/qml/view/calendar/CalendarEventCell.qml"),
         QStringLiteral("src/app/qml/view/calendar/CalendarTodayControl.qml"),
         QStringLiteral("src/app/qml/view/calendar/DayCalendarPage.qml"),

@@ -1,6 +1,5 @@
 #include "app/models/editor/SetTag.h"
 
-#include "app/models/editor/component/Agenda.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include <algorithm>
@@ -50,16 +49,6 @@ namespace
                 QStringLiteral("callout"),
                 QStringLiteral("<callout>"),
                 QStringLiteral("</callout>")
-            };
-        }
-        const WhatSon::EditorComponent::AgendaStaticTag agendaTag =
-            WhatSon::EditorComponent::Agenda::staticTagFor(tagName);
-        if (agendaTag.isValid())
-        {
-            return {
-                agendaTag.canonicalName,
-                agendaTag.openingToken,
-                agendaTag.closingToken
             };
         }
         if (normalized == QStringLiteral("event"))
@@ -201,7 +190,6 @@ namespace
         QStringList tagNames{
             QStringLiteral("callout"),
         };
-        tagNames.append(WhatSon::EditorComponent::Agenda::staticTagNames());
         tagNames.append({
             QStringLiteral("event"),
             QStringLiteral("header"),

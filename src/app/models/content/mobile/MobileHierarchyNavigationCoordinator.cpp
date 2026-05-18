@@ -161,10 +161,9 @@ QVariantMap MobileHierarchyNavigationCoordinator::calendarSurfacePlan(const bool
     return plan;
 }
 
-QVariantMap MobileHierarchyNavigationCoordinator::overlayDismissPlan(const bool agendaVisible, const bool dayVisible, const bool weekVisible, const bool monthVisible, const bool yearVisible) const
+QVariantMap MobileHierarchyNavigationCoordinator::overlayDismissPlan(const bool dayVisible, const bool weekVisible, const bool monthVisible, const bool yearVisible) const
 {
     QVariantMap plan;
-    plan.insert(QStringLiteral("dismissAgenda"), agendaVisible);
     plan.insert(QStringLiteral("dismissDay"), dayVisible);
     plan.insert(QStringLiteral("dismissWeek"), weekVisible);
     plan.insert(QStringLiteral("dismissMonth"), monthVisible);

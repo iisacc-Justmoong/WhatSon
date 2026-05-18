@@ -219,9 +219,7 @@ bool isTransparentContainerTagName(const QString& elementName)
 {
     const QString normalizedName = normalizedTagName(elementName);
     return normalizedName == QStringLiteral("event")
-        || normalizedName == QStringLiteral("callout")
-        || normalizedName == QStringLiteral("agenda")
-        || normalizedName == QStringLiteral("task");
+        || normalizedName == QStringLiteral("callout");
 }
 
 bool isSourceSemanticPassThroughTagName(const QString& elementName)

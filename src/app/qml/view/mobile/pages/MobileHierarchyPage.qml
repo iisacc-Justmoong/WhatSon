@@ -70,8 +70,6 @@ Item {
     property var windowInteractions: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarController: null
-    property bool agendaOverlayVisible: false
-    property var agendaController: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
     property var noteDeletionController: null
@@ -90,8 +88,6 @@ Item {
             return mobileHierarchyPage.windowInteractions.resolveLibraryNoteCreationController();
         return null;
     }
-    signal agendaRequested
-    signal agendaOverlayDismissRequested
     signal dayCalendarRequested
     signal dayCalendarOverlayDismissRequested
     signal monthCalendarRequested
@@ -364,9 +360,7 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function dismissCalendarOverlaysForEditorActivation() {
-        const plan = navigationCoordinator.overlayDismissPlan(mobileHierarchyPage.agendaOverlayVisible, mobileHierarchyPage.dayCalendarOverlayVisible, mobileHierarchyPage.weekCalendarOverlayVisible, mobileHierarchyPage.monthCalendarOverlayVisible, mobileHierarchyPage.yearCalendarOverlayVisible);
-        if (plan.dismissAgenda)
-            mobileHierarchyPage.agendaOverlayDismissRequested();
+        const plan = navigationCoordinator.overlayDismissPlan(mobileHierarchyPage.dayCalendarOverlayVisible, mobileHierarchyPage.weekCalendarOverlayVisible, mobileHierarchyPage.monthCalendarOverlayVisible, mobileHierarchyPage.yearCalendarOverlayVisible);
         if (plan.dismissDay)
             mobileHierarchyPage.dayCalendarOverlayDismissRequested();
         if (plan.dismissWeek)
@@ -404,12 +398,6 @@ Item {
         if (!plan.routeToEditor)
             return false;
         mobileHierarchyPage.routeToCanonicalEditor();
-        return true;
-    }
-    function requestOpenAgenda() {
-        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
-            return false;
-        mobileHierarchyPage.agendaRequested();
         return true;
     }
     function requestOpenDayCalendar() {
@@ -650,7 +638,6 @@ Item {
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
         onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
-        onAgendaRequested: mobileHierarchyPage.requestOpenAgenda()
         onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()
         onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()
         onStatusSearchSubmitted: function (text) {
@@ -782,8 +769,6 @@ Item {
             clipboardEditorPaste: mobileHierarchyPage.clipboardEditorPaste
             editorInputCommandFilter: mobileHierarchyPage.editorInputCommandFilter
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
-            agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
-            agendaController: mobileHierarchyPage.agendaController
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible
             dayCalendarController: mobileHierarchyPage.dayCalendarController
             monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible
@@ -794,7 +779,6 @@ Item {
             yearCalendarController: mobileHierarchyPage.yearCalendarController
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
-            onAgendaOverlayCloseRequested: mobileHierarchyPage.agendaOverlayDismissRequested()
             onDayCalendarOverlayCloseRequested: mobileHierarchyPage.dayCalendarOverlayDismissRequested()
             onMonthCalendarOverlayOpenRequested: mobileHierarchyPage.monthCalendarOverlayOpenRequested()
             onMonthCalendarOverlayCloseRequested: mobileHierarchyPage.monthCalendarOverlayDismissRequested()

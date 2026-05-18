@@ -39,25 +39,12 @@ Declares the active note editor document session object.
   current edited content height. QML calls this through a short debounce after text changes so typing inside a wrapped
   callout does not wait for idle persistence but also does not replace the native document on every keystroke.
 - Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
-  `underline`, `strikethrough`, `highlight`, `break`, or `agenda` through `SetTag`, then returns both canonical RAW
-  source and an editor HTML projection for the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as
-  the format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes
-  `selectedText` so the session can repair a drifted RichText selection offset before mutating RAW source. Empty
-  callout insertion returns the LVRS rich-text cursor at the rendered callout content start, after generated frame
-  chrome images, so the caret lands inside the callout rather than on the neighboring source line.
-- Provides `agendaTaskOverlayItemsForEditorDocument(...)` and `toggleAgendaTaskDoneInSource(...)` for the interactive
-  agenda checkbox overlay. The HTML renderer carries only non-source checkbox slots for text layout; QML uses these
-  APIs to position real `LV.CheckBox` controls over agenda task rows and to mutate canonical `<task done=...>`
-  attributes. Overlay items include the checkbox slot size, radius, and text gap so QML can keep the real
-  `LV.CheckBox` shape aligned with the Figma frame. Overlay position extraction is skipped for editor documents that do
-  not contain agenda renderer/source markers.
-- Provides `normalizedEditableCursorPositionForEditorDocument(...)` so rendered agenda frames expose only task content
-  spans as editable text positions. Header/date/chrome cursor placements are clamped back to the closest task body
-  boundary.
-- Provides `handleAgendaBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered first task
-  content start removes the whole agenda block. Enter/Return in the rendered last task delegates to `component/Agenda`
-  so a non-empty last task creates a following empty task, while an empty last task is removed and the cursor moves to
-  the line below the agenda.
+  `callout`, `header`, `subheader`, or `resource`, then returns both canonical source and an editor HTML projection for
+  the live LVRS surface. The session keeps the loaded `.wsnbody` RAW source as the format mutation basis and maps
+  rendered break tags such as `<next />`/`<br>` as one logical newline. QML also passes `selectedText` so the session can
+  repair a drifted RichText selection offset before mutating RAW source. Empty callout insertion returns the LVRS
+  rich-text cursor at the rendered callout content start, after generated frame chrome images, so the caret lands inside
+  the callout rather than on the neighboring source line.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. That content-start test uses the loaded RAW source and skips generated frame chrome plus
@@ -74,9 +61,6 @@ Declares the active note editor document session object.
   the resulting metadata refresh.
 - Format tag allow-list and mutation policy stay in `SetTag`; QML may only pass the requested tag name, current
   cursor/selection metadata, and selected visible text into this session boundary.
-- Agenda and callout boundary key behavior stays in this session boundary. QML and event filters may forward raw
-  key/cursor metadata, but they must not parse `<agenda>`, `<task>`, or `<callout>` source or mutate wrapper text
-  themselves.
 - Inline format mutation must not discard existing RAW wrapper tags just because the editor HTML projection no longer
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
@@ -109,19 +93,11 @@ Declares the active note editor document session object.
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트
   변경 후 짧은 debounce를 두고 이 함수를 호출해 native document를 매 keystroke마다 교체하지 않는다.
-- `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break`, `agenda` 같은 포맷 태그는
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
   visible 범위를 다시 찾는다. 빈 callout 삽입은 생성된 frame chrome image를 건너뛴 LVRS rich-text content 시작
   좌표를 반환해 커서가 주변 줄이 아니라 새 callout 내부에 놓이게 한다.
-- agenda task checkbox는 rich-text HTML 이미지로 처리하지 않는다. editor HTML은 투명 slot만 보유하고 실제
-  checkbox 시각과 클릭은 QML `LV.CheckBox`가 맡는다.
-  `agendaTaskOverlayItemsForEditorDocument(...)`가 task별 editor 좌표, done 상태, checkbox slot size/radius/gap을 제공하고,
-  `toggleAgendaTaskDoneInSource(...)`가 `<task done=...>` 속성을 갱신한 editor HTML을 돌려준다.
-- `handleAgendaBoundaryKeyInSource(...)`는 agenda 내부 key boundary를 처리한다. 첫 task content 시작점의
-  Backspace는 agenda block 전체를 제거한다. 마지막 task의 Enter/Return은 `component/Agenda`에 위임되어 내용이
-  있으면 다음 빈 task를 만들고, 빈 task이면 그 task를 지운 뒤 cursor를 agenda 아래 줄로 옮긴다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다. 이
   content 시작점 판정은 로드된 RAW source를 기준으로 하며 LVRS rich-text 좌표의 생성 frame chrome과 renderer 전용

@@ -23,37 +23,16 @@ void WhatSonCppRegressionTests::editorSetTag_insertsStaticCalloutPairIntoSourceS
     QCOMPARE(insertedSpy.count(), 1);
 }
 
-void WhatSonCppRegressionTests::editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames()
+void WhatSonCppRegressionTests::editorSetTag_rejectsUnsupportedStaticNames()
 {
     SetTag input;
     QVERIFY(input.availableTagNames().contains(QStringLiteral("callout")));
-    QVERIFY(input.availableTagNames().contains(QStringLiteral("agenda")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("header")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("subheader")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("resource")));
 
-    QVERIFY(input.configureTagName(QStringLiteral("agenda")));
-    QCOMPARE(input.tagName(), QStringLiteral("agenda"));
-
-    const QVariantMap agendaResult = input.insertIntoSource(
-        QStringLiteral("Plan: "),
-        6,
-        0);
-    QVERIFY(agendaResult.value(QStringLiteral("valid")).toBool());
-    const QString agendaSourceText = agendaResult.value(QStringLiteral("bodySourceText")).toString();
-    QVERIFY(QRegularExpression(
-        QStringLiteral(
-            R"(^Plan: <agenda date="\d{4}-\d{2}-\d{2}" time="\d{2}-\d{2}"><task done=false></task></agenda>$)"))
-        .match(agendaSourceText)
-        .hasMatch());
-    QVERIFY(!agendaSourceText.contains(QStringLiteral("yyyy-mm-dd")));
-    QVERIFY(!agendaSourceText.contains(QStringLiteral("hh-mm")));
-    QCOMPARE(
-        agendaResult.value(QStringLiteral("cursorPosition")).toInt(),
-        agendaSourceText.indexOf(QStringLiteral("</task>")));
-
     QVERIFY(!input.configureTagName(QStringLiteral("script")));
-    QCOMPARE(input.tagName(), QStringLiteral("agenda"));
+    QCOMPARE(input.tagName(), QStringLiteral("callout"));
     QVERIFY(input.lastError().contains(QStringLiteral("Unsupported static body tag")));
 
     const QVariantMap unsupportedResult = input.insertNamedTagIntoSource(

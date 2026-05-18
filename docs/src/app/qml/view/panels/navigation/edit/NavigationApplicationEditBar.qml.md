@@ -28,7 +28,7 @@ The Figma node mapping is:
   `requestViewHook(reason)`, so year-calendar clicks in icon mode and compact-menu mode share the
   same reason pipeline.
 - Compact menu mirrors full-mode default tools:
-  - Agenda / Daily / Weekly / Monthly / Yearly calendar entries
+  - Task and calendar entries (`Task`, `Daily Calendar`, `Weekly Calendar`, `Monthly Calendar`, `Yearly Calendar`)
   - New File
   - Preferences
 

@@ -42,7 +42,6 @@
   the LVRS viewport `Flickable` content coordinates and adjusting `contentY` only when the cursor leaves the visible
   top/bottom range. Command/Home/End jumps therefore move the viewport without adding key handlers to the wrapper.
 - Cursor placement is also normalized through `NoteEditorDocumentSession.normalizedEditableCursorPositionForEditorDocument(...)`.
-  For rendered agenda frames, the wrapper lets LVRS own the native click/selection stream but immediately moves any
   caret placed on header/date text, checkbox chrome, or row gaps back to the nearest editable task body position.
 - Cursor and text changes also report user activity to `NoteEditorDocumentSession.recordEditorUserActivity()`, letting
   the C++ sync layer delay active-note idle pulls until the editor surface has been quiet for the configured interval.
@@ -52,9 +51,8 @@
   `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
   available as the C++ RAW-source repair anchor.
 - The wrapper attaches `EditorInputCommandFilter` to the public LVRS `editorItem` as the editor-wide native key filter.
-  The filter delegates image paste shortcuts to `ClipboardEditorPaste`, delegates callout Backspace/Enter boundaries to
-  `NoteEditorDocumentSession`, and consumes the native event only when the delegated C++ command reports that it was
-  handled.
+  boundaries to `NoteEditorDocumentSession`, and consumes the native event only when the delegated C++ command reports
+  that it was handled.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's
@@ -81,7 +79,9 @@
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
   HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
-  then lets LVRS perform its automatic write-through sync.
+  then lets LVRS perform its automatic write-through sync. The deferred restore re-bounds the original requested cursor
+  value, not the immediately clamped value, because `TextEdit.length` can still be stale right after a rich-text document
+  replacement.
 - Replacing the current document text for a C++ resource/callout frame reproject uses a separate public
   `LV.TextEditor.text`/cursor path that preserves the current selection and only restores focus if the editor already
   had it. It is guarded by `editorFrameViewportRefreshApplying` and delayed by `editorFrameViewportRefreshDelayMs`, and
@@ -147,7 +147,8 @@
   bottomPadding으로만 표현한다.
 - 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영한다.
   RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
-  cursor API로 복원한다. 이미지 resource paste와 콜아웃 경계 키는 `EditorInputCommandFilter` C++ event filter가
+  cursor API로 복원한다. 다음 tick 복원은 즉시 clamp된 값이 아니라 C++이 요청한 원래 cursor 값을 다시 bound한다.
+  RichText 문서 교체 직후 `TextEdit.length`가 아직 갱신되지 않아 새 task 위치가 0으로 잘리는 일을 막기 위함이다.
   공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. 지원
   리소스가 없는 일반 paste는 공개 `paste()` API와 native `TextEdit` 경로에 남긴다.
 - resource/callout frame chrome refresh는 별도 교체 경로를 사용해 현재 selection을 보존하고, 이미 editor focus가

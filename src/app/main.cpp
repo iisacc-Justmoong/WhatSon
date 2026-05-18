@@ -19,7 +19,6 @@
 #include "app/models/detailPanel/NoteDetailPanelController.hpp"
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/calendar/DayCalendarController.hpp"
-#include "app/models/calendar/AgendaController.hpp"
 #include "app/models/calendar/MonthCalendarController.hpp"
 #include "app/models/calendar/WeekCalendarController.hpp"
 #include "app/models/calendar/YearCalendarController.hpp"
@@ -249,7 +248,6 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelControllerRegistry panelControllerRegistry;
     DayCalendarController dayCalendarController;
-    AgendaController agendaController;
     MonthCalendarController monthCalendarController;
     WeekCalendarController weekCalendarController;
     YearCalendarController yearCalendarController;
@@ -270,7 +268,6 @@ int main(int argc, char* argv[])
 #endif
     libraryNoteMutationController.setSourceController(&libraryHierarchyController);
     dayCalendarController.setCalendarBoardStore(&calendarBoardStore);
-    agendaController.setCalendarBoardStore(&calendarBoardStore);
     monthCalendarController.setCalendarBoardStore(&calendarBoardStore);
     weekCalendarController.setCalendarBoardStore(&calendarBoardStore);
     yearCalendarController.setCalendarBoardStore(&calendarBoardStore);
@@ -567,7 +564,6 @@ int main(int argc, char* argv[])
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;
     workspaceContextObjects.dayCalendarController = &dayCalendarController;
-    workspaceContextObjects.agendaController = &agendaController;
     workspaceContextObjects.monthCalendarController = &monthCalendarController;
     workspaceContextObjects.weekCalendarController = &weekCalendarController;
     workspaceContextObjects.yearCalendarController = &yearCalendarController;

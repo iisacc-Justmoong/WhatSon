@@ -108,10 +108,10 @@ Item {
                 "type": "divider"
             },
             {
-                "label": "Agenda",
+                "label": "Task",
                 "iconName": "validator",
                 "onTriggered": function () {
-                    applicationViewBar.requestViewHook("view-open-agenda");
+                    applicationViewBar.requestViewHook("view-open-task");
                 },
                 "keyVisible": false,
                 "showChevron": false

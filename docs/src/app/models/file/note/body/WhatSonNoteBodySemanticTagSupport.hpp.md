@@ -22,7 +22,6 @@ Declares the shared `.wsnbody` semantic-tag registry used by note-body save/load
   - `resource`
   - `break` / `hr`
 - Classifies transparent paired wrappers shared by persistence:
-  - `agenda` / `task`
   - `callout`
 - Exposes semantic HTML open/close helpers for non-editor read-side consumers.
 

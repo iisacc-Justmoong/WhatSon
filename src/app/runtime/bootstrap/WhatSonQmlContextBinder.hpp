@@ -33,7 +33,6 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* calendarBoardStore = nullptr;
         QObject* systemCalendarStore = nullptr;
         QObject* dayCalendarController = nullptr;
-        QObject* agendaController = nullptr;
         QObject* monthCalendarController = nullptr;
         QObject* weekCalendarController = nullptr;
         QObject* yearCalendarController = nullptr;

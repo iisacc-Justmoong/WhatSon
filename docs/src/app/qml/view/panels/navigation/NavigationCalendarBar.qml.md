@@ -8,14 +8,14 @@
 - Source path: `src/app/qml/view/panels/navigation/NavigationCalendarBar.qml`
 - Source kind: QML view/component
 - File name: `NavigationCalendarBar.qml`
-- Approximate line count: 47
+- Approximate line count: 54
 
 ## QML Surface Snapshot
 - Root type: `LV.HStack`
 
 ### Object IDs
 - `calendarBar`
-- `agendaButton`
+- `taskButton`
 - `dailyCalButton`
 - `weeklyCalButton`
 - `monthlyCalButton`
@@ -28,7 +28,8 @@
 - `viewHookRequested(string reason)`
 
 ## Interaction Contract
-- The left-most Agenda icon (`agendaButton`) emits `open-agenda` through `requestViewHook(...)`.
+- The task icon (`taskButton`) is the restored leftmost calendar-bar affordance. It keeps the old checklist glyph but
+  emits `open-task`, not the removed legacy hook.
 - The year icon (`yearlyCalButton`) emits `open-yearly-calendar` through `requestViewHook(...)`.
 - The signal now carries the hook reason string so parent wrappers can route the action into content overlays.
 

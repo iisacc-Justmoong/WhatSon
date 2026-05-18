@@ -54,7 +54,6 @@ LV.ApplicationWindow {
     readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
     readonly property var rootClipboardEditorPaste: typeof clipboardEditorPaste !== "undefined" ? clipboardEditorPaste : null
     readonly property var rootEditorInputCommandFilter: typeof editorInputCommandFilter !== "undefined" ? editorInputCommandFilter : null
-    readonly property var rootAgendaController: typeof agendaController !== "undefined" ? agendaController : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
     readonly property var rootWeekCalendarController: typeof weekCalendarController !== "undefined" ? weekCalendarController : null
@@ -94,7 +93,6 @@ LV.ApplicationWindow {
             path: applicationWindow.workspaceRoutePath,
             component: workspacePageComponent
         })
-    property bool agendaOverlayVisible: false
     property bool dayCalendarOverlayVisible: false
     property bool monthCalendarOverlayVisible: false
     property bool weekCalendarOverlayVisible: false
@@ -104,11 +102,6 @@ LV.ApplicationWindow {
 
     function currentIsoDate() {
         return Qt.formatDateTime(new Date(), "yyyy-MM-dd");
-    }
-    function resetAgendaOverlayCursorToToday() {
-        if (applicationWindow.rootAgendaController && applicationWindow.rootAgendaController.setDisplayedDateIso !== undefined) {
-            applicationWindow.rootAgendaController.setDisplayedDateIso(applicationWindow.currentIsoDate());
-        }
     }
     function resetDayCalendarCursorToToday() {
         if (applicationWindow.rootDayCalendarController && applicationWindow.rootDayCalendarController.setDisplayedDateIso !== undefined) {
@@ -130,19 +123,9 @@ LV.ApplicationWindow {
             applicationWindow.rootYearCalendarController.focusToday();
         }
     }
-    function openAgendaOverlay(resetToToday) {
-        if (resetToToday !== false)
-            applicationWindow.resetAgendaOverlayCursorToToday();
-        applicationWindow.agendaOverlayVisible = true;
-        applicationWindow.dayCalendarOverlayVisible = false;
-        applicationWindow.weekCalendarOverlayVisible = false;
-        applicationWindow.monthCalendarOverlayVisible = false;
-        applicationWindow.yearCalendarOverlayVisible = false;
-    }
     function openDayCalendarOverlay(resetToToday) {
         if (resetToToday !== false)
             applicationWindow.resetDayCalendarCursorToToday();
-        applicationWindow.agendaOverlayVisible = false;
         applicationWindow.dayCalendarOverlayVisible = true;
         applicationWindow.weekCalendarOverlayVisible = false;
         applicationWindow.monthCalendarOverlayVisible = false;
@@ -151,7 +134,6 @@ LV.ApplicationWindow {
     function openMonthCalendarOverlay(resetToToday) {
         if (resetToToday !== false)
             applicationWindow.resetMonthCalendarCursorToToday();
-        applicationWindow.agendaOverlayVisible = false;
         applicationWindow.dayCalendarOverlayVisible = false;
         applicationWindow.weekCalendarOverlayVisible = false;
         applicationWindow.monthCalendarOverlayVisible = true;
@@ -160,7 +142,6 @@ LV.ApplicationWindow {
     function openWeekCalendarOverlay(resetToToday) {
         if (resetToToday !== false)
             applicationWindow.resetWeekCalendarCursorToToday();
-        applicationWindow.agendaOverlayVisible = false;
         applicationWindow.dayCalendarOverlayVisible = false;
         applicationWindow.weekCalendarOverlayVisible = true;
         applicationWindow.monthCalendarOverlayVisible = false;
@@ -169,7 +150,6 @@ LV.ApplicationWindow {
     function openYearCalendarOverlay(resetToToday) {
         if (resetToToday !== false)
             applicationWindow.resetYearCalendarCursorToToday();
-        applicationWindow.agendaOverlayVisible = false;
         applicationWindow.dayCalendarOverlayVisible = false;
         applicationWindow.weekCalendarOverlayVisible = false;
         applicationWindow.yearCalendarOverlayVisible = true;
@@ -654,7 +634,6 @@ LV.ApplicationWindow {
 
                     onToggleDetailPanelRequested: applicationWindow.toggleDetailPanelVisibility()
                     onToggleSidebarRequested: applicationWindow.toggleSidebarVisibility()
-                    onAgendaRequested: applicationWindow.openAgendaOverlay(true)
                     onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)
                     onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)
                     onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)
@@ -690,8 +669,6 @@ LV.ApplicationWindow {
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
-                    agendaOverlayVisible: applicationWindow.agendaOverlayVisible
-                    agendaController: applicationWindow.rootAgendaController
                     dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
                     dayCalendarController: applicationWindow.rootDayCalendarController
                     monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
@@ -705,7 +682,6 @@ LV.ApplicationWindow {
                         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
                         if (normalizedNoteId.length === 0)
                             return;
-                        applicationWindow.agendaOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = false;
                         applicationWindow.weekCalendarOverlayVisible = false;
                         applicationWindow.monthCalendarOverlayVisible = false;
@@ -723,7 +699,6 @@ LV.ApplicationWindow {
                         if (value !== applicationWindow.preferredSidebarWidth)
                             applicationWindow.preferredSidebarWidth = value;
                     }
-                    onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
                     onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
                     onMonthCalendarOverlayOpenRequested: applicationWindow.openMonthCalendarOverlay(false)
                     onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
@@ -751,8 +726,6 @@ LV.ApplicationWindow {
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
             windowInteractions: windowInteractions
-            agendaOverlayVisible: applicationWindow.agendaOverlayVisible
-            agendaController: applicationWindow.rootAgendaController
             dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
             dayCalendarController: applicationWindow.rootDayCalendarController
             monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
@@ -762,12 +735,10 @@ LV.ApplicationWindow {
             yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
             yearCalendarController: applicationWindow.rootYearCalendarController
 
-            onAgendaRequested: applicationWindow.openAgendaOverlay(true)
             onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)
             onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)
             onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)
             onYearCalendarRequested: applicationWindow.openYearCalendarOverlay(true)
-            onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
             onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
             onMonthCalendarOverlayOpenRequested: applicationWindow.openMonthCalendarOverlay(false)
             onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false

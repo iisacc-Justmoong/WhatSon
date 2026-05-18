@@ -68,11 +68,6 @@ bool EditorInputCommandFilter::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_editorItem && event != nullptr && event->type() == QEvent::KeyPress)
     {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
-        if (handleEditorAgendaBoundaryKeyEvent(*keyEvent))
-        {
-            event->accept();
-            return true;
-        }
         if (handleEditorCalloutBoundaryKeyEvent(*keyEvent))
         {
             event->accept();
@@ -156,47 +151,6 @@ bool EditorInputCommandFilter::editorCalloutBoundaryKeyMatches(const QKeyEvent& 
         && !modifiers.testFlag(Qt::ControlModifier)
         && !modifiers.testFlag(Qt::MetaModifier)
         && !modifiers.testFlag(Qt::AltModifier);
-}
-
-bool EditorInputCommandFilter::handleEditorAgendaBoundaryKeyEvent(QKeyEvent& event)
-{
-    if (!editorCalloutBoundaryKeyMatches(event)
-        || m_editorOwner.isNull()
-        || m_noteEditorSessionObject.isNull())
-    {
-        return false;
-    }
-
-    auto* noteEditorSession = qobject_cast<NoteEditorDocumentSession*>(m_noteEditorSessionObject.data());
-    if (noteEditorSession == nullptr)
-    {
-        return false;
-    }
-
-    const QString editorDocumentText =
-        m_editorOwner->property("editorDocumentText").toString();
-    const int selectionStart =
-        m_editorOwner->property("editorSelectionStart").toInt();
-    const int selectionLength =
-        m_editorOwner->property("editorSelectionLength").toInt();
-
-    const QVariantMap result = noteEditorSession->handleAgendaBoundaryKeyInSource(
-        editorDocumentText,
-        selectionStart,
-        selectionLength,
-        event.key());
-    if (!result.value(QStringLiteral("handled")).toBool())
-    {
-        return false;
-    }
-    if (!result.value(QStringLiteral("valid")).toBool())
-    {
-        return true;
-    }
-
-    applyEditorCommandResultToOwner(result);
-    event.accept();
-    return true;
 }
 
 bool EditorInputCommandFilter::handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event)

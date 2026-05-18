@@ -12,7 +12,6 @@ right detail panel.
 - `rightPanelWidthDragRequested(int value)`
 - `sidebarWidthDragRequested(int value)`
 - `viewHookRequested`
-- `agendaOverlayDismissRequested`
 - `dayCalendarOverlayDismissRequested`
 - `monthCalendarOverlayOpenRequested`
 - `monthCalendarOverlayDismissRequested`

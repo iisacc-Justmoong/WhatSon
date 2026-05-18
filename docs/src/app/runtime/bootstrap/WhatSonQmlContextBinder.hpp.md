@@ -5,7 +5,6 @@ Declares workspace QML context-binding contracts used by the composition root.
 
 ## Public Contract
 - `WorkspaceContextObjects`: explicit object graph payload for all root context properties consumed
-  by QML, including Agenda/day/week/month/year calendar route controllers, the global `noteActiveState` tracker, and
   the `noteEditorSession` parsed-source bridge. It includes the restored `editorViewModeController` for navigation
   chrome and `editorInputCommandFilter` for editor item key interception.
 - `bindWorkspaceContextObjects(...)`: builds an LVRS `QmlContextBindPlan`, applies it to the

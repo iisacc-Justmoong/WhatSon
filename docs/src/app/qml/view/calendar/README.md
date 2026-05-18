@@ -19,7 +19,6 @@
 - `MonthCalendarDayCell.qml`
 - `MonthCalendarGridSurface.qml`
 - `MonthCalendarPage.qml`
-- `AgendaPage.qml`
 - `WeekCalendarPage.qml`
 - `YearCalendarPage.qml`
 
@@ -34,12 +33,8 @@
 ## Notes
 - Calendar QML remains in the module, but the TextEditor `ContentViewLayout.qml` no longer mounts these pages.
 - Day/week/month/year pages now consume the shared calendar backend through dedicated calendar controllers.
-- `AgendaPage.qml` consumes `AgendaController` and renders date header, location summary, all-day events,
-  timed events, and agenda-item completion rows inside the content-surface calendar route.
-- The Agenda section now follows Figma node `279:7854`: `panelBackground06` frame, `panelBackground10` stroke,
   `radiusLg`, `gap8` padding/header gap, and `gap4` task spacing. Its task rows are `LV.CheckBox` items rather than
   page-local Rectangle toggles.
-- `AgendaPage.qml` no longer includes any weather card; the header is limited to date navigation and location context.
 - Shared Figma-aligned calendar navigation control (`Prev/Today/Next`) is centralized in `CalendarTodayControl.qml`;
   it now follows node `238:7843` as a three-icon button group.
 - Day/week pages keep only `CalendarTodayControl` in the top band and distribute 24 hourly slots across the remaining content height.
@@ -68,7 +63,6 @@
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - Agenda/day/month note chips must emit a note-open request on both mouse click and touch tap.
     - `ContentViewLayout.qml` must not mount calendar pages.
     - Week view must only allow direct note open when one visible chip maps to exactly one note entry.
     - Initial month-view bootstrap must not render a note for `2026-04-01` or another current-month date inside a

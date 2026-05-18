@@ -190,39 +190,10 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectionStart")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectedText")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var editorAgendaTaskOverlayItems: []")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("readonly property var editorAgendaTaskOverlayItems")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property bool editorAgendaTaskOverlayRefreshPending: false")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function scheduleEditorAgendaTaskOverlayRefresh()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function refreshEditorAgendaTaskOverlayItems()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Timer {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorAgendaTaskOverlayRefreshTimer")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function toggleEditorAgendaTask(taskIndex, done)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("agendaTaskOverlayItemsForEditorDocument(editorDocumentText)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("toggleAgendaTaskDoneInSource(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsTextEditorStack")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorAgendaTaskOverlayLayer")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.fill: contentsTextEditor")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("z: contentsTextEditor.z + 1")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"editorAgendaTaskCheckBox\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.CheckBox {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeFocusOnTab: false")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("checkable: false")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("focusPolicy: Qt.NoFocus")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property real checkboxSize: Math.max(1, editorAgendaTaskCheckBox.checkboxRect.width)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("boxSize: Math.max(1, Math.round(editorAgendaTaskCheckBox.checkboxSize))")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("boxRadius: Math.max(0, Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxRadius) || 3.5)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("width: editorAgendaTaskCheckBox.checkboxRect.width")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("height: editorAgendaTaskCheckBox.checkboxRect.height")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onClicked: contentViewLayout.toggleEditorAgendaTask(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.forceEditorFocus();")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextChanged: {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property bool editorEditableCursorNormalizationApplying: false")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function normalizeEditorEditableCursorPosition()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("normalizedEditableCursorPositionForEditorDocument(")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: {")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.forceEditorFocus();")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"bold\")")));
@@ -243,15 +214,6 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"callout\")")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+C\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+C\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"agenda\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
-        "sequence: \"Ctrl+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"agenda\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral(
-        "sequence: \"Meta+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"agenda\")")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
-        "sequence: \"Ctrl+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"task\")")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral(
-        "sequence: \"Meta+Shift+T\"\n\n            onActivated: contentViewLayout.applyEditorFormatTag(\"task\")")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));

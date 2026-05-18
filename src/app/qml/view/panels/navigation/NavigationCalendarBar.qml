@@ -18,11 +18,11 @@ LV.HStack {
     spacing: LV.Theme.gap2
 
     LV.IconButton {
-        id: agendaButton
+        id: taskButton
 
         iconName: "toolWindowCheckDetails"
 
-        onClicked: calendarBar.requestViewHook("open-agenda")
+        onClicked: calendarBar.requestViewHook("open-task")
     }
     LV.IconButton {
         id: dailyCalButton

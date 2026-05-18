@@ -74,8 +74,6 @@
   resolves legacy body tags through one registry.
 - `.wsnbody` body-format blocks are owned by the note package layer: `resource` and `break` persist as direct `<body>`
   children when they appear as standalone source lines.
-  `<agenda date="yyyy-mm-dd" time="hh-mm"><task done=false>...</task></agenda>` and `<callout>...</callout>` persist
-  as ordinary paragraph RAW source, even when editor projection renders them as Figma-backed agenda/callout frames.
 - RAW note hyperlinks are now centralized in `WhatSonNoteBodyWebLinkSupport.*`:
   - typed/pasted committed URLs can be promoted into canonical `<weblink href="...">...</weblink>` RAW spans
   - `.wsnbody` body serialization reuses the same helper so saved source stays canonical

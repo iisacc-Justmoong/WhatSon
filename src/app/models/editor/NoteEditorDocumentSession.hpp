@@ -76,21 +76,6 @@ public:
         int cursorPosition,
         int selectionLength,
         const QString& selectedText = QString());
-    Q_INVOKABLE QVariantList agendaTaskOverlayItemsForEditorDocument(
-        const QString& editorDocumentText);
-    Q_INVOKABLE QVariantMap toggleAgendaTaskDoneInSource(
-        const QString& editorDocumentText,
-        int taskIndex,
-        bool done,
-        int cursorPosition);
-    Q_INVOKABLE QVariantMap normalizedEditableCursorPositionForEditorDocument(
-        const QString& editorDocumentText,
-        int cursorPosition);
-    Q_INVOKABLE QVariantMap handleAgendaBoundaryKeyInSource(
-        const QString& editorDocumentText,
-        int cursorPosition,
-        int selectionLength,
-        int key);
     Q_INVOKABLE QVariantMap handleCalloutBoundaryKeyInSource(
         const QString& editorDocumentText,
         int cursorPosition,

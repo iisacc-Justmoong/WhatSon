@@ -55,7 +55,6 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
-#include "app/models/editor/component/Agenda.h"
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
@@ -1197,15 +1196,11 @@ private slots:
     void editorSetProperty_setsDynamicAttributesWithInferredValueTypes();
     void editorSetProperty_updatesExistingAttributeAndRejectsInvalidNames();
     void editorSetProperty_serializesResourceAttributeIntoWsnbodyDocument();
-    void agendaComponent_providesStaticTagTemplates();
-    void agendaComponent_rendersFigmaAgendaFrame();
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
-    void editorSetTag_usesStaticAgendaTemplateAndRejectsUnsupportedNames();
+    void editorSetTag_rejectsUnsupportedStaticNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
     void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
-    void noteEditorDocumentSession_togglesAgendaTaskDoneFromEditorOverlay();
-    void noteEditorDocumentSession_handlesAgendaBoundaryKeys();
     void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
     void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
     void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
@@ -1260,7 +1255,6 @@ private slots:
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
-    void noteEditorDocumentSession_limitsAgendaEditableCursorToTaskContent();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
@@ -1279,10 +1273,9 @@ private slots:
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
-    void noteBodyPersistence_projectsAgendaAsFigmaFrameAndRecoversSource();
     void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();
     void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
-    void noteBodyPersistence_persistsCalloutAndAgendaAsParagraphTags();
+    void noteBodyPersistence_persistsCalloutAsParagraphTag();
     void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
@@ -1324,8 +1317,8 @@ private slots:
     void projectsHierarchyController_keepsNestedProjectPolicy();
     void qmlContentsView_keepsOnlyAllowedContentsViews();
     void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
+    void qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks();
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
-    void qmlAgendaPage_usesLvrsCheckBoxForFigmaTaskItems();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();

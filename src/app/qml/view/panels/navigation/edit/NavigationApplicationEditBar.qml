@@ -29,10 +29,10 @@ Item {
     function buildApplicationEditMenuItems() {
         const items = [
             {
-                "label": "Agenda",
+                "label": "Task",
                 "iconName": "toolWindowCheckDetails",
                 "onTriggered": function () {
-                    applicationEditBar.requestViewHook("edit-open-agenda");
+                    applicationEditBar.requestViewHook("edit-open-task");
                 },
                 "keyVisible": false,
                 "showChevron": false

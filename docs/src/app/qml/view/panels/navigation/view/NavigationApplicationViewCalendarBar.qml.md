@@ -7,7 +7,7 @@ inside `ApplicationViewBar`.
 ## Figma Mapping
 - Frame: `149:4001` `CalendarBar`
 - Button order:
-  - `149:4002` `TodoListButton` -> `validator`
+  - `149:4002` `TaskButton` -> `validator`
   - `149:4003` `DailyCalButton` -> `newUIlightThemeSelected`
   - `149:4004` `WeeklyCalButton` -> `table`
   - `149:4005` `MonyhltCalButton` -> `pnpm`
@@ -16,9 +16,8 @@ inside `ApplicationViewBar`.
 ## Interaction Contract
 - Root type: `LV.HStack`
 - Exposes `viewHookRequested(string reason)` and `requestViewHook(reason)`.
-- The first button keeps the existing agenda hook reason (`view-open-agenda`) while switching the icon/name contract
-  to the newer Figma `TodoListButton -> validator` metadata.
+- The restored leftmost task button emits `view-open-task`; it does not reintroduce the removed legacy hook.
 
 ## Regression Checklist
-- Keep the `validator` icon on `todoListButton`; do not fall back to `toolWindowCheckDetails`.
+- Keep the `validator` icon on `taskButton`; do not fall back to `toolWindowCheckDetails`.
 - Preserve the five-button order so compact-menu parity remains predictable.

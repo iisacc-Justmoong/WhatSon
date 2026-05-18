@@ -18,14 +18,14 @@ LV.HStack {
     spacing: LV.Theme.gap2
 
     LV.IconButton {
-        id: todoListButton
+        id: taskButton
 
         horizontalPadding: LV.Theme.gap2
         iconName: "validator"
         tone: LV.AbstractButton.Borderless
         verticalPadding: LV.Theme.gap2
 
-        onClicked: calendarBar.requestViewHook("view-open-agenda")
+        onClicked: calendarBar.requestViewHook("view-open-task")
     }
     LV.IconButton {
         id: dailyCalButton

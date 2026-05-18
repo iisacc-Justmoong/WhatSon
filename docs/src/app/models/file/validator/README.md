@@ -31,7 +31,6 @@
 ## Current Domain Notes
 - This directory owns filesystem and package validators only.
 - `.wsnbody` body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`.
-  Agenda/task wrappers are ordinary paragraph RAW source. The removed editor tag backend must not be reintroduced here.
 
 ## 한국어
 

@@ -126,7 +126,7 @@ WhatSon is an LVRS-based Qt Quick application.
   number grid.
 - Projected note chips now label themselves with the same top-line body preview text used by `NoteListItem`, instead of
   prefixing the chip with lifecycle strings such as `Created note` or `Modified note`.
-- Projected note chips in Agenda/day/week/month views can now reopen the backing library note in the editor on
+- Projected note chips in day/week/month views can now reopen the backing library note in the editor on
   click/touch. Week view keeps that affordance only for slot chips that represent exactly one note entry, because the
   current `title +N` summary chip does not expose a unique note target.
 - The monthly pager and month-grid delegates now resolve live projections/day-cells by index instead of holding stale
@@ -138,9 +138,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Library note saves, metadata reloads, note creation, note deletion, and folder clears now prefer single-note
   indexed-state upsert/remove paths instead of replacing the entire runtime note snapshot, which reduces rebuild fanout
   into the note list and calendar projection surfaces.
-- Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
+- Navigation-driven calendar opens now reset day/week/month/year overlays back to today's date context, while
   year-view drill-down into month view still preserves the explicitly tapped month/date.
-- Day/Agenda/Week/Year calendar `request*View()` hooks are now log/hook-only and no longer rebuild their models after
+- Day/Week/Year calendar `request*View()` hooks are now log/hook-only and no longer rebuild their models after
   QML has already changed the displayed cursor, which removes the duplicate recalculation path when opening or moving
   those calendar routes.
 - Week calendar no longer keeps a second QML-side date model/cache above `WeekCalendarViewModel`; the viewmodel now

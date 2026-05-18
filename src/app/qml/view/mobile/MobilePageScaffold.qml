@@ -34,7 +34,6 @@ Rectangle {
     signal compactAddFolderRequested
     signal compactLeadingActionRequested
     signal createNoteRequested
-    signal agendaRequested
     signal dayCalendarRequested
     signal monthCalendarRequested
     signal statusSearchSubmitted(string text)
@@ -74,7 +73,6 @@ Rectangle {
 
             onCompactAddFolderRequested: mobilePageScaffold.compactAddFolderRequested()
             onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()
-            onAgendaRequested: mobilePageScaffold.agendaRequested()
             onDayCalendarRequested: mobilePageScaffold.dayCalendarRequested()
             onMonthCalendarRequested: mobilePageScaffold.monthCalendarRequested()
             onToggleDetailPanelRequested: mobilePageScaffold.toggleDetailPanelRequested()

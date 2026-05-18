@@ -7,10 +7,8 @@ Implements the `SetTag` editor-domain input object.
 ## Current Rules
 
 - Static tag insertion is allow-list based; arbitrary XML tag names are rejected.
-- Supported templates include transparent/editor semantic wrappers such as `callout`, `agenda`, `task`, `event`,
   heading-style wrappers such as `header`, `subheader`, and `title`, inline formatting tags such as `bold` and
   `highlight`, canonical body `tag`, the source divider token `break`, and a placeholder `resource` body block.
-- `agenda` and `task` template names and paired source tokens are delegated to `component/Agenda`; this file only
   converts that descriptor into the generic `SetTag` insertion flow.
 - Selection mutation wraps selected source text between the opening and closing tokens.
 - If a non-empty selection is already exactly enclosed by the same paired static tag, applying that tag toggles the

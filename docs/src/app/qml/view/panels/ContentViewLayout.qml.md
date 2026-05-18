@@ -43,7 +43,6 @@ window. When the C++ filter handles a supported image resource it consumes the u
 through the LVRS native paste path.
 
 Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
-`underline`, `strikethrough`, `highlight`, `break`, `callout`, and `agenda` call
 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, selection
 metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. Keyboard
 shortcuts read the sibling editor's live selection at command time, while the selected-text context menu explicitly opts
@@ -56,25 +55,19 @@ lossy editor RichText projection cannot remove blank source rows before selectio
 format to the exact text already enclosed by that format toggles it off in `SetTag`; QML does not special-case this.
 Highlight is bound to `Meta+Shift+E` /
 `Ctrl+Shift+E`, break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`, callout is bound to `Meta+Shift+C` /
-`Ctrl+Shift+C`, and agenda is bound to `Meta+Shift+T` / `Ctrl+Shift+T`. Callout uses the same insertion result as other
 format shortcuts: a selection becomes the rendered callout contents, while an empty selection inserts an empty visual
-callout frame with the cursor inside the RAW wrapper. Agenda inserts the full agenda wrapper, including the first
 nested task item, rather than a standalone task wrapper.
 
-Rendered agenda task checkboxes are interactive QML controls, not rich-text image chrome. The agenda renderer reserves
-only a transparent checkbox slot for layout. The layout asks
-`NoteEditorDocumentSession.agendaTaskOverlayItemsForEditorDocument(...)` for task row positions, places an
-actual `LV.CheckBox` over each agenda checkbox slot, and sends clicks to
-`NoteEditorDocumentSession.toggleAgendaTaskDoneInSource(...)` so the canonical `<task done=...>` attribute changes.
-The checkbox controls live in `editorAgendaTaskOverlayLayer`, a sibling layer above `contentsTextEditor`, rather than
-inside the LVRS `TextEditor` component tree. This keeps the checkbox visual out of the editor's clipped
+renderer draws the visible checkbox fallback inside the task row so the shape is present before or without overlay
+refresh. The layout asks
+inside the LVRS `TextEditor` component tree. This keeps the interactive checkbox control out of the editor's clipped
 Flickable/TextEdit internals while preserving editor text selection and caret ownership.
-The overlay uses the slot's `checkboxSize` and `checkboxRadius` as the `LV.CheckBox.boxSize` / `boxRadius` values, so
-the native control keeps the Figma 17px rounded-square shape instead of collapsing to an empty-text implicit size.
+The overlay derives its hit target from the editable task body position plus `checkboxSize`, `checkboxTextGap`, and
+`checkboxRadius`, so the native control keeps the Figma 17px rounded-square shape instead of collapsing to an
+empty-text implicit size without requiring private marker characters in the editor text.
 The overlay is cached and refreshed through a short timer after document or line-metric changes; it is not computed as
 a synchronous rich-text binding while a note is opening. These checkboxes also opt out of tab and item focus, so they
 can be clicked without stealing the LVRS editor caret or hiding the text cursor during initial note load.
-The editor itself treats only the task body text next to each checkbox as an editable agenda text position; checkbox
 chrome remains an interactive completion control rather than a text input region.
 
 The selected-text format context menu is also owned here. A right-button `TapHandler` on the editor surface opens an
@@ -150,8 +143,8 @@ classified as a local modified-count push.
   consume한다. 지원 리소스가 없으면 이벤트를 consume하지 않아 일반 텍스트 paste는 LVRS native 경로로 계속 흐른다.
 - 포맷 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`의
   C++ source/editor HTML 결과를 이어 붙이는 얇은 command wiring으로 제한한다. 하이라이트는 `Cmd+Shift+E`,
-  브레이크는 `Cmd+Shift+B`, 콜아웃은 `Cmd+Shift+C`, 아젠다 전체 삽입은 `Cmd+Shift+T`를 기준으로 하고,
-  비 macOS 변형으로 같은 `Ctrl+Shift+E/B/C/T`도 받는다. 단축키는 명령
+  브레이크는 `Cmd+Shift+B`, 콜아웃은 `Cmd+Shift+C`를 기준으로 하고, 비 macOS 변형으로 같은
+  `Ctrl+Shift+E/B/C`도 받는다. 단축키는 명령
   시점의 live selection을 사용하고, 컨텍스트 메뉴만 우클릭 interaction 전에 저장한 snapshot을 명시적으로 사용한다.
   실제 포맷 mutation은 C++ 세션이 로드된 `.wsnbody` RAW source를 기준으로 수행하므로, editor RichText projection이
   빈 source row를 손실해도 보이는 selection이 하단 문자열로 밀리지 않아야 한다.
@@ -160,15 +153,7 @@ classified as a local modified-count push.
   컨텍스트 메뉴는 선택 영역이 있을 때만 열리며 `bold`/`italic`/`underline`/`strikethrough`/`highlight` 항목을
   같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
   처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
-  콜아웃 시각 프레임을 즉시 만든다. 아젠다 단축키는 독립 `task`가 아니라 첫 task child를 포함한 전체
-  `<agenda>` wrapper를 삽입한다.
-- 아젠다 task checkbox는 editor HTML의 이미지 chrome으로 그리지 않는다. renderer는 투명 checkbox slot만 남기고,
-  이 layout이 각 task row 위에 실제 `LV.CheckBox` overlay를 올린다. 클릭은
-  `toggleAgendaTaskDoneInSource(...)`로 보내 canonical `<task done=...>` 속성을 갱신한다. 이 checkbox는
-  LVRS `TextEditor` 내부 child가 아니라 `contentsTextEditor` 위의 sibling `editorAgendaTaskOverlayLayer`에
-  배치되어, editor 내부 Flickable/TextEdit clip에 묻히지 않는다. overlay는 slot의 `checkboxSize`와
-  `checkboxRadius`를 `LV.CheckBox.boxSize` / `boxRadius`에 그대로 전달해, 텍스트가 없는 checkbox라도 Figma의
-  17px rounded-square 형상을 유지한다.
+  콜아웃 시각 프레임을 즉시 만든다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고
