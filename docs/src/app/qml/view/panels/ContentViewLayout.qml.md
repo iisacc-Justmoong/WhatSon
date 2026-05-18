@@ -66,6 +66,9 @@ only a transparent checkbox slot for layout. The layout asks
 `NoteEditorDocumentSession.agendaTaskOverlayItemsForEditorDocument(...)` for task row positions, places an
 actual `LV.CheckBox` over each agenda checkbox slot, and sends clicks to
 `NoteEditorDocumentSession.toggleAgendaTaskDoneInSource(...)` so the canonical `<task done=...>` attribute changes.
+The checkbox controls live in `editorAgendaTaskOverlayLayer`, a sibling layer above `contentsTextEditor`, rather than
+inside the LVRS `TextEditor` component tree. This keeps the checkbox visual out of the editor's clipped
+Flickable/TextEdit internals while preserving editor text selection and caret ownership.
 The overlay uses the slot's `checkboxSize` and `checkboxRadius` as the `LV.CheckBox.boxSize` / `boxRadius` values, so
 the native control keeps the Figma 17px rounded-square shape instead of collapsing to an empty-text implicit size.
 The overlay is cached and refreshed through a short timer after document or line-metric changes; it is not computed as
@@ -161,9 +164,11 @@ classified as a local modified-count push.
   `<agenda>` wrapper를 삽입한다.
 - 아젠다 task checkbox는 editor HTML의 이미지 chrome으로 그리지 않는다. renderer는 투명 checkbox slot만 남기고,
   이 layout이 각 task row 위에 실제 `LV.CheckBox` overlay를 올린다. 클릭은
-  `toggleAgendaTaskDoneInSource(...)`로 보내 canonical `<task done=...>` 속성을 갱신한다. overlay는 slot의
-  `checkboxSize`와 `checkboxRadius`를 `LV.CheckBox.boxSize` / `boxRadius`에 그대로 전달해, 텍스트가 없는
-  checkbox라도 Figma의 17px rounded-square 형상을 유지한다.
+  `toggleAgendaTaskDoneInSource(...)`로 보내 canonical `<task done=...>` 속성을 갱신한다. 이 checkbox는
+  LVRS `TextEditor` 내부 child가 아니라 `contentsTextEditor` 위의 sibling `editorAgendaTaskOverlayLayer`에
+  배치되어, editor 내부 Flickable/TextEdit clip에 묻히지 않는다. overlay는 slot의 `checkboxSize`와
+  `checkboxRadius`를 `LV.CheckBox.boxSize` / `boxRadius`에 그대로 전달해, 텍스트가 없는 checkbox라도 Figma의
+  17px rounded-square 형상을 유지한다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
   editor view mode 백엔드는 mount하지 않는다.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고

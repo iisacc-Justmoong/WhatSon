@@ -200,6 +200,10 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function toggleEditorAgendaTask(taskIndex, done)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("agendaTaskOverlayItemsForEditorDocument(editorDocumentText)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("toggleAgendaTaskDoneInSource(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsTextEditorStack")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorAgendaTaskOverlayLayer")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("anchors.fill: contentsTextEditor")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("z: contentsTextEditor.z + 1")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("objectName: \"editorAgendaTaskCheckBox\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.CheckBox {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("activeFocusOnTab: false")));

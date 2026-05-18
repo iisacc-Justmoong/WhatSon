@@ -480,112 +480,129 @@ Item {
                 visible: contentViewLayout.imageResourceSelected
             }
 
-            ContentsView.TextEditor {
-                id: contentsTextEditor
-
+            Item {
+                id: contentsTextEditorStack
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
-                editorInputCommandFilter: contentViewLayout.editorInputCommandFilter
                 enabled: contentViewLayout.noteEditorSurfaceVisible
-                editorReadOnly: contentViewLayout.editorReadOnly
-                inAppClipboard: contentViewLayout.inAppClipboard
-                noteBodyFilePath: contentViewLayout.editorSourceFilePath
-                noteEditorSession: contentViewLayout.noteEditorSession
-                objectName: "contentsDisplayTextEditor"
                 visible: contentViewLayout.noteEditorSurfaceVisible
 
-                onSyncFinished: function(path) {
-                    if (contentViewLayout.noteEditorSurfaceVisible
-                            && contentViewLayout.noteEditorSession
-                            && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
-                        contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
-                                    path,
-                                    contentsTextEditor.editorDocumentText);
-                    }
-                }
-                onEditorPlainTextRevisionChanged: {
-                    if (contentViewLayout.noteEditorSurfaceVisible
-                            && !contentViewLayout.editorApplyingPulledDocumentText
-                            && contentViewLayout.noteEditorSession
-                            && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
-                            && contentViewLayout.editorSourceFilePath.length > 0) {
-                        contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
-                                    contentViewLayout.editorSourceFilePath,
-                                    contentsTextEditor.editorPlainTextRevision,
-                                    contentsTextEditor.editorDocumentText);
-                    }
-                    contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
-                }
-                onEditorDocumentTextChanged: {
-                    contentViewLayout.clearEditorFormatSelectionSnapshot();
-                    contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
-                }
-                onEditorLineMetricsRevisionChanged: contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh()
-                onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
-                onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
-                onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                ContentsView.TextEditor {
+                    id: contentsTextEditor
 
-                TapHandler {
-                    id: editorFormatContextMenuTapHandler
+                    anchors.fill: parent
+                    clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
+                    editorInputCommandFilter: contentViewLayout.editorInputCommandFilter
+                    enabled: contentViewLayout.noteEditorSurfaceVisible
+                    editorReadOnly: contentViewLayout.editorReadOnly
+                    inAppClipboard: contentViewLayout.inAppClipboard
+                    noteBodyFilePath: contentViewLayout.editorSourceFilePath
+                    noteEditorSession: contentViewLayout.noteEditorSession
+                    objectName: "contentsDisplayTextEditor"
+                    visible: contentViewLayout.noteEditorSurfaceVisible
 
-                    acceptedButtons: Qt.RightButton
-                    acceptedModifiers: Qt.KeyboardModifierMask
-                    enabled: contentViewLayout.editorFormatContextMenuAvailable
-                    gesturePolicy: TapHandler.DragThreshold
-                    grabPermissions: PointerHandler.ApprovesTakeOverByAnything
-
-                    onPressedChanged: {
-                        if (pressed) {
-                            contentViewLayout.editorFormatContextMenuPointerActive = true;
-                        } else {
-                            Qt.callLater(function () {
-                                if (!editorFormatContextMenu.opened)
-                                    contentViewLayout.editorFormatContextMenuPointerActive = false;
-                            });
+                    onSyncFinished: function(path) {
+                        if (contentViewLayout.noteEditorSurfaceVisible
+                                && contentViewLayout.noteEditorSession
+                                && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
+                            contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
+                                        path,
+                                        contentsTextEditor.editorDocumentText);
                         }
                     }
+                    onEditorPlainTextRevisionChanged: {
+                        if (contentViewLayout.noteEditorSurfaceVisible
+                                && !contentViewLayout.editorApplyingPulledDocumentText
+                                && contentViewLayout.noteEditorSession
+                                && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
+                                && contentViewLayout.editorSourceFilePath.length > 0) {
+                            contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
+                                        contentViewLayout.editorSourceFilePath,
+                                        contentsTextEditor.editorPlainTextRevision,
+                                        contentsTextEditor.editorDocumentText);
+                        }
+                        contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+                    }
+                    onEditorDocumentTextChanged: {
+                        contentViewLayout.clearEditorFormatSelectionSnapshot();
+                        contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh();
+                    }
+                    onEditorLineMetricsRevisionChanged: contentViewLayout.scheduleEditorAgendaTaskOverlayRefresh()
+                    onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                    onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                    onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
 
-                    onTapped: function (eventPoint, button) {
-                        if (button !== Qt.RightButton)
-                            return;
-                        contentViewLayout.openEditorFormatContextMenuFromPointer(
-                                    contentsTextEditor,
-                                    eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
-                                    eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
-                                    "rightClick");
+                    TapHandler {
+                        id: editorFormatContextMenuTapHandler
+
+                        acceptedButtons: Qt.RightButton
+                        acceptedModifiers: Qt.KeyboardModifierMask
+                        enabled: contentViewLayout.editorFormatContextMenuAvailable
+                        gesturePolicy: TapHandler.DragThreshold
+                        grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+
+                        onPressedChanged: {
+                            if (pressed) {
+                                contentViewLayout.editorFormatContextMenuPointerActive = true;
+                            } else {
+                                Qt.callLater(function () {
+                                    if (!editorFormatContextMenu.opened)
+                                        contentViewLayout.editorFormatContextMenuPointerActive = false;
+                                });
+                            }
+                        }
+
+                        onTapped: function (eventPoint, button) {
+                            if (button !== Qt.RightButton)
+                                return;
+                            contentViewLayout.openEditorFormatContextMenuFromPointer(
+                                        contentsTextEditor,
+                                        eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
+                                        eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
+                                        "rightClick");
+                        }
                     }
                 }
 
-                Repeater {
-                    model: contentViewLayout.editorAgendaTaskOverlayItems
+                Item {
+                    id: editorAgendaTaskOverlayLayer
 
-                    delegate: LV.CheckBox {
-                        id: editorAgendaTaskCheckBox
+                    anchors.fill: contentsTextEditor
+                    clip: true
+                    enabled: contentsTextEditor.visible
+                    visible: contentsTextEditor.visible
+                    z: contentsTextEditor.z + 1
 
-                        readonly property var checkboxRect: contentViewLayout.editorAgendaTaskCheckboxRect(editorAgendaTaskCheckBox.modelData)
-                        readonly property real checkboxSize: Math.max(1, editorAgendaTaskCheckBox.checkboxRect.width)
-                        readonly property bool nextDone: !(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true)
+                    Repeater {
+                        model: contentViewLayout.editorAgendaTaskOverlayItems
 
-                        activeFocusOnTab: false
-                        boxRadius: Math.max(0, Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxRadius) || 3.5)
-                        boxSize: Math.max(1, Math.round(editorAgendaTaskCheckBox.checkboxSize))
-                        checkable: false
-                        checked: editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true
-                        enabled: contentViewLayout.noteEditorSurfaceVisible && !contentViewLayout.editorReadOnly
-                        focusPolicy: Qt.NoFocus
-                        height: editorAgendaTaskCheckBox.checkboxRect.height
-                        objectName: "editorAgendaTaskCheckBox"
-                        text: ""
-                        visible: contentViewLayout.editorAgendaTaskCheckboxVisible(editorAgendaTaskCheckBox.modelData)
-                        width: editorAgendaTaskCheckBox.checkboxRect.width
-                        x: editorAgendaTaskCheckBox.checkboxRect.x
-                        y: editorAgendaTaskCheckBox.checkboxRect.y
-                        z: 20
+                        delegate: LV.CheckBox {
+                            id: editorAgendaTaskCheckBox
 
-                        onClicked: contentViewLayout.toggleEditorAgendaTask(
-                            Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.taskIndex) || 0,
-                            editorAgendaTaskCheckBox.nextDone)
+                            readonly property var checkboxRect: contentViewLayout.editorAgendaTaskCheckboxRect(editorAgendaTaskCheckBox.modelData)
+                            readonly property real checkboxSize: Math.max(1, editorAgendaTaskCheckBox.checkboxRect.width)
+                            readonly property bool nextDone: !(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true)
+
+                            activeFocusOnTab: false
+                            boxRadius: Math.max(0, Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.checkboxRadius) || 3.5)
+                            boxSize: Math.max(1, Math.round(editorAgendaTaskCheckBox.checkboxSize))
+                            checkable: false
+                            checked: editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.done === true
+                            enabled: contentViewLayout.noteEditorSurfaceVisible && !contentViewLayout.editorReadOnly
+                            focusPolicy: Qt.NoFocus
+                            height: editorAgendaTaskCheckBox.checkboxRect.height
+                            objectName: "editorAgendaTaskCheckBox"
+                            text: ""
+                            visible: contentViewLayout.editorAgendaTaskCheckboxVisible(editorAgendaTaskCheckBox.modelData)
+                            width: editorAgendaTaskCheckBox.checkboxRect.width
+                            x: editorAgendaTaskCheckBox.checkboxRect.x
+                            y: editorAgendaTaskCheckBox.checkboxRect.y
+                            z: 20
+
+                            onClicked: contentViewLayout.toggleEditorAgendaTask(
+                                Number(editorAgendaTaskCheckBox.modelData && editorAgendaTaskCheckBox.modelData.taskIndex) || 0,
+                                editorAgendaTaskCheckBox.nextDone)
+                        }
                     }
                 }
             }
