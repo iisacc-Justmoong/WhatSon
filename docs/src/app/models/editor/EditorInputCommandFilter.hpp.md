@@ -10,8 +10,8 @@ Declares the editor-wide native key event filter used by the note editor surface
   the editor wrapper, `ClipboardEditorPaste`, `InAppClipboardManager`, and `NoteEditorDocumentSession`.
 - Owns event-filter lifetime for the editor item. `ClipboardEditorPaste` must remain a paste orchestration object and
   must not install editor item event filters.
-- Consumes Backspace/Enter only when `NoteEditorDocumentSession.handleCalloutBoundaryKeyInSource(...)` or
-  `NoteEditorDocumentSession.handleEmptyParagraphBoundaryKeyInSource(...)` reports a handled semantic boundary operation.
+- Consumes Backspace/Enter only when `NoteEditorDocumentSession.handleCalloutBoundaryKeyInSource(...)` reports a handled
+  semantic boundary operation.
 - Consumes `Cmd/Ctrl+V` only after `ClipboardEditorPaste.pasteImageResourceIntoEditor(...)` produces a non-native,
   handled paste result.
 - Uses the wrapper's `editorCursorPosition` for collapsed selections so command dispatch follows the current caret.

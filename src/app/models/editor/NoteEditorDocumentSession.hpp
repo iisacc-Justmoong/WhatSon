@@ -81,11 +81,6 @@ public:
         int cursorPosition,
         int selectionLength,
         int key);
-    Q_INVOKABLE QVariantMap handleEmptyParagraphBoundaryKeyInSource(
-        const QString& editorDocumentText,
-        int cursorPosition,
-        int selectionLength,
-        int key);
 
 signals:
     void noteActiveStateChanged();
@@ -154,19 +149,12 @@ private:
         const QString& filePath,
         QString* outText,
         QString* errorMessage = nullptr) const;
+    bool writeCurrentEditorSnapshotToSessionFile(
+        const QString& editorFilePath,
+        const QString& editorDocumentText);
     bool persistEditorDocumentText(
         const QString& editorFilePath,
-        const QString& editorDocumentText,
-        const QString& pushReason = QString());
-    bool persistEditorFileForRawPush(
-        const QString& editorFilePath,
-        const QString& pushReason);
-    bool persistSourceTextForEditorContext(
-        const QString& noteId,
-        const QString& noteDirectoryPath,
-        const QString& editorFilePath,
-        const QString& sourceText,
-        const QString& loadedLastModifiedAt);
+        const QString& editorDocumentText);
     bool pushActiveEditorBeforeNoteDeparture();
     bool applyLoadedBodyTextToEditorSession(
         const QString& noteId,
@@ -182,21 +170,9 @@ private:
         bool success,
         const QString& errorMessage,
         const QString& lastModifiedAt);
-    bool persistActiveResourceInsertionSourceText(const QString& sourceText);
     QString bodySourceTextForEditorDocument(
         const QString& noteId,
         const QString& editorDocumentText) const;
-    void setActiveSessionBodySourceText(
-        const QString& sourceText,
-        bool protectsSync = true);
-    void clearActiveSessionBodySourceText();
-    bool hasActiveSessionBodySourceFor(
-        const QString& noteId,
-        const QString& noteDirectoryPath) const;
-    bool activeSessionBodySourceProtectsSyncFor(
-        const QString& noteId,
-        const QString& noteDirectoryPath) const;
-    QString activeSessionBodySourceText() const;
 
     void setEditorFilePath(const QString& editorFilePath);
     void setActiveNoteContext(
@@ -213,7 +189,6 @@ private:
     WhatSonEditorRawPullController m_rawPullController;
     WhatSonEditorRawPushController m_rawPushController;
     QHash<QString, EditorFileContext> m_editorFileContexts;
-    QHash<QString, int> m_latestEditorRevisionByFile;
     QString m_sessionRootPathForTests;
     QString m_editorFilePath;
     QString m_activeNoteId;
@@ -229,7 +204,5 @@ private:
     int m_editorViewportWidth = 0;
     bool m_loading = false;
     bool m_readOnly = true;
-    bool m_activeBodySourceTextAvailable = false;
-    bool m_activeBodySourceTextProtectsSync = false;
     QString m_lastError;
 };

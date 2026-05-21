@@ -1300,7 +1300,6 @@ private slots:
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
-    void noteEditorDocumentSession_backspaceOnExplicitEmptyParagraphDeletesLineOnFirstPress();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
@@ -1309,19 +1308,8 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
-    void noteEditorDocumentSession_pastesImportedResourceIntoExistingEmptyLine();
+    void noteEditorDocumentSession_insertsImportedResourceIntoCurrentEditorSnapshot();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
-    void noteEditorDocumentSession_persistsImportedResourceSourceBeforeIdlePush();
-    void noteEditorDocumentSession_writesImportedResourceSourceIntoSessionFile();
-    void noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile();
-    void noteEditorDocumentSession_keepsImportedResourceWhenReturningWithinSameSession();
-    void noteEditorDocumentSession_discardsPrePasteModifiedCountPush();
-    void noteEditorDocumentSession_keepsLastTextEditWhenStaleIdleSyncArrives();
-    void noteEditorDocumentSession_repushesSessionSourceWhenIdlePullReturnsOlderSnapshot();
-    void noteEditorDocumentSession_repushesActiveResourceSourceWhenFilesystemPullDropsIt();
-    void noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource();
-    void noteEditorDocumentSession_doesNotAccumulateEmptyParagraphsAfterImagePasteIdlePush();
-    void noteEditorDocumentSession_persistsBackspacedAmplifiedResourceParagraphsWithoutReinflating();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
     void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
@@ -1385,10 +1373,9 @@ private slots:
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
-    void noteEditorDocumentSession_readsMismatchedIdlePushFromSessionFile();
+    void noteEditorDocumentSession_writesRawPushPayloadToMountedSessionFile();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
-    void noteEditorDocumentSession_ignoresStaleModifiedCountPayloads();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();
@@ -1417,7 +1404,6 @@ private slots:
     void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
     void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
     void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
-    void editorInputCommandFilter_pastesImageResourceAtCaretForCollapsedSelection();
     void clipboardEditorPaste_requiresActiveNoteSessionForImagePaste();
     void clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();

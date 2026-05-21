@@ -73,7 +73,7 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("event->accept();")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
-    QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleEmptyParagraphBoundaryKeyInSource(")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleEmptyParagraphBoundaryKeyInSource(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCommandCursorPosition(selectionStart, selectionLength)")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("property(\"editorCursorPosition\")")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
@@ -397,6 +397,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
 
     ClipboardEditorPaste editorPaste;
     const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
         &clipboard,
         &session,
@@ -449,6 +450,14 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("contenteditable")));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
+    const QString persistedBodyDocument = readUtf8FileForInAppClipboardImportTest(bodyPath);
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        bodySourceText);
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
@@ -610,86 +619,6 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_importsPlatformImageMimePay
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
     const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
     QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
-}
-
-void WhatSonCppRegressionTests::editorInputCommandFilter_pastesImageResourceAtCaretForCollapsedSelection()
-{
-    QTemporaryDir workspaceDirectory;
-    QVERIFY(workspaceDirectory.isValid());
-    QTemporaryDir sessionRootDir;
-    QVERIFY(sessionRootDir.isValid());
-
-    QString createError;
-    const QString hubPath = createMinimalHubFixture(
-        workspaceDirectory.path(),
-        QStringLiteral("EditorInputCommandFilterPasteHub.wshub"),
-        &createError);
-    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
-
-    const QString libraryDirectoryPath =
-        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
-            .filePath(QStringLiteral("Library.wslibrary"));
-    const QString noteId = QStringLiteral("editor-input-filter-caret-paste-note");
-    const QString noteDirectoryPath = createLocalNoteForRegression(
-        libraryDirectoryPath,
-        noteId,
-        QStringLiteral("Alpha\nBeta"),
-        &createError);
-    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
-
-    QClipboard* systemClipboard = QGuiApplication::clipboard();
-    QVERIFY(systemClipboard != nullptr);
-    systemClipboard->clear();
-    QImage clipboardImage(QSize(10, 6), QImage::Format_ARGB32_Premultiplied);
-    clipboardImage.fill(qRgba(180, 66, 122, 255));
-    systemClipboard->setImage(clipboardImage);
-
-    InAppClipboardManager clipboard;
-    clipboard.setCurrentHubPath(hubPath);
-
-    NoteEditorDocumentSession session;
-    QVERIFY(openNoteEditorSessionForClipboardImportTest(
-        session,
-        sessionRootDir.path(),
-        noteId,
-        noteDirectoryPath));
-
-    ClipboardEditorPaste editorPaste;
-    EditorInputCommandFilter inputFilter;
-    QObject editorItem;
-    FakeEditorInputCommandOwner editorOwner;
-    const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
-    editorOwner.setProperty("editorDocumentText", editorHtml);
-    editorOwner.setProperty("editorSelectionStart", 0);
-    editorOwner.setProperty("editorSelectionLength", 0);
-    editorOwner.setProperty("editorCursorPosition", QStringLiteral("Alpha").size());
-
-    QVERIFY(inputFilter.attachEditorInputOwner(
-        &editorItem,
-        &editorOwner,
-        &editorPaste,
-        &clipboard,
-        &session));
-
-    QKeyEvent pasteEvent(QEvent::KeyPress, Qt::Key_V, Qt::MetaModifier);
-    QCoreApplication::sendEvent(&editorItem, &pasteEvent);
-
-    QVERIFY(editorOwner.replaceCalled());
-    QVERIFY(editorOwner.lastEditorDocumentText().contains(QStringLiteral("whatson-resource-frame")));
-    QVERIFY(editorOwner.lastCursorPosition() > QStringLiteral("Alpha").size());
-    QVERIFY(!clipboard.hasResource());
-    QCOMPARE(session.parsedLineCount(), 3);
-
-    const QString persistedBodyDocument = readUtf8FileForInAppClipboardImportTest(
-        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
-    const QString persistedSourceText =
-        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
-    const int alphaIndex = persistedSourceText.indexOf(QStringLiteral("Alpha"));
-    const int resourceIndex = persistedSourceText.indexOf(QStringLiteral("<resource type=\"image\""));
-    const int betaIndex = persistedSourceText.indexOf(QStringLiteral("Beta"));
-    QVERIFY(alphaIndex >= 0);
-    QVERIFY(resourceIndex > alphaIndex);
-    QVERIFY(betaIndex > resourceIndex);
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage()

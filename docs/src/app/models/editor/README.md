@@ -78,10 +78,11 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   format-tag source insertions for editor command flows, immediately commits active imported-resource insertions to the
   note body and mounted editor session file before reporting paste success, discards pre-paste pending pushes for that
   session file, and persists LVRS sync-finished rich-text edits back through the note body persistence path after
-  converting them to canonical source. The active editor session source becomes the save/sync truth for the active note
-  after local editor mutation refreshes it: modified-count pushes refresh it immediately, stale idle RAW pushes persist
-  it instead of stale sync-finished payloads, and idle filesystem pulls cannot replace it with an older session
-  snapshot. Note-departure flushes also persist that active source instead of falling back to stale mounted session-file
+  converting them to canonical source. Idle and modified-count RAW push requests first write the supplied editor payload
+  to the mounted session file, so the note editor shape at that call site becomes the filesystem session baseline. The
+  active editor session source becomes the save/sync truth for the active note after persistence converts that same
+  payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
+  flushes also persist that active source instead of falling back to stale mounted session-file
   contents. This protects the last editor action in general, including plain text input as well as resource insertion.
   The gutter uses the session's parsed
   source line count as
@@ -137,15 +138,16 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치의 빈
   줄 삽입을 계획한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를 실제로
   하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
-  경계 Backspace/Enter와 명시적 빈 paragraph Backspace는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
+  경계 Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
   위임하며, 처리된 경우에만 native editor event를 consume한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
   resource 삽입은 성공 반환 전에 `.wsnbody`와 mounted editor session file을 함께 확정하고, 같은 session file의
-  pre-paste pending push를 폐기한다. active editor session source는 로컬 editor mutation으로 갱신된 뒤 활성 노트
-  저장과 sync의 기준이 되며, modified-count push가 이를 즉시 갱신하고 idle RAW push와 idle filesystem pull은 오래된
-  snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
+  pre-paste pending push를 폐기한다. idle/modified-count RAW push 요청은 전달받은 editor payload를 먼저 mounted
+  session file에 써서 호출 시점의 노트 에디터 형태를 filesystem session 기준으로 만든다. active editor session
+  source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
+  pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
   이 계약은 resource line뿐 아니라 일반 텍스트의 마지막 입력에도 적용된다. 거터의 실제
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를

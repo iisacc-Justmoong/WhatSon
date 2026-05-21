@@ -17,14 +17,17 @@ Implements image resource paste orchestration for the note editor.
   objects.
 - Imports the clipboard image through `InAppClipboardManager`, which creates the `.wsresources/<id>.wsresource`
   package and updates `Resources.wsresources`.
-- Delegates editor/body source mutation to `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
+- Delegates editor/body source mutation to `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`, which uses
+  the current editor snapshot and queues the corresponding `.wsnbody` write instead of creating a temporary rich-text
+  frame.
 - Reloads imported resources after a valid insertion plan is produced, while preserving the editor insertion result if
   reload reports a non-fatal failure.
 
 ## 한국어
 
 - 에디터 붙여넣기 시점에 clipboard 이미지가 앱 내부 `.wsresource`로 들어가고, 본문에는 metadata 기반
-  `<resource ... />` 태그만 삽입되도록 조율한다.
+  `<resource ... />` 태그만 삽입되도록 조율한다. 실제 source 삽입과 `.wsnbody` 쓰기는
+  `NoteEditorDocumentSession`이 현재 editor snapshot 기준으로 처리한다.
 - active note session과 mounted editor file이 없으면 clipboard import를 시작하지 않는다. 이 경우 native image
   paste로 빠지지 않고 handled failure를 반환해 RAW에 없는 임시 이미지 프레임이 생기지 않게 한다.
 - 반환 map의 `stage`는 `capture`, `unsupported-resource`, `import`, `source-insertion`, `reload`, `completed`

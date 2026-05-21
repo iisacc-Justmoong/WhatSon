@@ -52,6 +52,9 @@ macOS file import.
   metadata reaches `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
 - Image editor paste requires an active note session before import; the fallback path must not insert a temporary rich-text
   image frame that lacks a backing RAW `<resource ... />` line.
+- Image editor paste must let `NoteEditorDocumentSession` insert the canonical `<resource ... />` tag into the current
+  editor-derived `.wsnbody` source and queue that body write immediately; it must not rely on a later sync of a temporary
+  frame.
 - Callout boundary Backspace/Enter share the editor item event filter owned by `EditorInputCommandFilter`, but RAW
   source decisions must still live in `NoteEditorDocumentSession`.
 

@@ -33,7 +33,6 @@ private:
     bool editorCalloutBoundaryKeyMatches(const QKeyEvent& event) const;
     int editorCommandCursorPosition(int selectionStart, int selectionLength) const;
     bool handleEditorPasteKeyEvent(QKeyEvent& event);
-    bool handleEditorEmptyParagraphBoundaryKeyEvent(QKeyEvent& event);
     bool handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event);
     bool applyEditorCommandResultToOwner(const QVariantMap& result);
 
