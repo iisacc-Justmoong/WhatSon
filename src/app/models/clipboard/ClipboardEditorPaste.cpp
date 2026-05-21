@@ -66,6 +66,14 @@ QVariantMap ClipboardEditorPaste::pasteImageResourceIntoEditor(
         emit pasteFailed(errorMessage);
         return handledFailureResult(QStringLiteral("note-session"), errorMessage);
     }
+    if (!noteEditorSession->hasActiveNote()
+        || noteEditorSession->editorFilePath().trimmed().isEmpty())
+    {
+        const QString errorMessage =
+            QStringLiteral("Image resource paste requires an active note editor session.");
+        emit pasteFailed(errorMessage);
+        return handledFailureResult(QStringLiteral("note-session"), errorMessage);
+    }
 
     if (!clipboard->refreshClipboardResourceAvailabilitySnapshot())
     {

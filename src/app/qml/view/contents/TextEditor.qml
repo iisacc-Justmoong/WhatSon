@@ -24,6 +24,7 @@ LV.TextEditor {
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
     readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
+    readonly property int editorCursorPosition: Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0))
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)

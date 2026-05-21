@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <QCryptographicHash>
 #include <QDir>
@@ -94,6 +95,12 @@ namespace
     {
         int sourceStart = 0;
         int sourceEnd = 0;
+    };
+
+    struct EmptySourceLineBoundaryEdit final
+    {
+        QString bodySourceText;
+        int sourceCursorPosition = 0;
     };
 
     QString sourceTagName(QStringView tagToken)
@@ -249,6 +256,52 @@ namespace
                 : visibleCharacter.logicalText.front();
         }
         return visibleText;
+    }
+
+    std::optional<EmptySourceLineBoundaryEdit> backspaceEmptySourceLineAtVisibleCursor(
+        const QString& bodySourceText,
+        const int visibleCursorPosition)
+    {
+        QStringList sourceLines = bodySourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        if (sourceLines.size() <= 1)
+        {
+            return std::nullopt;
+        }
+
+        int sourceOffset = 0;
+        int visibleOffset = 0;
+        for (int lineIndex = 0; lineIndex < sourceLines.size(); ++lineIndex)
+        {
+            const QString& sourceLine = sourceLines.at(lineIndex);
+            const int sourceLineStart = sourceOffset;
+            const int sourceLineEnd = sourceLineStart + sourceLine.size();
+            const int visibleLineStart = visibleOffset;
+            const int visibleLineEnd = visibleLineStart + visibleCursorMappingTextForSourceText(sourceLine).size();
+
+            if (lineIndex > 0
+                && sourceLine.trimmed().isEmpty()
+                && visibleCursorPosition == visibleLineStart)
+            {
+                sourceLines.removeAt(lineIndex);
+                const QString mutatedSourceText =
+                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceLines.join(QLatin1Char('\n')));
+                const int cursorPosition = qMin(sourceLineStart - 1, static_cast<int>(mutatedSourceText.size()));
+                return EmptySourceLineBoundaryEdit{
+                    mutatedSourceText,
+                    cursorPosition
+                };
+            }
+
+            sourceOffset = sourceLineEnd;
+            visibleOffset = visibleLineEnd;
+            if (lineIndex + 1 < sourceLines.size())
+            {
+                ++sourceOffset;
+                ++visibleOffset;
+            }
+        }
+
+        return std::nullopt;
     }
 
     int closestVisibleTextMatchStart(
@@ -2001,6 +2054,102 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
     }
 
     return applyCalloutEdit(*enterEdit);
+}
+
+QVariantMap NoteEditorDocumentSession::handleEmptyParagraphBoundaryKeyInSource(
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const int key)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString sourceText = hasActiveSessionBodySourceFor(noteId, m_activeNoteDirectoryPath)
+        ? activeSessionBodySourceText()
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QString sourceVisibleText = visibleCursorMappingTextForSourceText(sourceText);
+    const int boundedDecoratedCursorPosition =
+        clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
+    const int boundedCursorPosition =
+        clampedPosition(
+            WhatSon::EditorComponent::Callout::sourceVisibleCursorForDecoratedCursor(
+                editorDocumentText,
+                sourceVisibleText,
+                cursorPosition),
+            sourceVisibleText.size());
+
+    const auto buildResult =
+        [this, &noteId, &editorDocumentText](
+            const bool handled,
+            const bool changed,
+            const QString& bodySourceText,
+            const int sourceCursorPosition,
+            const int editorCursorPosition) -> QVariantMap
+        {
+            const QString projectedEditorDocumentText = handled
+                ? editorHtmlFromBodySourceForNoteContext(
+                    noteId,
+                    bodySourceText,
+                    m_activeNoteDirectoryPath,
+                    m_editorViewportWidth)
+                : editorDocumentText;
+            const int resolvedEditorCursorPosition = handled
+                ? decoratedEditorCursorPositionForVisibleCursor(
+                    projectedEditorDocumentText,
+                    editorCursorPosition)
+                : editorCursorPosition;
+
+            QVariantMap result;
+            result.insert(QStringLiteral("valid"), true);
+            result.insert(QStringLiteral("handled"), handled);
+            result.insert(QStringLiteral("changed"), handled && changed);
+            result.insert(QStringLiteral("bodySourceText"), bodySourceText);
+            result.insert(QStringLiteral("editorDocumentText"), projectedEditorDocumentText);
+            result.insert(QStringLiteral("cursorPosition"), resolvedEditorCursorPosition);
+            result.insert(QStringLiteral("sourceCursorPosition"), sourceCursorPosition);
+            result.insert(QStringLiteral("selectionStart"), sourceCursorPosition);
+            result.insert(QStringLiteral("selectionLength"), 0);
+            result.insert(QStringLiteral("editorSelectionStart"), resolvedEditorCursorPosition);
+            result.insert(QStringLiteral("editorSelectionLength"), 0);
+            result.insert(QStringLiteral("errorMessage"), QString());
+            return result;
+        };
+
+    if (selectionLength > 0 || key != Qt::Key_Backspace)
+    {
+        return buildResult(
+            false,
+            false,
+            sourceText,
+            sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+            boundedDecoratedCursorPosition);
+    }
+
+    const std::optional<EmptySourceLineBoundaryEdit> edit =
+        backspaceEmptySourceLineAtVisibleCursor(sourceText, boundedCursorPosition);
+    if (!edit.has_value())
+    {
+        return buildResult(
+            false,
+            false,
+            sourceText,
+            sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+            boundedDecoratedCursorPosition);
+    }
+
+    setParsedLineCount(lineCountForEditorSource(edit->bodySourceText));
+    if (hasActiveNote())
+    {
+        setActiveSessionBodySourceText(edit->bodySourceText);
+    }
+    setLastError(QString());
+    return buildResult(
+        true,
+        true,
+        edit->bodySourceText,
+        edit->sourceCursorPosition,
+        editorCursorPositionForSourcePosition(edit->bodySourceText, edit->sourceCursorPosition));
 }
 
 void NoteEditorDocumentSession::refreshFromActiveNoteState()

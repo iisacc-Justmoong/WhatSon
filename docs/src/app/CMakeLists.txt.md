@@ -8,10 +8,10 @@
 - Source path: `src/app/CMakeLists.txt`
 - Source kind: CMake build definition
 - File name: `CMakeLists.txt`
-- Approximate line count: 343
+- Approximate line count: 288
 
 ## Responsibility
-- Owns the `WhatSon` app target shell and keeps the LVRS / Qt Quick baseline close to the app entrypoint.
+- Consumes the root-declared `WhatSon` app target and keeps the LVRS / Qt Quick app wiring close to the app entrypoint.
 - Provides shared helper functions that child domain directories use to register sources, include paths, and QML assets.
 - Delegates source ownership to top-level app domains through `add_subdirectory(...)` instead of one monolithic recursive file list.
 
@@ -37,17 +37,27 @@
 ## Build Shards
 - `src/app/cmake/resources/CMakeLists.txt`: app icon resources, onboarding illustration resources, Apple bundle icon staging, Android package resource mirroring, and Windows icon RC generation.
 - `src/app/cmake/defaults/CMakeLists.txt`: LVRS project-default wiring and Apple plist / entitlements forwarding.
-- `src/app/cmake/runtime/CMakeLists.txt`: target link libraries, output properties, Apple framework links, iOS local dynamic-library embedding, LVRS runtime import overlays, and the final `lvrs_configure_qml_app(WhatSon)` call.
+- `src/app/cmake/runtime/CMakeLists.txt`: target link libraries, output properties, Apple framework links, iOS local dynamic-library embedding, LVRS runtime import overlays, and the final `lvrs_configure_qml_app(WhatSon)` call. The root file enters this shard after root QML-module finalization.
 
 ## Helper Surface
 - `whatson_app_register_sources(...)`: validates file existence before attaching sources to `WhatSon`.
 - `whatson_app_register_directory_sources(...)`: recursively or non-recursively registers C/C++ sources and headers for a child directory.
 - `whatson_app_register_directory_include_directories(...)`: expands recursive header-owner directories into include paths so existing short include statements remain valid.
-- `whatson_app_register_qml_entries(...)` and `whatson_app_register_directory_qml(...)`: collect QML and JS assets into global properties before the final `qt_add_qml_module(...)` call.
+- `whatson_app_register_qml_entries(...)` and `whatson_app_register_directory_qml(...)`: collect `src/app`-relative QML
+  and JS asset paths into global properties before the root `qt_add_qml_module(...)` call maps them to absolute files
+  with matching `QT_RESOURCE_ALIAS` values.
 
 ## Current Notes
 - QML ownership is now isolated to `src/app/qml/CMakeLists.txt`, which keeps the QML module collection separate from C++ domain registration.
-- Platform packaging, LVRS defaults, and runtime-linking details are now delegated again under `src/app/cmake/*`, while the final `qt_add_qml_module(...)` call stays in `src/app/CMakeLists.txt` because it finalizes the same `WhatSon` target created there.
+- The root `CMakeLists.txt` declares `qt_add_executable(WhatSon ... "src/app/main.cpp")`, performs
+  `qt_add_qml_module(WhatSon ...)`, enters `src/app/cmake/runtime`, and owns root-scope `POST_BUILD` hooks for Apple
+  bundle icon fallback copies. This app shard assumes that target already exists, then attaches include roots, domain
+  sources, QML asset manifests, platform resources, and defaults to the shared target.
+- Root QML module finalization keeps `OUTPUT_DIRECTORY` at `build/src/app/WhatSon/App` and uses `QT_RESOURCE_ALIAS` so
+  QML paths remain equivalent to the former `src/app`-local `qt_add_qml_module(...)` call.
+- Platform packaging and LVRS defaults are still delegated under `src/app/cmake/*`. Runtime linking is implemented in
+  `src/app/cmake/runtime/CMakeLists.txt`, but the root file invokes that shard after QML module finalization so Qt's
+  generated executable tooling stays in the target's owning directory.
 - New top-level app domains now require an explicit sibling `CMakeLists.txt` plus a matching `add_subdirectory(...)` entry in `src/app/CMakeLists.txt`; this is intentional so architecture changes stay visible in code review.
 - Existing child shards still register sources recursively inside their owned directory, so intra-domain file additions do not require another parent-file edit.
 - Child shards must register `${CMAKE_CURRENT_SOURCE_DIR}` explicitly instead of `.` because the helper functions append
@@ -80,11 +90,11 @@
 - This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported
   plugin targets, which makes future `module \"...\" is not installed` regressions less likely when dialogs or control
   styles pull nested QML imports.
-- The iOS resource shard now exports `WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES`, and `src/app/CMakeLists.txt` copies
-  those PNGs into the bundle root with a `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
+- The iOS resource shard now exports `WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES`, and the root `CMakeLists.txt` copies
+  those PNGs into the bundle root with a root-scope `POST_BUILD` command while `platform/Apple/iOS/Info.plist` keeps
   `CFBundleIcons` fallback metadata. A direct Xcode/device build therefore still has a valid home-screen icon even
   when the generated asset catalog path fails.
-- Apple builds pass `MACOSX_BUNDLE` at `qt_add_executable` time. The macOS resource shard attaches
+- Apple builds pass `MACOSX_BUNDLE` at root `qt_add_executable` time. The macOS resource shard attaches
   `AppIcon.icns` to the `WhatSon` target with `MACOSX_PACKAGE_LOCATION "Resources"`, while
   `platform/Apple/Info.plist` declares `CFBundleIconFile` as `AppIcon.icns` and runtime CMake sets
   `MACOSX_BUNDLE_ICON_FILE`. The same shard also exports the icon path for a `POST_BUILD` bundle copy, because the

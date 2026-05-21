@@ -19,19 +19,19 @@ void WhatSonCppRegressionTests::iosBundleIconPackaging_declaresPrimaryAndIpadFal
 
 void WhatSonCppRegressionTests::iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled()
 {
-    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
     const QString resourceCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/cmake/resources/CMakeLists.txt"));
 
-    QVERIFY(!appCmakeSource.isEmpty());
+    QVERIFY(!rootCmakeSource.isEmpty());
     QVERIFY(!resourceCmakeSource.isEmpty());
-    QVERIFY(appCmakeSource.contains(
+    QVERIFY(rootCmakeSource.contains(
         QStringLiteral("Some generated Xcode projects still miss the asset catalog Resources-phase entry")));
-    QVERIFY(appCmakeSource.contains(
+    QVERIFY(rootCmakeSource.contains(
         QStringLiteral("Xcode does not reliably attach MACOSX_PACKAGE_LOCATION \".\" image sources")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("add_custom_command(TARGET WhatSon POST_BUILD")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("copy_if_different")));
-    QVERIFY(appCmakeSource.contains(
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("add_custom_command(TARGET WhatSon POST_BUILD")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("copy_if_different")));
+    QVERIFY(rootCmakeSource.contains(
         QStringLiteral("$<TARGET_BUNDLE_DIR:WhatSon>/${_whatson_ios_bundle_icon_name}")));
     QVERIFY(resourceCmakeSource.contains(
         QStringLiteral("foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_BUNDLE_ICON_FILES)")));
@@ -43,27 +43,27 @@ void WhatSonCppRegressionTests::iosBundleIconPackaging_stagesBundleRootPngsEvenW
 
 void WhatSonCppRegressionTests::appleBundleIconPackaging_usesMacosAppBundleIconResourceContract()
 {
-    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
     const QString resourceCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/cmake/resources/CMakeLists.txt"));
     const QString runtimeCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/cmake/runtime/CMakeLists.txt"));
     const QString infoPlistSource = readUtf8SourceFile(QStringLiteral("platform/Apple/Info.plist"));
     const QFileInfo iconFile(QStringLiteral("resources/icons/app/desktop/AppIcon.icns"));
 
-    QVERIFY(!appCmakeSource.isEmpty());
+    QVERIFY(!rootCmakeSource.isEmpty());
     QVERIFY(!resourceCmakeSource.isEmpty());
     QVERIFY(!runtimeCmakeSource.isEmpty());
     QVERIFY(!infoPlistSource.isEmpty());
     QVERIFY(iconFile.isFile());
-    QVERIFY(appCmakeSource.contains(QStringLiteral("list(APPEND _whatson_executable_options MACOSX_BUNDLE)")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("qt_add_executable(WhatSon")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("list(APPEND _whatson_executable_options MACOSX_BUNDLE)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("qt_add_executable(WhatSon")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<key>CFBundleIconFile</key>")));
     QVERIFY(infoPlistSource.contains(QStringLiteral("<string>AppIcon.icns</string>")));
     QVERIFY(resourceCmakeSource.contains(QStringLiteral("set_source_files_properties(\"${WHATSON_APP_ICON_ICNS}\" PROPERTIES")));
     QVERIFY(resourceCmakeSource.contains(QStringLiteral("MACOSX_PACKAGE_LOCATION \"Resources\"")));
     QVERIFY(resourceCmakeSource.contains(QStringLiteral("target_sources(WhatSon PRIVATE \"${WHATSON_APP_ICON_ICNS}\")")));
     QVERIFY(resourceCmakeSource.contains(QStringLiteral("WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources/AppIcon.icns")));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("copy_if_different")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources/AppIcon.icns")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("copy_if_different")));
     QVERIFY(runtimeCmakeSource.contains(QStringLiteral("MACOSX_BUNDLE_ICON_FILE \"AppIcon.icns\"")));
 }

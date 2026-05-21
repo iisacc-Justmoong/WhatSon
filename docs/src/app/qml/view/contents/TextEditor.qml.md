@@ -53,9 +53,11 @@
   wrapper. `editorSelectedText` is read from the live editor surface with
   `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
   available as the C++ RAW-source repair anchor.
+- `editorCursorPosition` exposes the current caret separately from selection metadata. Native key filtering uses it for
+  collapsed paste/boundary commands so resource insertion targets the caret rather than a stale selection start.
 - The wrapper attaches `EditorInputCommandFilter` to the public LVRS `editorItem` as the editor-wide native key filter.
-  boundaries to `NoteEditorDocumentSession`, and consumes the native event only when the delegated C++ command reports
-  that it was handled.
+  It delegates callout and explicit-empty-paragraph boundaries to `NoteEditorDocumentSession`, and consumes the native
+  event only when the delegated C++ command reports that it was handled.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's

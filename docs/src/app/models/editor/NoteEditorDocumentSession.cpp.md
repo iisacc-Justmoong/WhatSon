@@ -71,7 +71,7 @@ Implements the active note editor document session.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - The active editor session source becomes the save/sync truth once local editor mutation refreshes it. Modified-count
-  pushes, resource paste, format-tag insertion, callout boundary edits, accepted idle pushes, and frame reprojection can
+  pushes, resource paste, format-tag insertion, callout boundary edits, empty paragraph boundary edits, accepted idle pushes, and frame reprojection can
   all refresh that source. Later idle pushes, note-departure flushes, and late persistence-finished callbacks must not
   rewind it to an older payload. `persistEditorFile(...)` is the explicit file-based fallback and therefore reads the
   current mounted editor session file, allowing real user deletions such as a removed resource object to become the next
@@ -83,6 +83,10 @@ Implements the active note editor document session.
   not write statistic fields directly.
 - The session computes parsed RAW source line count in C++ so QML gutter code does not read or parse note files. The
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
+- Explicit empty source lines can render through hidden placeholder characters so LVRS keeps an editable paragraph row.
+  Backspace on that empty row is handled as a source boundary edit in `NoteEditorDocumentSession`: the first key press
+  removes the empty RAW source line, refreshes the active session source, and updates `parsedLineCount` before the native
+  rich-text surface can consume only the placeholder character.
 - Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create
   resource packages itself.
 - Imported-resource insertion is a persistence boundary as well as a projection boundary: once the resource package
@@ -156,6 +160,10 @@ Implements the active note editor document session.
   낡았더라도 방금 삽입한 resource source를 mounted session file의 낡은 내용으로 덮어쓰지 않는다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
+- 명시적 빈 source line은 LVRS가 편집 가능한 paragraph row로 유지할 수 있도록 hidden placeholder를 통해 렌더될 수
+  있다. 이 빈 row에서 Backspace가 들어오면 `NoteEditorDocumentSession`이 첫 입력에서 곧바로 빈 RAW source line을
+  삭제하고 active session source와 `parsedLineCount`를 갱신한다. 따라서 native rich-text surface가 placeholder만
+  먼저 지워 거터 row를 남기는 상태로 가지 않는다.
 - QML은 공개 LVRS editor item 폭을 `editorViewportWidth`로 전달한다. 이 값은 resource frame media raster의
   intrinsic width가 되어 Qt rich text에서 프레임이 editor 폭을 채우도록 만들고, 실제 이미지 표시 박스는 그 frame
   폭 안에서 다시 중앙 정렬된다.

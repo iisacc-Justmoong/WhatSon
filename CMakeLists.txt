@@ -320,7 +320,86 @@ message(STATUS "  IIXML_PREFIX: ${IIXML_PREFIX}")
 message(STATUS "  IIHTMLBLOCK_PREFIX: ${IIHTMLBLOCK_PREFIX}")
 
 if (WHATSON_BUILD_APP)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)
+    find_package(LVRS CONFIG REQUIRED)
+    qt_policy(SET QTP0004 NEW)
+
+    set(_whatson_executable_options)
+    if (APPLE)
+        list(APPEND _whatson_executable_options MACOSX_BUNDLE)
+    endif ()
+
+    qt_add_executable(WhatSon
+            ${_whatson_executable_options}
+            "src/app/main.cpp")
     add_subdirectory(src/app)
+
+    get_property(WHATSON_APP_QML_FILES GLOBAL PROPERTY WHATSON_APP_QML_FILES)
+    get_property(WHATSON_APP_QML_RESOURCE_FILES GLOBAL PROPERTY WHATSON_APP_QML_RESOURCE_FILES)
+
+    list(REMOVE_DUPLICATES WHATSON_APP_QML_FILES)
+    list(REMOVE_DUPLICATES WHATSON_APP_QML_RESOURCE_FILES)
+    list(SORT WHATSON_APP_QML_FILES)
+    list(SORT WHATSON_APP_QML_RESOURCE_FILES)
+
+    if (NOT WHATSON_APP_QML_FILES)
+        message(FATAL_ERROR "No QML files were discovered under src/app/qml.")
+    endif ()
+
+    set(_whatson_app_qml_files)
+    foreach (_whatson_app_qml_file IN LISTS WHATSON_APP_QML_FILES)
+        set(_whatson_app_qml_abs_file "${CMAKE_SOURCE_DIR}/src/app/${_whatson_app_qml_file}")
+        set_source_files_properties("${_whatson_app_qml_abs_file}" PROPERTIES
+                QT_RESOURCE_ALIAS "${_whatson_app_qml_file}")
+        list(APPEND _whatson_app_qml_files "${_whatson_app_qml_abs_file}")
+    endforeach ()
+
+    set(_whatson_app_qml_resource_files)
+    foreach (_whatson_app_qml_resource_file IN LISTS WHATSON_APP_QML_RESOURCE_FILES)
+        set(_whatson_app_qml_resource_abs_file "${CMAKE_SOURCE_DIR}/src/app/${_whatson_app_qml_resource_file}")
+        set_source_files_properties("${_whatson_app_qml_resource_abs_file}" PROPERTIES
+                QT_RESOURCE_ALIAS "${_whatson_app_qml_resource_file}")
+        list(APPEND _whatson_app_qml_resource_files "${_whatson_app_qml_resource_abs_file}")
+    endforeach ()
+
+    qt_add_qml_module(WhatSon
+            URI WhatSon.App
+            VERSION 1.0
+            OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src/app/WhatSon/App"
+            RESOURCE_PREFIX "/qt/qml"
+            QML_FILES
+            ${_whatson_app_qml_files}
+            RESOURCES
+            ${_whatson_app_qml_resource_files}
+    )
+
+    if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
+        # Keep loose PNG icons in the bundle root even when Xcode asset catalogs are enabled.
+        # Some generated Xcode projects still miss the asset catalog Resources-phase entry, and
+        # the manual CFBundleIcons fallback keeps the installed app icon visible on device.
+        # Xcode does not reliably attach MACOSX_PACKAGE_LOCATION "." image sources to the app
+        # Resources phase, so copy the fallback PNGs from the owning root target directory after link.
+        foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
+            get_filename_component(_whatson_ios_bundle_icon_name "${_whatson_ios_bundle_icon_file}" NAME)
+            add_custom_command(TARGET WhatSon POST_BUILD
+                    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "${_whatson_ios_bundle_icon_file}"
+                    "$<TARGET_BUNDLE_DIR:WhatSon>/${_whatson_ios_bundle_icon_name}"
+                    VERBATIM)
+        endforeach ()
+    endif ()
+
+    if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE)
+        add_custom_command(TARGET WhatSon POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E make_directory
+                "$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources"
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE}"
+                "$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources/AppIcon.icns"
+                VERBATIM)
+    endif ()
+
+    add_subdirectory(src/app/cmake/runtime)
 endif ()
 
 if (WHATSON_BUILD_DAEMON)

@@ -820,6 +820,70 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInit
         QStringLiteral("whatson-callout")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceOnExplicitEmptyParagraphDeletesLineOnFirstPress()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    const QString noteId = QStringLiteral("explicit-empty-paragraph-backspace-note");
+    const QString initialSourceText =
+        QStringLiteral("Before\n"
+                       "\n"
+                       "<callout>Inside</callout>\n"
+                       "After");
+    const QString expectedSourceText =
+        QStringLiteral("Before\n"
+                       "<callout>Inside</callout>\n"
+                       "After");
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        initialSourceText,
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    QVERIFY(openNoteEditorSessionForTest(session, sessionRootDir.path(), noteId, noteDirectoryPath));
+    QCOMPARE(session.parsedLineCount(), 4);
+
+    const QString mountedEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QTextDocument mountedEditorDocument;
+    mountedEditorDocument.setHtml(mountedEditorHtml);
+    const QString mountedPlainText = mountedEditorDocument.toPlainText();
+    const int emptyParagraphPlaceholderIndex = mountedPlainText.indexOf(QChar(0x200B));
+    QVERIFY(emptyParagraphPlaceholderIndex >= 0);
+
+    const QVariantMap result = session.handleEmptyParagraphBoundaryKeyInSource(
+        mountedEditorHtml,
+        emptyParagraphPlaceholderIndex + 1,
+        0,
+        Qt::Key_Backspace);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QVERIFY(result.value(QStringLiteral("handled")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(result.value(QStringLiteral("bodySourceText")).toString(), expectedSourceText);
+    QCOMPARE(session.parsedLineCount(), 3);
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        1,
+        result.value(QStringLiteral("editorDocumentText")).toString());
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        expectedSourceText);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine()
 {
     const QString sourceText =
@@ -1524,6 +1588,68 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsImportedResourceW
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, reopenedEditorHtml),
         resourceBodySourceText);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        resourceBodySourceText);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsImportedResourceWhenReturningWithinSameSession()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("resource-same-session-return-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+    const QString otherNoteId = QStringLiteral("resource-same-session-other-note");
+    const QString otherNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        otherNoteId,
+        QStringLiteral("Other"),
+        &createError);
+    QVERIFY2(!otherNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    QVERIFY(openNoteEditorSessionForTest(session, sessionRootDir.path(), noteId, noteDirectoryPath));
+
+    const QVariantMap insertion = insertImportedImageResourceForNoteEditorSessionTest(
+        session,
+        QStringLiteral("same-session-return-capture"));
+    QVERIFY2(
+        insertion.value(QStringLiteral("valid")).toBool(),
+        qPrintable(insertion.value(QStringLiteral("errorMessage")).toString()));
+    const QString resourceBodySourceText = insertion.value(QStringLiteral("bodySourceText")).toString();
+    QVERIFY(resourceBodySourceText.contains(QStringLiteral("same-session-return-capture.wsresource")));
+    QCOMPARE(session.parsedLineCount(), 3);
+
+    QSignalSpy leavePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QSignalSpy otherLoadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(otherNoteId, otherNoteDirectoryPath));
+    QTRY_VERIFY_WITH_TIMEOUT(leavePersistedSpy.count() >= 1, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(otherLoadedSpy.count(), 1, 3000);
+    QCOMPARE(otherLoadedSpy.takeFirst().at(0).toString(), otherNoteId);
+
+    QSignalSpy returnedLoadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(returnedLoadedSpy.count(), 1, 3000);
+    QCOMPARE(returnedLoadedSpy.takeFirst().at(0).toString(), noteId);
+
+    const QString returnedEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY(returnedEditorHtml.contains(QStringLiteral("whatson-resource-frame")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, returnedEditorHtml),
+        resourceBodySourceText);
+    QCOMPARE(session.parsedLineCount(), 3);
 
     const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
         WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));

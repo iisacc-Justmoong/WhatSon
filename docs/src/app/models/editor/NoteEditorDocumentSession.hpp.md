@@ -59,6 +59,9 @@ Declares the active note editor document session object.
   callout frame entirely. That content-start test uses the loaded RAW source and skips generated frame chrome plus
   renderer-only line characters in LVRS rich-text coordinates. Enter/Return inside a callout moves the cursor to the
   next source line outside the wrapper, adding that line break when the callout is currently the trailing source node.
+- Provides `handleEmptyParagraphBoundaryKeyInSource(...)` for the same native editor key filter. Backspace on an explicit
+  empty source paragraph removes that RAW source line on the first key press, updates parsed line metadata, and returns a
+  reprojected editor document before LVRS can treat the hidden placeholder as the only deleted character.
 
 ## Guardrails
 
@@ -118,3 +121,6 @@ Declares the active note editor document session object.
   content 시작점 판정은 로드된 RAW source를 기준으로 하며 LVRS rich-text 좌표의 생성 frame chrome과 renderer 전용
   줄 문자를 건너뛴다. 콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로
   이동시키고, 뒤에 줄이 없으면 새 줄을 추가한다.
+- `handleEmptyParagraphBoundaryKeyInSource(...)`는 명시적 빈 source paragraph의 Backspace boundary를 처리한다.
+  첫 입력에서 빈 RAW source line을 삭제하고 parsed line metadata와 reprojected editor document를 반환하므로
+  hidden placeholder 문자만 지워져 거터가 한 번 늦게 줄어드는 상태를 만들지 않는다.

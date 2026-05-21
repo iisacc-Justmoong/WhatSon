@@ -68,6 +68,11 @@ bool EditorInputCommandFilter::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_editorItem && event != nullptr && event->type() == QEvent::KeyPress)
     {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
+        if (handleEditorEmptyParagraphBoundaryKeyEvent(*keyEvent))
+        {
+            event->accept();
+            return true;
+        }
         if (handleEditorCalloutBoundaryKeyEvent(*keyEvent))
         {
             event->accept();
@@ -153,6 +158,61 @@ bool EditorInputCommandFilter::editorCalloutBoundaryKeyMatches(const QKeyEvent& 
         && !modifiers.testFlag(Qt::AltModifier);
 }
 
+int EditorInputCommandFilter::editorCommandCursorPosition(
+    const int selectionStart,
+    const int selectionLength) const
+{
+    if (selectionLength > 0 || m_editorOwner.isNull())
+    {
+        return selectionStart;
+    }
+
+    const QVariant cursorPosition = m_editorOwner->property("editorCursorPosition");
+    return cursorPosition.isValid() ? cursorPosition.toInt() : selectionStart;
+}
+
+bool EditorInputCommandFilter::handleEditorEmptyParagraphBoundaryKeyEvent(QKeyEvent& event)
+{
+    if (!editorCalloutBoundaryKeyMatches(event)
+        || m_editorOwner.isNull()
+        || m_noteEditorSessionObject.isNull())
+    {
+        return false;
+    }
+
+    auto* noteEditorSession = qobject_cast<NoteEditorDocumentSession*>(m_noteEditorSessionObject.data());
+    if (noteEditorSession == nullptr)
+    {
+        return false;
+    }
+
+    const QString editorDocumentText =
+        m_editorOwner->property("editorDocumentText").toString();
+    const int selectionStart =
+        m_editorOwner->property("editorSelectionStart").toInt();
+    const int selectionLength =
+        m_editorOwner->property("editorSelectionLength").toInt();
+    const int cursorPosition = editorCommandCursorPosition(selectionStart, selectionLength);
+
+    const QVariantMap result = noteEditorSession->handleEmptyParagraphBoundaryKeyInSource(
+        editorDocumentText,
+        cursorPosition,
+        selectionLength,
+        event.key());
+    if (!result.value(QStringLiteral("handled")).toBool())
+    {
+        return false;
+    }
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        return true;
+    }
+
+    applyEditorCommandResultToOwner(result);
+    event.accept();
+    return true;
+}
+
 bool EditorInputCommandFilter::handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event)
 {
     if (!editorCalloutBoundaryKeyMatches(event)
@@ -174,10 +234,11 @@ bool EditorInputCommandFilter::handleEditorCalloutBoundaryKeyEvent(QKeyEvent& ev
         m_editorOwner->property("editorSelectionStart").toInt();
     const int selectionLength =
         m_editorOwner->property("editorSelectionLength").toInt();
+    const int cursorPosition = editorCommandCursorPosition(selectionStart, selectionLength);
 
     const QVariantMap result = noteEditorSession->handleCalloutBoundaryKeyInSource(
         editorDocumentText,
-        selectionStart,
+        cursorPosition,
         selectionLength,
         event.key());
     if (!result.value(QStringLiteral("handled")).toBool())
@@ -217,12 +278,13 @@ bool EditorInputCommandFilter::handleEditorPasteKeyEvent(QKeyEvent& event)
         m_editorOwner->property("editorSelectionStart").toInt();
     const int selectionLength =
         m_editorOwner->property("editorSelectionLength").toInt();
+    const int cursorPosition = editorCommandCursorPosition(selectionStart, selectionLength);
 
     const QVariantMap insertion = editorPaste->pasteImageResourceIntoEditor(
         m_clipboardObject.data(),
         m_noteEditorSessionObject.data(),
         editorDocumentText,
-        selectionStart,
+        cursorPosition,
         selectionLength);
     if (insertion.value(QStringLiteral("nativePaste")).toBool())
     {

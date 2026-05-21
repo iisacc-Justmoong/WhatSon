@@ -2,6 +2,15 @@
 
 ## Responsibility
 - Owns repository-wide toolchain setup, product build options, and the top-level `add_subdirectory(...)` graph.
+- Declares the `WhatSon` Qt executable target at the root when `WHATSON_BUILD_APP` is enabled, then lets
+  `src/app/CMakeLists.txt` attach app-domain sources, QML assets, packaging shards, and runtime wiring to that target.
+- Finalizes the app QML module and enters `src/app/cmake/runtime` from the root after `src/app` has collected QML
+  entries. Qt-generated executable tooling expects these target-finalization calls to share the root target directory.
+- Converts `src/app`-relative QML manifests to absolute source paths with `QT_RESOURCE_ALIAS`, preserving the existing
+  module-internal paths and `build/src/app/WhatSon/App` output directory even though `qt_add_qml_module(...)` now runs
+  from the root.
+- Owns root-scope `POST_BUILD` commands for the root-created app target, including Apple bundle icon fallback copies
+  that CMake requires to live in the same directory as the target declaration.
 - Keeps application, daemon, CLI, and `test/` enablement close to the root configuration entrypoint.
 - Delegates large custom-target groups to `cmake/root/*/CMakeLists.txt` so the root file remains an orchestration surface instead of a full target catalog.
 
@@ -16,8 +25,11 @@
 - `cmake/root/distribution/CMakeLists.txt`: install/export/package targets and the dedicated `build-trial` mirror flow.
 
 ## Invariants
-- Keep option declarations, package discovery, and primary product `add_subdirectory(...)` calls in the root file.
+- Keep option declarations, package discovery, the root `qt_add_executable(WhatSon ...)` declaration, root
+  `qt_add_qml_module(WhatSon ...)` finalization, and primary product `add_subdirectory(...)` calls in the root file.
 - Keep grouped custom targets in `cmake/root/*` and avoid moving product-level source ownership back into the root file.
+- Keep app source/module ownership below `src/app`; the root executable declaration owns the target shell,
+  `src/app/main.cpp`, and target-directory-only root `POST_BUILD` hooks.
 - `whatson_build_all` is an aggregate custom target with explicit `add_dependencies(...)` on product targets. Do not
   put bundle executable paths or product target names in the custom target's `DEPENDS` list, because macOS app bundles
   can otherwise be interpreted as file dependencies without a make rule.

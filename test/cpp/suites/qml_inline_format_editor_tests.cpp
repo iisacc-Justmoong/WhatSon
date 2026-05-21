@@ -171,6 +171,7 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorSelectedText")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorSelectedTextForCurrentSelection()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(selectionStart, selectionEnd)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));

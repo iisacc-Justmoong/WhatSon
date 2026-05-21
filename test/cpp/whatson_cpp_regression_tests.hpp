@@ -982,6 +982,49 @@ private:
     bool m_noteBacked = true;
 };
 
+class FakeEditorInputCommandOwner final : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit FakeEditorInputCommandOwner(QObject* parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    Q_INVOKABLE QVariant replaceEditorDocumentText(
+        const QVariant& editorDocumentText,
+        const QVariant& cursorPosition)
+    {
+        m_replaceCalled = true;
+        m_lastEditorDocumentText = editorDocumentText.toString();
+        m_lastCursorPosition = cursorPosition.toInt();
+        setProperty("editorDocumentText", editorDocumentText);
+        setProperty("editorCursorPosition", cursorPosition);
+        return QVariant(true);
+    }
+
+    bool replaceCalled() const noexcept
+    {
+        return m_replaceCalled;
+    }
+
+    QString lastEditorDocumentText() const
+    {
+        return m_lastEditorDocumentText;
+    }
+
+    int lastCursorPosition() const noexcept
+    {
+        return m_lastCursorPosition;
+    }
+
+private:
+    bool m_replaceCalled = false;
+    QString m_lastEditorDocumentText;
+    int m_lastCursorPosition = 0;
+};
+
 class FakeRowOnlySelectionNoteListModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -1256,6 +1299,7 @@ private slots:
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
+    void noteEditorDocumentSession_backspaceOnExplicitEmptyParagraphDeletesLineOnFirstPress();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
@@ -1269,6 +1313,7 @@ private slots:
     void noteEditorDocumentSession_persistsImportedResourceSourceBeforeIdlePush();
     void noteEditorDocumentSession_writesImportedResourceSourceIntoSessionFile();
     void noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile();
+    void noteEditorDocumentSession_keepsImportedResourceWhenReturningWithinSameSession();
     void noteEditorDocumentSession_discardsPrePasteModifiedCountPush();
     void noteEditorDocumentSession_keepsLastTextEditWhenStaleIdleSyncArrives();
     void noteEditorDocumentSession_repushesSessionSourceWhenIdlePullReturnsOlderSnapshot();
@@ -1369,6 +1414,8 @@ private slots:
     void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
     void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
     void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
+    void editorInputCommandFilter_pastesImageResourceAtCaretForCollapsedSelection();
+    void clipboardEditorPaste_requiresActiveNoteSessionForImagePaste();
     void clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
     void clipboardEditorPaste_fallsBackForNonImageResource();

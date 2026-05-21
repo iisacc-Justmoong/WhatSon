@@ -6,11 +6,13 @@
 void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages()
 {
     const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     const QString appRuntimeCmakeSource = readUtf8SourceFile(
         QStringLiteral("src/app/cmake/runtime/CMakeLists.txt"));
     const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
 
     QVERIFY(!rootCmakeSource.isEmpty());
+    QVERIFY(!appCmakeSource.isEmpty());
     QVERIFY(!appRuntimeCmakeSource.isEmpty());
     QVERIFY(!testCmakeSource.isEmpty());
 
@@ -22,6 +24,20 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
     QVERIFY(rootCmakeSource.contains(QStringLiteral("whatson_require_ios_local_package(iiHtmlBlock")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiXml 0.1.0 CONFIG REQUIRED)")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiHtmlBlock 0.1.0 CONFIG REQUIRED)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(LVRS CONFIG REQUIRED)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("qt_add_executable(WhatSon")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("\"src/app/main.cpp\"")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("qt_add_qml_module(WhatSon")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("QT_RESOURCE_ALIAS")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("OUTPUT_DIRECTORY \"${CMAKE_BINARY_DIR}/src/app/WhatSon/App\"")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("add_subdirectory(src/app/cmake/runtime)")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("qt_add_executable(WhatSon")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("qt_add_qml_module(WhatSon")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(cmake/runtime)")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("add_custom_command(TARGET WhatSon POST_BUILD")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_custom_command(TARGET WhatSon POST_BUILD")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("add_custom_target(whatson_build_all)")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("add_dependencies(whatson_build_all ${WHATSON_BUILD_TARGETS})")));
     QVERIFY(!rootCmakeSource.contains(QStringLiteral("add_custom_target(whatson_build_all DEPENDS ${WHATSON_BUILD_TARGETS})")));

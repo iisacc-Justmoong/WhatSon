@@ -70,8 +70,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   closing tag. Explicit empty source lines adjacent to callouts render through an invisible placeholder so they count as
   editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
-  delegating RAW semantic-boundary decisions to `NoteEditorDocumentSession` and clipboard package creation to
-  `ClipboardEditorPaste`.
+  semantic boundary and paste commands, delegating RAW semantic-boundary decisions to `NoteEditorDocumentSession` and
+  clipboard package creation to `ClipboardEditorPaste`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
@@ -90,6 +90,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   session returns the cursor position in decorated LVRS rich-text coordinates after generated callout chrome so the
   caret starts inside the callout content span. Backspace at that same decorated content start maps back to the loaded
   RAW source content start and delegates the wrapper/empty-line edit plan to `component/Callout` instead of deleting
+  generated chrome. Backspace on an explicit empty source paragraph is also a session-owned boundary edit: the first key
+  press deletes the empty RAW source line and refreshes parsed line count instead of only deleting a hidden placeholder.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
   from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
@@ -135,7 +137,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치의 빈
   줄 삽입을 계획한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를 실제로
   하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
-  경계 Backspace/Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
+  경계 Backspace/Enter와 명시적 빈 paragraph Backspace는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
   위임하며, 처리된 경우에만 native editor event를 consume한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
@@ -148,7 +150,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
   커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면
-  loaded RAW source의 callout content 시작점으로 역매핑하고 `component/Callout`의 edit 계획을 적용해 주변 줄이
+  loaded RAW source의 callout content 시작점으로 역매핑하고 `component/Callout`의 edit 계획을 적용한다. 명시적
+  빈 source paragraph의 Backspace는 첫 입력에서 빈 RAW source line을 삭제하고 parsed line count를 갱신하므로
+  hidden placeholder만 삭제된 채 거터 row가 남지 않는다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
   resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
   frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor
