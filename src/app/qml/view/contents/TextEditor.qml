@@ -124,7 +124,7 @@ LV.TextEditor {
     }
 
     function bumpEditorPlainTextRevision() {
-        textEditor.editorPlainTextRevision = (textEditor.editorPlainTextRevision + 1) % 1000000;
+        textEditor.editorPlainTextRevision = textEditor.editorPlainTextRevision + 1;
     }
 
     function bumpEditorLineMetricsRevision() {

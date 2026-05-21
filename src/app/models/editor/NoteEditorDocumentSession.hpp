@@ -213,6 +213,7 @@ private:
     WhatSonEditorRawPullController m_rawPullController;
     WhatSonEditorRawPushController m_rawPushController;
     QHash<QString, EditorFileContext> m_editorFileContexts;
+    QHash<QString, int> m_latestEditorRevisionByFile;
     QString m_sessionRootPathForTests;
     QString m_editorFilePath;
     QString m_activeNoteId;

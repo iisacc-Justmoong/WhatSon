@@ -29,9 +29,11 @@ Declares the active note editor document session object.
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
-  push triggers into `file/sync/WhatSonEditorRawPushController`. Modified-count pushes update the active session source
-  immediately, and idle pushes persist that source instead of allowing a stale sync-finished payload to drop the last
-  editor action.
+  push triggers into `file/sync/WhatSonEditorRawPushController`. Idle pushes from the active session file use the live
+  editor payload; idle pushes for another saved session file fall back to reading that file. Modified-count pushes must
+  carry the active session-file path and a revision newer than the last accepted revision for that path before they
+  update the active session source. Accepted idle and modified-count pushes persist that source instead of allowing a
+  stale sync-finished payload to drop the last editor action.
 - Keeps the active editor session source as the save/sync truth after local mutation refreshes it. Late persistence
   callbacks and note-departure flushes are not allowed to rewind it to an older source, while explicit
   `persistEditorFile(path)` still reads the mounted editor session file so real user deletions become authoritative.
@@ -89,11 +91,12 @@ Declares the active note editor document session object.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
-- LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
+- LVRS가 현재 mounted session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
   note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다. modified-count push는 active
-  session source를 즉시 갱신하고, idle push와 note-departure flush는 늦게 도착한 sync-finished payload나 낡은
-  mounted session file 대신 그 source를 저장한다.
+  session file path와 최신 revision을 함께 가져야 active session source를 갱신할 수 있고, 오래된 revision은
+  갱신 전에 무시된다. idle push와 note-departure flush는 늦게 도착한 sync-finished payload나 낡은 mounted session
+  file 대신 그 source를 저장한다.
   따라서 마지막 텍스트 입력이나 마지막 component 삽입이 stale snapshot에 의해 잘리지 않는다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
   다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull한다. 로컬 mutation으로 active session source가 권위

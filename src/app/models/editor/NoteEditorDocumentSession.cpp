@@ -1475,7 +1475,19 @@ void NoteEditorDocumentSession::requestEditorIdleRawPush(
     const QString& editorFilePath,
     const QString& editorDocumentText)
 {
-    m_rawPushController.requestIdlePush(editorFilePath, editorDocumentText);
+    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty())
+    {
+        return;
+    }
+
+    if (normalizedEditorFilePath != normalizePath(m_editorFilePath))
+    {
+        persistEditorFileForRawPush(normalizedEditorFilePath, QStringLiteral("idle"));
+        return;
+    }
+
+    m_rawPushController.requestIdlePush(normalizedEditorFilePath, editorDocumentText);
 }
 
 void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
@@ -1485,6 +1497,19 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
 {
     recordEditorUserActivity();
     const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty()
+        || normalizedEditorFilePath != normalizePath(m_editorFilePath))
+    {
+        return;
+    }
+
+    const int latestEditorRevision = m_latestEditorRevisionByFile.value(normalizedEditorFilePath, -1);
+    if (modifiedCount <= latestEditorRevision)
+    {
+        return;
+    }
+    m_latestEditorRevisionByFile.insert(normalizedEditorFilePath, modifiedCount);
+
     const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
     if (contextIterator != m_editorFileContexts.constEnd()
         && hasActiveSessionBodySourceFor(contextIterator->noteId, contextIterator->noteDirectoryPath))
@@ -1505,7 +1530,7 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
         setParsedLineCount(lineCountForEditorSource(activeSessionBodySourceText()));
     }
     m_rawPushController.requestModifiedCountPush(
-        editorFilePath,
+        normalizedEditorFilePath,
         modifiedCount,
         editorDocumentText);
 }
@@ -2268,6 +2293,7 @@ bool NoteEditorDocumentSession::applyLoadedBodyTextToEditorSession(
     m_editorFileContexts.insert(
         sessionFilePath,
         {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt.trimmed()});
+    m_latestEditorRevisionByFile.insert(sessionFilePath, -1);
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
     setActiveSessionBodySourceText(normalizedBodySourceText, false);
     setParsedLineCount(lineCountForEditorSource(normalizedBodySourceText));

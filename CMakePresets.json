@@ -1,0 +1,41 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "macos-clion",
+      "displayName": "macOS CLion",
+      "description": "Configures WhatSon in the repository build/ directory for CLion and local development.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "WHATSON_BUILD_APP": "ON",
+        "WHATSON_BUILD_DAEMON": "ON",
+        "WHATSON_BUILD_CLI": "ON",
+        "WHATSON_ENABLE_DEV_TOOLING": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "whatson-build-regression",
+      "displayName": "WhatSon Build Regression",
+      "configurePreset": "macos-clion",
+      "targets": [
+        "whatson_build_regression"
+      ]
+    },
+    {
+      "name": "whatson-regression",
+      "displayName": "WhatSon Regression",
+      "configurePreset": "macos-clion",
+      "targets": [
+        "whatson_regression"
+      ]
+    }
+  ]
+}

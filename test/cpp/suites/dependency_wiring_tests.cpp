@@ -3,6 +3,11 @@
 #include <iiHtmlBlock.h>
 #include <iiXml.h>
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+
 void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages()
 {
     const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
@@ -46,6 +51,68 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
     QVERIFY(appRuntimeCmakeSource.contains(QStringLiteral("iiHtmlBlock::iiHtmlBlock")));
     QVERIFY(testCmakeSource.contains(QStringLiteral("iiXml::iiXml")));
     QVERIFY(testCmakeSource.contains(QStringLiteral("iiHtmlBlock::iiHtmlBlock")));
+}
+
+void WhatSonCppRegressionTests::cmakePresets_exposeStableClionConfigureProfile()
+{
+    const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
+    const QString presetSource = readUtf8SourceFile(QStringLiteral("CMakePresets.json"));
+
+    QVERIFY(!rootCmakeSource.isEmpty());
+    QVERIFY(!presetSource.isEmpty());
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("file(GLOB QT_INSTALL_DIRS \"$ENV{HOME}/Qt/6.*\")")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("set(QT_ROOT_PATH \"${LATEST_QT}/macos\" CACHE PATH")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("list(APPEND CMAKE_PREFIX_PATH \"${QT_ROOT_PATH}\")")));
+
+    QJsonParseError parseError;
+    const QJsonDocument presetDocument = QJsonDocument::fromJson(presetSource.toUtf8(), &parseError);
+
+    QCOMPARE(parseError.error, QJsonParseError::NoError);
+    QVERIFY(presetDocument.isObject());
+
+    const QJsonObject rootObject = presetDocument.object();
+    const QJsonArray configurePresets = rootObject.value(QStringLiteral("configurePresets")).toArray();
+    const QJsonArray buildPresets = rootObject.value(QStringLiteral("buildPresets")).toArray();
+
+    QVERIFY(!configurePresets.isEmpty());
+    QVERIFY(!buildPresets.isEmpty());
+
+    QJsonObject clionConfigurePreset;
+    for (const QJsonValue& presetValue : configurePresets) {
+        const QJsonObject presetObject = presetValue.toObject();
+        if (presetObject.value(QStringLiteral("name")).toString() == QStringLiteral("macos-clion")) {
+            clionConfigurePreset = presetObject;
+            break;
+        }
+    }
+
+    QVERIFY(!clionConfigurePreset.isEmpty());
+    QCOMPARE(clionConfigurePreset.value(QStringLiteral("binaryDir")).toString(), QStringLiteral("${sourceDir}/build"));
+    QCOMPARE(clionConfigurePreset.value(QStringLiteral("generator")).toString(), QStringLiteral("Unix Makefiles"));
+
+    const QJsonObject cacheVariables = clionConfigurePreset.value(QStringLiteral("cacheVariables")).toObject();
+    QCOMPARE(cacheVariables.value(QStringLiteral("WHATSON_BUILD_APP")).toString(), QStringLiteral("ON"));
+    QCOMPARE(cacheVariables.value(QStringLiteral("WHATSON_ENABLE_DEV_TOOLING")).toString(), QStringLiteral("ON"));
+
+    auto buildPresetTargets = [buildPresets](const QString& presetName) {
+        QStringList targets;
+        for (const QJsonValue& presetValue : buildPresets) {
+            const QJsonObject presetObject = presetValue.toObject();
+            if (presetObject.value(QStringLiteral("name")).toString() != presetName) {
+                continue;
+            }
+
+            for (const QJsonValue& targetValue : presetObject.value(QStringLiteral("targets")).toArray()) {
+                targets.append(targetValue.toString());
+            }
+        }
+        return targets;
+    };
+
+    QCOMPARE(buildPresetTargets(QStringLiteral("whatson-build-regression")),
+             QStringList{QStringLiteral("whatson_build_regression")});
+    QCOMPARE(buildPresetTargets(QStringLiteral("whatson-regression")),
+             QStringList{QStringLiteral("whatson_regression")});
 }
 
 void WhatSonCppRegressionTests::cmakeBuildTargets_cleanTransientBuildDiagnostics()

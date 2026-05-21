@@ -1248,6 +1248,7 @@ private slots:
     void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
     void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
+    void cmakePresets_exposeStableClionConfigureProfile();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
     void detailPanelRouting_separatesNoteAndResourceViewsAndControllers();
     void foldersHierarchyParser_escapesLiteralSlashLabelsIntoSingleSegments();
@@ -1384,8 +1385,10 @@ private slots:
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
+    void noteEditorDocumentSession_readsMismatchedIdlePushFromSessionFile();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
+    void noteEditorDocumentSession_ignoresStaleModifiedCountPayloads();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();

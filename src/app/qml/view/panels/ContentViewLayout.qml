@@ -421,11 +421,16 @@ Item {
                     visible: contentViewLayout.noteEditorSurfaceVisible
 
                     onSyncFinished: function(path) {
+                        const syncedPath = path === undefined || path === null ? "" : String(path).trim();
+                        if (syncedPath.length === 0
+                                || syncedPath !== contentViewLayout.editorSourceFilePath) {
+                            return;
+                        }
                         if (contentViewLayout.noteEditorSurfaceVisible
                                 && contentViewLayout.noteEditorSession
                                 && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
                             contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
-                                        path,
+                                        syncedPath,
                                         contentsTextEditor.editorDocumentText);
                         }
                     }

@@ -96,10 +96,13 @@ viewer routing is based on the entry type/format and the already-resolved `sourc
 fields. The layout does not parse resource packages or mutate resource metadata.
 
 `noteEditorSession` is consumed to bind the editor session file into `LV.TextEditor`, to notify the C++ session when
-LVRS finishes syncing that session file, to forward editor modified-count increments for RAW push scheduling, and to
-insert already-imported resource metadata returned from `inAppClipboard`. Other restored-shell state must not be used
-to mount parser, projection, renderer, generic resource editor, or editor view-mode backend logic. Calendar routing is
-limited to the already-owned day/week/month/year controllers and overlay visibility signals.
+LVRS finishes syncing the currently mounted session file, to forward editor modified-count increments with the mounted
+path, revision, and live document text for RAW push scheduling, and to insert already-imported resource metadata
+returned from `inAppClipboard`. `syncFinished(path)` is ignored when `path` is not the current
+`editorSourceFilePath`, so an old session-file notification cannot pair that old path with the current editor payload.
+Other restored-shell state must not be used to mount parser, projection, renderer, generic resource editor, or editor
+view-mode backend logic. Calendar routing is limited to the already-owned day/week/month/year controllers and overlay
+visibility signals.
 When the session emits `editorDocumentTextPulled(...)` for a newer idle filesystem pull, the layout replaces the LVRS
 document text through the sibling editor's public wrapper hook and suppresses the resulting revision tick from being
 classified as a local modified-count push.

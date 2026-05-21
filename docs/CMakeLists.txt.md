@@ -2,6 +2,8 @@
 
 ## Responsibility
 - Owns repository-wide toolchain setup, product build options, and the top-level `add_subdirectory(...)` graph.
+- Auto-discovers common macOS Qt installations under `~/Qt/6.*` through `QT_ROOT_PATH`, giving CLion's default CMake
+  profile and the repository preset the same package-discovery path.
 - Declares the `WhatSon` Qt executable target at the root when `WHATSON_BUILD_APP` is enabled, then lets
   `src/app/CMakeLists.txt` attach app-domain sources, QML assets, packaging shards, and runtime wiring to that target.
 - Finalizes the app QML module and enters `src/app/cmake/runtime` from the root after `src/app` has collected QML
@@ -34,6 +36,8 @@
   put bundle executable paths or product target names in the custom target's `DEPENDS` list, because macOS app bundles
   can otherwise be interpreted as file dependencies without a make rule.
 - Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
+- Keep `CMakePresets.json` aligned with this root entrypoint. CLion should import the `macos-clion` preset and configure
+  `${sourceDir}/build`, while root CMake continues to own dependency discovery.
 - Keep `build/` free of ad-hoc diagnostic artifacts. Build-system support files may exist there, but temporary
   WhatSon logs/images/backups should be routed under owned subdirectories or removed by `whatson_clean_build_extras`.
 - User-built local libraries under `~/.local` are surfaced through cacheable root prefixes. `iiXml` and `iiHtmlBlock`

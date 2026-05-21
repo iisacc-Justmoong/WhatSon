@@ -117,6 +117,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForLogicalCursor()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorPlainTextRevision: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorLineMetricsRevision: 0")));
+    QVERIFY(textEditorSource.contains(QStringLiteral(
+        "textEditor.editorPlainTextRevision = textEditor.editorPlainTextRevision + 1")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral(
+        "textEditor.editorPlainTextRevision = (textEditor.editorPlainTextRevision + 1) % 1000000")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorMeasuredContentHeight")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorRenderedLineCount")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorVisualLineHeight")));
@@ -376,6 +380,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("scrollTarget: contentsTextEditor.scrollEditorViewportTo")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const syncedPath")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("syncedPath !== contentViewLayout.editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorModifiedCountRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextPulled(noteId, editorDocumentText)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorApplyingPulledDocumentText")));

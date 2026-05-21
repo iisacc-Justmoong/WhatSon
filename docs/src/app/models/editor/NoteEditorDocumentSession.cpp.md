@@ -23,14 +23,18 @@ Implements the active note editor document session.
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
 7. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
-   `requestEditorIdleRawPush(...)`; when the editor surface modified count increases, QML sends the same surface
-   payload to `requestEditorModifiedCountRawPush(...)`. Both routes pass through
+   `requestEditorIdleRawPush(...)` only when that path is the currently mounted editor source file. If another caller
+   sends an idle push for a different session file, the C++ session reads that saved session file instead of mixing it
+   with the current editor payload. When the editor surface modified count increases, QML sends the mounted path,
+   revision, and surface payload together to `requestEditorModifiedCountRawPush(...)`. The session accepts only the
+   active editor path and a revision newer than the last accepted revision for that path. Both routes pass through
    `WhatSonEditorRawPushController`, then the session converts the editor document HTML back into canonical source text
    and delegates persistence through `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and
    `parsedLineCount` is refreshed.
-   Modified-count pushes update the active session source immediately, before any delayed persistence callback can run.
-   Idle pushes then persist that active session source instead of trusting an older sync-finished payload, so the last
-   typed character or last inserted source component is not lost when a stale editor-file sync arrives late.
+   Accepted modified-count pushes update the active session source immediately, before any delayed persistence callback
+   can run. Stale modified-count pushes are ignored before they can replace the active source. Idle pushes then persist
+   that active session source instead of trusting an older sync-finished payload, so the last typed character or last
+   inserted source component is not lost when a stale editor-file sync arrives late.
    If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
    Before note context changes or clears, the session asks the same push controller to flush the active surface. If that
@@ -72,11 +76,13 @@ Implements the active note editor document session.
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
 - The active editor session source becomes the save/sync truth once local editor mutation refreshes it. Modified-count
   pushes, resource paste, format-tag insertion, callout boundary edits, empty paragraph boundary edits, accepted idle pushes, and frame reprojection can
-  all refresh that source. Later idle pushes, note-departure flushes, and late persistence-finished callbacks must not
-  rewind it to an older payload. `persistEditorFile(...)` is the explicit file-based fallback and therefore reads the
-  current mounted editor session file, allowing real user deletions such as a removed resource object to become the next
-  active source. Internal note-departure fallback uses `persistEditorFileForRawPush(...)` so stale session-file contents
-  cannot erase a just-inserted resource before the note is reopened.
+  all refresh that source. Modified-count payloads must carry the active session-file path and a revision newer than the
+  last accepted revision for that path before they can update the active source. Later idle pushes, note-departure
+  flushes, and late persistence-finished callbacks must not rewind it to an older payload. `persistEditorFile(...)` is
+  the explicit file-based fallback and therefore reads the current mounted editor session file, allowing real user
+  deletions such as a removed resource object to become the next active source. Internal note-departure fallback uses
+  `persistEditorFileForRawPush(...)` so stale session-file contents cannot erase a just-inserted resource before the
+  note is reopened.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
 - The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must

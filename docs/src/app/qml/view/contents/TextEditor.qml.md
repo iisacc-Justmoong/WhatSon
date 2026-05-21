@@ -66,7 +66,8 @@
   below the rendered frame. If parsed source lines outnumber the plain-text rows exposed by LVRS, overflow source lines
   are placed after the last measured editor rectangle instead of reusing the same document-end coordinate. It is only a
   placement helper; it must not drive gutter delegate count.
-- `editorPlainTextRevision` bumps when the editor text changes or the wrapper finishes initial discovery.
+- `editorPlainTextRevision` bumps monotonically when the editor text changes or the wrapper finishes initial discovery,
+  so C++ can reject stale editor payloads by revision without wraparound ambiguity.
 - `editorLineMetricsRevision` bumps when text or LVRS rendered geometry changes so the sibling gutter can move existing
   source-line delegates while still leaving wrapped continuation rows unnumbered.
 - `preferNativeGestures` stays `false` for the WhatSon note body wrapper. The LVRS viewport flick path must remain

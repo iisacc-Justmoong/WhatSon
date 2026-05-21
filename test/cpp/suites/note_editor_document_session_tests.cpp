@@ -200,6 +200,59 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
         QStringLiteral("After idle push"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_readsMismatchedIdlePushFromSessionFile()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString firstNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("idle-mismatch-first-note"),
+        QStringLiteral("First note before mismatch"),
+        &createError);
+    QVERIFY2(!firstNoteDirectoryPath.isEmpty(), qPrintable(createError));
+    const QString secondNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("idle-mismatch-second-note"),
+        QStringLiteral("Second active note"),
+        &createError);
+    QVERIFY2(!secondNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("idle-mismatch-first-note"), firstNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    const QString firstEditorFilePath = session.editorFilePath();
+
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+        firstEditorFilePath,
+        QStringLiteral("First note session file wins")));
+
+    QVERIFY(session.openNoteForEditing(QStringLiteral("idle-mismatch-second-note"), secondNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 2, 3000);
+    QVERIFY(session.editorFilePath() != firstEditorFilePath);
+
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+        firstEditorFilePath,
+        QStringLiteral("First note session file wins after switch")));
+
+    session.requestEditorIdleRawPush(
+        firstEditorFilePath,
+        QStringLiteral("Wrong active editor payload"));
+
+    const QString firstBodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(firstNoteDirectoryPath);
+    QTRY_COMPARE_WITH_TIMEOUT(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(
+            readUtf8FileForNoteEditorSessionTest(firstBodyPath)),
+        QStringLiteral("First note session file wins after switch"),
+        3000);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest()
 {
     QTemporaryDir workspaceDir;
@@ -282,6 +335,53 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         QStringLiteral("After modified count push"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_ignoresStaleModifiedCountPayloads()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("stale-modified-count-note"),
+        QStringLiteral("Before stale revision"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("stale-modified-count-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        2,
+        QStringLiteral("Latest revision text"));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        1,
+        QStringLiteral("Stale revision text"));
+    session.requestEditorIdleRawPush(
+        session.editorFilePath(),
+        QStringLiteral("Stale idle sync text"));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Latest revision text"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture()
