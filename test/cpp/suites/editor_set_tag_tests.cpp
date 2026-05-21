@@ -30,6 +30,7 @@ void WhatSonCppRegressionTests::editorSetTag_rejectsUnsupportedStaticNames()
     QVERIFY(input.availableTagNames().contains(QStringLiteral("header")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("subheader")));
     QVERIFY(input.availableTagNames().contains(QStringLiteral("resource")));
+    QVERIFY(input.availableTagNames().contains(QStringLiteral("style")));
 
     QVERIFY(!input.configureTagName(QStringLiteral("script")));
     QCOMPARE(input.tagName(), QStringLiteral("callout"));
@@ -54,6 +55,21 @@ void WhatSonCppRegressionTests::editorSetTag_addsHeaderSubheaderAndResourceTempl
     QVERIFY(headerDescriptor.value(QStringLiteral("valid")).toBool());
     QCOMPARE(headerDescriptor.value(QStringLiteral("openingToken")).toString(), QStringLiteral("<header>"));
     QCOMPARE(headerDescriptor.value(QStringLiteral("closingToken")).toString(), QStringLiteral("</header>"));
+
+    const QVariantMap styleDescriptor = input.staticTagDescriptor(QStringLiteral("style"));
+    QVERIFY(styleDescriptor.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(styleDescriptor.value(QStringLiteral("openingToken")).toString(), QStringLiteral("<style>"));
+    QCOMPARE(styleDescriptor.value(QStringLiteral("closingToken")).toString(), QStringLiteral("</style>"));
+
+    const QVariantMap styleResult = input.insertNamedTagIntoSource(
+        QStringLiteral("style"),
+        QStringLiteral("Styled text"),
+        0,
+        QStringLiteral("Styled").size());
+    QVERIFY(styleResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        styleResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style>Styled</style> text"));
 
     const QVariantMap subheaderResult = input.insertNamedTagIntoSource(
         QStringLiteral("subheader"),

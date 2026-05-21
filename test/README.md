@@ -44,7 +44,8 @@ ctest --test-dir build --output-on-failure -L cpp_regression
   coverage locks the mobile editor route to hidden gutter/minimap rails.
 - Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
   editor minimap backends and any extra contents-view QML beyond those three files.
-- Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, while `SetProperty`
+- Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, including the paired
+  `style` text wrapper whose `style` attribute follows LVRS text token names, while `SetProperty`
   uses dynamic string attribute names with inferred string/int/float/bool values. `GetProperty` captures tag
   attributes into in-app key/value state with the matching inferred value kinds. These paths reserialize or project
   body documents through the note-body persistence boundary.

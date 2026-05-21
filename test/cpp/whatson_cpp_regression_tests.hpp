@@ -1271,6 +1271,7 @@ private slots:
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
+    void noteBodyPersistence_roundTripsCanonicalStyleTagAttributes();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
     void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();

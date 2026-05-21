@@ -169,6 +169,11 @@ bool isWebLinkTagName(const QString& elementName)
     return normalizedTagName(elementName) == QStringLiteral("weblink");
 }
 
+bool isStyleTagName(const QString& elementName)
+{
+    return normalizedTagName(elementName) == QStringLiteral("style");
+}
+
 bool isSourceProjectionLineBreakTagName(const QString& elementName)
 {
     return normalizedTagName(elementName) == QStringLiteral("br");
@@ -225,6 +230,7 @@ bool isTransparentContainerTagName(const QString& elementName)
 bool isSourceSemanticPassThroughTagName(const QString& elementName)
 {
     return normalizedTagName(elementName) == QStringLiteral("next")
+        || isStyleTagName(elementName)
         || isTransparentContainerTagName(elementName)
         || isLegacySemanticTextBlockTag(elementName);
 }

@@ -144,6 +144,7 @@ namespace
 
         return !SemanticTags::canonicalInlineStyleTagName(tagName).isEmpty()
             || SemanticTags::isWebLinkTagName(tagName)
+            || SemanticTags::isStyleTagName(tagName)
             || SemanticTags::isHashtagTagName(tagName)
             || SemanticTags::isTransparentContainerTagName(tagName)
             || !SemanticTags::semanticTextOpeningHtml(tagName).isEmpty();

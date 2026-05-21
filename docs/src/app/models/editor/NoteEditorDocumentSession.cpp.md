@@ -94,8 +94,9 @@ Implements the active note editor document session.
   removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
   format mutation basis so a lossy RichText projection cannot drop blank source rows before selection mapping.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
-  mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
-  span and repairs the source range before calling `SetTag`.
+  mapped. Custom `<style ...>` wrappers are invisible source chrome while their child text remains selectable. If the
+  RichText selection offset has drifted, the session compares that selected text with the visible source span and repairs
+  the source range before calling `SetTag`.
 - Callout boundary keys are source mutations applied by this class, but the callout-specific range parsing and edit
   planning live in `component/Callout`. Backspace at the callout content start removes only the `<callout>` wrapper when
   content exists, or removes the whole empty callout source line when it does not. Enter/Return inside a callout never

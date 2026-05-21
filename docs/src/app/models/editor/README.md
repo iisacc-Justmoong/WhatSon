@@ -33,7 +33,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
   text or into a serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`. Component-specific template
   definitions can live under `component/`; `SetTag` consumes those descriptors and owns the generic mutation result
-  shape.
+  shape. The paired `style` text wrapper is part of this allow-list; its `style` attribute names an LVRS text token, and
+  note-body persistence projects the token metrics/color plus optional key/value overrides rather than letting QML own
+  that policy.
 - `TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
   static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
   the actual `.wsnbody` document is updated.

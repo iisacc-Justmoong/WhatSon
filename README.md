@@ -391,6 +391,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - Legacy `.wsnbody` semantic tags now resolve through one shared registry across persistence and editor HTML read paths,
   so tags such as `<next/>`, `<title>`, `<subTitle>`, and `<eventTitle>` no longer render as literal XML in one path
   while being interpreted semantically in another.
+- `.wsnbody` now accepts a paired `<style ...>...</style>` text wrapper. Its `style` attribute maps to the LVRS text
+  tokens (`Title`, `Title2`, `Header`, `Header2`, `Body`, `Description`, `Caption`, `Disabled`), projecting the matching
+  size, weight, line height, and text color before optional `font`, `weight`, `size`, `color`, `background`, `align`,
+  and `height` overrides are applied. The canonical source keeps those key/value attributes through save/load
+  round-trips.
 - Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
   Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
   height through root `height:auto`, keeps `4px` top/bottom padding with `4px` left/right padding,

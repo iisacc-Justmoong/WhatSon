@@ -15,7 +15,10 @@ Implements the shared semantic-tag lookup used by note-body persistence and edit
 - The same registry now also distinguishes generic gap text (`type=text`) from explicit semantic text-tag blocks such
   as `paragraph`, `header`, `subheader`, `title`, `subtitle`, and `eventtitle`.
 - Treats `next` as a rendered line-break alias without forcing the save path to drop that legacy source token.
-  their children without painting the wrapper tag literally.
+- Treats `style` as a source-preserved wrapper whose attributes are interpreted by note-body persistence rather than
+  escaped as literal XML.
+- Treats transparent wrappers such as `event` and `callout` as source semantic containers whose children render without
+  painting the wrapper tag literally.
 - Keeps the source-projection block whitelist narrower than the rendered-semantic whitelist so legacy semantic tags can
   survive round-trips as raw source while still rendering as meaningful HTML.
 

@@ -91,6 +91,10 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
   - `weblink` -> `<a href="...">` with the shared editor/preview link styling and scheme normalization for `www.*`
+  - `style` -> marker-backed `<span>` styling from `.wsnbody` attributes:
+    `style` names an LVRS text token (`Title`, `Title2`, `Header`, `Header2`, `Body`, `Description`, `Caption`,
+    `Disabled`) and supplies that token's size, weight, line height, and text color; `font`, `weight`, `size`, `color`,
+    `background`, `align`, and `height` remain optional overrides for the projected renderer CSS
   - `callout` -> `component/Callout` HTML block with the Figma `280:7897` full-width wrapping surface
   - divider block tags (`<break/>` and legacy `<hr/>`) -> logical editor break line
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
@@ -110,8 +114,11 @@ The current contract preserves editor-authored RAW source across save/load turns
   callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`
   before persistence. The generated leading-bar image is frame chrome and is intentionally excluded from this marker
   path; the gap is its rendering margin rather than source content.
-  rendered as a table-backed rich-text surface. The inverse path extracts each task marker, restores
-  marker after `QTextDocument::toHtml()`.
+- The inverse boundary recognizes `<!--whatson-style-source:...-->...<!--/whatson-style-source-->` marker pairs and the
+  matching start-anchor plus styled-span fallback that survives `QTextDocument::toHtml()` around generated style spans.
+  The marker stores the canonical opening `<style ...>` token as renderer metadata, never as visible/plain text, so
+  edited rich-text content can be converted back to source and wrapped with the original style attributes before
+  `.wsnbody` persistence.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
   style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized

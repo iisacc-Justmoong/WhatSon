@@ -162,6 +162,14 @@ namespace
                 QStringLiteral("</tag>")
             };
         }
+        if (normalized == QStringLiteral("style"))
+        {
+            return {
+                QStringLiteral("style"),
+                QStringLiteral("<style>"),
+                QStringLiteral("</style>")
+            };
+        }
         if (normalized == QStringLiteral("break")
             || normalized == QStringLiteral("hr")
             || normalized == QStringLiteral("divider"))
@@ -204,6 +212,7 @@ namespace
             QStringLiteral("strikethrough"),
             QStringLiteral("highlight"),
             QStringLiteral("tag"),
+            QStringLiteral("style"),
             QStringLiteral("break"),
             QStringLiteral("resource")
         });

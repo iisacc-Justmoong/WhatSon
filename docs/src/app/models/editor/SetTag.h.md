@@ -9,8 +9,9 @@ methods for inserting those templates into editor source text or into a serializ
 
 ## Public Contract
 
-- Default tag: `callout`
-  `subheader`, and `resource`.
+- Default tag: `callout`.
+- Known static templates include paired wrappers such as `header`, `subheader`, `style`, and standalone placeholders such
+  as `resource`.
 - `configureTagName(...)` changes the active tag only when the requested name resolves to a known static template.
 - `insertIntoSource(...)` inserts the active template into editor-facing body source text.
 - `insertNamedTagIntoSource(...)` performs the same mutation without changing the active tag.
@@ -21,6 +22,8 @@ methods for inserting those templates into editor source text or into a serializ
   `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - `resource` is a static placeholder block (`<resource />`) and is line-isolated during source mutation so persistence
   stores it as a direct body child rather than escaped paragraph prose.
+- `style` is a paired static wrapper (`<style>...</style>`). Attribute values such as `font`, `size`, `color`, and
+  `height` are set by the normal tag-attribute path and interpreted by note-body persistence during HTML projection.
 - Unsupported tag names return an invalid result and leave source/document text unchanged.
 
 ## Signals And Slots

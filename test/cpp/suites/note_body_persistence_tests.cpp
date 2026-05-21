@@ -1,6 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 #include <QTextDocument>
+#include <QVector>
 
 void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks()
 {
@@ -85,6 +86,97 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorFormattingTags
         QStringLiteral(
             "Alpha <bold>Beta</bold> <italic>Gamma</italic> <underline>Delta</underline> "
             "<strikethrough>Epsilon</strikethrough> <highlight>Zeta</highlight>\nTail"));
+}
+
+void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagAttributes()
+{
+    struct StyleTokenExpectation final
+    {
+        QString token;
+        int pixelSize = 0;
+        int weight = 0;
+        int lineHeight = 0;
+        QString color;
+    };
+
+    const QVector<StyleTokenExpectation> styleExpectations = {
+        {QStringLiteral("Title"), 26, 700, 26, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Title2"), 22, 700, 22, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Header"), 17, 600, 17, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Header2"), 15, 600, 15, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Body"), 12, 500, 12, QStringLiteral("#CCFFFFFF")},
+        {QStringLiteral("Description"), 12, 600, 12, QStringLiteral("#99FFFFFF")},
+        {QStringLiteral("Caption"), 11, 400, 11, QStringLiteral("#80FFFFFF")}
+    };
+
+    for (const StyleTokenExpectation& expectation : styleExpectations)
+    {
+        const QString tokenSourceText = QStringLiteral("<style style=\"%1\">Token text</style>")
+            .arg(expectation.token);
+        const QString tokenEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+            QStringLiteral("note"),
+            tokenSourceText);
+
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-size:%1px;").arg(expectation.pixelSize)));
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-weight:%1;").arg(expectation.weight)));
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("line-height:%1px;").arg(expectation.lineHeight)));
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("color:%1;").arg(expectation.color)));
+        QCOMPARE(
+            WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), tokenEditorHtml),
+            tokenSourceText);
+
+        QTextDocument tokenRoundTrippedDocument;
+        tokenRoundTrippedDocument.setHtml(tokenEditorHtml);
+        const QString tokenRoundTrippedHtml = tokenRoundTrippedDocument.toHtml();
+        const QString tokenRecoveredSource = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("note"),
+            tokenRoundTrippedHtml);
+        QVERIFY2(
+            tokenRecoveredSource == tokenSourceText,
+            qPrintable(tokenRoundTrippedHtml));
+    }
+
+    const QString sourceText = QStringLiteral(
+        "<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14 "
+        "color=\"#F3F5F8\" background=\"#262728\" align=\"center\" height=1.25>"
+        "Styled <bold>text</bold></style>");
+
+    const QString bodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
+
+    QVERIFY(bodyDocument.contains(QStringLiteral("<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14")));
+    QVERIFY(bodyDocument.contains(QStringLiteral("color=\"#F3F5F8\" background=\"#262728\" align=\"center\" height=1.25")));
+    QVERIFY(bodyDocument.contains(QStringLiteral("Styled <bold>text</bold></style>")));
+    QCOMPARE(WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument), sourceText);
+
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        sourceText);
+    QVERIFY(editorHtml.contains(QStringLiteral("<!--whatson-style-source:")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-weight:600;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-size:14px;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("color:#F3F5F8;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("text-align:center;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("line-height:1.25;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">text</strong>")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
+        sourceText);
+
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    QVERIFY(!editorDocument.toPlainText().contains(QChar(0x200B)));
+    QVERIFY(editorDocument.toPlainText().contains(QStringLiteral("Styled text")));
+
+    QTextDocument roundTrippedEditorDocument;
+    roundTrippedEditorDocument.setHtml(editorHtml);
+    const QString roundTrippedEditorHtml = roundTrippedEditorDocument.toHtml();
+    const QString recoveredSource = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        QStringLiteral("note"),
+        roundTrippedEditorHtml);
+    QVERIFY2(recoveredSource == sourceText, qPrintable(roundTrippedEditorHtml));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()
