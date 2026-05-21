@@ -1384,6 +1384,109 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsMarkerlessLi
         QStringLiteral("whatson-resource-source")));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_doesNotAccumulateEmptyParagraphsAfterImagePasteIdlePush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardFrameIdlePushHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-frame-idle-push-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QImage clipboardImage(QSize(1600, 900), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(12, 90, 170, 255));
+
+    InAppClipboardManager clipboard;
+    QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
+    clipboard.setCurrentHubPath(hubPath);
+    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-frame-idle-push-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString editorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    const QString bodySourceText = insertion.value(QStringLiteral("bodySourceText")).toString();
+    QString editorDocumentText = insertion.value(QStringLiteral("editorDocumentText")).toString();
+    QVERIFY(bodySourceText.contains(QStringLiteral("<resource type=\"image\" format=\".png\"")));
+
+    const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
+    for (int cycle = 0; cycle < 4; ++cycle)
+    {
+        QTextDocument qtSerializedDocument;
+        qtSerializedDocument.setHtml(editorDocumentText);
+        const QString qtSerializedEditorHtml = qtSerializedDocument.toHtml();
+        QVERIFY(!qtSerializedEditorHtml.contains(QStringLiteral("whatson-resource-source:")));
+
+        QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+        session.requestEditorIdleRawPush(session.editorFilePath(), qtSerializedEditorHtml);
+        QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+        QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+        const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(bodyPath);
+        QCOMPARE(
+            WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+            bodySourceText);
+        QCOMPARE(persistedBodyDocument.count(QStringLiteral("<paragraph></paragraph>")), 0);
+
+        editorDocumentText = qtSerializedEditorHtml;
+    }
+
+    const QString markerlessFrameWithoutObjectHtml = QStringLiteral(
+        "<html><body>"
+        "<p>Alpha</p>"
+        "<table class=\"whatson-resource-frame\" data-resource-preview=\"image-only-frame\">"
+        "<tr><td></td></tr>"
+        "</table>"
+        "<p>Beta</p>"
+        "</body></html>");
+    QVERIFY(markerlessFrameWithoutObjectHtml.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(!WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+                 QStringLiteral("clipboard-frame-idle-push-note"),
+                 markerlessFrameWithoutObjectHtml)
+                 .contains(QStringLiteral("<resource")));
+
+    for (int cycle = 0; cycle < 4; ++cycle)
+    {
+        QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+        session.requestEditorIdleRawPush(session.editorFilePath(), markerlessFrameWithoutObjectHtml);
+        QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+        QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+        const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(bodyPath);
+        QCOMPARE(
+            WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+            bodySourceText);
+        QCOMPARE(persistedBodyDocument.count(QStringLiteral("<paragraph></paragraph>")), 0);
+    }
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()
 {
     const QString shortSource = QStringLiteral("<callout>Short callout</callout>");

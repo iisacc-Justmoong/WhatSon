@@ -974,6 +974,48 @@ namespace
             resourceLines);
     }
 
+    QString sourceTextWithoutResourceSourceLines(const QString& sourceText)
+    {
+        const QStringList sourceLines =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText)
+                .split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList linesWithoutResources;
+        linesWithoutResources.reserve(sourceLines.size());
+        for (const QString& sourceLine : sourceLines)
+        {
+            if (canonicalResourceSourceLine(sourceLine).isEmpty())
+            {
+                linesWithoutResources.push_back(sourceLine);
+            }
+        }
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            linesWithoutResources.join(QLatin1Char('\n')));
+    }
+
+    QString restoreMarkerlessResourceFrameSourceFromActiveSource(
+        const QString& editorSourceText,
+        const QString& activeBodySourceText,
+        const QString& editorDocumentText)
+    {
+        const QString normalizedActiveSourceText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(activeBodySourceText);
+        if (!editorDocumentContainsLiveRenderedResourceFrame(editorDocumentText)
+            || activeResourceSourceLines(normalizedActiveSourceText).isEmpty())
+        {
+            return editorSourceText;
+        }
+
+        const QString normalizedEditorSourceText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(editorSourceText);
+        if (sourceTextWithoutResourceSourceLines(normalizedActiveSourceText)
+            == sourceTextWithoutResourceSourceLines(normalizedEditorSourceText))
+        {
+            return normalizedActiveSourceText;
+        }
+
+        return normalizedEditorSourceText;
+    }
+
     QVariantMap invalidImportedResourcesInsertionResult(
         const QString& noteId,
         const QString& bodySourceText,
@@ -1354,6 +1396,10 @@ bool NoteEditorDocumentSession::persistEditorDocumentText(
     sourceText = restoreResourceObjectPlaceholdersFromActiveSource(
         sourceText,
         activeSourceTextForContext);
+    sourceText = restoreMarkerlessResourceFrameSourceFromActiveSource(
+        sourceText,
+        activeSourceTextForContext,
+        editorDocumentText);
     setParsedLineCount(lineCountForEditorSource(sourceText));
 
     emit editorSourcePersistRequested(contextIterator->noteId, normalizedEditorFilePath);
@@ -2128,11 +2174,15 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
         editorDocumentText);
     const QString activeSourceText =
         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
-    if (hasActiveNote() && !activeSourceText.isEmpty())
+    if (hasActiveNote() && noteId.trimmed() == m_activeNoteId.trimmed() && !activeSourceText.isEmpty())
     {
-        const QString restoredEditorSourceText = restoreResourceObjectPlaceholdersFromActiveSource(
+        QString restoredEditorSourceText = restoreResourceObjectPlaceholdersFromActiveSource(
             editorSourceText,
             activeSourceText);
+        restoredEditorSourceText = restoreMarkerlessResourceFrameSourceFromActiveSource(
+            restoredEditorSourceText,
+            activeSourceText,
+            editorDocumentText);
         if (restoredEditorSourceText != editorSourceText
             && editorDocumentContainsLiveRenderedResourceFrame(editorDocumentText))
         {

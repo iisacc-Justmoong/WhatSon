@@ -85,7 +85,9 @@ Implements the active note editor document session.
   round-trips. The debounced `reprojectResourceFramesForEditorWidth(...)` path applies the same active-source
   restoration when the live editor HTML still contains a resource frame but the `whatson-resource-source` comments were
   stripped, so a freshly pasted image frame is not interpreted as a deleted resource during immediate viewport
-  re-projection.
+  re-projection. If a markerless live frame also loses its rich-text object placeholder, idle RAW push compares the
+  source text with resource source lines removed and keeps the active canonical resource source instead of persisting the
+  renderer's empty frame blocks as new `<paragraph></paragraph>` rows.
 - If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
   header/footer chrome cleanup path is kept in the current image-only frame contract.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
@@ -132,6 +134,9 @@ Implements the active note editor document session.
   marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
   placeholder를 기준으로 `<resource ... />`를 복원한다. 즉시 viewport 재투영도 live resource frame이 남아 있으면
   같은 active source 복원 경로를 사용하므로, paste 직후 marker comment만 사라진 프레임을 삭제로 오해하지 않는다.
+  markerless live frame이 rich-text object placeholder까지 잃은 경우에도 idle RAW push는 resource line을 제거한
+  주변 source가 같은지 확인한 뒤 active canonical source를 유지한다. 따라서 renderer가 만든 빈 frame block이
+  시간차 저장 때마다 `<paragraph></paragraph>`로 누적되지 않는다.
   Backspace/Delete 뒤 이미지 object가 사라진 경우에는
   resource frame이 삭제된 것으로 본다. persistence 성공 콜백 뒤에는 `.wsnbody` serializer/read-back 경계의
   canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
