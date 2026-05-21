@@ -1124,6 +1124,45 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
     QCOMPARE(session.parsedLineCount(), 3);
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_pastesImportedResourceIntoExistingEmptyLine()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("resource-empty-line-note"),
+        QStringLiteral("Alpha\n\nBeta"));
+
+    QVariantMap importedResource;
+    importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-blank-line"));
+    importedResource.insert(
+        QStringLiteral("resourcePath"),
+        QStringLiteral("Workspace.wsresources/capture-blank-line.wsresource"));
+    importedResource.insert(QStringLiteral("type"), QStringLiteral("image"));
+    importedResource.insert(QStringLiteral("format"), QStringLiteral(".png"));
+    importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
+
+    const QVariantMap result = session.insertImportedResourcesIntoSource(
+        editorHtml,
+        QStringLiteral("Alpha\n\n").size(),
+        0,
+        QVariantList{importedResource});
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(result.value(QStringLiteral("changed")).toBool(), true);
+    QCOMPARE(
+        result.value(QStringLiteral("insertedText")).toString(),
+        QStringLiteral(
+            "<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-blank-line.wsresource\" id=\"capture-blank-line\" />"));
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral(
+            "Alpha\n<resource type=\"image\" format=\".png\" "
+            "path=\"Workspace.wsresources/capture-blank-line.wsresource\" id=\"capture-blank-line\" />\nBeta"));
+    QCOMPARE(result.value(QStringLiteral("selectionStart")).toInt(), QStringLiteral("Alpha\n").size());
+    QCOMPARE(result.value(QStringLiteral("selectionLength")).toInt(), 0);
+    QCOMPARE(session.parsedLineCount(), 3);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame()
 {
     QTemporaryDir workspaceDirectory;

@@ -1264,6 +1264,7 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
+    void noteEditorDocumentSession_pastesImportedResourceIntoExistingEmptyLine();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();

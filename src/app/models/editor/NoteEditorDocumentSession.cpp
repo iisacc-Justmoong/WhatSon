@@ -88,6 +88,12 @@ namespace
         int editorEnd = 0;
     };
 
+    struct SourceInsertionRange final
+    {
+        int sourceStart = 0;
+        int sourceEnd = 0;
+    };
+
     QString sourceTagName(QStringView tagToken)
     {
         if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
@@ -419,6 +425,69 @@ namespace
         }
 
         return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
+    }
+
+    int sourceLineStartForPosition(const QString& bodySourceText, const int sourcePosition)
+    {
+        if (bodySourceText.isEmpty())
+        {
+            return 0;
+        }
+
+        const int boundedPosition = clampedPosition(sourcePosition, bodySourceText.size());
+        const int searchFrom = qMax(0, boundedPosition - 1);
+        const int newlineIndex = bodySourceText.lastIndexOf(QLatin1Char('\n'), searchFrom);
+        return newlineIndex < 0 ? 0 : newlineIndex + 1;
+    }
+
+    int sourceLineEndForStart(const QString& bodySourceText, const int lineStart)
+    {
+        const int boundedLineStart = clampedPosition(lineStart, bodySourceText.size());
+        const int newlineIndex = bodySourceText.indexOf(QLatin1Char('\n'), boundedLineStart);
+        return newlineIndex < 0 ? bodySourceText.size() : newlineIndex;
+    }
+
+    bool sourceLineIsBlank(const QString& bodySourceText, const int lineStart, const int lineEnd)
+    {
+        const int boundedStart = clampedPosition(lineStart, bodySourceText.size());
+        const int boundedEnd = clampedPosition(lineEnd, bodySourceText.size());
+        if (boundedEnd < boundedStart)
+        {
+            return false;
+        }
+        return bodySourceText.mid(boundedStart, boundedEnd - boundedStart).trimmed().isEmpty();
+    }
+
+    SourceInsertionRange resourceInsertionRangeForSourceSelection(
+        const QString& bodySourceText,
+        const int sourceSelectionStart,
+        const int sourceSelectionEnd)
+    {
+        const int boundedStart = clampedPosition(sourceSelectionStart, bodySourceText.size());
+        const int boundedEnd = clampedPosition(sourceSelectionEnd, bodySourceText.size());
+        if (boundedStart != boundedEnd)
+        {
+            return {std::min(boundedStart, boundedEnd), std::max(boundedStart, boundedEnd)};
+        }
+
+        const int currentLineStart = sourceLineStartForPosition(bodySourceText, boundedStart);
+        const int currentLineEnd = sourceLineEndForStart(bodySourceText, currentLineStart);
+        if (sourceLineIsBlank(bodySourceText, currentLineStart, currentLineEnd))
+        {
+            return {currentLineStart, currentLineEnd};
+        }
+
+        if (boundedStart == currentLineStart && currentLineStart > 0)
+        {
+            const int previousLineEnd = currentLineStart - 1;
+            const int previousLineStart = sourceLineStartForPosition(bodySourceText, previousLineEnd);
+            if (sourceLineIsBlank(bodySourceText, previousLineStart, previousLineEnd))
+            {
+                return {previousLineStart, previousLineEnd};
+            }
+        }
+
+        return {boundedStart, boundedEnd};
     }
 
     bool isStandaloneResourceSourceLine(const QString& line)
@@ -1443,8 +1512,12 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
             errorMessage);
     }
 
-    const QString beforeSelection = sourceText.left(sourceSelectionStart);
-    const QString afterSelection = sourceText.mid(sourceSelectionEnd);
+    const SourceInsertionRange insertionRange = resourceInsertionRangeForSourceSelection(
+        sourceText,
+        sourceSelectionStart,
+        sourceSelectionEnd);
+    const QString beforeSelection = sourceText.left(insertionRange.sourceStart);
+    const QString afterSelection = sourceText.mid(insertionRange.sourceEnd);
     const QString insertedBlock = resourceTags.join(QLatin1Char('\n'));
     const QString prefix = !beforeSelection.isEmpty() && !beforeSelection.endsWith(QLatin1Char('\n'))
         ? QStringLiteral("\n")
@@ -1477,8 +1550,8 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
         QStringLiteral("cursorPosition"),
         editorCursorPositionForSourcePosition(mutatedSourceText, sourceCursorPosition));
     result.insert(QStringLiteral("sourceCursorPosition"), sourceCursorPosition);
-    result.insert(QStringLiteral("selectionStart"), sourceSelectionStart);
-    result.insert(QStringLiteral("selectionLength"), sourceSelectionEnd - sourceSelectionStart);
+    result.insert(QStringLiteral("selectionStart"), insertionRange.sourceStart);
+    result.insert(QStringLiteral("selectionLength"), insertionRange.sourceEnd - insertionRange.sourceStart);
     result.insert(QStringLiteral("editorSelectionStart"), editorSelectionStart);
     result.insert(QStringLiteral("editorSelectionLength"), editorSelectionEnd - editorSelectionStart);
     result.insert(QStringLiteral("insertedText"), insertedText);
