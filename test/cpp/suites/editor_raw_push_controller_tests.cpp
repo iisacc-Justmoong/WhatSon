@@ -96,3 +96,41 @@ void WhatSonCppRegressionTests::editorRawPushController_keepsPendingModifiedCoun
     QCOMPARE(pushedReasons.constLast(), QStringLiteral("modified-count"));
     QCOMPARE(pushedTexts.constLast(), QStringLiteral("after first backspace"));
 }
+
+void WhatSonCppRegressionTests::editorRawPushController_discardsPendingPushForAuthoritativeWrite()
+{
+    ensureCoreApplication();
+
+    WhatSonEditorRawPushController controller;
+    controller.setIdleIntervalMs(25);
+
+    QStringList pushedReasons;
+    controller.setRawPushCallback(
+        [&pushedReasons](
+            const QString&,
+            const QString&,
+            const bool,
+            const QString& reason,
+            QString*) -> bool
+        {
+            pushedReasons.push_back(reason);
+            return true;
+        });
+
+    QSignalSpy finishedSpy(&controller, &WhatSonEditorRawPushController::rawPushFinished);
+    controller.requestModifiedCountPush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        1,
+        QStringLiteral("stale pre-paste surface"));
+    QVERIFY(controller.discardPendingPushForFile(QStringLiteral("/tmp/surface.wsnsource")));
+    QTest::qWait(50);
+    QCOMPARE(finishedSpy.count(), 0);
+    QVERIFY(pushedReasons.isEmpty());
+
+    controller.requestModifiedCountPush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        1,
+        QStringLiteral("post-discard edit"));
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
+    QCOMPARE(pushedReasons.constLast(), QStringLiteral("modified-count"));
+}

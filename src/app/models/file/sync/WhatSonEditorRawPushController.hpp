@@ -33,6 +33,7 @@ public:
         const QString& editorDocumentText);
     Q_INVOKABLE bool pushBeforeNoteDeparture(const QString& editorFilePath);
     Q_INVOKABLE bool flushPendingPush();
+    Q_INVOKABLE bool discardPendingPushForFile(const QString& editorFilePath);
 
 public slots:
     void setIdleIntervalMs(int idleIntervalMs);

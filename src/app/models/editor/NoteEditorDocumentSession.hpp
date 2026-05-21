@@ -151,7 +151,17 @@ private:
         QString* errorMessage = nullptr) const;
     bool persistEditorDocumentText(
         const QString& editorFilePath,
-        const QString& editorDocumentText);
+        const QString& editorDocumentText,
+        const QString& pushReason = QString());
+    bool persistEditorFileForRawPush(
+        const QString& editorFilePath,
+        const QString& pushReason);
+    bool persistSourceTextForEditorContext(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        const QString& editorFilePath,
+        const QString& sourceText,
+        const QString& loadedLastModifiedAt);
     bool pushActiveEditorBeforeNoteDeparture();
     bool applyLoadedBodyTextToEditorSession(
         const QString& noteId,
@@ -171,6 +181,17 @@ private:
     QString bodySourceTextForEditorDocument(
         const QString& noteId,
         const QString& editorDocumentText) const;
+    void setActiveSessionBodySourceText(
+        const QString& sourceText,
+        bool protectsSync = true);
+    void clearActiveSessionBodySourceText();
+    bool hasActiveSessionBodySourceFor(
+        const QString& noteId,
+        const QString& noteDirectoryPath) const;
+    bool activeSessionBodySourceProtectsSyncFor(
+        const QString& noteId,
+        const QString& noteDirectoryPath) const;
+    QString activeSessionBodySourceText() const;
 
     void setEditorFilePath(const QString& editorFilePath);
     void setActiveNoteContext(
@@ -202,5 +223,7 @@ private:
     int m_editorViewportWidth = 0;
     bool m_loading = false;
     bool m_readOnly = true;
+    bool m_activeBodySourceTextAvailable = false;
+    bool m_activeBodySourceTextProtectsSync = false;
     QString m_lastError;
 };

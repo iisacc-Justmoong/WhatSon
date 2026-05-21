@@ -127,6 +127,30 @@ bool WhatSonEditorRawPushController::flushPendingPush()
     return executePush(push);
 }
 
+bool WhatSonEditorRawPushController::discardPendingPushForFile(const QString& editorFilePath)
+{
+    const QString path = normalizedPath(editorFilePath);
+    if (path.isEmpty())
+    {
+        return false;
+    }
+
+    if (m_modifiedCountFilePath == path)
+    {
+        m_lastModifiedCount = -1;
+    }
+
+    if (!m_hasPendingPush || m_pendingPush.editorFilePath != path)
+    {
+        return false;
+    }
+
+    m_idleTimer.stop();
+    m_pendingPush = PendingPush();
+    m_hasPendingPush = false;
+    return true;
+}
+
 QString WhatSonEditorRawPushController::normalizedPath(const QString& path)
 {
     const QString trimmedPath = path.trimmed();

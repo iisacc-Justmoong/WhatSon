@@ -21,19 +21,27 @@ Declares the active note editor document session object.
 - Carries the loaded note `lastModified` timestamp with the editor-file context so RAW pushes can resolve
   multi-device conflicts by timestamp.
 - Provides `recordEditorUserActivity()` and `requestActiveNoteIdleRawPull()` for the active-note idle pull loop. The
-  idle loop pulls every 5000 ms while the editor surface is quiet, and the session only applies a filesystem body when
-  its `lastModified` timestamp is newer than the loaded session timestamp.
+  idle loop pulls every 5000 ms while the editor surface is quiet. Once local editor mutation has made the active
+  session source authoritative, even a newer filesystem snapshot is ignored with `session-authoritative` and the
+  session source is repushed. A freshly loaded note can still accept a newer filesystem body before local mutation makes
+  the session source authoritative.
 - Emits `editorDocumentTextPulled(...)` when a newer filesystem body replaces the live editor document, and
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
-  push triggers into `file/sync/WhatSonEditorRawPushController`.
+  push triggers into `file/sync/WhatSonEditorRawPushController`. Modified-count pushes update the active session source
+  immediately, and idle pushes persist that source instead of allowing a stale sync-finished payload to drop the last
+  editor action.
+- Keeps the active editor session source as the save/sync truth after local mutation refreshes it. Late persistence
+  callbacks and note-departure flushes are not allowed to rewind it to an older source, while explicit
+  `persistEditorFile(path)` still reads the mounted editor session file so real user deletions become authoritative.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
   `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, persists
-  that active-note source through the note-management queue before returning success, and returns an editor HTML
-  projection for the live LVRS surface.
+  that active-note source through the note-management queue before returning success, discards stale pending pushes for
+  the same session file, writes the matching editor session file, and returns an editor HTML projection for the live LVRS
+  surface.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
@@ -80,17 +88,22 @@ Declares the active note editor document session object.
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
 - LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
-  note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
+  note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다. modified-count push는 active
+  session source를 즉시 갱신하고, idle push와 note-departure flush는 늦게 도착한 sync-finished payload나 낡은
+  mounted session file 대신 그 source를 저장한다.
+  따라서 마지막 텍스트 입력이나 마지막 component 삽입이 stale snapshot에 의해 잘리지 않는다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
-  다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다
-  최신일 때만 editor document를 교체한다. 오래된 pull은 `editorFilesystemPullIgnored(...)`로 무시된다.
+  다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull한다. 로컬 mutation으로 active session source가 권위
+  상태가 된 경우에는 더 최신 filesystem snapshot도 `session-authoritative`로 무시하고 session source를 다시 저장한다.
+  아직 로컬 mutation이 없는 freshly loaded 노트는 최신 filesystem body로 editor document를 교체할 수 있다.
 - 노트 진입/open 시 filesystem RAW pull 요청은 sync pull controller를 먼저 지나며, 실제 `.wsnbody` 읽기와 editor
   session file mount는 기존 C++ 세션/코디네이터 경로에 남는다.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해
   hub sync가 로컬 변경으로 인식할 수 있게 한다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
   canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입하고, 성공을 반환하기 전에 활성 노트의
-  `.wsnbody`에 그 source를 확정한다. clipboard MIME 판별과 package persistence는 이 세션의 책임이 아니다.
+  `.wsnbody`에 그 source를 확정하며, 같은 projection을 mounted editor session file에도 쓴다. clipboard MIME
+  판별과 package persistence는 이 세션의 책임이 아니다.
 - `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트

@@ -1267,6 +1267,12 @@ private slots:
     void noteEditorDocumentSession_pastesImportedResourceIntoExistingEmptyLine();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_persistsImportedResourceSourceBeforeIdlePush();
+    void noteEditorDocumentSession_writesImportedResourceSourceIntoSessionFile();
+    void noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile();
+    void noteEditorDocumentSession_discardsPrePasteModifiedCountPush();
+    void noteEditorDocumentSession_keepsLastTextEditWhenStaleIdleSyncArrives();
+    void noteEditorDocumentSession_repushesSessionSourceWhenIdlePullReturnsOlderSnapshot();
+    void noteEditorDocumentSession_repushesActiveResourceSourceWhenFilesystemPullDropsIt();
     void noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource();
     void noteEditorDocumentSession_doesNotAccumulateEmptyParagraphsAfterImagePasteIdlePush();
     void noteEditorDocumentSession_persistsBackspacedAmplifiedResourceParagraphsWithoutReinflating();
@@ -1304,6 +1310,7 @@ private slots:
     void editorRawPullController_pullsActiveNoteEveryIdleInterval();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void editorRawPushController_keepsPendingModifiedCountWhenIdleSyncArrives();
+    void editorRawPushController_discardsPendingPushForAuthoritativeWrite();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
     void hubSyncWiring_includesNoteEditorSessionVersionDiffMutations();
