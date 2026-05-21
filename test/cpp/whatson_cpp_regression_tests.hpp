@@ -89,6 +89,7 @@
 #include <QSet>
 #include <QThreadPool>
 #include <QTemporaryDir>
+#include <QTextBlock>
 #include <QUrl>
 #include <QVariantMap>
 #include <QtTest>
@@ -1308,6 +1309,8 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
+    void noteEditorDocumentSession_insertsImportedResourceWithoutReplacingSelection();
+    void noteEditorDocumentSession_ignoresProgrammaticResourceProjectionPush();
     void noteEditorDocumentSession_insertsImportedResourceIntoCurrentEditorSnapshot();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
@@ -1326,6 +1329,7 @@ private slots:
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
     void noteBodyPersistence_dropsDeletedSingleResourceObjectMarker();
+    void noteBodyPersistence_preservesIntentionalBlankLinesAroundRenderedResourceFrame();
     void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
@@ -1376,6 +1380,7 @@ private slots:
     void noteEditorDocumentSession_writesRawPushPayloadToMountedSessionFile();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
+    void noteEditorDocumentSession_ignoresStaleIdleSyncAfterDirectRawInput();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();

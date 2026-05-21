@@ -41,13 +41,13 @@
   `file/sync` because note editor sync is bidirectional; concrete `.wsnbody` reads, timestamp winner checks, editor
   projection, and session-file writes still remain in `ContentsNoteManagementCoordinator` and
   `NoteEditorDocumentSession`.
-- `WhatSonEditorRawPushController` owns editor-surface-to-RAW push triggers for idle turns, note departure, and editor
-  modified-count increments. The controller stays in `file/sync` because it is sync orchestration; concrete
-  `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and `file/note`. A pending
-  modified-count push has priority over a later idle sync trigger so a stale sync-finished event cannot replace the
-  first user deletion snapshot. `NoteEditorDocumentSession` also records modified-count payloads as the active session
-  source immediately, so later idle pushes, note-departure flushes, and idle filesystem pulls cannot drop the user's
-  last action. An authoritative write can discard a pending push for the same session file before it becomes a stale
+- `WhatSonEditorRawPushController` owns fallback editor-surface-to-RAW push triggers for idle turns and note departure.
+  Live editor modified-count input is handled directly by `NoteEditorDocumentSession` from LVRS `textEdited(text)` so
+  the selected `.wsnbody` receives the latest action immediately. The controller stays in `file/sync` because it is sync
+  orchestration; concrete `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and
+  `file/note`. `NoteEditorDocumentSession` rejects stale idle sync payloads after direct RAW input, so later idle pushes,
+  note-departure flushes, and idle filesystem pulls cannot drop the user's last action. An authoritative write can
+  discard a pending push for the same session file before it becomes a stale
   overwrite.
 
 ## Tests

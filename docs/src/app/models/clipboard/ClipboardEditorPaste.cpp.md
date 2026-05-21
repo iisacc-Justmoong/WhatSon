@@ -20,6 +20,8 @@ Implements image resource paste orchestration for the note editor.
 - Delegates editor/body source mutation to `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`, which uses
   the current editor snapshot and queues the corresponding `.wsnbody` write instead of creating a temporary rich-text
   frame.
+- Image resource paste is insertion, not replacement. `EditorInputCommandFilter` passes the caret and a collapsed
+  selection, and `NoteEditorDocumentSession` does not use `selectionLength` as a deletion range for surrounding source.
 - Reloads imported resources after a valid insertion plan is produced, while preserving the editor insertion result if
   reload reports a non-fatal failure.
 
@@ -33,5 +35,7 @@ Implements image resource paste orchestration for the note editor.
 - 반환 map의 `stage`는 `capture`, `unsupported-resource`, `import`, `source-insertion`, `reload`, `completed`
   같은 실패/완료 단계를 담아 QML이 native paste fallback과 실제 처리 실패를 구분할 수 있게 한다.
 - QML은 반환된 `editorDocumentText`와 `cursorPosition`만 LVRS `TextEditor`에 반영한다.
+- 이미지 resource paste는 replacement가 아니라 insertion이다. `EditorInputCommandFilter`는 caret 위치와 collapsed
+  selection을 넘기고, `NoteEditorDocumentSession`은 selection length를 주변 source 삭제 범위로 쓰지 않는다.
 - key event consume 여부는 `EditorInputCommandFilter`가 결정한다. 이 객체는 붙여넣기 orchestration 결과에
   `nativePaste: true`가 있으면 native LVRS paste 경로를 남긴다.

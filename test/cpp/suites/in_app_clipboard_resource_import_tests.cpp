@@ -75,6 +75,8 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
     QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleEmptyParagraphBoundaryKeyInSource(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCommandCursorPosition(selectionStart, selectionLength)")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCaretPosition(selectionStart)")));
+    QVERIFY(editorInputFilterSource.contains(QStringLiteral("const int pasteSelectionLength = 0")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("property(\"editorCursorPosition\")")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));

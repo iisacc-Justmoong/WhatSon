@@ -314,6 +314,20 @@ Item {
         return contentViewLayout.noteEditorSession.markEditorSessionFileReadyForRawPush(
                     readPath);
     }
+    function requestEditorModifiedRawPush(editorDocumentText) {
+        if (contentViewLayout.noteEditorSurfaceVisible
+                && !contentViewLayout.editorApplyingPulledDocumentText
+                && contentViewLayout.noteEditorSession
+                && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
+                && contentViewLayout.editorSourceFilePath.length > 0) {
+            contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
+                        contentViewLayout.editorSourceFilePath,
+                        contentsTextEditor.editorPlainTextRevision + 1,
+                        editorDocumentText === undefined || editorDocumentText === null
+                        ? contentsTextEditor.editorDocumentText
+                        : String(editorDocumentText));
+        }
+    }
     function editorFormatSelectionForCommand(allowSelectionSnapshot) {
         if (Boolean(allowSelectionSnapshot)
                 && contentViewLayout.editorFormatSelectionSnapshot
@@ -437,6 +451,9 @@ Item {
                     onReadFinished: function(path) {
                         contentViewLayout.markEditorSessionFileReadyForRawPush(path);
                     }
+                    onTextEdited: function(text) {
+                        contentViewLayout.requestEditorModifiedRawPush(text);
+                    }
                     onSyncFinished: function(path) {
                         const syncedPath = path === undefined || path === null ? "" : String(path).trim();
                         if (syncedPath.length === 0
@@ -452,16 +469,7 @@ Item {
                         }
                     }
                     onEditorPlainTextRevisionChanged: {
-                        if (contentViewLayout.noteEditorSurfaceVisible
-                                && !contentViewLayout.editorApplyingPulledDocumentText
-                                && contentViewLayout.noteEditorSession
-                                && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
-                                && contentViewLayout.editorSourceFilePath.length > 0) {
-                            contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
-                                        contentViewLayout.editorSourceFilePath,
-                                        contentsTextEditor.editorPlainTextRevision,
-                                        contentsTextEditor.editorDocumentText);
-                        }
+                        contentViewLayout.clearEditorFormatSelectionSnapshot();
                     }
                     onEditorDocumentTextChanged: {
                         contentViewLayout.clearEditorFormatSelectionSnapshot();

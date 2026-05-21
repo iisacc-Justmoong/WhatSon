@@ -33,6 +33,9 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   `</break>`. This projection now avoids an extra structured-tag linter rewrite pass so passive file reads do not
   mutate the editor RAW shape. Empty text-block tags around standalone blocks are projected as explicit newline
   boundaries instead of being ignored as zero-character content.
+- `editorHtmlDocumentFromProjection(...)` wraps an already-composed body HTML projection in the LVRS Body-token editor
+  document shell. Callers that need custom block composition, such as resource-aware session projection, use it to avoid
+  concatenating multiple full `<!DOCTYPE HTML>` documents into one editor payload.
 - `editorHtmlFromBodySource(...)` projects canonical editor source into the rich-text session document consumed by
   LVRS `TextEditor`; logical source newlines become explicit `<br/>` boundaries so the editor surface cannot collapse
   authored note lines into one rendered paragraph.

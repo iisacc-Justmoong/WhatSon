@@ -22,18 +22,15 @@ Implements the active note editor document session.
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
 7. When LVRS emits `readFinished(path)` for the currently mounted session file, QML calls
-   `markEditorSessionFileReadyForRawPush(path)`. Only after that matching read-finished path is acknowledged can
-   `syncFinished(path)` or editor modified-count changes enqueue RAW pushes. This prevents the startup blank editor or a
-   stale file read from pairing the previous editor payload with a newly selected note path. When LVRS emits
-   `syncFinished(path)`, QML sends the editor document text to `requestEditorIdleRawPush(...)`; when the editor surface
-   modified count increases, QML sends the same surface payload to `requestEditorModifiedCountRawPush(...)`. Both routes
-   first write that payload into the mounted editor session file, making the filesystem copy of the session match the
-   editor shape at that moment. They then pass through `WhatSonEditorRawPushController`, and the session converts the
-   same editor document HTML back into canonical source text and delegates persistence through
-   `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
-   If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
+   `markEditorSessionFileReadyForRawPush(path)`. Only after that matching read-finished path is acknowledged can editor
+   input write RAW. QML listens to LVRS `textEdited(text)` and sends that exact fresh rich-text payload to
+   `requestEditorModifiedCountRawPush(...)`; the session converts it immediately to canonical source and writes the
+   selected `.wsnbody` through `WhatSonLocalNoteFileStore`. `syncFinished(path)` remains an idle fallback trigger, but if
+   direct RAW input has already advanced the active source, a stale idle payload is ignored instead of being promoted
+   back to the source of truth. If direct persistence writes a timestamped `.wsnversion` diff, the session emits
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
-   Before note context changes or clears, the session asks the same push controller to flush the active surface.
+   Before note context changes or clears, the session flushes only when no direct RAW input has already saved the active
+   source.
 8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
@@ -41,7 +38,9 @@ Implements the active note editor document session.
    the resource package. The session recovers the current LVRS editor snapshot as RAW source, inserts RAW resource tags at
    the current cursor/selection, writes the updated session file, discards older pending RAW pushes for that file, queues
    `.wsnbody` persistence, and returns an editor HTML projection that renders each standalone resource source line as a
-   resource frame.
+   resource frame. Resource-aware projection now builds one editor document from body HTML fragments and resource frame
+   fragments; it does not join resource-adjacent fragments with an extra `<br/>`, so the frame begins on the logical
+   source line rather than on a synthetic spacer row.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
     callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
@@ -61,12 +60,12 @@ Implements the active note editor document session.
 - Active-note idle RAW pulls reuse that same timestamp context in the opposite direction: a filesystem pull whose
   `lastModified` is not strictly newer is ignored and reported through `editorFilesystemPullIgnored(...)`; a newer pull
   rewrites the session file, emits `editorDocumentTextPulled(...)`, and updates the stored base timestamp.
-- Idle, modified-count, and note-departure RAW pushes are routed through
-  `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
+- Idle fallback and note-departure RAW pushes are routed through `file/sync/WhatSonEditorRawPushController`; live
+  modified-count input writes RAW directly in this session so the last editor action is already in `.wsnbody`.
 - Idle and modified-count RAW pushes are ignored until `markEditorSessionFileReadyForRawPush(...)` confirms that LVRS has
   read the current active session file path. Opening or clearing a note resets that readiness.
-- Idle and modified-count RAW push requests synchronously write the supplied editor payload to the mounted session file
-  before scheduling the push. The current editor snapshot at the call site is therefore the filesystem session baseline.
+- Modified-count RAW input synchronously writes the supplied editor payload to the mounted session file and selected
+  `.wsnbody`; idle sync payloads cannot overwrite a newer direct RAW source.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
 - The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must
@@ -78,6 +77,8 @@ Implements the active note editor document session.
 - Imported-resource insertion uses the current editor document snapshot as the source basis, not a previously loaded
   `m_activeBodySourceText` when the user has typed since the last persistence cycle. This keeps `Cmd+V` from losing the
   last edit before the resource tag is inserted.
+- Imported-resource insertion is non-destructive. The session collapses the command to the provided cursor position,
+  inserts generated resource source lines there, and does not treat `selectionLength` as a source deletion range.
 - A successful imported-resource insertion is an authoritative RAW source write: it cancels pending pushes for the mounted
   editor file, updates that session file with the projected document, and queues direct note-body persistence for the
   mutated `.wsnbody` source.
@@ -85,7 +86,9 @@ Implements the active note editor document session.
   `component/ResourceImageFrame` and wraps that frame in `whatson-resource-source` markers so the persistence boundary can
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context
   render as `<img src="file://...">` inside the Figma `292:50` resource frame; unresolved or non-image resources still
-  render as a visible resource frame with the stored resource reference.
+  render as a visible resource frame with the stored resource reference. The editor projection keeps this as a single
+  top-level editor document and suppresses automatic `<br/>` separators next to resource frames; only intentional empty
+  source lines adjacent to the frame are rendered through invisible source-line placeholders.
 - Resource frame projection uses `editorViewportWidth` from QML as the media raster's intrinsic width, while preserving
   a structured `width="100%"` frame, `height:auto` media, and dynamic centered image placement in the emitted HTML.
   The first projection records `data-frame-display-height`; `reprojectResourceFramesForEditorWidth(...)` parses that
@@ -127,8 +130,9 @@ Implements the active note editor document session.
 - 이 구현은 `.wsnbody` XML을 그대로 에디터에 띄우지 않는다.
 - 선택된 노트의 본문을 RAW source로 파싱한 뒤 LVRS `TextEditor`가 줄바꿈을 보존해 렌더할 수 있는 editor HTML
   session file로 투영하고, LVRS 저장 이벤트는 다시 canonical source로 복원해 `.wsnbody` 직렬화 경로로 연결한다.
-- idle/modified-count RAW push 요청은 전달받은 현재 editor payload를 먼저 mounted session file에 쓴 뒤 push를
-  예약한다. 따라서 해당 시점의 노트 에디터 형태가 filesystem session 기준이 된다.
+- LVRS `textEdited(text)` 입력은 전달받은 현재 editor payload를 mounted session file과 selected `.wsnbody`에 바로
+  쓴다. 따라서 마지막 입력 시점의 노트 에디터 형태가 RAW filesystem 기준이 된다. `syncFinished(path)` idle payload는
+  direct RAW 입력보다 오래되면 무시된다.
 - parsed RAW source line count는 이 C++ 세션이 계산한다. 거터 표시 row 개수는 이 metadata만 따른다.
   paragraph wrap으로 생긴 rendered row count는 거터 row count에 참여하지 않는다.
 - QML은 공개 LVRS editor item 폭을 `editorViewportWidth`로 전달한다. 이 값은 resource frame media raster의
@@ -136,11 +140,14 @@ Implements the active note editor document session.
   폭 안에서 다시 중앙 정렬된다.
 - clipboard resource paste는 `InAppClipboardManager`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
   `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 현재 LVRS editor snapshot을 RAW source로 복원한 뒤
-  커서/선택 위치에 `<resource ... />` 참조를 삽입하고 editor HTML projection을 반환한다. 삽입 성공 시에는 같은
+  커서 위치에 `<resource ... />` 참조를 삽입하고 editor HTML projection을 반환한다. 이 삽입은 비파괴식이며
+  `selectionLength`를 주변 source 삭제 범위로 쓰지 않는다. 삽입 성공 시에는 같은
   editor session file의 오래된 pending RAW push를 버리고, 갱신된 session file과 `.wsnbody` persistence를 즉시
   큐잉한다. standalone resource source line은 editor HTML에서
   `component/ResourceImageFrame`을 통해 Figma `292:50` 형태의 `whatson-resource-frame`으로 렌더링되고, 이미지 package
-  asset을 active note/hub 기준으로 찾을 수 있으면 `file://` 이미지로 표시된다. 저장 시에는
+  asset을 active note/hub 기준으로 찾을 수 있으면 `file://` 이미지로 표시된다. 이 projection은 하나의 editor
+  document 안에서 body HTML fragment와 resource frame fragment를 합치며, resource frame 옆에는 자동 `<br/>`를
+  추가하지 않는다. 의도적인 빈 source line만 invisible placeholder로 보존한다. 저장 시에는
   `whatson-resource-source` marker가 다시 canonical `<resource ... />` source tag로 복구된다. Qt RichText 직렬화가
   marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
   placeholder를 기준으로 `<resource ... />`를 복원한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는

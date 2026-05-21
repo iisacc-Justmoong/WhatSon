@@ -470,6 +470,32 @@ void WhatSonCppRegressionTests::noteBodyPersistence_dropsDeletedSingleResourceOb
     QCOMPARE(sourceText, QStringLiteral("Alpha\nBeta"));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_preservesIntentionalBlankLinesAroundRenderedResourceFrame()
+{
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/capture.wsresource\" id=\"capture\" />");
+    const QString encodedResourceTag = QString::fromLatin1(resourceTag.toUtf8().toHex());
+    const QString renderedEditorHtml = QStringLiteral(
+                                           "<p>Alpha</p>"
+                                           "<p><br /></p>"
+                                           "<!--whatson-resource-source:%1-->"
+                                           "<table class=\"whatson-resource-frame\" data-resource-preview=\"image-only-frame\">"
+                                           "<tr><td><img class=\"whatson-resource-media\" src=\"data:image/png;base64,ZmFrZQ==\" /></td></tr>"
+                                           "</table>"
+                                           "<!--/whatson-resource-source-->"
+                                           "<p><br /></p>"
+                                           "<p>Beta</p>")
+                                           .arg(encodedResourceTag);
+
+    const QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+        QStringLiteral("resource-note"),
+        renderedEditorHtml);
+
+    QCOMPARE(
+        sourceText,
+        QStringLiteral("Alpha\n\n%1\n\nBeta").arg(resourceTag));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource()
 {
     const QString bodyDocument = QStringLiteral(

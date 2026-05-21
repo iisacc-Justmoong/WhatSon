@@ -74,13 +74,13 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   clipboard package creation to `ClipboardEditorPaste`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
-  LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
-  format-tag source insertions for editor command flows, immediately commits active imported-resource insertions to the
-  note body and mounted editor session file before reporting paste success, discards pre-paste pending pushes for that
-  session file, and persists LVRS sync-finished rich-text edits back through the note body persistence path after
-  converting them to canonical source. Idle and modified-count RAW push requests are accepted only after LVRS
-  `readFinished(path)` has marked the current mounted session file ready, then first write the supplied editor payload
-  to the mounted session file, so the note editor shape at that call site becomes the filesystem session baseline. The
+  LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds non-destructive
+  imported-resource cursor insertions and static format-tag source insertions for editor command flows, immediately
+  commits active imported-resource insertions to the note body and mounted editor session file before reporting paste
+  success, discards pre-paste pending pushes for that session file, and persists LVRS `textEdited(text)` payloads directly to the selected `.wsnbody` after converting them
+  to canonical source. Idle RAW push requests are accepted only after LVRS `readFinished(path)` has marked the current
+  mounted session file ready; modified-count input writes both the mounted session file and RAW body immediately, so the
+  note editor shape at that call site becomes the filesystem baseline. The
   active editor session source becomes the save/sync truth for the active note after persistence converts that same
   payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
   flushes also persist that active source instead of falling back to stale mounted session-file
@@ -98,7 +98,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
   from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
   centered image placement inside that frame-width media raster, and an image-only visible rendering surface inside the
-  frame container. It does not emit type/file-name display metadata or visible header/footer chrome.
+  frame container. Its table margins are zeroed, and the session projection places resource frames without adding
+  synthetic `<br/>` separators around them. It does not emit type/file-name display metadata or visible header/footer
+  chrome.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -144,10 +146,11 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
-  resource 삽입은 성공 반환 전에 `.wsnbody`와 mounted editor session file을 함께 확정하고, 같은 session file의
-  pre-paste pending push를 폐기한다. idle/modified-count RAW push 요청은 LVRS `readFinished(path)`가 현재 mounted
-  session file을 ready로 표시한 뒤에만 허용되며, 전달받은 editor payload를 먼저 mounted
-  session file에 써서 호출 시점의 노트 에디터 형태를 filesystem session 기준으로 만든다. active editor session
+  resource 삽입은 cursor 위치에 비파괴식으로 적용되며 selection length로 주변 source를 지우지 않는다. 삽입 성공
+  반환 전에 `.wsnbody`와 mounted editor session file을 함께 확정하고, 같은 session file의
+  pre-paste pending push를 폐기한다. LVRS `textEdited(text)` 입력은 `readFinished(path)` 이후 즉시 canonical RAW로
+  변환되어 selected `.wsnbody`에 쓰이며, mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
+  남고 direct RAW 입력보다 오래된 payload를 active source로 되돌리지 않는다. active editor session
   source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
   pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
   이 계약은 resource line뿐 아니라 일반 텍스트의 마지막 입력에도 적용된다. 거터의 실제
@@ -162,6 +165,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor
   viewport 폭을 따른다. 첫 auto height는 `data-frame-display-height`로 고정되고 이후 viewport 재투영에서는 frame
   폭과 x축 중앙 offset만 다시 계산한다. 실제 이미지 표시 박스는 frame 폭 안에서 동적으로 중앙 정렬된다. resource
-  type, `...`, file name 표시 정보는 HTML에도 내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도
-  제공하지 않는다.
+  frame table margin은 0으로 고정되고, 세션 projection은 resource frame 앞뒤에 합성 `<br/>` separator를 추가하지
+  않는다. 따라서 frame 좌상단은 canonical resource source line의 시작 위치에 맞는다. resource type, `...`, file
+  name 표시 정보는 HTML에도 내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

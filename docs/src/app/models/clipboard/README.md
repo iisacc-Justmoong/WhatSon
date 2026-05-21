@@ -55,6 +55,8 @@ macOS file import.
 - Image editor paste must let `NoteEditorDocumentSession` insert the canonical `<resource ... />` tag into the current
   editor-derived `.wsnbody` source and queue that body write immediately; it must not rely on a later sync of a temporary
   frame.
+- Image editor paste is a non-destructive cursor insertion. A stale editor selection must not cause surrounding text,
+  blank lines, or existing frames to be replaced by the new resource tag.
 - Callout boundary Backspace/Enter share the editor item event filter owned by `EditorInputCommandFilter`, but RAW
   source decisions must still live in `NoteEditorDocumentSession`.
 

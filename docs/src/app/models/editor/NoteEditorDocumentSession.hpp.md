@@ -28,15 +28,17 @@ Declares the active note editor document session object.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
 - Provides `markEditorSessionFileReadyForRawPush(path)` so QML can acknowledge the LVRS `readFinished(path)` event for
   the currently mounted session file before idle or modified-count push triggers are accepted.
-- Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
-  push triggers into `file/sync/WhatSonEditorRawPushController` after the current session file has been marked ready and
-  after first writing the supplied editor payload to the mounted session file.
+- Provides `requestEditorModifiedCountRawPush(...)`, which accepts the fresh LVRS `textEdited(text)` payload after the
+  current session file has been marked ready, converts it to RAW immediately, and writes the selected `.wsnbody` without
+  waiting for the idle sync path.
+- Provides `requestEditorIdleRawPush(...)` as a fallback for LVRS session-file sync completion. Idle payloads are ignored
+  when direct RAW input has already advanced the active source.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
   `InAppClipboardManager`, recovers the current editor snapshot as RAW source, inserts canonical RAW `<resource ... />`
-  calls at the current editor cursor/selection, updates the mounted session file, queues `.wsnbody` persistence, and
-  returns an editor HTML projection for the live LVRS surface.
+  calls at the current editor cursor without replacing the surrounding selection, updates the mounted session file,
+  queues `.wsnbody` persistence, and returns an editor HTML projection for the live LVRS surface.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
@@ -87,10 +89,9 @@ Declares the active note editor document session object.
 - LVRS가 현재 session file의 `readFinished(path)`를 낸 뒤에만
   `markEditorSessionFileReadyForRawPush(path)`가 해당 파일을 write 가능한 editor 세션으로 승격한다. 앱 시작 직후의
   blank editor나 이전 파일의 늦은 read-finished 이벤트는 새로 선택된 노트를 덮어쓰는 RAW push를 열지 못한다.
-- LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
-  `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
-  이 두 요청은 전달받은 editor payload를 mounted session file에 먼저 써서 그 시점의 노트 에디터 형태를 filesystem
-  session 기준으로 만든다. note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
+- LVRS `textEdited(text)` 입력은 `requestEditorModifiedCountRawPush(...)`로 들어와 즉시 RAW로 변환되고 선택된
+  `.wsnbody`에 기록된다. `syncFinished(path)`는 fallback idle trigger일 뿐이며, direct RAW 입력보다 오래된 payload는
+  active source로 승격되지 않는다. note 이탈 시에는 direct RAW 저장이 없을 때만 fallback flush를 수행한다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
   다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다
   최신일 때만 editor document를 교체한다. 오래된 pull은 `editorFilesystemPullIgnored(...)`로 무시된다.

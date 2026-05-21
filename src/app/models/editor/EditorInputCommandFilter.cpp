@@ -166,6 +166,17 @@ int EditorInputCommandFilter::editorCommandCursorPosition(
     return cursorPosition.isValid() ? cursorPosition.toInt() : selectionStart;
 }
 
+int EditorInputCommandFilter::editorCaretPosition(const int fallbackPosition) const
+{
+    if (m_editorOwner.isNull())
+    {
+        return fallbackPosition;
+    }
+
+    const QVariant cursorPosition = m_editorOwner->property("editorCursorPosition");
+    return cursorPosition.isValid() ? cursorPosition.toInt() : fallbackPosition;
+}
+
 bool EditorInputCommandFilter::handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event)
 {
     if (!editorCalloutBoundaryKeyMatches(event)
@@ -229,16 +240,15 @@ bool EditorInputCommandFilter::handleEditorPasteKeyEvent(QKeyEvent& event)
         m_editorOwner->property("editorDocumentText").toString();
     const int selectionStart =
         m_editorOwner->property("editorSelectionStart").toInt();
-    const int selectionLength =
-        m_editorOwner->property("editorSelectionLength").toInt();
-    const int cursorPosition = editorCommandCursorPosition(selectionStart, selectionLength);
+    const int cursorPosition = editorCaretPosition(selectionStart);
+    const int pasteSelectionLength = 0;
 
     const QVariantMap insertion = editorPaste->pasteImageResourceIntoEditor(
         m_clipboardObject.data(),
         m_noteEditorSessionObject.data(),
         editorDocumentText,
         cursorPosition,
-        selectionLength);
+        pasteSelectionLength);
     if (insertion.value(QStringLiteral("nativePaste")).toBool())
     {
         return false;

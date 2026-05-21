@@ -54,7 +54,8 @@
   `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
   available as the C++ RAW-source repair anchor.
 - `editorCursorPosition` exposes the current caret separately from selection metadata. Native key filtering uses it for
-  collapsed paste/boundary commands so resource insertion targets the caret rather than a stale selection start.
+  image resource paste and collapsed boundary commands so resource insertion targets the caret rather than a stale
+  selection start.
 - The wrapper attaches `EditorInputCommandFilter` to the public LVRS `editorItem` as the editor-wide native key filter.
   It delegates callout and explicit-empty-paragraph boundaries to `NoteEditorDocumentSession`, and consumes the native
   event only when the delegated C++ command reports that it was handled.

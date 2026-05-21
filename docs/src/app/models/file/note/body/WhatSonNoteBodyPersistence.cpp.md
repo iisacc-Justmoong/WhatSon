@@ -103,15 +103,18 @@ The current contract preserves editor-authored RAW source across save/load turns
   The generated editor document carries the LVRS Body token default (`Pretendard`, `12px`, medium weight, `12px`
   line height, and `#CCFFFFFF`) so the note editor does not fall back to the platform/system rich-text font before
   token-specific or explicit style overrides are applied.
+- `editorHtmlDocumentFromProjection(...)` exposes only the final LVRS Body-token editor document wrapper. It lets
+  higher-level session code compose body fragments and resource frame fragments first, then wrap that projection once,
+  avoiding nested `<!DOCTYPE HTML>` payloads and resource-adjacent spacer rows.
 - `sourceTextFromEditorDocument(...)` is the inverse editor-session boundary. It detects LVRS/Qt rich-text HTML,
   extracts its visible text with preserved paragraph and `<br/>` boundaries, recovers command-generated inline format
   spans as canonical source tags, and returns normalized canonical source for persistence. Non-rich RAW source is passed
   through unchanged apart from line-ending normalization.
 - The same inverse editor-session boundary recognizes note-session resource frame markers of the form
   `<!--whatson-resource-source:...-->...<!--/whatson-resource-source-->`, decodes the embedded canonical
-  `<resource ... />` source tag, and removes renderer padding rows around that atomic frame before persistence.
-  This lets the editor display a rich resource frame while the `.wsnbody` source continues to store only the canonical
-  resource reference.
+  `<resource ... />` source tag, and preserves authored blank lines around that atomic frame. This lets the editor
+  display a rich resource frame while the `.wsnbody` source continues to store only the canonical resource reference
+  without treating adjacent paragraphs as renderer cleanup targets.
 - The inverse boundary also recognizes `<!--whatson-callout-source:...-->...<!--/whatson-callout-source-->` marker pairs,
   extracts the inner `<!--whatson-callout-content-->...<!--/whatson-callout-content-->` payload from the live rendered
   callout frame, converts its rich text back to canonical source, and wraps that content in `<callout>...</callout>`

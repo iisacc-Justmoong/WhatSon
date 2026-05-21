@@ -3,15 +3,13 @@
 ## Runtime Behavior
 
 - `requestIdlePush(...)` records the latest editor document text and schedules an idle timer.
-- `requestModifiedCountPush(...)` records the latest editor document text only when the supplied modified count is
-  greater than the last count seen for that editor session file.
+- `requestModifiedCountPush(...)` remains available for fallback trigger tests, but live note input now writes RAW
+  directly through `NoteEditorDocumentSession` from LVRS `textEdited(text)`.
 - If an idle sync trigger arrives while a modified-count push is already pending, the pending user-edit payload wins.
   This prevents a stale session-file sync notification from replacing the first Backspace/delete snapshot before it is
   converted back to RAW source.
-- The controller only orders trigger payloads. `NoteEditorDocumentSession` is responsible for promoting the latest
-  modified-count payload to the active session source immediately and for making idle pushes persist that source when a
-  stale sync-finished payload arrives after the user's last action. The same session-side policy handles
-  note-departure fallback when the mounted session file is older than the active source.
+- The controller only orders fallback trigger payloads. `NoteEditorDocumentSession` is responsible for direct RAW input
+  writes and for ignoring stale sync-finished payloads after the user's last action.
 - `pushBeforeNoteDeparture(...)` stops any pending idle push and flushes the latest known surface payload immediately.
   If no live payload is pending for that file, the callback is invoked without editor text so the session can fall back
   to its note-departure persistence policy.

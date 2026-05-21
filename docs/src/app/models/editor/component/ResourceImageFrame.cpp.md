@@ -16,6 +16,8 @@ Implements the editor image resource-frame HTML renderer.
   frame HTML as display text or diagnostic attributes.
 - The frame is not wrapped in a synthetic outer block, because that block can confuse Qt rich-text flow height and let
   following note text intrude into the frame.
+- The frame table itself carries zero top/bottom/left/right margins. Source-line placement is owned by the editor
+  session projection, so the table must not add an extra spacer row above the resource line.
 - There are no visible header/footer text surfaces in the current image-only frame contract.
 
 ## Runtime Behavior
@@ -48,6 +50,8 @@ Implements the editor image resource-frame HTML renderer.
   `whatson-resource-frame` table을 노출하고, 이 table이 frame container 역할을 한다.
 - frame 안에서 보이는 콘텐츠는 이미지 하나뿐이다. resource type, `...`, file name은 화면 텍스트나
   diagnostic attribute로도 내보내지 않는다.
+- frame table의 상하좌우 margin은 0으로 고정한다. resource source line의 위치는 editor session projection이
+  결정하므로, table 자체가 resource line 위에 추가 spacer row를 만들면 안 된다.
 - 이미지는 현재 editor viewport 폭으로 캐시 PNG를 만들며, 실제 이미지 표시 박스는 frame 폭 안에서 중앙 정렬한다.
   Figma 480px 기준은 design baseline metadata로만 남긴다.
 - resource frame은 synthetic outer block을 사용하지 않는다. 별도 outer block은 Qt rich text 흐름 높이를

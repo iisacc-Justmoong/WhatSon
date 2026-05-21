@@ -27,6 +27,10 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(html.startsWith(QStringLiteral("<!--whatson-resource-source:")));
     QVERIFY(html.contains(QStringLiteral("class=\"whatson-resource-frame\"")));
     QVERIFY(html.contains(QStringLiteral("<table")));
+    QVERIFY(html.contains(QStringLiteral("margin-top:0px")));
+    QVERIFY(html.contains(QStringLiteral("margin-bottom:0px")));
+    QVERIFY(html.contains(QStringLiteral("margin-left:0px")));
+    QVERIFY(html.contains(QStringLiteral("margin-right:0px")));
     QVERIFY(!html.contains(QStringLiteral("data-whatson-component=\"resource-frame\"")));
     QVERIFY(html.count(QStringLiteral("<img")) == 1);
     QVERIFY(html.contains(QStringLiteral("width:100%")));

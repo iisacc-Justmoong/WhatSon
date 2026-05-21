@@ -371,6 +371,7 @@ namespace WhatSon::EditorComponent
             "data-media-alignment=\"center\" "
             "width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
             "style=\"width:100%;max-width:100%;border-spacing:0;border-collapse:separate;"
+            "margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px;"
             "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%2px;\">"
             "<tr><td align=\"center\" style=\"padding:0;margin:0;text-align:center;\">"
             "<img src=\"%3\" alt=\"\" class=\"whatson-resource-media\" data-resource-preview=\"media-raster\" "

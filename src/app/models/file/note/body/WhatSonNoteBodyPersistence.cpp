@@ -1873,58 +1873,6 @@ namespace
         return line;
     }
 
-    QStringList removeRenderedResourceFramePaddingLines(
-        const QStringList& sourceLines,
-        const QVector<RenderedResourceSourceToken>& tokens)
-    {
-        if (tokens.isEmpty())
-        {
-            return sourceLines;
-        }
-
-        QStringList compacted;
-        compacted.reserve(sourceLines.size());
-        for (int index = 0; index < sourceLines.size(); ++index)
-        {
-            const QString& line = sourceLines.at(index);
-            if (line.trimmed().isEmpty())
-            {
-                const bool previousIsRenderedResource =
-                    index > 0 && isRenderedResourceSourceLine(sourceLines.at(index - 1), tokens);
-                const bool nextIsRenderedResource =
-                    index + 1 < sourceLines.size() && isRenderedResourceSourceLine(sourceLines.at(index + 1), tokens);
-                if (previousIsRenderedResource || nextIsRenderedResource)
-                {
-                    continue;
-                }
-            }
-            compacted.push_back(line);
-        }
-        return compacted;
-    }
-
-    QString removeRenderedResourceFramePaddingText(
-        QString sourceText,
-        const QVector<RenderedResourceSourceToken>& tokens)
-    {
-        for (const RenderedResourceSourceToken& token : tokens)
-        {
-            while (sourceText.contains(QStringLiteral("\n\n") + token.sourceTag))
-            {
-                sourceText.replace(
-                    QStringLiteral("\n\n") + token.sourceTag,
-                    QLatin1Char('\n') + token.sourceTag);
-            }
-            while (sourceText.contains(token.sourceTag + QStringLiteral("\n\n")))
-            {
-                sourceText.replace(
-                    token.sourceTag + QStringLiteral("\n\n"),
-                    token.sourceTag + QLatin1Char('\n'));
-            }
-        }
-        return sourceText;
-    }
-
     bool isStandaloneBreakLine(const QString& trimmedLine)
     {
         return WhatSon::EditorComponent::Break::isSourceLine(trimmedLine);
@@ -2058,6 +2006,13 @@ namespace
             + QStringLiteral("</callout>");
     }
 
+    QString normalizedRichEditorBlockSourceLine(QString sourceLine)
+    {
+        QString withoutLineBreaks = sourceLine;
+        withoutLineBreaks.remove(QLatin1Char('\n'));
+        return withoutLineBreaks.isEmpty() ? QString() : sourceLine;
+    }
+
     QString sourceTextFromRichEditorDocument(const QString& editorDocumentText)
     {
         QString normalizedEditorDocumentText = editorDocumentText;
@@ -2132,7 +2087,8 @@ namespace
                 sourceLine += QStringLiteral("</callout>");
             }
 
-            sourceLine = repairSerializedEmptyCalloutPrefix(sourceLine);
+            sourceLine = normalizedRichEditorBlockSourceLine(
+                repairSerializedEmptyCalloutPrefix(sourceLine));
             sourceLine = compactRenderedCalloutSourceLine(
                 compactRenderedResourceSourceLine(sourceLine, renderedResourceTokens),
                 renderedCalloutTokens);
@@ -2145,14 +2101,11 @@ namespace
         }
         const QStringList sourceLinesWithoutCalloutPadding =
             removeRenderedCalloutPaddingLines(sourceLines, renderedCalloutTokens);
-        const QStringList sourceLinesWithoutRenderedPadding =
-            removeRenderedResourceFramePaddingLines(sourceLinesWithoutCalloutPadding, renderedResourceTokens);
         const QString normalizedSourceText =
             WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-                sourceLinesWithoutRenderedPadding.join(QLatin1Char('\n')));
-        return restoreExplicitEmptySourceLinePlaceholders(removeRenderedResourceFramePaddingText(
-            removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens),
-            renderedResourceTokens));
+                sourceLinesWithoutCalloutPadding.join(QLatin1Char('\n')));
+        return restoreExplicitEmptySourceLinePlaceholders(
+            removeRenderedCalloutPaddingText(normalizedSourceText, renderedCalloutTokens));
     }
 }
 
@@ -2272,6 +2225,11 @@ namespace WhatSon::NoteBodyPersistence
                 .arg(line.isEmpty() ? explicitEmptySourceLineHtml() : renderedLine));
         }
         return htmlLines.join(containsStandaloneCalloutLine ? QString() : QStringLiteral("<br/>"));
+    }
+
+    QString editorHtmlDocumentFromProjection(const QString& bodyHtml)
+    {
+        return ::editorHtmlDocumentFromProjection(bodyHtml);
     }
 
     QString editorHtmlFromBodySource(
