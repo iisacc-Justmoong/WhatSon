@@ -19,6 +19,10 @@
 ### Required Properties
 - None detected during scaffold generation.
 
+### Properties
+- `calendarDetailActive`: forwards calendar content ownership into `RightPanel.qml` so the detail router can mount
+  `CalendarDetailPanel.qml`.
+
 ### Signals
 - `viewHookRequested`
 

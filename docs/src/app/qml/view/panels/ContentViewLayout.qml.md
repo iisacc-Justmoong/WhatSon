@@ -1,14 +1,18 @@
 # `src/app/qml/view/panels/ContentViewLayout.qml`
 
 ## Role
-`ContentViewLayout.qml` is the content slot surface used by the restored desktop/mobile shell. It exists only to switch
-between the note editor contents views and the image-resource viewer.
+`ContentViewLayout.qml` is the content slot surface used by the restored desktop/mobile shell. It switches between the
+note editor contents views, the image-resource viewer, and the navigation-driven calendar overlays.
 
 ## Composition
 - `ContentsView.Gutter`
 - `ContentsView.ImageEditor`
 - `ContentsView.TextEditor`
 - `ContentsView.Minimap`
+- `CalendarView.DayCalendarPage`
+- `CalendarView.WeekCalendarPage`
+- `CalendarView.MonthCalendarPage`
+- `CalendarView.YearCalendarPage`
 
 The image editor is mounted only when the active list model exposes `currentResourceEntry` and the selected entry is an
 image resource. Its input is the current resource entry map; it does not create a generic resource editor surface.
@@ -33,6 +37,13 @@ editor route sets it to `false`, matching the existing `minimapVisible: false` c
 The minimap receives the sibling editor's rich-text document, viewport geometry, font tokens, and a view-local scroll
 hook so it can render a VSCode-style right-side miniature and viewport thumb without owning parser or persistence
 state.
+
+Calendar overlays are mounted in a separate `CalendarView` stack above the editor/image row. When any calendar overlay
+is active, the editor/image row is hidden and disabled so pointer and focus ownership moves to the visible calendar
+page. The overlay receives the day/week/month/year controllers from `Main.qml` via `BodyLayout.qml`. Day, week, and
+month note chips call `LibraryHierarchyController.activateNoteById(...)`, switch the sidebar back to the Library
+hierarchy, and dismiss the visible overlay after a successful activation. Year view drill-down sets the month
+controller cursor before requesting the month overlay so the selected month/date is preserved.
 
 Clipboard resource paste is owned by the editor surface, not by an observer shortcut path. The layout passes
 `EditorInputCommandFilter`, `ClipboardEditorPaste`, `InAppClipboardManager`, and `NoteEditorDocumentSession` into
@@ -87,7 +98,8 @@ fields. The layout does not parse resource packages or mutate resource metadata.
 `noteEditorSession` is consumed to bind the editor session file into `LV.TextEditor`, to notify the C++ session when
 LVRS finishes syncing that session file, to forward editor modified-count increments for RAW push scheduling, and to
 insert already-imported resource metadata returned from `inAppClipboard`. Other restored-shell state must not be used
-to mount parser, projection, renderer, generic resource editor, or calendar page logic.
+to mount parser, projection, renderer, generic resource editor, or editor view-mode backend logic. Calendar routing is
+limited to the already-owned day/week/month/year controllers and overlay visibility signals.
 When the session emits `editorDocumentTextPulled(...)` for a newer idle filesystem pull, the layout replaces the LVRS
 document text through the sibling editor's public wrapper hook and suppresses the resulting revision tick from being
 classified as a local modified-count push.
@@ -95,7 +107,9 @@ classified as a local modified-count push.
 `editorViewModeController` remains removed from this component and must not be reintroduced as a TextEditor backend.
 
 ## Guardrails
-- Do not add parser, projection, document snapshot, generic resource editor, calendar, or editor view-mode wiring here.
+- Do not add parser, projection, document snapshot, generic resource editor, or editor view-mode wiring here.
+- Keep calendar wiring limited to the four overlay pages, controller pass-through, year-to-month drill-down, and
+  note-chip activation bridge.
 - Keep image resource routing limited to `ResourcesListModel.currentResourceEntry` and `ContentsView.ImageEditor`.
 - Keep file access limited to the `NoteEditorDocumentSession.editorFilePath -> LV.TextEditor.filePath` binding and
   the thin RAW-push trigger calls into `NoteEditorDocumentSession`.
@@ -120,7 +134,8 @@ classified as a local modified-count push.
 
 - 이 파일은 restored workspace shell의 content slot surface다.
 - 내부 배치는 노트 선택 시 거터, `LV.TextEditor` wrapper, 미니맵으로 끝나며, 이미지 리소스 선택 시
-  `ImageEditor.qml`만 콘텐츠 표면에 표시한다.
+  `ImageEditor.qml`만 콘텐츠 표면에 표시한다. 네비게이션 캘린더 버튼이 열린 상태에서는 같은 content slot 위에
+  day/week/month/year calendar overlay를 표시하고 editor/image row를 비활성화한다.
 - shell 호환 입력은 받을 수 있고 active note의 editor HTML session file만 `LV.TextEditor.filePath`로 넘긴다.
 - 리소스 하이어라키 list model이 `currentResourceEntry`를 제공하면, type/format과 `source`/`resolvedPath`/
   `resourcePath`를 기준으로 이미지 리소스 선택 여부를 판단한다. 이 판단은 viewer 전환만 수행하며 `.wsresource`
@@ -154,8 +169,9 @@ classified as a local modified-count push.
   같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
   처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
   콜아웃 시각 프레임을 즉시 만든다.
-- `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, 캘린더,
-  editor view mode 백엔드는 mount하지 않는다.
+- `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, generic resource editor,
+  editor view mode 백엔드는 mount하지 않는다. Calendar overlay는 이미 노출된 calendar controller와
+  `LibraryHierarchyController.activateNoteById(...)` bridge만 사용한다.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고
   `NoteEditorDocumentSession`의 RAW push 요청 함수로 넘긴다. 실제 debounce, note-departure flush, RAW 변환은
   C++ 쪽 책임이다.

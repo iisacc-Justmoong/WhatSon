@@ -5,6 +5,7 @@ Rectangle {
     id: rightPanel
 
     readonly property string figmaNodeId: "155:4574"
+    property bool calendarDetailActive: false
     property int detailPanelDefaultWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     property int detailPanelMinWidth: LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + LV.Theme.controlHeightMd + Math.round(LV.Theme.strokeThin)
     property color panelColor: "transparent"
@@ -25,5 +26,6 @@ Rectangle {
 
     DetailPanel {
         anchors.fill: parent
+        calendarDetailActive: rightPanel.calendarDetailActive
     }
 }

@@ -387,7 +387,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("resourceEntry: contentViewLayout.currentResourceEntry")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.imageResourceSelected")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("import WhatSon.App.Internal 1.0")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("CalendarView.")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.DayCalendarPage {")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("StackLayout")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewModeController")));
 
@@ -539,6 +539,56 @@ void WhatSonCppRegressionTests::qmlNavigationCalendarBars_restoreTaskButtonWitho
     QVERIFY(editApplicationBarSource.contains(QStringLiteral("applicationEditBar.requestViewHook(\"edit-open-task\");")));
 }
 
+void WhatSonCppRegressionTests::qmlNavigationCalendarButtons_mountCalendarPagesInContentSurface()
+{
+    const QString navigationBarSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/NavigationBarLayout.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+
+    QVERIFY(!navigationBarSource.isEmpty());
+    QVERIFY(!contentViewLayoutSource.isEmpty());
+    QVERIFY(!mainSource.isEmpty());
+
+    QVERIFY(navigationBarSource.contains(QStringLiteral("function handleApplicationBarViewHook(reason)")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("hookReason.indexOf(\"daily-calendar\") >= 0")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("hookReason.indexOf(\"weekly-calendar\") >= 0")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("hookReason.indexOf(\"monthly-calendar\") >= 0")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("hookReason.indexOf(\"yearly-calendar\") >= 0")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("navigationBar.dayCalendarRequested();")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("navigationBar.weekCalendarRequested();")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("navigationBar.monthCalendarRequested();")));
+    QVERIFY(navigationBarSource.contains(QStringLiteral("navigationBar.yearCalendarRequested();")));
+
+    QVERIFY(mainSource.contains(QStringLiteral("onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)")));
+    QVERIFY(mainSource.contains(QStringLiteral("onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)")));
+    QVERIFY(mainSource.contains(QStringLiteral("onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)")));
+    QVERIFY(mainSource.contains(QStringLiteral("onYearCalendarRequested: applicationWindow.openYearCalendarOverlay(true)")));
+
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../calendar\" as CalendarView")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool calendarOverlayActive")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: !contentViewLayout.calendarOverlayActive")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.DayCalendarPage {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("dayCalendarController: contentViewLayout.dayCalendarController")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.dayCalendarOverlayVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.WeekCalendarPage {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("weekCalendarController: contentViewLayout.weekCalendarController")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.weekCalendarOverlayVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.MonthCalendarPage {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("monthCalendarController: contentViewLayout.monthCalendarController")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.monthCalendarOverlayVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.YearCalendarPage {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("yearCalendarController: contentViewLayout.yearCalendarController")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.yearCalendarOverlayVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function openCalendarNote(noteId)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.libraryHierarchyController.activateNoteById(normalizedNoteId)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.sidebarHierarchyController.setActiveHierarchyIndex(contentViewLayout.libraryHierarchyIndex)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.closeCalendarOverlays()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function openMonthCalendarFromYear(year, month, selectedDateIso)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.monthCalendarOverlayOpenRequested()")));
+}
+
 void WhatSonCppRegressionTests::qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog()
 {
     const QString onboardingSource = readUtf8SourceFile(
@@ -576,6 +626,7 @@ void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokens
         QStringLiteral("src/app/qml/view/panels/NoteListItem.qml"),
         QStringLiteral("src/app/qml/view/panels/ResourceListItem.qml"),
         QStringLiteral("src/app/qml/view/panels/StatusBarLayout.qml"),
+        QStringLiteral("src/app/qml/view/panels/detail/CalendarDetailPanel.qml"),
         QStringLiteral("src/app/qml/view/panels/detail/DetailContents.qml"),
         QStringLiteral("src/app/qml/view/panels/detail/DetailFileStatForm.qml"),
         QStringLiteral("src/app/qml/view/panels/detail/DetailMetadataHierarchyPicker.qml"),

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/detail`
 - Child directories: 0
-- Child files: 10
+- Child files: 11
 
 ## Child Directories
 - No child directories.
@@ -17,6 +17,7 @@
 - `DetailFileStatForm.qml`
 - `DetailMetadataHierarchyPicker.qml`
 - `DetailMetadataSelectionController.qml`
+- `CalendarDetailPanel.qml`
 - `DetailPanel.qml`
 - `DetailPanelHeaderToolbar.qml`
 - `DetailPanelHeaderToolbarButton.qml`
@@ -25,8 +26,11 @@
 - `RightPanel.qml`
 
 ## Recent Notes
-- `DetailPanel.qml` is now only the hierarchy-aware router for the detail column, and it switches between
-  `NoteDetailPanel.qml` and `ResourceDetailPanel.qml` instead of forcing one note-only form onto every hierarchy.
+- `DetailPanel.qml` is now only the route-aware router for the detail column, and it switches between
+  `CalendarDetailPanel.qml`, `NoteDetailPanel.qml`, and `ResourceDetailPanel.qml` instead of forcing one note-only
+  form onto every hierarchy or calendar route.
+- `CalendarDetailPanel.qml` is intentionally blank for now, but it already owns a dedicated calendar-detail surface so
+  future calendar-only UI can grow without reopening note/resource branching.
 - `ResourceDetailPanel.qml` is intentionally blank for now, but it already owns a dedicated resource-detail
   controller contract so future resource-only UI can grow without reopening note-detail branching.
 - `DetailContents.qml` is shared by desktop and mobile detail routes, so compact section spacing and fixed-height

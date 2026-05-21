@@ -795,6 +795,10 @@ Item {
 
             PanelView.DetailPanelLayout {
                 anchors.fill: parent
+                calendarDetailActive: mobileHierarchyPage.dayCalendarOverlayVisible
+                        || mobileHierarchyPage.weekCalendarOverlayVisible
+                        || mobileHierarchyPage.monthCalendarOverlayVisible
+                        || mobileHierarchyPage.yearCalendarOverlayVisible
                 panelColor: "transparent"
 
                 onViewHookRequested: mobileHierarchyPage.requestViewHook()

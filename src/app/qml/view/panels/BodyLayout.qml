@@ -65,6 +65,10 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarController: null
+    readonly property bool calendarDetailActive: hStack.dayCalendarOverlayVisible
+            || hStack.weekCalendarOverlayVisible
+            || hStack.monthCalendarOverlayVisible
+            || hStack.yearCalendarOverlayVisible
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
@@ -304,6 +308,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.rightVisible ? hStack.minRightPanelWidth : 0
                 Layout.preferredWidth: hStack.rightVisible ? hStack.rightPanelWidth : 0
+                calendarDetailActive: hStack.calendarDetailActive
                 panelColor: hStack.rightPanelColor
                 visible: hStack.rightVisible
             }

@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "../calendar" as CalendarView
 import "../contents" as ContentsView
 
 Item {
@@ -12,6 +13,10 @@ Item {
     property var contentController: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarController: null
+    readonly property bool calendarOverlayActive: contentViewLayout.dayCalendarOverlayVisible
+            || contentViewLayout.weekCalendarOverlayVisible
+            || contentViewLayout.monthCalendarOverlayVisible
+            || contentViewLayout.yearCalendarOverlayVisible
     property color displayColor: "transparent"
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
@@ -133,6 +138,53 @@ Item {
         if (contentViewLayout.panelController && contentViewLayout.panelController.requestControllerHook)
             contentViewLayout.panelController.requestControllerHook(hookReason);
         contentViewLayout.viewHookRequested();
+    }
+    function closeCalendarOverlays() {
+        if (contentViewLayout.dayCalendarOverlayVisible)
+            contentViewLayout.dayCalendarOverlayCloseRequested();
+        if (contentViewLayout.weekCalendarOverlayVisible)
+            contentViewLayout.weekCalendarOverlayCloseRequested();
+        if (contentViewLayout.monthCalendarOverlayVisible)
+            contentViewLayout.monthCalendarOverlayCloseRequested();
+        if (contentViewLayout.yearCalendarOverlayVisible)
+            contentViewLayout.yearCalendarOverlayCloseRequested();
+    }
+    function openCalendarNote(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null
+                ? ""
+                : String(noteId).trim();
+        if (normalizedNoteId.length === 0
+                || !contentViewLayout.libraryHierarchyController
+                || contentViewLayout.libraryHierarchyController.activateNoteById === undefined)
+            return false;
+
+        if (contentViewLayout.sidebarHierarchyController
+                && contentViewLayout.sidebarHierarchyController.setActiveHierarchyIndex !== undefined)
+            contentViewLayout.sidebarHierarchyController.setActiveHierarchyIndex(contentViewLayout.libraryHierarchyIndex);
+
+        const activated = Boolean(contentViewLayout.libraryHierarchyController.activateNoteById(normalizedNoteId));
+        if (activated)
+            contentViewLayout.closeCalendarOverlays();
+        return activated;
+    }
+    function openMonthCalendarFromYear(year, month, selectedDateIso) {
+        const targetYear = Math.floor(Number(year));
+        const targetMonth = Math.floor(Number(month));
+        const normalizedSelectedDateIso = selectedDateIso === undefined || selectedDateIso === null
+                ? ""
+                : String(selectedDateIso).trim();
+
+        if (contentViewLayout.monthCalendarController) {
+            if (isFinite(targetYear) && contentViewLayout.monthCalendarController.setDisplayedYear !== undefined)
+                contentViewLayout.monthCalendarController.setDisplayedYear(targetYear);
+            if (isFinite(targetMonth) && contentViewLayout.monthCalendarController.setDisplayedMonth !== undefined)
+                contentViewLayout.monthCalendarController.setDisplayedMonth(targetMonth);
+            if (normalizedSelectedDateIso.length > 0
+                    && contentViewLayout.monthCalendarController.setSelectedDateIso !== undefined)
+                contentViewLayout.monthCalendarController.setSelectedDateIso(normalizedSelectedDateIso);
+        }
+
+        contentViewLayout.monthCalendarOverlayOpenRequested();
     }
     function editorCommandShortcutEnabled() {
         if (!contentViewLayout.noteEditorSurfaceVisible)
@@ -318,7 +370,9 @@ Item {
 
         RowLayout {
             anchors.fill: parent
+            enabled: !contentViewLayout.calendarOverlayActive
             spacing: LV.Theme.gapNone
+            visible: !contentViewLayout.calendarOverlayActive
 
             ContentsView.Gutter {
                 Layout.fillHeight: true
@@ -567,6 +621,69 @@ Item {
 
             function onEditorDocumentTextPulled(noteId, editorDocumentText) {
                 contentViewLayout.applyPulledEditorDocumentText(noteId, editorDocumentText);
+            }
+        }
+
+        Item {
+            id: calendarOverlayStack
+
+            anchors.fill: parent
+            enabled: contentViewLayout.calendarOverlayActive
+            visible: contentViewLayout.calendarOverlayActive
+            z: 4
+
+            Rectangle {
+                anchors.fill: parent
+                color: contentViewLayout.displayColor
+            }
+
+            CalendarView.DayCalendarPage {
+                anchors.fill: parent
+                dayCalendarController: contentViewLayout.dayCalendarController
+                visible: contentViewLayout.dayCalendarOverlayVisible
+
+                onNoteOpenRequested: function (noteId) {
+                    contentViewLayout.openCalendarNote(noteId);
+                }
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.requestViewHook("calendar.day." + reason);
+                }
+            }
+            CalendarView.WeekCalendarPage {
+                anchors.fill: parent
+                weekCalendarController: contentViewLayout.weekCalendarController
+                visible: contentViewLayout.weekCalendarOverlayVisible
+
+                onNoteOpenRequested: function (noteId) {
+                    contentViewLayout.openCalendarNote(noteId);
+                }
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.requestViewHook("calendar.week." + reason);
+                }
+            }
+            CalendarView.MonthCalendarPage {
+                anchors.fill: parent
+                monthCalendarController: contentViewLayout.monthCalendarController
+                visible: contentViewLayout.monthCalendarOverlayVisible
+
+                onNoteOpenRequested: function (noteId) {
+                    contentViewLayout.openCalendarNote(noteId);
+                }
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.requestViewHook("calendar.month." + reason);
+                }
+            }
+            CalendarView.YearCalendarPage {
+                anchors.fill: parent
+                visible: contentViewLayout.yearCalendarOverlayVisible
+                yearCalendarController: contentViewLayout.yearCalendarController
+
+                onMonthCalendarOpenRequested: function (year, month, selectedDateIso) {
+                    contentViewLayout.openMonthCalendarFromYear(year, month, selectedDateIso);
+                }
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.requestViewHook("calendar.year." + reason);
+                }
             }
         }
     }

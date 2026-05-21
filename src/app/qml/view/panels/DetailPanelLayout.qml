@@ -5,6 +5,7 @@ import "detail" as DetailView
 Rectangle {
     id: detailPanel
 
+    property bool calendarDetailActive: false
     property color panelColor: "transparent"
     readonly property var panelController: panelControllerRegistry ? panelControllerRegistry.panelController("DetailPanelLayout") : null
 
@@ -21,6 +22,7 @@ Rectangle {
 
     DetailView.RightPanel {
         anchors.fill: parent
+        calendarDetailActive: detailPanel.calendarDetailActive
         panelColor: detailPanel.panelColor
     }
 }

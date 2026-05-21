@@ -8,6 +8,13 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
         QStringLiteral("src/app/qml/view/panels/detail/NoteDetailPanel.qml"));
     const QString resourceDetailPanelSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/detail/ResourceDetailPanel.qml"));
+    const QString calendarDetailPanelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/CalendarDetailPanel.qml"));
+    const QString bodyLayoutSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/BodyLayout.qml"));
+    const QString detailPanelLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/DetailPanelLayout.qml"));
+    const QString rightPanelSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/detail/RightPanel.qml"));
     const QString binderSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp"));
     const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
@@ -16,6 +23,10 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
     QVERIFY(!detailPanelSource.isEmpty());
     QVERIFY(!noteDetailPanelSource.isEmpty());
     QVERIFY(!resourceDetailPanelSource.isEmpty());
+    QVERIFY(!calendarDetailPanelSource.isEmpty());
+    QVERIFY(!bodyLayoutSource.isEmpty());
+    QVERIFY(!detailPanelLayoutSource.isEmpty());
+    QVERIFY(!rightPanelSource.isEmpty());
     QVERIFY(!binderSource.isEmpty());
     QVERIFY(!mainQmlSource.isEmpty());
     QVERIFY(!mainCppSource.isEmpty());
@@ -26,13 +37,26 @@ void WhatSonCppRegressionTests::detailPanelRouting_separatesNoteAndResourceViews
         QStringLiteral("typeof resourceDetailPanelController !== \"undefined\" ? resourceDetailPanelController : null")));
     QVERIFY(detailPanelSource.contains(QStringLiteral("NoteDetailPanel {")));
     QVERIFY(detailPanelSource.contains(QStringLiteral("ResourceDetailPanel {")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("CalendarDetailPanel {")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("property bool calendarDetailActive: false")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("visible: detailPanel.calendarDetailActive")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("visible: !detailPanel.calendarDetailActive && detailPanel.resourceHierarchyActive")));
+    QVERIFY(detailPanelSource.contains(QStringLiteral("visible: !detailPanel.calendarDetailActive && !detailPanel.resourceHierarchyActive")));
     QVERIFY(detailPanelSource.contains(
         QStringLiteral("sidebarHierarchyControllerObject.activeHierarchyController === resourcesHierarchyControllerObject")));
+    QVERIFY(bodyLayoutSource.contains(QStringLiteral("calendarDetailActive: hStack.calendarDetailActive")));
+    QVERIFY(detailPanelLayoutSource.contains(QStringLiteral("property bool calendarDetailActive: false")));
+    QVERIFY(detailPanelLayoutSource.contains(QStringLiteral("calendarDetailActive: detailPanel.calendarDetailActive")));
+    QVERIFY(rightPanelSource.contains(QStringLiteral("property bool calendarDetailActive: false")));
+    QVERIFY(rightPanelSource.contains(QStringLiteral("calendarDetailActive: rightPanel.calendarDetailActive")));
 
     QVERIFY(noteDetailPanelSource.contains(QStringLiteral("property var noteDetailPanelController: null")));
     QVERIFY(noteDetailPanelSource.contains(
         QStringLiteral("readonly property var detailPanelRuntime: noteDetailPanel.noteDetailPanelController")));
     QVERIFY(resourceDetailPanelSource.contains(QStringLiteral("property var resourceDetailPanelController: null")));
+    QVERIFY(calendarDetailPanelSource.contains(QStringLiteral("objectName: \"CalendarDetailPanel\"")));
+    QVERIFY(calendarDetailPanelSource.contains(QStringLiteral("signal viewHookRequested")));
+    QVERIFY(calendarDetailPanelSource.contains(QStringLiteral("function requestViewHook(reason)")));
 
     QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.Controllers")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("LV.ViewModels")));

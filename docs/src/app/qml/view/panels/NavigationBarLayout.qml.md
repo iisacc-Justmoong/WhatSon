@@ -29,9 +29,13 @@
 ### Signals
 - `compactAddFolderRequested`
 - `compactLeadingActionRequested`
+- `dayCalendarRequested`
+- `monthCalendarRequested`
 - `toggleDetailPanelRequested`
 - `toggleSidebarRequested`
 - `viewHookRequested`
+- `weekCalendarRequested`
+- `yearCalendarRequested`
 
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` so nested mode `Component` branches can safely reference
@@ -49,6 +53,9 @@
 - The compact mobile surface fill is supplied by `compactSurfaceColor`; the Figma mobile editor chrome uses
   `panelBackground10` (`#343536`) for that pill background instead of leaving it transparent or inheriting the page
   canvas tone.
+- Calendar hook reasons emitted by the View/Edit application bars are normalized in `handleApplicationBarViewHook(...)`.
+  Reasons containing `daily-calendar`, `weekly-calendar`, `monthly-calendar`, or `yearly-calendar` raise the matching
+  calendar request signal so `Main.qml` can open the corresponding content overlay.
 
 ## Intended Detailed Sections
 - Responsibility and business role

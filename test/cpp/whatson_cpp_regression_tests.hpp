@@ -1318,6 +1318,7 @@ private slots:
     void qmlContentsView_keepsOnlyAllowedContentsViews();
     void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
     void qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks();
+    void qmlNavigationCalendarButtons_mountCalendarPagesInContentSurface();
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();

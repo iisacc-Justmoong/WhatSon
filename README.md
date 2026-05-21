@@ -181,6 +181,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/view/panels/detail/DetailPanel.qml` now passes that statistics object into
   `DetailContents.qml` through an explicit `fileStatViewModel` property instead of relying on a generic active-state
   object for the statistics tab.
+- When a day/week/month/year calendar page is mounted in the content view, the right detail router now shows the
+  dedicated `CalendarDetailPanel.qml` surface. That calendar detail surface is intentionally blank for now, matching
+  the resource-specific detail-panel split.
 
 ## Hierarchy Interaction
 
@@ -270,15 +273,14 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Content Editor Surface
 
-- `src/app/qml/view/panels/ContentViewLayout.qml` is now a panel-level wrapper only; the actual Figma
-  `ContentsDisplayView` editor implementation lives in
-  `src/app/qml/view/content/editor/ContentsDisplayView.qml`.
-- The navigation daily/weekly/monthly/yearly calendar actions now mount day/week/month/year calendar content directly
-  in the `ContentDisplayView` slot of the editor surface, and the calendar pages are backed by shared context objects
-  from `main.cpp`
-  (`dayCalendarViewModel`, `weekCalendarViewModel`, `monthCalendarViewModel`, `yearCalendarViewModel`).
-- `ContentViewLayout.qml` now also owns the shared "open note from calendar" bridge. It activates the requested note
-  through `LibraryHierarchyViewModel::activateNoteById(...)`, switches the active hierarchy back to Library, and then
+- `src/app/qml/view/panels/ContentViewLayout.qml` is the panel-level content slot. It composes the allowed contents
+  views (`Gutter`, `ImageEditor`, `TextEditor`, `Minimap`) and the navigation-driven calendar overlay pages.
+- The navigation daily/weekly/monthly/yearly calendar actions mount day/week/month/year calendar content directly in the
+  `ContentViewLayout.qml` content slot. `Main.qml` owns the overlay visibility state and passes the shared
+  `DayCalendarController`, `WeekCalendarController`, `MonthCalendarController`, and `YearCalendarController` objects
+  through `BodyLayout.qml`.
+- `ContentViewLayout.qml` owns the shared "open note from calendar" bridge. It activates the requested note through
+  `LibraryHierarchyController::activateNoteById(...)`, switches the active hierarchy back to Library, and then
   dismisses the visible calendar overlay so the editor shows the selected note.
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
