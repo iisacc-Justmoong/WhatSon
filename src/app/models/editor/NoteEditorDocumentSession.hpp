@@ -167,6 +167,7 @@ private:
         bool success,
         const QString& errorMessage,
         const QString& lastModifiedAt);
+    bool persistActiveResourceInsertionSourceText(const QString& sourceText);
     QString bodySourceTextForEditorDocument(
         const QString& noteId,
         const QString& editorDocumentText) const;

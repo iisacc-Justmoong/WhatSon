@@ -34,9 +34,11 @@ Implements the active note editor document session.
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
-   the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
-   standalone resource source line as a resource frame. If a collapsed paste cursor resolves to the start of the line
-   after an empty source line, that empty line is reused for the resource tag instead of creating another line below it.
+   the resource package. The session inserts RAW resource tags, commits the active-note source through the
+   note-management queue before returning a successful paste result, and returns an editor HTML projection that renders
+   each standalone resource source line as a resource frame. If a collapsed paste cursor resolves to the start of the
+   line after an empty source line, that empty line is reused for the resource tag instead of creating another line below
+   it.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
     callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
@@ -66,6 +68,10 @@ Implements the active note editor document session.
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create
   resource packages itself.
+- Imported-resource insertion is a persistence boundary as well as a projection boundary: once the resource package
+  exists and the active note is known, the canonical RAW `<resource ... />` line is saved to `.wsnbody` before the paste
+  result is reported. This keeps an immediate app quit/restart from reopening the pre-paste body and dropping the
+  resource reference.
 - Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
   `component/ResourceImageFrame` and wraps that frame in `whatson-resource-source` markers so the persistence boundary can
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context
@@ -129,7 +135,9 @@ Implements the active note editor document session.
   폭 안에서 다시 중앙 정렬된다.
 - clipboard resource paste는 `InAppClipboardManager`가 `.wsresource` package를 먼저 만든 뒤 이 세션의
   `insertImportedResourcesIntoSource(...)`로 들어온다. 세션은 본문 RAW source에 `<resource ... />` 참조를
-  삽입하고 editor HTML projection을 반환한다. collapsed cursor가 빈 source line 바로 다음 줄 시작으로 들어와도
+  삽입하고, 활성 노트라면 성공 결과를 반환하기 전에 note-management queue를 통해 `.wsnbody`까지 저장한 뒤
+  editor HTML projection을 반환한다. 이 즉시 저장 경계 때문에 붙여넣기 직후 앱을 종료해도 재시작 시
+  `<resource ... />` 참조가 사라지지 않는다. collapsed cursor가 빈 source line 바로 다음 줄 시작으로 들어와도
   세션은 그 빈 줄을 resource line으로 재사용하므로, 이미지가 현재 커서 줄 아래에 새 빈 공간을 만든 뒤 붙지 않는다.
   standalone resource source line은 editor HTML에서
   `component/ResourceImageFrame`을 통해 Figma `292:50` 형태의 `whatson-resource-frame`으로 렌더링되고, 이미지 package

@@ -75,7 +75,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource and static
-  format-tag source insertions for editor command flows, and persists LVRS sync-finished rich-text edits back through the note body
+  format-tag source insertions for editor command flows, immediately commits active imported-resource insertions to the
+  note body before reporting paste success, and persists LVRS sync-finished rich-text edits back through the note body
   persistence path after converting them to canonical source. The gutter uses the session's parsed source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
   not let the LVRS rendered wrap-line count create additional gutter rows. When a new empty callout is inserted, the

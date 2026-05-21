@@ -57,6 +57,11 @@ void WhatSonEditorRawPushController::requestIdlePush(
     }
 
     resetModifiedCountTrackingIfNeeded(path);
+    if (m_hasPendingPush
+        && m_pendingPush.reason == QString::fromLatin1(kModifiedCountReason))
+    {
+        return;
+    }
     schedulePush({path, editorDocumentText, QString::fromLatin1(kIdleReason), true});
 }
 

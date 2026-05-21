@@ -60,3 +60,39 @@ void WhatSonCppRegressionTests::editorRawPushController_pushesOnIdleModifiedCoun
     QCOMPARE(pushedReasons.constLast(), QStringLiteral("note-departure"));
     QCOMPARE(pushedTexts.constLast(), QStringLiteral("pending before departure"));
 }
+
+void WhatSonCppRegressionTests::editorRawPushController_keepsPendingModifiedCountWhenIdleSyncArrives()
+{
+    ensureCoreApplication();
+
+    WhatSonEditorRawPushController controller;
+    controller.setIdleIntervalMs(25);
+
+    QStringList pushedReasons;
+    QStringList pushedTexts;
+    controller.setRawPushCallback(
+        [&pushedReasons, &pushedTexts](
+            const QString&,
+            const QString& editorDocumentText,
+            const bool hasEditorDocumentText,
+            const QString& reason,
+            QString*) -> bool
+        {
+            pushedReasons.push_back(reason);
+            pushedTexts.push_back(hasEditorDocumentText ? editorDocumentText : QStringLiteral("<file>"));
+            return true;
+        });
+
+    QSignalSpy finishedSpy(&controller, &WhatSonEditorRawPushController::rawPushFinished);
+    controller.requestModifiedCountPush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        1,
+        QStringLiteral("after first backspace"));
+    controller.requestIdlePush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        QStringLiteral("stale sync snapshot"));
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
+    QCOMPARE(pushedReasons.constLast(), QStringLiteral("modified-count"));
+    QCOMPARE(pushedTexts.constLast(), QStringLiteral("after first backspace"));
+}

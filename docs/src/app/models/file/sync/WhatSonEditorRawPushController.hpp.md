@@ -11,6 +11,8 @@ Declares the editor-surface-to-RAW push trigger controller.
   - idle push after the LVRS session file has synced
   - modified-count push when the editor surface revision increases
   - note-departure push before the active note context is cleared or changed
+- Treats a pending modified-count push as newer than a following idle sync trigger for the same pending slot, so the
+  user's first edit is not overwritten by a stale sync-finished surface snapshot.
 - Exposes `setRawPushCallback(...)`; the callback performs the actual RAW conversion and note-package write.
 - Emits `rawPushRequested(...)` and `rawPushFinished(...)` for regression and diagnostics.
 

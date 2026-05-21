@@ -18,6 +18,7 @@
 #include <utility>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
@@ -25,6 +26,7 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QTextDocument>
+#include <QTimer>
 #include <QVector>
 
 namespace
@@ -1661,6 +1663,22 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
         m_editorViewportWidth);
     const int sourceCursorPosition = beforeSelection.size() + prefix.size() + insertedBlock.size();
 
+    if (hasActiveNote() && !persistActiveResourceInsertionSourceText(mutatedSourceText))
+    {
+        const QString errorMessage = m_lastError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to persist imported resources into the note body.")
+            : m_lastError.trimmed();
+        return invalidImportedResourcesInsertionResult(
+            noteId,
+            sourceText,
+            sourceSelectionStart,
+            sourceSelectionEnd - sourceSelectionStart,
+            editorAnchor,
+            editorSelectionStart,
+            editorSelectionEnd - editorSelectionStart,
+            errorMessage);
+    }
+
     setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
     if (hasActiveNote())
     {
@@ -2092,6 +2110,106 @@ void NoteEditorDocumentSession::handleIdleNoteBodyTextLoaded(
         lastModifiedAt,
         false,
         true);
+}
+
+bool NoteEditorDocumentSession::persistActiveResourceInsertionSourceText(const QString& sourceText)
+{
+    const QString normalizedNoteId = m_activeNoteId.trimmed();
+    const QString normalizedNoteDirectoryPath = normalizePath(m_activeNoteDirectoryPath);
+    if (normalizedNoteId.isEmpty() || normalizedNoteDirectoryPath.isEmpty())
+    {
+        setLastError(QStringLiteral("Active note context is unavailable."));
+        return false;
+    }
+
+    const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
+    const QString normalizedEditorFilePath = normalizePath(m_editorFilePath);
+    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
+    const QString loadedLastModifiedAt =
+        contextIterator == m_editorFileContexts.constEnd()
+        || contextIterator->noteId != normalizedNoteId
+        || contextIterator->noteDirectoryPath != normalizedNoteDirectoryPath
+            ? QString()
+            : contextIterator->loadedLastModifiedAt;
+
+    bool finished = false;
+    bool success = false;
+    QString errorMessage;
+    QEventLoop persistenceLoop;
+    QTimer timeoutTimer;
+    timeoutTimer.setSingleShot(true);
+    timeoutTimer.setInterval(5000);
+
+    const QMetaObject::Connection finishedConnection = connect(
+        &m_noteManagementCoordinator,
+        &ContentsNoteManagementCoordinator::editorTextPersistenceFinished,
+        &persistenceLoop,
+        [&](
+            const QString& persistedNoteId,
+            const QString&,
+            const bool persisted,
+            const QString& persistedErrorMessage)
+        {
+            if (persistedNoteId != normalizedNoteId)
+            {
+                return;
+            }
+
+            finished = true;
+            success = persisted;
+            errorMessage = persistedErrorMessage.trimmed();
+            persistenceLoop.quit();
+        });
+    const QMetaObject::Connection timeoutConnection = connect(
+        &timeoutTimer,
+        &QTimer::timeout,
+        &persistenceLoop,
+        [&]()
+        {
+            persistenceLoop.quit();
+        });
+
+    emit editorSourcePersistRequested(normalizedNoteId, normalizedEditorFilePath);
+    const bool enqueued = m_noteManagementCoordinator.persistEditorTextForNoteAtPath(
+        normalizedNoteId,
+        normalizedNoteDirectoryPath,
+        normalizedSourceText,
+        loadedLastModifiedAt);
+    if (enqueued)
+    {
+        timeoutTimer.start();
+        persistenceLoop.exec();
+    }
+    else
+    {
+        errorMessage = QStringLiteral("Failed to enqueue imported resource note body persistence.");
+    }
+
+    disconnect(finishedConnection);
+    disconnect(timeoutConnection);
+
+    if (!enqueued)
+    {
+        setLastError(errorMessage);
+        emit editorSourcePersistFinished(normalizedNoteId, false, errorMessage);
+        return false;
+    }
+
+    if (!finished)
+    {
+        errorMessage = QStringLiteral("Timed out while persisting imported resources into the note body.");
+        setLastError(errorMessage);
+        emit editorSourcePersistFinished(normalizedNoteId, false, errorMessage);
+        return false;
+    }
+
+    if (!success)
+    {
+        setLastError(errorMessage);
+        return false;
+    }
+
+    return true;
 }
 
 void NoteEditorDocumentSession::handleEditorTextPersistenceFinished(

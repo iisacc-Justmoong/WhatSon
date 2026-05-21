@@ -43,7 +43,9 @@
   `NoteEditorDocumentSession`.
 - `WhatSonEditorRawPushController` owns editor-surface-to-RAW push triggers for idle turns, note departure, and editor
   modified-count increments. The controller stays in `file/sync` because it is sync orchestration; concrete
-  `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and `file/note`.
+  `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and `file/note`. A pending
+  modified-count push has priority over a later idle sync trigger so a stale sync-finished event cannot replace the
+  first user deletion snapshot.
 
 ## Tests
 

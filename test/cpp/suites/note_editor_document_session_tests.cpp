@@ -1314,6 +1314,76 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
         bodySourceText);
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsImportedResourceSourceBeforeIdlePush()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+    QTemporaryDir restartSessionRootDir;
+    QVERIFY(restartSessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("resource-paste-restart-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QVariantMap importedResource;
+    importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-restart"));
+    importedResource.insert(
+        QStringLiteral("resourcePath"),
+        QStringLiteral("Workspace.wsresources/capture-restart.wsresource"));
+    importedResource.insert(QStringLiteral("type"), QStringLiteral("image"));
+    importedResource.insert(QStringLiteral("format"), QStringLiteral(".png"));
+    importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
+
+    QString insertedBodySourceText;
+    {
+        NoteEditorDocumentSession session;
+        session.setSessionRootPathForTests(sessionRootDir.path());
+
+        QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+        QVERIFY(session.openNoteForEditing(QStringLiteral("resource-paste-restart-note"), noteDirectoryPath));
+        QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+        const QString editorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+        const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+            editorHtml,
+            QStringLiteral("Alpha").size(),
+            0,
+            QVariantList{importedResource});
+        QVERIFY2(
+            insertion.value(QStringLiteral("valid")).toBool(),
+            qPrintable(insertion.value(QStringLiteral("errorMessage")).toString()));
+        insertedBodySourceText = insertion.value(QStringLiteral("bodySourceText")).toString();
+        QVERIFY(insertedBodySourceText.contains(QStringLiteral("capture-restart.wsresource")));
+    }
+
+    const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(bodyPath);
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        insertedBodySourceText);
+
+    NoteEditorDocumentSession restartedSession;
+    restartedSession.setSessionRootPathForTests(restartSessionRootDir.path());
+
+    QSignalSpy restartedLoadedSpy(&restartedSession, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(restartedSession.openNoteForEditing(QStringLiteral("resource-paste-restart-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(restartedLoadedSpy.count(), 1, 3000);
+
+    const QString restartedEditorHtml = readUtf8FileForNoteEditorSessionTest(restartedSession.editorFilePath());
+    QVERIFY(restartedEditorHtml.contains(QStringLiteral("whatson-resource-frame")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("resource-paste-restart-note"),
+            restartedEditorHtml),
+        insertedBodySourceText);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource()
 {
     QTemporaryDir workspaceDirectory;

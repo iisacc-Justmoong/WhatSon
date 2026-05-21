@@ -31,8 +31,9 @@ Declares the active note editor document session object.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
-  `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, and returns
-  an editor HTML projection for the live LVRS surface.
+  `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, persists
+  that active-note source through the note-management queue before returning success, and returns an editor HTML
+  projection for the live LVRS surface.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
@@ -64,7 +65,8 @@ Declares the active note editor document session object.
 - Inline format mutation must not discard existing RAW wrapper tags just because the editor HTML projection no longer
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
-  persistence stay in `InAppClipboardManager`.
+  persistence stay in `InAppClipboardManager`, while the resulting RAW `<resource ... />` reference must be committed
+  to the active `.wsnbody` before the paste command reports success.
 
 ## 한국어
 
@@ -87,8 +89,8 @@ Declares the active note editor document session object.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해
   hub sync가 로컬 변경으로 인식할 수 있게 한다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
-  canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입한다. clipboard MIME 판별과 package
-  persistence는 이 세션의 책임이 아니다.
+  canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입하고, 성공을 반환하기 전에 활성 노트의
+  `.wsnbody`에 그 source를 확정한다. clipboard MIME 판별과 package persistence는 이 세션의 책임이 아니다.
 - `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트
