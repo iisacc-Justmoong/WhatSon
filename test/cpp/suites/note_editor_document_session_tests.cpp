@@ -146,6 +146,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("idle-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     session.requestEditorIdleRawPush(
@@ -188,6 +189,18 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_writesRawPushPayloadTo
         QStringLiteral("Current session shape"));
     QVERIFY(readUtf8FileForNoteEditorSessionTest(session.editorFilePath()) != editorSnapshot);
 
+    const QString prematureSnapshot = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("raw-push-session-file-note"),
+        QStringLiteral("Premature blank shape"));
+    QSignalSpy prematurePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        1,
+        prematureSnapshot);
+    QVERIFY(readUtf8FileForNoteEditorSessionTest(session.editorFilePath()) != prematureSnapshot);
+    QVERIFY(!prematurePersistedSpy.wait(100));
+
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     session.requestEditorModifiedCountRawPush(
         session.editorFilePath(),
@@ -226,6 +239,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCall
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("idle-callout-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("idle-callout-raw-push-note"),
@@ -273,6 +287,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("modified-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     session.requestEditorModifiedCountRawPush(

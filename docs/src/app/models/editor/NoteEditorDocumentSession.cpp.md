@@ -21,13 +21,16 @@ Implements the active note editor document session.
 6. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
-7. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
-   `requestEditorIdleRawPush(...)`; when the editor surface modified count increases, QML sends the same surface
-   payload to `requestEditorModifiedCountRawPush(...)`. Both routes first write that payload into the mounted editor
-   session file, making the filesystem copy of the session match the editor shape at that moment. They then pass through
-   `WhatSonEditorRawPushController`, and the session converts the same editor document HTML back into canonical source
-   text and delegates persistence through `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and
-   `parsedLineCount` is refreshed.
+7. When LVRS emits `readFinished(path)` for the currently mounted session file, QML calls
+   `markEditorSessionFileReadyForRawPush(path)`. Only after that matching read-finished path is acknowledged can
+   `syncFinished(path)` or editor modified-count changes enqueue RAW pushes. This prevents the startup blank editor or a
+   stale file read from pairing the previous editor payload with a newly selected note path. When LVRS emits
+   `syncFinished(path)`, QML sends the editor document text to `requestEditorIdleRawPush(...)`; when the editor surface
+   modified count increases, QML sends the same surface payload to `requestEditorModifiedCountRawPush(...)`. Both routes
+   first write that payload into the mounted editor session file, making the filesystem copy of the session match the
+   editor shape at that moment. They then pass through `WhatSonEditorRawPushController`, and the session converts the
+   same editor document HTML back into canonical source text and delegates persistence through
+   `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
    If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
    Before note context changes or clears, the session asks the same push controller to flush the active surface.
@@ -60,6 +63,8 @@ Implements the active note editor document session.
   rewrites the session file, emits `editorDocumentTextPulled(...)`, and updates the stored base timestamp.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
+- Idle and modified-count RAW pushes are ignored until `markEditorSessionFileReadyForRawPush(...)` confirms that LVRS has
+  read the current active session file path. Opening or clearing a note resets that readiness.
 - Idle and modified-count RAW push requests synchronously write the supplied editor payload to the mounted session file
   before scheduling the push. The current editor snapshot at the call site is therefore the filesystem session baseline.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten

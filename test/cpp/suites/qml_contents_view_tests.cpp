@@ -379,6 +379,12 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentWidth: contentsTextEditor.editorViewportWidth")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("scrollTarget: contentsTextEditor.scrollEditorViewportTo")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function markEditorSessionFileReadyForRawPush(path)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readPath !== contentViewLayout.editorSourceFilePath")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.markEditorSessionFileReadyForRawPush(")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readPath);")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onReadFinished: function(path)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.markEditorSessionFileReadyForRawPush(path);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const syncedPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("syncedPath !== contentViewLayout.editorSourceFilePath")));

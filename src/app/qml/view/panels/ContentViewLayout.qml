@@ -300,6 +300,20 @@ Item {
         });
         return replaced;
     }
+    function markEditorSessionFileReadyForRawPush(path) {
+        const readPath = path === undefined || path === null ? "" : String(path).trim();
+        if (!contentViewLayout.noteEditorSurfaceVisible
+                || contentViewLayout.editorReadOnly
+                || readPath.length === 0
+                || readPath !== contentViewLayout.editorSourceFilePath
+                || contentViewLayout.editorSourceFilePath.length === 0
+                || !contentViewLayout.noteEditorSession
+                || contentViewLayout.noteEditorSession.markEditorSessionFileReadyForRawPush === undefined)
+            return false;
+
+        return contentViewLayout.noteEditorSession.markEditorSessionFileReadyForRawPush(
+                    readPath);
+    }
     function editorFormatSelectionForCommand(allowSelectionSnapshot) {
         if (Boolean(allowSelectionSnapshot)
                 && contentViewLayout.editorFormatSelectionSnapshot
@@ -420,6 +434,9 @@ Item {
                     objectName: "contentsDisplayTextEditor"
                     visible: contentViewLayout.noteEditorSurfaceVisible
 
+                    onReadFinished: function(path) {
+                        contentViewLayout.markEditorSessionFileReadyForRawPush(path);
+                    }
                     onSyncFinished: function(path) {
                         const syncedPath = path === undefined || path === null ? "" : String(path).trim();
                         if (syncedPath.length === 0

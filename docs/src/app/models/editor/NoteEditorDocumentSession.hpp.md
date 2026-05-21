@@ -26,9 +26,11 @@ Declares the active note editor document session object.
 - Emits `editorDocumentTextPulled(...)` when a newer filesystem body replaces the live editor document, and
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
+- Provides `markEditorSessionFileReadyForRawPush(path)` so QML can acknowledge the LVRS `readFinished(path)` event for
+  the currently mounted session file before idle or modified-count push triggers are accepted.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
-  push triggers into `file/sync/WhatSonEditorRawPushController` after first writing the supplied editor payload to the
-  mounted session file.
+  push triggers into `file/sync/WhatSonEditorRawPushController` after the current session file has been marked ready and
+  after first writing the supplied editor payload to the mounted session file.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
@@ -82,6 +84,9 @@ Declares the active note editor document session object.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
+- LVRS가 현재 session file의 `readFinished(path)`를 낸 뒤에만
+  `markEditorSessionFileReadyForRawPush(path)`가 해당 파일을 write 가능한 editor 세션으로 승격한다. 앱 시작 직후의
+  blank editor나 이전 파일의 늦은 read-finished 이벤트는 새로 선택된 노트를 덮어쓰는 RAW push를 열지 못한다.
 - LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
   이 두 요청은 전달받은 editor payload를 mounted session file에 먼저 써서 그 시점의 노트 에디터 형태를 filesystem

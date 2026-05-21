@@ -60,6 +60,7 @@ public:
         const QString& editorFilePath,
         int modifiedCount,
         const QString& editorDocumentText);
+    Q_INVOKABLE bool markEditorSessionFileReadyForRawPush(const QString& editorFilePath);
     Q_INVOKABLE void recordEditorUserActivity();
     Q_INVOKABLE quint64 requestActiveNoteIdleRawPull();
     Q_INVOKABLE QVariantMap insertImportedResourcesIntoSource(
@@ -198,6 +199,7 @@ private:
     QString m_pendingIdlePullNoteId;
     QString m_pendingIdlePullNoteDirectoryPath;
     QString m_activeBodySourceText;
+    QString m_rawPushReadyEditorFilePath;
     quint64 m_pendingLoadSequence = 0;
     quint64 m_pendingIdlePullSequence = 0;
     int m_parsedLineCount = 0;

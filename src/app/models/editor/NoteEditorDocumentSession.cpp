@@ -1158,6 +1158,7 @@ bool NoteEditorDocumentSession::openNoteForEditing(
 
     m_pendingLoadNoteId = normalizedNoteId;
     m_pendingLoadNoteDirectoryPath = normalizedNoteDirectoryPath;
+    m_rawPushReadyEditorFilePath.clear();
     m_pendingLoadSequence = m_rawPullController.requestNoteOpenPull(
         normalizedNoteId,
         normalizedNoteDirectoryPath);
@@ -1187,6 +1188,7 @@ bool NoteEditorDocumentSession::clearEditor()
     m_pendingIdlePullNoteId.clear();
     m_pendingIdlePullNoteDirectoryPath.clear();
     m_activeBodySourceText.clear();
+    m_rawPushReadyEditorFilePath.clear();
     setActiveNoteContext(QString(), QString());
     setParsedLineCount(0);
     setLoading(false);
@@ -1221,6 +1223,11 @@ void NoteEditorDocumentSession::requestEditorIdleRawPush(
     const QString& editorDocumentText)
 {
     const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty()
+        || normalizedEditorFilePath != m_rawPushReadyEditorFilePath)
+    {
+        return;
+    }
     if (!writeCurrentEditorSnapshotToSessionFile(normalizedEditorFilePath, editorDocumentText))
     {
         return;
@@ -1236,6 +1243,11 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
 {
     recordEditorUserActivity();
     const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty()
+        || normalizedEditorFilePath != m_rawPushReadyEditorFilePath)
+    {
+        return;
+    }
     if (!writeCurrentEditorSnapshotToSessionFile(normalizedEditorFilePath, editorDocumentText))
     {
         return;
@@ -1245,6 +1257,32 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
         normalizedEditorFilePath,
         modifiedCount,
         editorDocumentText);
+}
+
+bool NoteEditorDocumentSession::markEditorSessionFileReadyForRawPush(const QString& editorFilePath)
+{
+    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
+    if (normalizedEditorFilePath.isEmpty()
+        || normalizedEditorFilePath != normalizePath(m_editorFilePath)
+        || m_loading
+        || m_readOnly
+        || m_activeNoteId.trimmed().isEmpty()
+        || m_activeNoteDirectoryPath.trimmed().isEmpty())
+    {
+        return false;
+    }
+
+    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
+    if (contextIterator == m_editorFileContexts.constEnd()
+        || contextIterator->noteId != m_activeNoteId
+        || contextIterator->noteDirectoryPath != m_activeNoteDirectoryPath)
+    {
+        return false;
+    }
+
+    m_rawPushReadyEditorFilePath = normalizedEditorFilePath;
+    setLastError(QString());
+    return true;
 }
 
 void NoteEditorDocumentSession::recordEditorUserActivity()
@@ -1884,6 +1922,7 @@ bool NoteEditorDocumentSession::applyLoadedBodyTextToEditorSession(
     m_editorFileContexts.insert(
         sessionFilePath,
         {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt.trimmed()});
+    m_rawPushReadyEditorFilePath.clear();
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
     m_activeBodySourceText = normalizedBodySourceText;
     setParsedLineCount(lineCountForEditorSource(normalizedBodySourceText));

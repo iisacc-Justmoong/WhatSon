@@ -78,7 +78,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   format-tag source insertions for editor command flows, immediately commits active imported-resource insertions to the
   note body and mounted editor session file before reporting paste success, discards pre-paste pending pushes for that
   session file, and persists LVRS sync-finished rich-text edits back through the note body persistence path after
-  converting them to canonical source. Idle and modified-count RAW push requests first write the supplied editor payload
+  converting them to canonical source. Idle and modified-count RAW push requests are accepted only after LVRS
+  `readFinished(path)` has marked the current mounted session file ready, then first write the supplied editor payload
   to the mounted session file, so the note editor shape at that call site becomes the filesystem session baseline. The
   active editor session source becomes the save/sync truth for the active note after persistence converts that same
   payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
@@ -144,7 +145,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
   resource 삽입은 성공 반환 전에 `.wsnbody`와 mounted editor session file을 함께 확정하고, 같은 session file의
-  pre-paste pending push를 폐기한다. idle/modified-count RAW push 요청은 전달받은 editor payload를 먼저 mounted
+  pre-paste pending push를 폐기한다. idle/modified-count RAW push 요청은 LVRS `readFinished(path)`가 현재 mounted
+  session file을 ready로 표시한 뒤에만 허용되며, 전달받은 editor payload를 먼저 mounted
   session file에 써서 호출 시점의 노트 에디터 형태를 filesystem session 기준으로 만든다. active editor session
   source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
   pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
