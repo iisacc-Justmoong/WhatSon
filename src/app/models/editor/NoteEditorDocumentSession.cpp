@@ -734,6 +734,14 @@ namespace
         return line.contains(QChar::ObjectReplacementCharacter);
     }
 
+    bool editorDocumentContainsLiveRenderedResourceFrame(const QString& editorDocumentText)
+    {
+        const QString foldedEditorDocumentText = editorDocumentText.toCaseFolded();
+        return foldedEditorDocumentText.contains(QStringLiteral("whatson-resource-frame"))
+            || foldedEditorDocumentText.contains(QStringLiteral("data-resource-preview"))
+            || foldedEditorDocumentText.contains(QStringLiteral("<img"));
+    }
+
     QString compactRestoredResourcePadding(
         const QStringList& restoredLines,
         const QVector<ActiveResourceSourceLine>& resourceLines)
@@ -2047,11 +2055,20 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
         editorDocumentText);
     const QString activeSourceText =
         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
-    if (hasActiveNote()
-        && !activeSourceText.isEmpty()
-        && visibleTextForSourceText(activeSourceText) == visibleTextForSourceText(editorSourceText))
+    if (hasActiveNote() && !activeSourceText.isEmpty())
     {
-        return activeSourceText;
+        const QString restoredEditorSourceText = restoreResourceObjectPlaceholdersFromActiveSource(
+            editorSourceText,
+            activeSourceText);
+        if (restoredEditorSourceText != editorSourceText
+            && editorDocumentContainsLiveRenderedResourceFrame(editorDocumentText))
+        {
+            return restoredEditorSourceText;
+        }
+        if (visibleTextForSourceText(activeSourceText) == visibleTextForSourceText(editorSourceText))
+        {
+            return activeSourceText;
+        }
     }
     return editorSourceText;
 }

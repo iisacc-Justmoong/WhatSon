@@ -81,7 +81,10 @@ Implements the active note editor document session.
 - When Qt serializes the rich editor document and strips those HTML markers, image frames remain as rich-text object
   replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
   resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
-  round-trips.
+  round-trips. The debounced `reprojectResourceFramesForEditorWidth(...)` path applies the same active-source
+  restoration when the live editor HTML still contains a resource frame but the `whatson-resource-source` comments were
+  stripped, so a freshly pasted image frame is not interpreted as a deleted resource during immediate viewport
+  re-projection.
 - If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
   header/footer chrome cleanup path is kept in the current image-only frame contract.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
@@ -124,7 +127,9 @@ Implements the active note editor document session.
   asset을 active note/hub 기준으로 찾을 수 있으면 `file://` 이미지로 표시된다. 저장 시에는
   `whatson-resource-source` marker가 다시 canonical `<resource ... />` source tag로 복구된다. Qt RichText 직렬화가
   marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
-  placeholder를 기준으로 `<resource ... />`를 복원한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는
+  placeholder를 기준으로 `<resource ... />`를 복원한다. 즉시 viewport 재투영도 live resource frame이 남아 있으면
+  같은 active source 복원 경로를 사용하므로, paste 직후 marker comment만 사라진 프레임을 삭제로 오해하지 않는다.
+  Backspace/Delete 뒤 이미지 object가 사라진 경우에는
   resource frame이 삭제된 것으로 본다. persistence 성공 콜백 뒤에는 `.wsnbody` serializer/read-back 경계의
   canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
   남지 않게 한다.

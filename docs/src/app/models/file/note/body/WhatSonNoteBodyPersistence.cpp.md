@@ -100,6 +100,9 @@ The current contract preserves editor-authored RAW source across save/load turns
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
   `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
   line breaks, inline style rendering, and escaped resource text stay aligned with the persisted note body contract.
+  The generated editor document carries the LVRS Body token default (`Pretendard`, `12px`, medium weight, `12px`
+  line height, and `#CCFFFFFF`) so the note editor does not fall back to the platform/system rich-text font before
+  token-specific or explicit style overrides are applied.
 - `sourceTextFromEditorDocument(...)` is the inverse editor-session boundary. It detects LVRS/Qt rich-text HTML,
   extracts its visible text with preserved paragraph and `<br/>` boundaries, recovers command-generated inline format
   spans as canonical source tags, and returns normalized canonical source for persistence. Non-rich RAW source is passed

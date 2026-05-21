@@ -98,7 +98,10 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAn
     const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(editorFilePath);
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<?xml")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("<contents")));
-    QVERIFY(mountedEditorSource.contains(QStringLiteral("Visible line<br/>")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(QRegularExpression(QStringLiteral("Visible line[\\s\\S]*<br\\s*/?>"))
+                .match(mountedEditorSource)
+                .hasMatch());
     QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-source")));
     QVERIFY(mountedEditorSource.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("&lt;resource path=&quot;asset.png&quot; /&gt;")));
@@ -889,9 +892,15 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_projectsBreakSourceLin
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
 
     const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
-    QCOMPARE(mountedEditorSource, QStringLiteral("Alpha<br/><br/>Beta"));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(mountedEditorSource.contains(QStringLiteral("Alpha<br/><br/>Beta")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("</break>")));
     QVERIFY(!mountedEditorSource.contains(QStringLiteral("&lt;/break&gt;")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("break-projection-note"),
+            mountedEditorSource),
+        QStringLiteral("Alpha\n\nBeta"));
     QCOMPARE(session.parsedLineCount(), 3);
 }
 
@@ -1097,11 +1106,16 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
     QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("Alpha<br/>")));
     QVERIFY(!result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("&lt;resource")));
     const QString editorDocumentText = result.value(QStringLiteral("editorDocumentText")).toString();
-    QVERIFY(editorDocumentText.contains(QStringLiteral("Alpha<br/>")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(QRegularExpression(QStringLiteral("Alpha[\\s\\S]*<br\\s*/?>"))
+                .match(editorDocumentText)
+                .hasMatch());
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-source")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource type=&quot;image&quot;")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("<br/>Beta")));
+    QVERIFY(QRegularExpression(QStringLiteral("<br\\s*/?>[\\s\\S]*Beta"))
+                .match(editorDocumentText)
+                .hasMatch());
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
             QStringLiteral("resource-note"),
@@ -1259,6 +1273,76 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         bodySourceText);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("MarkerlessClipboardFrameHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("markerless-clipboard-frame-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QImage clipboardImage(QSize(1600, 900), QImage::Format_ARGB32_Premultiplied);
+    clipboardImage.fill(qRgba(90, 80, 210, 255));
+
+    InAppClipboardManager clipboard;
+    QVERIFY(clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")));
+    clipboard.setCurrentHubPath(hubPath);
+    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
+    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("markerless-clipboard-frame-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString editorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        editorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+
+    const QString bodySourceText = insertion.value(QStringLiteral("bodySourceText")).toString();
+    QString markerlessEditorText = insertion.value(QStringLiteral("editorDocumentText")).toString();
+    markerlessEditorText.remove(QRegularExpression(QStringLiteral(R"(<!--whatson-resource-source:[^>]*-->)")));
+    markerlessEditorText.remove(QStringLiteral("<!--/whatson-resource-source-->"));
+    QVERIFY(!markerlessEditorText.contains(QStringLiteral("whatson-resource-source")));
+    QVERIFY(markerlessEditorText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(markerlessEditorText.contains(QStringLiteral("data-resource-preview=\"image-only-frame\"")));
+
+    const QVariantMap reprojected = session.reprojectResourceFramesForEditorWidth(
+        markerlessEditorText,
+        960);
+    QVERIFY2(
+        reprojected.value(QStringLiteral("valid")).toBool(),
+        qPrintable(reprojected.value(QStringLiteral("errorMessage")).toString()));
+    QCOMPARE(reprojected.value(QStringLiteral("bodySourceText")).toString(), bodySourceText);
+    QVERIFY(reprojected.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-resource-frame")));
+    QVERIFY(reprojected.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-resource-source")));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()

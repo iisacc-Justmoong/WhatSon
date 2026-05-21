@@ -46,7 +46,24 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsSourceToEditorHtmlWi
         QStringLiteral("note"),
         QStringLiteral("First line\nSecond line"));
 
-    QCOMPARE(editorHtml, QStringLiteral("First line<br/>Second line"));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-size:12px;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-weight:500;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("line-height:12px;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("color:#CCFFFFFF;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("First line<br/>Second line")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
+        QStringLiteral("First line\nSecond line"));
+
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    const QString roundTrippedEditorHtml = editorDocument.toHtml();
+    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("Pretendard")));
+    QVERIFY(roundTrippedEditorHtml.contains(QStringLiteral("font-family:'Pretendard'")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), roundTrippedEditorHtml),
+        QStringLiteral("First line\nSecond line"));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines()
@@ -117,6 +134,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
             QStringLiteral("note"),
             tokenSourceText);
 
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-family:Pretendard;")));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-size:%1px;").arg(expectation.pixelSize)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-weight:%1;").arg(expectation.weight)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("line-height:%1px;").arg(expectation.lineHeight)));

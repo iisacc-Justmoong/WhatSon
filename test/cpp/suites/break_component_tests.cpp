@@ -14,9 +14,13 @@ void WhatSonCppRegressionTests::breakComponent_projectsStandaloneBreakAsLogicalE
         QStringLiteral("break-note"),
         source);
 
-    QCOMPARE(editorHtml, QStringLiteral("Alpha<br/><br/>Beta"));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("Alpha<br/><br/>Beta")));
     QVERIFY(!editorHtml.contains(QStringLiteral("</break>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("&lt;/break&gt;")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("break-note"), editorHtml),
+        QStringLiteral("Alpha\n\nBeta"));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(
             WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("break-note"), source)),

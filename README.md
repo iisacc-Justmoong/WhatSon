@@ -305,7 +305,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - The same `LV.TextEditor`-backed wrapper binds the body token explicitly for this surface:
   `LV.Theme.fontBody`, `12px` host-driven weight/size policy, zero letter spacing, explicit `LV.Theme.bodyColor` text
   color, and the standard LVRS selection highlight (`LV.Theme.accent`), matching the Figma `Body` token and the rest
-  of the app's input controls.
+  of the app's input controls. The C++ editor-session HTML projection also carries the same Pretendard Body token by
+  default so loaded rich text does not fall back to the platform/system document font before LVRS token overrides apply.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.

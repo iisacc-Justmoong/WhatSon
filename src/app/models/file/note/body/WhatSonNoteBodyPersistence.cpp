@@ -179,6 +179,34 @@ namespace
         return {};
     }
 
+    QString lvrsDefaultEditorFontFamily()
+    {
+        return QStringLiteral("Pretendard");
+    }
+
+    QString lvrsBodyEditorCssDeclaration()
+    {
+        const LvrsTextStyleToken bodyToken = lvrsTextStyleTokenFromName(QStringLiteral("body"));
+        return QStringLiteral("font-family:%1;font-size:%2px;font-weight:%3;line-height:%4px;color:%5;")
+            .arg(
+                lvrsDefaultEditorFontFamily(),
+                QString::number(bodyToken.pixelSize),
+                QString::number(bodyToken.weight),
+                QString::number(bodyToken.lineHeight),
+                bodyToken.color);
+    }
+
+    QString editorHtmlDocumentFromProjection(const QString& bodyHtml)
+    {
+        return QStringLiteral(
+            "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" "
+            "\"http://www.w3.org/TR/REC-html40/strict.dtd\">"
+            "<html><head><meta name=\"qrichtext\" content=\"1\" />"
+            "<meta charset=\"utf-8\" /></head>"
+            "<body style=\"%1\">%2</body></html>")
+            .arg(lvrsBodyEditorCssDeclaration(), bodyHtml);
+    }
+
     QString styleCssDeclarationFromRawToken(const QString& rawTagText)
     {
         QStringList declarations;
@@ -186,6 +214,7 @@ namespace
             lvrsTextStyleTokenFromName(attributeValueFromRawToken(rawTagText, QStringLiteral("style")));
         if (styleToken.valid)
         {
+            declarations.push_back(QStringLiteral("font-family:%1;").arg(lvrsDefaultEditorFontFamily()));
             declarations.push_back(QStringLiteral("font-size:%1px;").arg(styleToken.pixelSize));
             declarations.push_back(QStringLiteral("font-weight:%1;").arg(styleToken.weight));
             declarations.push_back(QStringLiteral("line-height:%1px;").arg(styleToken.lineHeight));
@@ -2250,7 +2279,8 @@ namespace WhatSon::NoteBodyPersistence
         const QString& bodySourceText,
         const int editorViewportWidth)
     {
-        return htmlProjectionFromBodyDocument(serializeBodyDocument(noteId, bodySourceText), editorViewportWidth);
+        return editorHtmlDocumentFromProjection(
+            htmlProjectionFromBodyDocument(serializeBodyDocument(noteId, bodySourceText), editorViewportWidth));
     }
 
     QString sourceTextFromEditorDocument(const QString&, const QString& editorDocumentText)
