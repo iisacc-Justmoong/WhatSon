@@ -15,8 +15,8 @@ Declares the editor-surface-to-RAW push trigger controller.
   user's first edit is not overwritten by a stale sync-finished surface snapshot.
 - Leaves canonical active-session-source ownership to `NoteEditorDocumentSession`, which writes live modified-count input
   directly to RAW and rejects stale idle or note-departure payloads.
-- Exposes `discardPendingPushForFile(...)` for authoritative writes such as imported-resource paste, where a pre-paste
-  modified-count payload must not run after the canonical resource line has already been saved.
+- Exposes `discardPendingPushForFile(...)` for session-owned authoritative writes where an older pending payload must not
+  run after direct RAW input has already saved the active source.
 - Exposes `setRawPushCallback(...)`; the callback performs the actual RAW conversion and note-package write.
 - Emits `rawPushRequested(...)` and `rawPushFinished(...)` for regression and diagnostics.
 

@@ -35,12 +35,12 @@ Implements the active note editor document session.
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
-   the resource package. The session recovers the current LVRS editor snapshot as RAW source, inserts RAW resource tags at
-   the current cursor/selection, writes the updated session file, discards older pending RAW pushes for that file, queues
-   `.wsnbody` persistence, and returns an editor HTML projection that renders each standalone resource source line as a
-   resource frame. Resource-aware projection now builds one editor document from body HTML fragments and resource frame
-   fragments; it does not join resource-adjacent fragments with an extra `<br/>`, so the frame begins on the logical
-   source line rather than on a synthetic spacer row.
+   the resource package. The session uses the active RAW source when available, otherwise recovers the current LVRS
+   editor snapshot as RAW source, applies the returned selection range, and returns an editor HTML projection that renders
+   each standalone resource source line as a resource frame. Persistence follows the ordinary LVRS editor sync path rather
+   than an immediate paste-time `.wsnbody` write. Resource-aware projection builds one editor document from body HTML
+   fragments and resource frame fragments; it does not join resource-adjacent fragments with an extra `<br/>`, so the
+   frame begins on the logical source line rather than on a synthetic spacer row.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
     callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
@@ -74,14 +74,9 @@ Implements the active note editor document session.
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create
   resource packages itself.
-- Imported-resource insertion uses the current editor document snapshot as the source basis, not a previously loaded
-  `m_activeBodySourceText` when the user has typed since the last persistence cycle. This keeps `Cmd+V` from losing the
-  last edit before the resource tag is inserted.
-- Imported-resource insertion is non-destructive. The session collapses the command to the provided cursor position,
-  inserts generated resource source lines there, and does not treat `selectionLength` as a source deletion range.
-- A successful imported-resource insertion is an authoritative RAW source write: it cancels pending pushes for the mounted
-  editor file, updates that session file with the projected document, and queues direct note-body persistence for the
-  mutated `.wsnbody` source.
+- Imported-resource insertion follows the 2026-05-19 editor command contract: it uses the active RAW source cache when
+  available, falls back to the current editor document snapshot, and applies the provided cursor/selection range before
+  returning source plus projected editor HTML. It does not perform an immediate paste-time `.wsnbody` write.
 - Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
   `component/ResourceImageFrame` and wraps that frame in `whatson-resource-source` markers so the persistence boundary can
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context

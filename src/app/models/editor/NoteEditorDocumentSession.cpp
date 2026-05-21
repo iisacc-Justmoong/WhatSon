@@ -1638,15 +1638,21 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
         : m_activeNoteId.trimmed();
-    const QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
     const QVector<SourceVisibleCharacter> visibleCharacters = visibleCharactersForSourceText(sourceText);
     const int editorTextSize = visibleCharacters.size();
-    Q_UNUSED(selectionLength);
     const int editorAnchor = clampedPosition(cursorPosition, editorTextSize);
-    const int editorSelectionStart = editorAnchor;
-    const int editorSelectionEnd = editorAnchor;
+    const int editorActive = clampedPosition(cursorPosition + selectionLength, editorTextSize);
+    const int editorSelectionStart = std::min(editorAnchor, editorActive);
+    const int editorSelectionEnd = std::max(editorAnchor, editorActive);
     const int sourceSelectionStart = sourcePositionForEditorSelectionStart(sourceText, editorSelectionStart);
-    const int sourceSelectionEnd = sourceSelectionStart;
+    const int sourceSelectionEnd = editorSelectionStart == editorSelectionEnd
+        ? sourceSelectionStart
+        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionEnd);
 
     QStringList resourceTags;
     resourceTags.reserve(importedEntries.size());
@@ -1700,69 +1706,6 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
         m_editorViewportWidth);
     const int sourceCursorPosition = beforeSelection.size() + prefix.size() + insertedBlock.size();
 
-    bool persistenceQueued = false;
-    if (hasActiveNote())
-    {
-        const QString normalizedEditorFilePath = normalizePath(m_editorFilePath);
-        if (normalizedEditorFilePath.isEmpty())
-        {
-            const QString errorMessage =
-                QStringLiteral("Image resource paste requires an active editor session file.");
-            setLastError(errorMessage);
-            return invalidImportedResourcesInsertionResult(
-                noteId,
-                sourceText,
-                sourceSelectionStart,
-                sourceSelectionEnd - sourceSelectionStart,
-                editorAnchor,
-                editorSelectionStart,
-                editorSelectionEnd - editorSelectionStart,
-                errorMessage);
-        }
-
-        m_rawPushController.discardPendingPushForFile(normalizedEditorFilePath);
-        m_directRawSourceByEditorFile.insert(
-            normalizedEditorFilePath,
-            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(mutatedSourceText));
-
-        QString writeError;
-        if (!writeEditorSourceFile(normalizedEditorFilePath, projectedEditorDocumentText, &writeError))
-        {
-            setLastError(writeError);
-            return invalidImportedResourcesInsertionResult(
-                noteId,
-                sourceText,
-                sourceSelectionStart,
-                sourceSelectionEnd - sourceSelectionStart,
-                editorAnchor,
-                editorSelectionStart,
-                editorSelectionEnd - editorSelectionStart,
-                writeError);
-        }
-
-        emit editorSourcePersistRequested(m_activeNoteId, normalizedEditorFilePath);
-        persistenceQueued = m_noteManagementCoordinator.persistEditorTextForNoteAtPath(
-            m_activeNoteId,
-            m_activeNoteDirectoryPath,
-            mutatedSourceText);
-        if (!persistenceQueued)
-        {
-            const QString errorMessage =
-                QStringLiteral("Failed to enqueue imported resource source persistence.");
-            setLastError(errorMessage);
-            emit editorSourcePersistFinished(m_activeNoteId, false, errorMessage);
-            return invalidImportedResourcesInsertionResult(
-                noteId,
-                sourceText,
-                sourceSelectionStart,
-                sourceSelectionEnd - sourceSelectionStart,
-                editorAnchor,
-                editorSelectionStart,
-                editorSelectionEnd - editorSelectionStart,
-                errorMessage);
-        }
-    }
-
     setParsedLineCount(lineCountForEditorSource(mutatedSourceText));
     if (hasActiveNote())
     {
@@ -1785,7 +1728,6 @@ QVariantMap NoteEditorDocumentSession::insertImportedResourcesIntoSource(
     result.insert(QStringLiteral("editorSelectionLength"), editorSelectionEnd - editorSelectionStart);
     result.insert(QStringLiteral("insertedText"), insertedText);
     result.insert(QStringLiteral("insertedCount"), resourceTags.size());
-    result.insert(QStringLiteral("persistenceQueued"), persistenceQueued);
     result.insert(QStringLiteral("errorMessage"), QString());
     return result;
 }

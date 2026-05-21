@@ -74,17 +74,16 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   clipboard package creation to `ClipboardEditorPaste`.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
-  LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds non-destructive
-  imported-resource cursor insertions and static format-tag source insertions for editor command flows, immediately
-  commits active imported-resource insertions to the note body and mounted editor session file before reporting paste
-  success, discards pre-paste pending pushes for that session file, and persists LVRS `textEdited(text)` payloads directly to the selected `.wsnbody` after converting them
+  LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource command
+  insertions and static format-tag source insertions for editor command flows, and persists LVRS `textEdited(text)` payloads directly to the selected `.wsnbody` after converting them
   to canonical source. Idle RAW push requests are accepted only after LVRS `readFinished(path)` has marked the current
   mounted session file ready; modified-count input writes both the mounted session file and RAW body immediately, so the
   note editor shape at that call site becomes the filesystem baseline. The
   active editor session source becomes the save/sync truth for the active note after persistence converts that same
   payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
   flushes also persist that active source instead of falling back to stale mounted session-file
-  contents. This protects the last editor action in general, including plain text input as well as resource insertion.
+  contents. This protects ordinary typed editor input while image paste follows the 2026-05-19 command-result and LVRS
+  sync flow.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -146,14 +145,13 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
-  resource 삽입은 cursor 위치에 비파괴식으로 적용되며 selection length로 주변 source를 지우지 않는다. 삽입 성공
-  반환 전에 `.wsnbody`와 mounted editor session file을 함께 확정하고, 같은 session file의
-  pre-paste pending push를 폐기한다. LVRS `textEdited(text)` 입력은 `readFinished(path)` 이후 즉시 canonical RAW로
+  resource 삽입은 2026-05-19 image paste command-result 흐름처럼 현재 커서/선택 범위를 적용한 source/editor HTML
+  결과를 반환하고, 저장은 일반 LVRS sync 흐름을 따른다. LVRS `textEdited(text)` 입력은 `readFinished(path)` 이후 즉시 canonical RAW로
   변환되어 selected `.wsnbody`에 쓰이며, mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
   남고 direct RAW 입력보다 오래된 payload를 active source로 되돌리지 않는다. active editor session
   source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
   pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
-  이 계약은 resource line뿐 아니라 일반 텍스트의 마지막 입력에도 적용된다. 거터의 실제
+  이 direct RAW 입력 계약은 일반 텍스트의 마지막 입력에 적용된다. 거터의 실제
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
   커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면

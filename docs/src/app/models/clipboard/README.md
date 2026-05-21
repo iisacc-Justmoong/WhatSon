@@ -50,13 +50,6 @@ macOS file import.
   pipeline is part of `InAppClipboardManager`.
 - Editor paste must go through `ClipboardEditorPaste` so the `.wsresource` package is persisted before only returned
   metadata reaches `NoteEditorDocumentSession.insertImportedResourcesIntoSource(...)`.
-- Image editor paste requires an active note session before import; the fallback path must not insert a temporary rich-text
-  image frame that lacks a backing RAW `<resource ... />` line.
-- Image editor paste must let `NoteEditorDocumentSession` insert the canonical `<resource ... />` tag into the current
-  editor-derived `.wsnbody` source and queue that body write immediately; it must not rely on a later sync of a temporary
-  frame.
-- Image editor paste is a non-destructive cursor insertion. A stale editor selection must not cause surrounding text,
-  blank lines, or existing frames to be replaced by the new resource tag.
 - Callout boundary Backspace/Enter share the editor item event filter owned by `EditorInputCommandFilter`, but RAW
   source decisions must still live in `NoteEditorDocumentSession`.
 
@@ -79,7 +72,5 @@ macOS file import.
   package/asset 이름으로 바뀌며, duplicate preflight에서도 기본 임시 파일명 자체로 충돌하지 않는다.
 - QML은 `ClipboardEditorPaste`의 좁은 editor paste invokable 결과만 에디터에 반영하며, 실제 MIME 판별,
   패키지 생성, 충돌 처리, source 삽입 계획, `.wsresources` 갱신은 C++ 객체들이 수행한다.
-- 이미지 editor paste는 active note session이 있을 때만 import를 시작한다. RAW `<resource ... />` 줄에 연결되지
-  않는 임시 rich-text 이미지 프레임은 허용하지 않는다.
 - editor item event filter는 `EditorInputCommandFilter`가 소유한다. 콜아웃 경계 Backspace/Enter의
   `<callout>` RAW 판단과 source mutation은 `NoteEditorDocumentSession` 책임이다.

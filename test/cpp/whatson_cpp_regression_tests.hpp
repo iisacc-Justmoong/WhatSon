@@ -1309,9 +1309,7 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
-    void noteEditorDocumentSession_insertsImportedResourceWithoutReplacingSelection();
-    void noteEditorDocumentSession_ignoresProgrammaticResourceProjectionPush();
-    void noteEditorDocumentSession_insertsImportedResourceIntoCurrentEditorSnapshot();
+    void noteEditorDocumentSession_insertsImportedResourceIntoLoadedBodySource();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
     void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
@@ -1409,7 +1407,7 @@ private slots:
     void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
     void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
     void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
-    void clipboardEditorPaste_requiresActiveNoteSessionForImagePaste();
+    void clipboardEditorPaste_allowsImagePasteWithoutMountedSession();
     void clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
     void clipboardEditorPaste_fallsBackForNonImageResource();

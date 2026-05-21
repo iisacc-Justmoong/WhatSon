@@ -1222,42 +1222,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStandaloneResour
     QCOMPARE(session.parsedLineCount(), 3);
 }
 
-void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourceWithoutReplacingSelection()
-{
-    NoteEditorDocumentSession session;
-    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
-        QStringLiteral("resource-note"),
-        QStringLiteral("Alpha\nKeep\nBeta"));
-
-    QVariantMap importedResource;
-    importedResource.insert(QStringLiteral("resourceId"), QStringLiteral("capture-preserve"));
-    importedResource.insert(
-        QStringLiteral("resourcePath"),
-        QStringLiteral("Workspace.wsresources/capture-preserve.wsresource"));
-    importedResource.insert(QStringLiteral("type"), QStringLiteral("image"));
-    importedResource.insert(QStringLiteral("format"), QStringLiteral(".png"));
-    importedResource.insert(QStringLiteral("bucket"), QStringLiteral("Image"));
-
-    const QVariantMap result = session.insertImportedResourcesIntoSource(
-        editorHtml,
-        QStringLiteral("Alpha\n").size(),
-        QStringLiteral("Keep").size(),
-        QVariantList{importedResource});
-
-    QVERIFY(result.value(QStringLiteral("valid")).toBool());
-    QCOMPARE(
-        result.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral(
-            "Alpha\n"
-            "<resource type=\"image\" format=\".png\" "
-            "path=\"Workspace.wsresources/capture-preserve.wsresource\" id=\"capture-preserve\" />\n"
-            "Keep\n"
-            "Beta"));
-    QCOMPARE(result.value(QStringLiteral("selectionLength")).toInt(), 0);
-    QCOMPARE(result.value(QStringLiteral("editorSelectionLength")).toInt(), 0);
-}
-
-void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourceIntoCurrentEditorSnapshot()
+void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourceIntoLoadedBodySource()
 {
     QTemporaryDir workspaceDir;
     QVERIFY(workspaceDir.isValid());
@@ -1279,7 +1244,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourc
     QVERIFY(session.openNoteForEditing(QStringLiteral("resource-live-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
 
-    const QString liveEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+    const QString staleEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("resource-live-note"),
         QStringLiteral("AlphaX\nBeta"));
 
@@ -1294,7 +1259,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourc
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     const QVariantMap result = session.insertImportedResourcesIntoSource(
-        liveEditorHtml,
+        staleEditorHtml,
         QStringLiteral("AlphaX").size(),
         0,
         QVariantList{importedResource});
@@ -1303,18 +1268,14 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_insertsImportedResourc
     QCOMPARE(
         result.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral(
-            "AlphaX\n<resource type=\"image\" format=\".png\" "
+            "Alpha\n<resource type=\"image\" format=\".png\" "
             "path=\"Workspace.wsresources/capture-live.wsresource\" id=\"capture-live\" />\nBeta"));
     QCOMPARE(session.parsedLineCount(), 3);
-    QCOMPARE(result.value(QStringLiteral("persistenceQueued")).toBool(), true);
-    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
-    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+    QVERIFY(!persistedSpy.wait(100));
 
     const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
     const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(bodyPath);
-    QCOMPARE(
-        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
-        result.value(QStringLiteral("bodySourceText")).toString());
+    QCOMPARE(WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument), QStringLiteral("Alpha\nBeta"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame()

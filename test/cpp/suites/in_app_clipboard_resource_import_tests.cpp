@@ -75,8 +75,8 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
     QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleEmptyParagraphBoundaryKeyInSource(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCommandCursorPosition(selectionStart, selectionLength)")));
-    QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCaretPosition(selectionStart)")));
-    QVERIFY(editorInputFilterSource.contains(QStringLiteral("const int pasteSelectionLength = 0")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("editorCaretPosition(selectionStart)")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("const int pasteSelectionLength = 0")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("property(\"editorCursorPosition\")")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));
@@ -399,7 +399,6 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
 
     ClipboardEditorPaste editorPaste;
     const QString editorHtml = readUtf8FileForInAppClipboardImportTest(session.editorFilePath());
-    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     const QVariantMap result = editorPaste.pasteImageResourceIntoEditor(
         &clipboard,
         &session,
@@ -452,14 +451,6 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("contenteditable")));
-    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
-    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
-
-    const QString bodyPath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
-    const QString persistedBodyDocument = readUtf8FileForInAppClipboardImportTest(bodyPath);
-    QCOMPARE(
-        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
-        bodySourceText);
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
@@ -645,7 +636,7 @@ void WhatSonCppRegressionTests::inAppClipboard_refreshReplacesStaleSnapshotWithS
     QVERIFY(clipboard.resourceEntry().value(QStringLiteral("hasImage")).toBool());
 }
 
-void WhatSonCppRegressionTests::clipboardEditorPaste_requiresActiveNoteSessionForImagePaste()
+void WhatSonCppRegressionTests::clipboardEditorPaste_allowsImagePasteWithoutMountedSession()
 {
     QTemporaryDir workspaceDirectory;
     QVERIFY(workspaceDirectory.isValid());
@@ -677,16 +668,23 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_requiresActiveNoteSessionFo
         QStringLiteral("Alpha").size(),
         0);
 
-    QCOMPARE(result.value(QStringLiteral("valid")).toBool(), false);
+    QCOMPARE(result.value(QStringLiteral("valid")).toBool(), true);
     QCOMPARE(result.value(QStringLiteral("nativePaste")).toBool(), false);
-    QCOMPARE(result.value(QStringLiteral("stage")).toString(), QStringLiteral("note-session"));
-    QVERIFY(result.value(QStringLiteral("errorMessage")).toString().contains(QStringLiteral("active note")));
+    QCOMPARE(result.value(QStringLiteral("stage")).toString(), QStringLiteral("completed"));
+    QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("<resource type=\"image\"")));
+    QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("path=\"")));
     QVERIFY(!clipboard.hasResource());
+
+    const QVariantList importedEntries = result.value(QStringLiteral("importedEntries")).toList();
+    QCOMPARE(importedEntries.size(), 1);
+    const QVariantMap importedResource = importedEntries.constFirst().toMap();
+    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
 
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
     const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
-    QVERIFY(!resourcesListText.contains(QStringLiteral(".wsresource")));
+    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
 }
 
 void WhatSonCppRegressionTests::clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture()

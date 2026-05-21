@@ -31,7 +31,6 @@ private:
     void clearDestroyedEditorInputOwner();
     bool editorPasteKeyMatches(const QKeyEvent& event) const;
     bool editorCalloutBoundaryKeyMatches(const QKeyEvent& event) const;
-    int editorCaretPosition(int fallbackPosition) const;
     int editorCommandCursorPosition(int selectionStart, int selectionLength) const;
     bool handleEditorPasteKeyEvent(QKeyEvent& event);
     bool handleEditorCalloutBoundaryKeyEvent(QKeyEvent& event);
