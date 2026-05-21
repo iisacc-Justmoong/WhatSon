@@ -13,10 +13,11 @@
 - `viewportContentY` relays the LVRS editor viewport scroll offset so the sibling gutter can keep line numbers aligned.
 - `editorViewportHeight`, `editorViewportContentHeight`, and `editorViewportWidth` expose the public LVRS editor
   viewport geometry required by the sibling minimap.
-- `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width or text
-  changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)` hook through a short debounce timer. The hook
-  keeps image resource frames at `width:100%` while using an intrinsic media bitmap width that Qt rich text can lay
-  out, and it regenerates callout frame chrome when edited text wraps to more lines.
+- `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`. Viewport-width changes and
+  note reads can refresh resource frames, while ordinary text changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)`
+  debounce only when the document still contains callout chrome. The hook keeps image resource frames at `width:100%`
+  while using an intrinsic media bitmap width that Qt rich text can lay out, and it regenerates callout frame chrome
+  when edited text wraps to more lines.
 - `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
   LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - The wrapper also binds the public LVRS `editorItem.height` to the measured document end plus the same bottom padding.
@@ -33,8 +34,10 @@
   editor plain text. The wrapper maps source line starts directly from the public editor plain-text rows.
 - Callouts remain ordinary editable rich text in the LVRS `TextEdit` surface. `TextEditor.qml` does not parse callout
   HTML or draw callout overlays; `component/Callout` emits the block frame HTML that QTextDocument renders directly.
-  The wrapper only schedules the shared C++ frame reproject hook after text changes with a short debounce, so generated
-  leading bars keep up with edited wrapped content without replacing the native document on every keystroke. It otherwise
+  The wrapper only schedules the shared C++ frame reproject hook after text changes when callout chrome is present, so
+  generated leading bars keep up with edited wrapped content without replacing the native document on every keystroke.
+  Resource frame refresh is left to read/viewport-width changes and command results, so deleting empty lines around an
+  image frame is not followed by a delayed resource-frame reprojection that restores stale blank paragraphs. It otherwise
   provides the existing source-line metrics for the sibling gutter.
 - `editorCursorLineIndex` is derived from the source-aligned plain-text cursor position, giving the sibling gutter the
   current logical cursor line for its indicator.
@@ -126,10 +129,10 @@
   않게 한다.
 - 미니맵 동기화를 위해 editor viewport의 폭/높이/contentHeight와 `scrollEditorViewportTo(contentY)` hook을
   제공한다.
-- 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌거나 텍스트가
-  바뀌면 QML은 짧은 debounce timer 뒤 현재 editor HTML과 새 폭을 C++
-  `reprojectResourceFramesForEditorWidth(...)`에 넘기고, C++이 resource frame 또는 callout frame chrome을 다시
-  렌더한 경우에만 공개 `LV.TextEditor.text` 경로로 반영한다.
+- 같은 `editorViewportWidth`는 `NoteEditorDocumentSession.editorViewportWidth`에도 전달된다. 폭이 바뀌거나 note를
+  읽은 직후에는 resource frame도 refresh될 수 있지만, 일반 텍스트 변경 debounce는 callout chrome이 남아 있을 때만
+  `reprojectResourceFramesForEditorWidth(...)`를 호출한다. 따라서 이미지 frame 주변 빈 줄을 지운 직후 resource frame
+  재투영이 늦게 들어와 예전 빈 paragraph를 되살리지 않는다.
 - 본문 하단에는 viewport 높이의 75%에 해당하는 `bottomPadding`을 공개 LVRS editor item에 적용해 마지막 줄도
   화면 상단 쪽까지 끌어올려 볼 수 있게 한다. 이 인공 여백은 미니맵/스크롤 표면용이며 거터 line-height
   계산에는 참여하지 않는다.

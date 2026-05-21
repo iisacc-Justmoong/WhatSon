@@ -541,6 +541,12 @@ LV.TextEditor {
         return true;
     }
 
+    function editorDocumentNeedsTextChangeFrameRefresh() {
+        const documentText = textEditor.editorDocumentText;
+        return documentText.indexOf("whatson-callout") !== -1
+                || documentText.indexOf("data-callout") !== -1;
+    }
+
     function scheduleEditorFrameViewportRefresh() {
         if (textEditor.editorFrameViewportRefreshApplying)
             return false;
@@ -758,7 +764,8 @@ LV.TextEditor {
         textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        if (!textEditor.editorFrameViewportRefreshApplying)
+        if (!textEditor.editorFrameViewportRefreshApplying
+                && textEditor.editorDocumentNeedsTextChangeFrameRefresh())
             textEditor.scheduleEditorFrameViewportRefresh();
     }
     onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()

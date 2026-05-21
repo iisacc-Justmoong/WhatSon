@@ -1268,6 +1268,7 @@ private slots:
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_reprojectsMarkerlessLiveResourceFrameFromActiveSource();
     void noteEditorDocumentSession_doesNotAccumulateEmptyParagraphsAfterImagePasteIdlePush();
+    void noteEditorDocumentSession_persistsBackspacedAmplifiedResourceParagraphsWithoutReinflating();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
     void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();

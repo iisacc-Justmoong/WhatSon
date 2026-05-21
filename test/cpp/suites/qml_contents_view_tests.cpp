@@ -230,9 +230,12 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("if (textEditor.editorFrameViewportRefreshApplying)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorFrameViewportRefreshApplying = true;")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorFrameViewportRefreshApplying = false;")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("function editorDocumentNeedsTextChangeFrameRefresh()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("documentText.indexOf(\"whatson-callout\") !== -1")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("documentText.indexOf(\"data-callout\") !== -1")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onTextChanged:")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("if (!textEditor.editorFrameViewportRefreshApplying)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.scheduleEditorFrameViewportRefresh();")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("&& textEditor.editorDocumentNeedsTextChangeFrameRefresh()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("if (!textEditor.editorFrameViewportRefreshApplying)\n            textEditor.scheduleEditorFrameViewportRefresh();")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorInputCommandFilterOwner()")));

@@ -770,8 +770,8 @@ namespace
     struct ActiveResourceSourceLine final
     {
         QString sourceTag;
-        bool hasBlankBefore = false;
-        bool hasBlankAfter = false;
+        int blankBeforeCount = 0;
+        int blankAfterCount = 0;
     };
 
     QVector<ActiveResourceSourceLine> activeResourceSourceLines(const QString& activeBodySourceText)
@@ -789,11 +789,23 @@ namespace
                 continue;
             }
 
-            resourceLines.push_back({
-                resourceLine,
-                index > 0 && activeLines.at(index - 1).trimmed().isEmpty(),
-                index + 1 < activeLines.size() && activeLines.at(index + 1).trimmed().isEmpty()
-            });
+            int blankBeforeCount = 0;
+            for (int beforeIndex = index - 1;
+                 beforeIndex >= 0 && activeLines.at(beforeIndex).trimmed().isEmpty();
+                 --beforeIndex)
+            {
+                ++blankBeforeCount;
+            }
+
+            int blankAfterCount = 0;
+            for (int afterIndex = index + 1;
+                 afterIndex < activeLines.size() && activeLines.at(afterIndex).trimmed().isEmpty();
+                 ++afterIndex)
+            {
+                ++blankAfterCount;
+            }
+
+            resourceLines.push_back({resourceLine, blankBeforeCount, blankAfterCount});
         }
         return resourceLines;
     }
@@ -809,6 +821,35 @@ namespace
         return foldedEditorDocumentText.contains(QStringLiteral("whatson-resource-frame"))
             || foldedEditorDocumentText.contains(QStringLiteral("data-resource-preview"))
             || foldedEditorDocumentText.contains(QStringLiteral("<img"));
+    }
+
+    int preservedResourceFrameBlankCount(
+        const int editorBlankCount,
+        const int activeBlankCount)
+    {
+        if (editorBlankCount <= 0 || activeBlankCount <= 0)
+        {
+            return 0;
+        }
+
+        return qBound(0, editorBlankCount - activeBlankCount - 1, activeBlankCount);
+    }
+
+    void replaceTrailingBlankLines(QStringList* lines, const int preservedBlankCount)
+    {
+        if (lines == nullptr)
+        {
+            return;
+        }
+
+        while (!lines->isEmpty() && lines->constLast().trimmed().isEmpty())
+        {
+            lines->removeLast();
+        }
+        for (int index = 0; index < preservedBlankCount; ++index)
+        {
+            lines->push_back(QString());
+        }
     }
 
     QString compactRestoredResourcePadding(
@@ -831,7 +872,7 @@ namespace
                 && resourceLine == resourceLines.at(resourceIndex).sourceTag)
             {
                 const ActiveResourceSourceLine& activeResourceLine = resourceLines.at(resourceIndex);
-                if (!activeResourceLine.hasBlankBefore)
+                if (activeResourceLine.blankBeforeCount <= 0)
                 {
                     while (!compactedLines.isEmpty() && compactedLines.constLast().trimmed().isEmpty())
                     {
@@ -840,7 +881,7 @@ namespace
                 }
 
                 compactedLines.push_back(activeResourceLine.sourceTag);
-                if (!activeResourceLine.hasBlankAfter)
+                if (activeResourceLine.blankAfterCount <= 0)
                 {
                     while (index + 1 < restoredLines.size()
                            && restoredLines.at(index + 1).trimmed().isEmpty())
@@ -916,7 +957,8 @@ namespace
 
     QString restoreResourceObjectPlaceholdersFromActiveSource(
         const QString& editorSourceText,
-        const QString& activeBodySourceText)
+        const QString& activeBodySourceText,
+        const bool resourceFrameDocument)
     {
         const QVector<ActiveResourceSourceLine> resourceLines =
             activeResourceSourceLines(activeBodySourceText);
@@ -949,10 +991,11 @@ namespace
             const bool nextLineIsResourceObject =
                 index + 1 < editorLines.size()
                 && lineContainsRichTextObjectReplacement(editorLines.at(index + 1));
-            if (lineIsBlank
+            if (!resourceFrameDocument
+                && lineIsBlank
                 && nextLineIsResourceObject
                 && resourceIndex < resourceLines.size()
-                && !resourceLines.at(resourceIndex).hasBlankBefore)
+                && resourceLines.at(resourceIndex).blankBeforeCount <= 0)
             {
                 continue;
             }
@@ -960,8 +1003,45 @@ namespace
             if (lineHasResourceObject && resourceIndex < resourceLines.size())
             {
                 const ActiveResourceSourceLine& resourceLine = resourceLines.at(resourceIndex);
+                if (resourceFrameDocument)
+                {
+                    int blankBeforeRun = 0;
+                    for (int beforeIndex = restoredLines.size() - 1;
+                         beforeIndex >= 0 && restoredLines.at(beforeIndex).trimmed().isEmpty();
+                         --beforeIndex)
+                    {
+                        ++blankBeforeRun;
+                    }
+                    replaceTrailingBlankLines(
+                        &restoredLines,
+                        preservedResourceFrameBlankCount(
+                            blankBeforeRun,
+                            resourceLine.blankBeforeCount));
+                }
+
                 restoredLines.push_back(resourceLine.sourceTag);
-                skipNextPaddingLineAfterResource = !resourceLine.hasBlankAfter;
+
+                if (resourceFrameDocument)
+                {
+                    int blankAfterRun = 0;
+                    while (index + 1 + blankAfterRun < editorLines.size()
+                           && editorLines.at(index + 1 + blankAfterRun).trimmed().isEmpty())
+                    {
+                        ++blankAfterRun;
+                    }
+                    const int preservedBlankAfterCount = preservedResourceFrameBlankCount(
+                        blankAfterRun,
+                        resourceLine.blankAfterCount);
+                    for (int blankIndex = 0; blankIndex < preservedBlankAfterCount; ++blankIndex)
+                    {
+                        restoredLines.push_back(QString());
+                    }
+                    index += blankAfterRun;
+                    ++resourceIndex;
+                    continue;
+                }
+
+                skipNextPaddingLineAfterResource = resourceLine.blankAfterCount <= 0;
                 ++resourceIndex;
                 continue;
             }
@@ -1395,7 +1475,8 @@ bool NoteEditorDocumentSession::persistEditorDocumentText(
             : QString();
     sourceText = restoreResourceObjectPlaceholdersFromActiveSource(
         sourceText,
-        activeSourceTextForContext);
+        activeSourceTextForContext,
+        editorDocumentContainsLiveRenderedResourceFrame(editorDocumentText));
     sourceText = restoreMarkerlessResourceFrameSourceFromActiveSource(
         sourceText,
         activeSourceTextForContext,
@@ -2178,7 +2259,8 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
     {
         QString restoredEditorSourceText = restoreResourceObjectPlaceholdersFromActiveSource(
             editorSourceText,
-            activeSourceText);
+            activeSourceText,
+            editorDocumentContainsLiveRenderedResourceFrame(editorDocumentText));
         restoredEditorSourceText = restoreMarkerlessResourceFrameSourceFromActiveSource(
             restoredEditorSourceText,
             activeSourceText,

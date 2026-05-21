@@ -1487,6 +1487,67 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_doesNotAccumulateEmpty
     }
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsBackspacedAmplifiedResourceParagraphsWithoutReinflating()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    const QString resourceTag =
+        QStringLiteral("<resource type=\"image\" format=\".png\" path=\"Workspace.wsresources/capture.wsresource\" id=\"capture\" />");
+    const QString amplifiedSource =
+        QStringLiteral("Alpha\n\n\n\n%1\n\n\n\nBeta").arg(resourceTag);
+    const QString expectedBackspacedSource =
+        QStringLiteral("Alpha\n\n\n%1\n\n\nBeta").arg(resourceTag);
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        QStringLiteral("resource-frame-amplified-backspace-note"),
+        amplifiedSource,
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("resource-frame-amplified-backspace-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString backspacedMarkerlessFrameHtml =
+        QStringLiteral("<html><body>"
+                       "<p>Alpha</p>"
+                       "<p><br /></p>"
+                       "<p><br /></p>"
+                       "<p><br /></p>"
+                       "<p class=\"whatson-resource-frame\" data-resource-preview=\"image-only-frame\">&#xfffc;</p>"
+                       "<p><br /></p>"
+                       "<p><br /></p>"
+                       "<p><br /></p>"
+                       "<p>Beta</p>"
+                       "</body></html>");
+    QVERIFY(backspacedMarkerlessFrameHtml.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+                QStringLiteral("resource-frame-amplified-backspace-note"),
+                backspacedMarkerlessFrameHtml)
+                .contains(QChar::ObjectReplacementCharacter));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(session.editorFilePath(), backspacedMarkerlessFrameHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        expectedBackspacedSource);
+    QCOMPARE(persistedBodyDocument.count(QStringLiteral("<paragraph></paragraph>")), 4);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()
 {
     const QString shortSource = QStringLiteral("<callout>Short callout</callout>");

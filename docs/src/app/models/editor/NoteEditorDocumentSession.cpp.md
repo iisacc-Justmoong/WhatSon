@@ -88,6 +88,10 @@ Implements the active note editor document session.
   re-projection. If a markerless live frame also loses its rich-text object placeholder, idle RAW push compares the
   source text with resource source lines removed and keeps the active canonical resource source instead of persisting the
   renderer's empty frame blocks as new `<paragraph></paragraph>` rows.
+- For notes that already contain amplified empty paragraphs around a resource frame, Backspace/Delete edits are allowed
+  to reduce those empty source lines. The restore path tracks the active blank-line count around each resource line and
+  subtracts the live frame's serialized padding before preserving blanks, so a one-line deletion cannot re-save as a
+  larger run of empty paragraphs.
 - If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
   header/footer chrome cleanup path is kept in the current image-only frame contract.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
@@ -137,6 +141,9 @@ Implements the active note editor document session.
   markerless live frame이 rich-text object placeholder까지 잃은 경우에도 idle RAW push는 resource line을 제거한
   주변 source가 같은지 확인한 뒤 active canonical source를 유지한다. 따라서 renderer가 만든 빈 frame block이
   시간차 저장 때마다 `<paragraph></paragraph>`로 누적되지 않는다.
+  이미 빈 paragraph가 증폭된 노트에서도 Backspace/Delete가 줄인 빈 source line은 유지된다. 세션은 resource 주변의
+  active blank-line 개수를 추적하고 live frame 직렬화 패딩을 뺀 뒤 빈 줄을 보존하므로, 지운 빈 paragraph가 저장
+  경계에서 더 큰 빈 줄 묶음으로 되살아나지 않는다.
   Backspace/Delete 뒤 이미지 object가 사라진 경우에는
   resource frame이 삭제된 것으로 본다. persistence 성공 콜백 뒤에는 `.wsnbody` serializer/read-back 경계의
   canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
