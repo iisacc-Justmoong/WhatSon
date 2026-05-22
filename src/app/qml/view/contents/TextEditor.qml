@@ -19,6 +19,7 @@ LV.TextEditor {
     property bool cursorViewportSyncQueued: false
     property bool editorFrameViewportRefreshPending: false
     property bool editorFrameViewportRefreshApplying: false
+    property bool editorProgrammaticDocumentApplying: false
     property int editorFrameViewportRefreshDelayMs: 120
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
@@ -478,10 +479,17 @@ LV.TextEditor {
     }
 
     function replaceEditorDocumentText(nextText, nextCursorPosition) {
-        textEditor.text = nextText === undefined || nextText === null
-                ? ""
-                : String(nextText);
-        textEditor.restoreEditorCursorPosition(nextCursorPosition);
+        textEditor.editorProgrammaticDocumentApplying = true;
+        try {
+            textEditor.text = nextText === undefined || nextText === null
+                    ? ""
+                    : String(nextText);
+            textEditor.restoreEditorCursorPosition(nextCursorPosition);
+        } finally {
+            Qt.callLater(function () {
+                textEditor.editorProgrammaticDocumentApplying = false;
+            });
+        }
         return true;
     }
 
@@ -495,6 +503,7 @@ LV.TextEditor {
         const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
 
         textEditor.editorFrameViewportRefreshApplying = true;
+        textEditor.editorProgrammaticDocumentApplying = true;
         try {
             textEditor.text = nextText === undefined || nextText === null
                     ? ""
@@ -508,6 +517,9 @@ LV.TextEditor {
                 textEditor.cursorPosition = targetCursorPosition;
         } finally {
             textEditor.editorFrameViewportRefreshApplying = false;
+            Qt.callLater(function () {
+                textEditor.editorProgrammaticDocumentApplying = false;
+            });
         }
 
         if (hadEditorFocus) {

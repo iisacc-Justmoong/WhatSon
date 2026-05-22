@@ -177,6 +177,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("idle-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     session.requestEditorIdleRawPush(
@@ -213,6 +214,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCall
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("idle-callout-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("idle-callout-raw-push-note"),
@@ -260,6 +262,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("modified-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     session.requestEditorModifiedCountRawPush(
@@ -297,9 +300,11 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("departure-raw-push-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
-    QVERIFY(writeUtf8FileForNoteEditorSessionTest(
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+    session.requestEditorModifiedCountRawPush(
         session.editorFilePath(),
-        QStringLiteral("After departure push")));
+        1,
+        QStringLiteral("After departure push"));
 
     QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
     QVERIFY(session.clearEditor());
@@ -1062,6 +1067,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-frame-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     const QString editorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
     const QVariantMap result = session.insertImportedResourcesIntoSource(
@@ -1340,6 +1346,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_discardsStalePendingPu
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-pending-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
     session.requestEditorModifiedCountRawPush(
@@ -1409,6 +1416,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesTextTypedImme
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-object-text-note"), noteDirectoryPath));
     QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
 
     const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
     const QVariantMap insertion = session.insertImportedResourcesIntoSource(
@@ -1448,6 +1456,290 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesTextTypedImme
     QCOMPARE(persistedSourceText, expectedSourceText);
     QVERIFY(persistedSourceText.contains(resourcePath));
     QCOMPARE(session.parsedLineCount(), 7);
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_rejectsTransientEmptyEditorTextBeforeRawPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        QStringLiteral("empty-raw-guard-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("empty-raw-guard-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(session.editorFilePath(), QString());
+    QTest::qWait(50);
+    QCOMPARE(persistedSpy.count(), 0);
+
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 1, QString());
+    QTest::qWait(50);
+    QCOMPARE(persistedSpy.count(), 0);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha\nBeta"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_rejectsEmptyRichTextSessionPayloadBeforeRawPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("empty-rich-text-guard-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString emptyEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QString());
+    QVERIFY(!emptyEditorHtml.trimmed().isEmpty());
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, emptyEditorHtml),
+        QString());
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(session.editorFilePath(), emptyEditorHtml);
+    QVERIFY(session.clearEditor());
+    QTest::qWait(50);
+    QCOMPARE(persistedSpy.count(), 0);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha\nBeta"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString firstNoteId = QStringLiteral("reopen-readiness-first-note");
+    const QString firstNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        firstNoteId,
+        QStringLiteral("Alpha body"),
+        &createError);
+    QVERIFY2(!firstNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    const QString secondNoteId = QStringLiteral("reopen-readiness-second-note");
+    const QString secondNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        secondNoteId,
+        QStringLiteral("Beta body"),
+        &createError);
+    QVERIFY2(!secondNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(firstNoteId, firstNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    const QString firstEditorFilePath = session.editorFilePath();
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(firstEditorFilePath));
+
+    QVERIFY(session.openNoteForEditing(secondNoteId, secondNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 2, 3000);
+
+    QVERIFY(session.openNoteForEditing(firstNoteId, firstNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 3, 3000);
+    QCOMPARE(session.editorFilePath(), firstEditorFilePath);
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(
+        session.editorFilePath(),
+        QStringLiteral("Stale editor payload before fresh readFinished"));
+    QVERIFY(session.clearEditor());
+    QTest::qWait(50);
+    QCOMPARE(persistedSpy.count(), 0);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(firstNoteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha body"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_persistsStagedRawResourceAfterTransientEmptyPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardRawGuardHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-raw-guard-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QString importError;
+    const QVariantList importedEntries = importClipboardImageEntriesForNoteEditorSessionTest(hubPath, &importError);
+    QVERIFY2(importedEntries.size() == 1, qPrintable(importError));
+    const QString resourcePath =
+        importedEntries.constFirst().toMap().value(QStringLiteral("resourcePath")).toString();
+    QVERIFY(!resourcePath.isEmpty());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-raw-guard-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        originalEditorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertion.value(QStringLiteral("bodySourceText")).toString().contains(resourcePath));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 1, QString());
+    QTest::qWait(50);
+    QCOMPARE(persistedSpy.count(), 0);
+
+    QVERIFY(session.clearEditor());
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    const QString persistedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Alpha")));
+    QVERIFY(persistedSourceText.contains(resourcePath));
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Beta")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_mergesIdlePullDiffIntoDirtySession()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardDirtyPullGuardHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteId = QStringLiteral("clipboard-dirty-pull-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        noteId,
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QString importError;
+    const QVariantList importedEntries = importClipboardImageEntriesForNoteEditorSessionTest(hubPath, &importError);
+    QVERIFY2(importedEntries.size() == 1, qPrintable(importError));
+    const QString resourcePath =
+        importedEntries.constFirst().toMap().value(QStringLiteral("resourcePath")).toString();
+    QVERIFY(!resourcePath.isEmpty());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        originalEditorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertion.value(QStringLiteral("bodySourceText")).toString().contains(resourcePath));
+
+    QString updateError;
+    QVERIFY2(
+        writeFilesystemBodyForIdlePullSessionTest(
+            noteId,
+            noteDirectoryPath,
+            QStringLiteral("Alpha\nRemote filesystem line\nBeta"),
+            QStringLiteral("2099-05-01-12-00-00"),
+            &updateError),
+        qPrintable(updateError));
+
+    QSignalSpy pulledSpy(&session, &NoteEditorDocumentSession::editorDocumentTextPulled);
+    QSignalSpy ignoredSpy(&session, &NoteEditorDocumentSession::editorFilesystemPullIgnored);
+    QVERIFY(session.requestActiveNoteIdleRawPull() != 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pulledSpy.count(), 1, 3000);
+    QCOMPARE(ignoredSpy.count(), 0);
+
+    const QString mergedEditorText = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY(mergedEditorText.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(mergedEditorText.contains(QStringLiteral("Remote filesystem line")));
+
+    const QString mergedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, mergedEditorText);
+    QVERIFY(mergedSourceText.contains(QStringLiteral("Alpha")));
+    QVERIFY(mergedSourceText.contains(QStringLiteral("Remote filesystem line")));
+    QVERIFY(mergedSourceText.contains(resourcePath));
+    QVERIFY(mergedSourceText.contains(QStringLiteral("Beta")));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()

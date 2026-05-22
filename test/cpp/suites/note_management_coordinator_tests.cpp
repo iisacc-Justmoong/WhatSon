@@ -30,7 +30,7 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
     request.kind = ContentsNoteManagementCoordinator::RequestKind::ReconcileViewSessionSnapshot;
     request.noteId = noteId;
     request.noteDirectoryPath = noteDirectoryPath;
-    request.text = QStringLiteral("editor-after");
+    request.text = QStringLiteral("raw-before editor-after");
     request.preferViewSessionOnMismatch = true;
 
     const ContentsNoteManagementCoordinator::Result result =
@@ -50,8 +50,8 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
 
     QCOMPARE(contentController.applyPersistedBodyStateCallCount, 1);
     QCOMPARE(contentController.lastAppliedNoteId, noteId);
-    QCOMPARE(contentController.lastAppliedBodyPlainText, QStringLiteral("editor-after"));
-    QCOMPARE(contentController.lastAppliedBodySourceText, QStringLiteral("editor-after"));
+    QCOMPARE(contentController.lastAppliedBodyPlainText, QStringLiteral("raw-before editor-after"));
+    QCOMPARE(contentController.lastAppliedBodySourceText, QStringLiteral("raw-before editor-after"));
     QCOMPARE(contentController.reloadNoteMetadataCallCount, 1);
     QCOMPARE(contentController.lastReloadedNoteId, noteId);
 
@@ -67,8 +67,53 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_reconcilePersistsEdito
         qPrintable(QStringLiteral("Failed to read reconciled note: %1").arg(readError)));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
-        QStringLiteral("editor-after"));
+        QStringLiteral("raw-before editor-after"));
     QCOMPARE(document.headerStore.modifiedCount(), 1);
+}
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRejectsWholeEditorSnapshotReplacement()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("whole-replacement-reconcile-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("raw-before"),
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    ContentsNoteManagementCoordinator::Request request;
+    request.kind = ContentsNoteManagementCoordinator::RequestKind::ReconcileViewSessionSnapshot;
+    request.noteId = noteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.text = QStringLiteral("editor-after");
+    request.preferViewSessionOnMismatch = true;
+
+    const ContentsNoteManagementCoordinator::Result result =
+        ContentsNoteManagementCoordinator::performWorkerRequest(request);
+    QVERIFY(result.success);
+    QVERIFY(!result.viewSessionPersisted);
+    QVERIFY(result.snapshotRefreshRequested);
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read reconciled note: %1").arg(readError)));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
+        QStringLiteral("raw-before"));
+    QCOMPARE(document.headerStore.modifiedCount(), 0);
 }
 
 void WhatSonCppRegressionTests::noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative()
@@ -183,6 +228,72 @@ void WhatSonCppRegressionTests::noteManagementCoordinator_directBodyPersistAdvan
         WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
         QStringLiteral("raw-after"));
     QCOMPARE(document.headerStore.modifiedCount(), 1);
+}
+
+void WhatSonCppRegressionTests::noteManagementCoordinator_directBodyPersistAppliesEditorDiffToCurrentFilesystemBody()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("direct-diff-edited-note");
+    const QString baseSource = QStringLiteral("Alpha\nBeta\nGamma");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        baseSource,
+        &createError);
+    QVERIFY2(
+        !noteDirectoryPath.isEmpty(),
+        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteDocument document;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+    QString readError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &document, &readError),
+        qPrintable(QStringLiteral("Failed to read note fixture: %1").arg(readError)));
+
+    document.bodyPlainText = QStringLiteral("Alpha\nRemote filesystem line\nBeta\nGamma");
+    document.bodySourceText = document.bodyPlainText;
+    WhatSonLocalNoteFileStore::UpdateRequest remoteUpdate;
+    remoteUpdate.document = document;
+    remoteUpdate.persistHeader = false;
+    remoteUpdate.persistBody = true;
+    remoteUpdate.touchLastModified = true;
+    remoteUpdate.resolveTimestampConflicts = false;
+    QString remoteUpdateError;
+    QVERIFY2(
+        fileStore.updateNote(remoteUpdate, nullptr, &remoteUpdateError),
+        qPrintable(QStringLiteral("Failed to stage remote filesystem body: %1").arg(remoteUpdateError)));
+
+    ContentsNoteManagementCoordinator::Request request;
+    request.kind = ContentsNoteManagementCoordinator::RequestKind::DirectPersistBody;
+    request.noteId = noteId;
+    request.noteDirectoryPath = noteDirectoryPath;
+    request.text = QStringLiteral("Alpha\nBeta local\nGamma");
+    request.baseBodySourceText = baseSource;
+    request.hasBaseBodySourceText = true;
+
+    const ContentsNoteManagementCoordinator::Result result =
+        ContentsNoteManagementCoordinator::performWorkerRequest(request);
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(result.persistedDocument.bodySourceText),
+        QStringLiteral("Alpha\nRemote filesystem line\nBeta local\nGamma"));
+
+    WhatSonLocalNoteDocument persistedDocument;
+    QString persistedReadError;
+    QVERIFY2(
+        fileStore.readNote(readRequest, &persistedDocument, &persistedReadError),
+        qPrintable(QStringLiteral("Failed to read directly persisted note: %1").arg(persistedReadError)));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(persistedDocument.bodySourceText),
+        QStringLiteral("Alpha\nRemote filesystem line\nBeta local\nGamma"));
+    QCOMPARE(persistedDocument.headerStore.modifiedCount(), 2);
 }
 
 void WhatSonCppRegressionTests::noteManagementCoordinator_openCountReloadsPersistedMetadata()

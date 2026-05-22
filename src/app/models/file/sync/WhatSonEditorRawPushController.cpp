@@ -48,7 +48,7 @@ void WhatSonEditorRawPushController::setRawPushCallback(RawPushCallback callback
 
 void WhatSonEditorRawPushController::requestIdlePush(
     const QString& editorFilePath,
-    const QString& editorDocumentText)
+    const QString& bodySourceText)
 {
     const QString path = normalizedPath(editorFilePath);
     if (path.isEmpty())
@@ -62,13 +62,13 @@ void WhatSonEditorRawPushController::requestIdlePush(
     {
         return;
     }
-    schedulePush({path, editorDocumentText, QString::fromLatin1(kIdleReason), true});
+    schedulePush({path, bodySourceText, QString::fromLatin1(kIdleReason), true});
 }
 
 void WhatSonEditorRawPushController::requestModifiedCountPush(
     const QString& editorFilePath,
     const int modifiedCount,
-    const QString& editorDocumentText)
+    const QString& bodySourceText)
 {
     const QString path = normalizedPath(editorFilePath);
     if (path.isEmpty())
@@ -83,7 +83,7 @@ void WhatSonEditorRawPushController::requestModifiedCountPush(
     }
 
     m_lastModifiedCount = modifiedCount;
-    schedulePush({path, editorDocumentText, QString::fromLatin1(kModifiedCountReason), true});
+    schedulePush({path, bodySourceText, QString::fromLatin1(kModifiedCountReason), true});
 }
 
 bool WhatSonEditorRawPushController::pushBeforeNoteDeparture(const QString& editorFilePath)
@@ -96,16 +96,11 @@ bool WhatSonEditorRawPushController::pushBeforeNoteDeparture(const QString& edit
 
     m_idleTimer.stop();
 
-    PendingPush departurePush;
-    if (m_hasPendingPush && m_pendingPush.editorFilePath == path)
+    if (!m_hasPendingPush || m_pendingPush.editorFilePath != path)
     {
-        departurePush = m_pendingPush;
+        return true;
     }
-    else
-    {
-        departurePush.editorFilePath = path;
-        departurePush.hasEditorDocumentText = false;
-    }
+    PendingPush departurePush = m_pendingPush;
     departurePush.reason = QString::fromLatin1(kNoteDepartureReason);
 
     m_pendingPush = PendingPush();
@@ -151,6 +146,12 @@ bool WhatSonEditorRawPushController::discardPendingPushForFile(const QString& ed
     return true;
 }
 
+bool WhatSonEditorRawPushController::hasPendingPushForFile(const QString& editorFilePath) const
+{
+    const QString path = normalizedPath(editorFilePath);
+    return !path.isEmpty() && m_hasPendingPush && m_pendingPush.editorFilePath == path;
+}
+
 QString WhatSonEditorRawPushController::normalizedPath(const QString& path)
 {
     const QString trimmedPath = path.trimmed();
@@ -177,8 +178,8 @@ bool WhatSonEditorRawPushController::executePush(const PendingPush& push)
     const bool success = m_rawPushCallback
         ? m_rawPushCallback(
               push.editorFilePath,
-              push.editorDocumentText,
-              push.hasEditorDocumentText,
+              push.bodySourceText,
+              push.hasBodySourceText,
               push.reason,
               &errorMessage)
         : false;

@@ -17,19 +17,24 @@ Implements the active note editor document session.
 5. The same mounted note becomes the active idle-pull target. User activity reported by the editor surface restarts the
    pull timer; once the note remains idle for 5000 ms, `WhatSonEditorRawPullController` queues an `idle` pull.
    The session compares the returned filesystem `lastModified` timestamp against the session-file context timestamp and
-   only applies the pull when the filesystem copy is newer.
+   only processes the pull when the filesystem copy is newer. The newer filesystem body is applied as a diff from the
+   loaded RAW base onto the active RAW source, so local editor mutations and remote filesystem mutations can coexist
+   without a full-body replacement.
 6. QML binds that session file into LVRS `TextEditor.filePath`, keeps the parsed source line count as session metadata,
    binds the current editor viewport width into the session, and uses the parsed line count as the gutter delegate
    count. The sibling editor supplies only rendered start positions for those parsed source lines.
-7. When LVRS emits `syncFinished(path)`, QML sends the editor document text to
-   `requestEditorIdleRawPush(...)`; when the editor surface modified count increases, QML sends the same surface
-   payload to `requestEditorModifiedCountRawPush(...)`. Both routes pass through
-   `WhatSonEditorRawPushController`, then the session converts the editor document HTML back into canonical source text
-   and delegates persistence through `ContentsNoteManagementCoordinator` so `.wsnbody` is reserialized and
-   `parsedLineCount` is refreshed.
+7. When LVRS emits `syncFinished(path)`, QML asks `requestEditorIdleRawPush(...)` to inspect the current editor
+   document; when the editor surface modified count increases, QML asks `requestEditorModifiedCountRawPush(...)` to do
+   the same. The session first verifies that `readFinished(path)` marked the mounted `.wsnsource` file ready, converts
+   the editor document into canonical RAW source, rejects transient empty editor payloads over a non-empty active RAW
+   source, and only then queues `WhatSonEditorRawPushController`. The push controller stores that verified RAW source,
+   not the editor HTML/session-file snapshot. Persistence then writes the queued RAW source through
+   `ContentsNoteManagementCoordinator`, which applies the editor RAW diff from the loaded RAW base onto the current
+   filesystem RAW body before `.wsnbody` is reserialized and `parsedLineCount` is refreshed.
    If that persistence writes a timestamped `.wsnversion` diff, the coordinator signal is forwarded as
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
-   Before note context changes or clears, the session asks the same push controller to flush the active surface.
+   Before note context changes or clears, the session flushes the active RAW source or the controller's pending RAW
+   payload; it no longer falls back to re-reading an arbitrary session-file snapshot for sync.
 8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
    maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
    projection, and maps the source cursor back to the rendered editor cursor position.
@@ -51,14 +56,17 @@ Implements the active note editor document session.
   the note that originally owned that file.
 - Note entry/open RAW pulls are routed through `file/sync/WhatSonEditorRawPullController`; the session remains the
   load callback and editor projection owner.
-- The loaded note's `lastModified` timestamp is kept with the editor session-file context. Later RAW pushes pass that
-  base timestamp into the note-management queue so timestamp conflict resolution can tell whether the filesystem
-  changed after this editor pull.
+- The loaded note's `lastModified` timestamp and RAW source are kept with the editor session-file context. Later RAW
+  pushes pass that base source into the note-management queue so the editor change can be applied as a diff onto the
+  current filesystem body instead of replacing the whole note package body.
 - Active-note idle RAW pulls reuse that same timestamp context in the opposite direction: a filesystem pull whose
   `lastModified` is not strictly newer is ignored and reported through `editorFilesystemPullIgnored(...)`; a newer pull
-  rewrites the session file, emits `editorDocumentTextPulled(...)`, and updates the stored base timestamp.
+  applies the filesystem diff onto the active RAW source, rewrites the session file with the merged result, emits
+  `editorDocumentTextPulled(...)`, and updates the stored filesystem base source/timestamp.
 - Idle, modified-count, and note-departure RAW pushes are routed through
-  `file/sync/WhatSonEditorRawPushController`; the session remains the conversion/write callback owner.
+  `file/sync/WhatSonEditorRawPushController` only after this session has converted the live editor document into
+  validated RAW source. The controller orders RAW payloads; it does not own editor HTML or reread the mounted session
+  file as sync truth.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
 - The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must
@@ -95,9 +103,9 @@ Implements the active note editor document session.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
   `.wsnbody` serializer/read-back boundary before refreshing `parsedLineCount`. This keeps deleted atomic resource
   objects from leaving a transient trailing editor line in the gutter contract.
-- Before note departure, an imported-resource command result that has not yet been superseded by a modified-count editor
-  payload is persisted from the active canonical source, not from the possibly stale mounted session file and not from an
-  older queued idle/modified push.
+- Before note departure, an imported-resource command result or other C++ RAW command result that has not yet been
+  superseded by a validated modified-count RAW payload is persisted from the active canonical source, not from the
+  possibly stale mounted session file and not from an older queued idle/modified push.
 - The session does not decide hub-sync policy itself; it only forwards the coordinator's version-diff filesystem
   mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,

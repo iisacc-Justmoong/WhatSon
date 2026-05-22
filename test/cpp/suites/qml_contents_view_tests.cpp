@@ -364,6 +364,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onReadFinished: function(path)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.markEditorSessionFileReadyForRawPush(path);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function requestEditorModifiedRawPush(editorDocumentText)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("!contentsTextEditor.editorProgrammaticDocumentApplying")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("!contentsTextEditor.editorFrameViewportRefreshApplying")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onTextEdited: function()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestEditorModifiedRawPush(text);")));
@@ -373,6 +375,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorModifiedCountRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextPulled(noteId, editorDocumentText)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorApplyingPulledDocumentText")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("property bool editorProgrammaticDocumentApplying: false")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorProgrammaticDocumentApplying = true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorProgrammaticDocumentApplying = false")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function recordEditorUserActivity()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("recordEditorUserActivity()")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("persistEditorFile(path)")));

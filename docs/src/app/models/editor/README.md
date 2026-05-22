@@ -75,19 +75,21 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource command
-  insertions and static format-tag source insertions for editor command flows, and persists the current full editor
-  document text directly to the selected `.wsnbody` after converting it to canonical source. The LVRS
-  `textEdited(text)` signal payload is not used as that persistence payload because it can omit rich resource-frame
-  markers. Idle RAW push requests are accepted only after LVRS `readFinished(path)` has marked the current
-  mounted session file ready; modified-count input writes both the mounted session file and RAW body immediately, so the
-  note editor shape at that call site becomes the filesystem baseline. The
-  active editor session source becomes the save/sync truth for the active note after persistence converts that same
-  payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
-  flushes also persist that active source instead of falling back to stale mounted session-file
-  contents. This protects ordinary typed editor input while image paste follows the 2026-05-19 command-result and LVRS
-  sync flow. Imported image-resource command results are staged to the mounted `.wsnsource` file immediately and discard
-  older pending pushes for that file; until later user typing supplies a newer modified-count payload, note departure
-  persists that active canonical source.
+  insertions and static format-tag source insertions for editor command flows, and persists only canonical RAW source to
+  the selected `.wsnbody`. The LVRS `textEdited(text)` signal payload is not used as a persistence payload because it
+  can omit rich resource-frame markers. Idle and modified-count RAW push requests are accepted only after LVRS
+  `readFinished(path)` has marked the current mounted session file ready; the session then converts the current editor
+  document into RAW source, rejects transient empty editor payloads over a non-empty active RAW source, and queues only
+  that validated RAW source in `WhatSonEditorRawPushController`. The controller no longer stores editor HTML or rereads
+  the `.wsnsource` file as sync truth. The active RAW source becomes the save/sync truth for the active note; idle
+  filesystem pulls apply the filesystem diff onto that active RAW source, and editor pushes apply the editor diff onto
+  the current filesystem RAW body. Neither direction may fall back to replacing the whole body when the current text has
+  diverged from the loaded base. Note-departure flushes persist active/pending RAW instead of falling back to stale
+  mounted session-file contents. This protects ordinary typed editor input while image paste follows the 2026-05-19
+  command-result and LVRS sync flow. Imported image-resource command
+  results are staged to the mounted `.wsnsource` file immediately and discard older pending pushes for that file; until
+  later user typing supplies a newer validated modified-count RAW payload, note departure persists that active canonical
+  source.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -152,15 +154,16 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
   resource 삽입은 2026-05-19 image paste command-result 흐름처럼 현재 커서/선택 범위를 적용한 source/editor HTML
   결과를 반환한다. active note에서는 이 결과를 mounted `.wsnsource` file에도 즉시 기록하고, 이미지 삽입 전의
-  오래된 pending push는 폐기한다. 이후 더 최신 modified-count payload가 들어오기 전까지 note-departure flush는
-  이 active canonical source를 저장한다. `readFinished(path)` 이후 editor revision이 증가하면 QML은
-  `textEdited(text)` signal payload가 아니라 현재 전체 editor document text를 전달하고, 세션은 이를 canonical RAW로
-  변환해 selected `.wsnbody`에 쓴다. 이미지 바로 아래 첫 텍스트가 image object와 같은 rich-text block으로
-  직렬화되어도 복원 경로는 object 앞/뒤 텍스트를 별도 source line으로 보존한다. mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
-  남고 direct RAW 입력보다 오래된 payload를 active source로 되돌리지 않는다. active editor session
-  source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
-  pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
-  이 direct RAW 입력 계약은 일반 텍스트의 마지막 입력에 적용된다. 거터의 실제
+  오래된 pending push는 폐기한다. 이후 더 최신 validated modified-count RAW payload가 들어오기 전까지
+  note-departure flush는 이 active canonical source를 저장한다. `readFinished(path)` 이후 editor revision이
+  증가하면 QML은 `textEdited(text)` signal payload가 아니라 현재 전체 editor document text를 전달하고, 세션은
+  이를 canonical RAW로 변환·검증한 뒤 RAW source payload만 sync controller에 넘긴다. 빈 editor 문자열이 non-empty
+  active source를 덮는 transient payload이면 저장하지 않는다. push/pull은 loaded RAW base와 현재 RAW의 diff를
+  적용하는 방식으로만 본문을 갱신하며, diverged current body 위에 editor payload 전체를 대체 쓰기하지 않는다.
+  이미지 바로 아래 첫 텍스트가 image object와 같은
+  rich-text block으로 직렬화되어도 복원 경로는 object 앞/뒤 텍스트를 별도 source line으로 보존한다. idle sync와
+  note-departure flush는 낡은 mounted session file 대신 active RAW source 또는 pending RAW payload를 기준으로 한다.
+  거터의 실제
   row 개수는 session의 parsed source line count만 사용하며, QML `TextEditor` wrapper는 해당 source line의 렌더
   위치만 제공할 수 있다. 새 빈 callout을 삽입할 때는 생성된 callout chrome 뒤의 LVRS rich-text content 좌표를
   커서 위치로 반환해 caret이 callout 내부에서 시작하게 한다. 같은 decorated content 시작점에서 Backspace가 오면

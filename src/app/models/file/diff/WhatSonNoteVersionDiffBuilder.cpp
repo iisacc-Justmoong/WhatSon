@@ -2,6 +2,7 @@
 
 #include <QDateTime>
 #include <QStringList>
+#include <QVector>
 
 namespace
 {
@@ -39,6 +40,115 @@ namespace
         }
         return patch;
     }
+
+    QVector<int> occurrenceOffsets(
+        const QString& text,
+        const QString& needle)
+    {
+        QVector<int> offsets;
+        if (needle.isEmpty())
+        {
+            return offsets;
+        }
+
+        int offset = 0;
+        while (offset <= text.size())
+        {
+            const int found = text.indexOf(needle, offset);
+            if (found < 0)
+            {
+                break;
+            }
+
+            offsets.push_back(found);
+            offset = found + qMax(1, needle.size());
+        }
+        return offsets;
+    }
+
+    QString trailingAnchor(const QString& text)
+    {
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        const int lineBreak = text.lastIndexOf(QLatin1Char('\n'));
+        QString anchor = lineBreak >= 0 ? text.mid(lineBreak + 1) : text;
+        if (anchor.size() > 64)
+        {
+            anchor = anchor.right(64);
+        }
+        return anchor;
+    }
+
+    QString leadingAnchor(const QString& text)
+    {
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        const int lineBreak = text.indexOf(QLatin1Char('\n'));
+        QString anchor = lineBreak >= 0 ? text.left(lineBreak) : text;
+        if (anchor.size() > 64)
+        {
+            anchor = anchor.left(64);
+        }
+        return anchor;
+    }
+
+    bool segmentMatchesBase(
+        const QString& base,
+        const WhatSonNoteVersionDiffSegment& segment)
+    {
+        if (segment.prefixLength < 0
+            || segment.suffixLength < 0
+            || segment.prefixLength > base.size()
+            || segment.suffixLength > base.size()
+            || segment.prefixLength + segment.suffixLength > base.size())
+        {
+            return false;
+        }
+
+        const int removedLength = base.size() - segment.prefixLength - segment.suffixLength;
+        return base.mid(segment.prefixLength, removedLength) == segment.removedText;
+    }
+
+    bool contextMatches(
+        const QString& current,
+        const int start,
+        const int removedLength,
+        const QString& prefixAnchor,
+        const QString& suffixAnchor)
+    {
+        if (!prefixAnchor.isEmpty()
+            && !current.left(start).endsWith(prefixAnchor))
+        {
+            return false;
+        }
+        if (!suffixAnchor.isEmpty()
+            && !current.mid(start + removedLength).startsWith(suffixAnchor))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    bool pickUniqueOffset(
+        const QVector<int>& offsets,
+        int* outOffset)
+    {
+        if (offsets.size() != 1)
+        {
+            return false;
+        }
+        if (outOffset != nullptr)
+        {
+            *outOffset = offsets.constFirst();
+        }
+        return true;
+    }
 } // namespace
 
 WhatSonNoteVersionDiffSegment WhatSonNoteVersionDiffBuilder::diffSegment(
@@ -69,4 +179,194 @@ WhatSonNoteVersionDiffSegment WhatSonNoteVersionDiffBuilder::diffSegment(
     segment.unifiedPatch = unifiedPatch(label, before, after);
     segment.generatedAtUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
     return segment;
+}
+
+QString WhatSonNoteVersionDiffBuilder::applyDiffSegmentOntoCurrent(
+    const QString& base,
+    const QString& current,
+    const WhatSonNoteVersionDiffSegment& segment,
+    bool* applied,
+    QString* errorMessage) const
+{
+    if (applied != nullptr)
+    {
+        *applied = false;
+    }
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+
+    if (!segmentMatchesBase(base, segment))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Diff segment does not match the supplied base document.");
+        }
+        return current;
+    }
+
+    const QString target = base.left(segment.prefixLength)
+        + segment.insertedText
+        + base.right(segment.suffixLength);
+    if (current == target)
+    {
+        if (applied != nullptr)
+        {
+            *applied = true;
+        }
+        return current;
+    }
+
+    if (base == current)
+    {
+        if (applied != nullptr)
+        {
+            *applied = true;
+        }
+        return target;
+    }
+
+    if (segment.removedText.isEmpty() && segment.insertedText.isEmpty())
+    {
+        if (applied != nullptr)
+        {
+            *applied = true;
+        }
+        return current;
+    }
+
+    const bool replacesWholeBase =
+        segment.prefixLength == 0
+        && segment.suffixLength == 0
+        && segment.removedText == base
+        && !base.isEmpty();
+    if (replacesWholeBase)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Refusing to apply a whole document diff onto a diverged current document.");
+        }
+        return current;
+    }
+
+    const QString prefix = base.left(segment.prefixLength);
+    const QString suffix = base.right(segment.suffixLength);
+    const QString prefixAnchor = trailingAnchor(prefix);
+    const QString suffixAnchor = leadingAnchor(suffix);
+
+    int applyOffset = -1;
+    if (!segment.removedText.isEmpty())
+    {
+        QVector<int> candidates;
+        const QVector<int> offsets = occurrenceOffsets(current, segment.removedText);
+        for (const int offset : offsets)
+        {
+            if (contextMatches(
+                    current,
+                    offset,
+                    segment.removedText.size(),
+                    prefixAnchor,
+                    suffixAnchor))
+            {
+                candidates.push_back(offset);
+            }
+        }
+        if (candidates.isEmpty())
+        {
+            candidates = offsets;
+        }
+        if (!pickUniqueOffset(candidates, &applyOffset))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to locate an unambiguous removed-text diff target.");
+            }
+            return current;
+        }
+
+        QString merged = current;
+        merged.replace(applyOffset, segment.removedText.size(), segment.insertedText);
+        if (applied != nullptr)
+        {
+            *applied = true;
+        }
+        return merged;
+    }
+
+    if (!suffix.isEmpty())
+    {
+        QVector<int> candidates;
+        const QVector<int> offsets = occurrenceOffsets(current, suffix);
+        for (const int offset : offsets)
+        {
+            if (prefixAnchor.isEmpty()
+                || current.left(offset).endsWith(prefixAnchor))
+            {
+                candidates.push_back(offset);
+            }
+        }
+        if (candidates.isEmpty())
+        {
+            candidates = offsets;
+        }
+        if (pickUniqueOffset(candidates, &applyOffset))
+        {
+            QString merged = current;
+            merged.insert(applyOffset, segment.insertedText);
+            if (applied != nullptr)
+            {
+                *applied = true;
+            }
+            return merged;
+        }
+    }
+
+    if (!prefix.isEmpty())
+    {
+        QVector<int> candidates;
+        const QVector<int> offsets = occurrenceOffsets(current, prefix);
+        for (const int offset : offsets)
+        {
+            if (suffixAnchor.isEmpty()
+                || current.mid(offset + prefix.size()).startsWith(suffixAnchor))
+            {
+                candidates.push_back(offset + prefix.size());
+            }
+        }
+        if (candidates.isEmpty())
+        {
+            const QString prefixTail = trailingAnchor(prefix);
+            const QVector<int> tailOffsets = occurrenceOffsets(current, prefixTail);
+            for (const int offset : tailOffsets)
+            {
+                candidates.push_back(offset + prefixTail.size());
+            }
+        }
+        if (pickUniqueOffset(candidates, &applyOffset))
+        {
+            QString merged = current;
+            merged.insert(applyOffset, segment.insertedText);
+            if (applied != nullptr)
+            {
+                *applied = true;
+            }
+            return merged;
+        }
+    }
+
+    if (base.isEmpty() && current.isEmpty())
+    {
+        if (applied != nullptr)
+        {
+            *applied = true;
+        }
+        return segment.insertedText;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        *errorMessage = QStringLiteral("Failed to locate an unambiguous insertion diff target.");
+    }
+    return current;
 }

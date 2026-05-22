@@ -1,6 +1,7 @@
 #include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
+#include "app/models/file/diff/WhatSonNoteVersionDiffBuilder.hpp"
 #include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
@@ -20,6 +21,16 @@ namespace
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
+
+    bool isWholeDocumentReplacementDiff(
+        const QString& baseBodySourceText,
+        const WhatSonNoteVersionDiffSegment& bodyDiff)
+    {
+        return bodyDiff.prefixLength == 0
+            && bodyDiff.suffixLength == 0
+            && bodyDiff.removedText == baseBodySourceText
+            && !baseBodySourceText.isEmpty();
+    }
 } // namespace
 
 namespace
@@ -105,7 +116,9 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNoteAtPath(
     const QString& noteId,
     const QString& noteDirectoryPath,
     const QString& text,
-    const QString& baseLastModifiedAt)
+    const QString& baseLastModifiedAt,
+    const QString& baseBodySourceText,
+    const bool hasBaseBodySourceText)
 {
     const QString normalizedNoteId = noteId.trimmed();
     const QString normalizedNoteDirectoryPath = noteDirectoryPath.trimmed();
@@ -121,6 +134,8 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNoteAtPath(
     request.noteDirectoryPath = normalizedNoteDirectoryPath;
     request.text = text;
     request.baseLastModifiedAt = baseLastModifiedAt.trimmed();
+    request.baseBodySourceText = baseBodySourceText;
+    request.hasBaseBodySourceText = hasBaseBodySourceText;
     return enqueueRequest(std::move(request));
 }
 
@@ -484,9 +499,11 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
         && m_activeRequest.noteId == request.noteId)
     {
         if ((request.kind == RequestKind::DirectPersistBody
-             || request.kind == RequestKind::ControllerPersistBody
-             || request.kind == RequestKind::ReconcileViewSessionSnapshot)
-            && m_activeRequest.text == request.text)
+            || request.kind == RequestKind::ControllerPersistBody
+            || request.kind == RequestKind::ReconcileViewSessionSnapshot)
+            && m_activeRequest.text == request.text
+            && m_activeRequest.baseBodySourceText == request.baseBodySourceText
+            && m_activeRequest.hasBaseBodySourceText == request.hasBaseBodySourceText)
         {
             if (request.kind != RequestKind::ReconcileViewSessionSnapshot
                 || !request.preferViewSessionOnMismatch
@@ -509,7 +526,9 @@ bool ContentsNoteManagementCoordinator::enqueueRequest(Request request)
         if (request.kind == RequestKind::DirectPersistBody
             || request.kind == RequestKind::ControllerPersistBody)
         {
-            if (pendingRequest.text == request.text)
+            if (pendingRequest.text == request.text
+                && pendingRequest.baseBodySourceText == request.baseBodySourceText
+                && pendingRequest.hasBaseBodySourceText == request.hasBaseBodySourceText)
             {
                 return true;
             }
@@ -673,16 +692,45 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
             return result;
         }
 
+        const QString filesystemBodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
+        const QString incomingBodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.text);
+        const QString baseBodySourceText = request.hasBaseBodySourceText
+            ? WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.baseBodySourceText)
+            : filesystemBodySourceText;
+
+        WhatSonNoteVersionDiffBuilder diffBuilder;
+        const WhatSonNoteVersionDiffSegment bodyDiff = diffBuilder.diffSegment(
+            baseBodySourceText,
+            incomingBodySourceText,
+            QStringLiteral("body.wsnbody"));
+        bool diffApplied = false;
+        QString diffApplyError;
+        const QString mergedBodySourceText = diffBuilder.applyDiffSegmentOntoCurrent(
+            baseBodySourceText,
+            filesystemBodySourceText,
+            bodyDiff,
+            &diffApplied,
+            &diffApplyError);
+        if (!diffApplied)
+        {
+            result.errorMessage = diffApplyError.trimmed().isEmpty()
+                ? QStringLiteral("Failed to apply editor body diff.")
+                : diffApplyError.trimmed();
+            return result;
+        }
+
         WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
         updateRequest.document = std::move(document);
-        updateRequest.document.bodyPlainText = request.text;
-        updateRequest.document.bodySourceText = request.text;
+        updateRequest.document.bodyPlainText = mergedBodySourceText;
+        updateRequest.document.bodySourceText = mergedBodySourceText;
         updateRequest.persistHeader = false;
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
         updateRequest.incrementModifiedCount = true;
         updateRequest.baseLastModifiedAt = request.baseLastModifiedAt;
         updateRequest.incomingLastModifiedAt = request.incomingLastModifiedAt;
+        updateRequest.resolveTimestampConflicts = false;
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 
@@ -729,14 +777,42 @@ ContentsNoteManagementCoordinator::performWorkerRequest(const Request& request)
             return result;
         }
 
+        WhatSonNoteVersionDiffBuilder diffBuilder;
+        const WhatSonNoteVersionDiffSegment viewSessionDiff = diffBuilder.diffSegment(
+            normalizedRawSourceText,
+            request.text,
+            QStringLiteral("body.wsnbody"));
+        if (isWholeDocumentReplacementDiff(normalizedRawSourceText, viewSessionDiff))
+        {
+            result.snapshotRefreshRequested = true;
+            result.success = true;
+            return result;
+        }
+
+        bool diffApplied = false;
+        QString diffApplyError;
+        const QString reconciledBodySourceText = diffBuilder.applyDiffSegmentOntoCurrent(
+            normalizedRawSourceText,
+            normalizedRawSourceText,
+            viewSessionDiff,
+            &diffApplied,
+            &diffApplyError);
+        if (!diffApplied)
+        {
+            result.snapshotRefreshRequested = true;
+            result.success = true;
+            return result;
+        }
+
         WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
         updateRequest.document = std::move(document);
-        updateRequest.document.bodyPlainText = request.text;
-        updateRequest.document.bodySourceText = request.text;
+        updateRequest.document.bodyPlainText = reconciledBodySourceText;
+        updateRequest.document.bodySourceText = reconciledBodySourceText;
         updateRequest.persistHeader = false;
         updateRequest.persistBody = true;
         updateRequest.touchLastModified = true;
         updateRequest.incrementModifiedCount = true;
+        updateRequest.resolveTimestampConflicts = false;
         updateRequest.refreshIncomingBacklinkStatistics = false;
         updateRequest.refreshAffectedBacklinkTargets = false;
 

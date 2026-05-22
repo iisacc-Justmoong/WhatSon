@@ -78,12 +78,14 @@
   It must not reach into the internal `TextDocumentModel` or the removed `editorImeAdapter` object.
 - Replacing the current document text for a C++-computed resource or format insertion assigns the C++-projected editor
   HTML to `LV.TextEditor.text`, restores the returned cursor position immediately and once more on the next QML tick,
-  then lets LVRS perform its automatic write-through sync.
+  and raises `editorProgrammaticDocumentApplying` until the next QML tick so the outer layout does not classify that
+  programmatic replacement as a user RAW push.
 - Replacing the current document text for a C++ resource/callout frame reproject uses a separate public
   `LV.TextEditor.text`/cursor path that preserves the current selection and only restores focus if the editor already
   had it. It is guarded by `editorFrameViewportRefreshApplying` and delayed by `editorFrameViewportRefreshDelayMs`, and
-  it must not call the command-result restore path that forces focus and deselects because frame chrome refresh can
-  happen while the user is typing, clicking, dragging, or composing IME text in the native editor.
+  it also raises `editorProgrammaticDocumentApplying` so LVRS sync notifications from frame refresh do not become RAW
+  push payloads. It must not call the command-result restore path that forces focus and deselects because frame chrome
+  refresh can happen while the user is typing, clicking, dragging, or composing IME text in the native editor.
 - `editorReadOnly` lets the C++ note session freeze the native surface while no note is selected or a note source is
   loading.
 - The file does not compute source mutations, resource tags, projection, rendering, persistence, tag management, or

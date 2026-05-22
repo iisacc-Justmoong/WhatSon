@@ -317,6 +317,8 @@ Item {
     function requestEditorModifiedRawPush(editorDocumentText) {
         if (contentViewLayout.noteEditorSurfaceVisible
                 && !contentViewLayout.editorApplyingPulledDocumentText
+                && !contentsTextEditor.editorProgrammaticDocumentApplying
+                && !contentsTextEditor.editorFrameViewportRefreshApplying
                 && contentViewLayout.noteEditorSession
                 && contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush !== undefined
                 && contentViewLayout.editorSourceFilePath.length > 0) {
@@ -461,6 +463,9 @@ Item {
                             return;
                         }
                         if (contentViewLayout.noteEditorSurfaceVisible
+                                && !contentViewLayout.editorApplyingPulledDocumentText
+                                && !contentsTextEditor.editorProgrammaticDocumentApplying
+                                && !contentsTextEditor.editorFrameViewportRefreshApplying
                                 && contentViewLayout.noteEditorSession
                                 && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
                             contentViewLayout.noteEditorSession.requestEditorIdleRawPush(

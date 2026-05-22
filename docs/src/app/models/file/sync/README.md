@@ -39,16 +39,18 @@
 - `WhatSonEditorRawPullController` owns note-entry/open RAW pull requests and active-note idle RAW pull scheduling from
   the editor session into the filesystem load queue. Its default idle interval is 5000 ms. The controller stays in
   `file/sync` because note editor sync is bidirectional; concrete `.wsnbody` reads, timestamp winner checks, editor
-  projection, and session-file writes still remain in `ContentsNoteManagementCoordinator` and
-  `NoteEditorDocumentSession`.
-- `WhatSonEditorRawPushController` owns fallback editor-surface-to-RAW push triggers for idle turns and note departure.
-  Live editor modified-count input is handled directly by `NoteEditorDocumentSession` from LVRS `textEdited(text)` so
-  the selected `.wsnbody` receives the latest action immediately. The controller stays in `file/sync` because it is sync
-  orchestration; concrete `.wsnbody` conversion and note-package writes still remain in `NoteEditorDocumentSession` and
-  `file/note`. `NoteEditorDocumentSession` rejects stale idle sync payloads after direct RAW input, so later idle pushes,
-  note-departure flushes, and idle filesystem pulls cannot drop the user's last action. An authoritative write can
-  discard a pending push for the same session file before it becomes a stale
-  overwrite.
+  projection, diff application, and session-file writes still remain in `ContentsNoteManagementCoordinator`,
+  `file/diff`, and `NoteEditorDocumentSession`.
+- `WhatSonEditorRawPushController` owns ordering for verified RAW push payloads produced by
+  `NoteEditorDocumentSession` on idle, modified-count, and note-departure paths. The controller stays in `file/sync`
+  because it is sync orchestration; editor HTML conversion, unsafe empty-payload rejection, concrete `.wsnbody`
+  serialization, and note-package writes remain in `NoteEditorDocumentSession` and `file/note`. The controller stores
+  RAW source text rather than editor HTML/session-file snapshots, so a later note-departure flush cannot reread a stale
+  `.wsnsource` file and overwrite the active note. An authoritative RAW source mutation can discard a pending push for
+  the same session file before it becomes a stale overwrite. The eventual persistence worker receives the editor's
+  loaded RAW base and applies the push as a diff onto the current filesystem RAW body. Its idle push interval is
+  nonzero by default so sync-finished notifications are debounced instead of being executed immediately in the same
+  event turn.
 
 ## Tests
 

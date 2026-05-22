@@ -28,7 +28,9 @@ public:
         const QString& noteId,
         const QString& noteDirectoryPath,
         const QString& text,
-        const QString& baseLastModifiedAt = QString());
+        const QString& baseLastModifiedAt = QString(),
+        const QString& baseBodySourceText = QString(),
+        bool hasBaseBodySourceText = false);
     bool captureDirectPersistenceContextForNote(
         const QString& noteId,
         QString* noteDirectoryPath) const;
@@ -87,10 +89,12 @@ private:
         QString noteId;
         QString noteDirectoryPath;
         QString text;
+        QString baseBodySourceText;
         QString baseLastModifiedAt;
         QString incomingLastModifiedAt;
         bool incrementOpenCount = false;
         bool preferViewSessionOnMismatch = false;
+        bool hasBaseBodySourceText = false;
     };
 
     struct Result final

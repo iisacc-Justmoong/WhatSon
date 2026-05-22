@@ -27,8 +27,9 @@
   `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request. Direct
   changed-body writes opt in to `modifiedCount` advancement in the file-store transaction, while unchanged body saves
   still short-circuit before touching `.wsnhead`.
-- Direct editor persistence now forwards the editor pull base timestamp into `WhatSonLocalNoteFileStore`, so a body
-  save can resolve filesystem/editor divergence by comparing `lastModified` timestamps before writing.
+- Direct editor persistence now forwards the editor pull base timestamp and base body source into the worker request.
+  The worker builds a `WhatSonNoteVersionDiffBuilder` segment from base body -> editor body and applies that segment to
+  the current filesystem body, so a push merges the editor delta instead of replacing the whole `.wsnbody` source.
 - When that direct persistence writes a timestamped `.wsnversion` diff, the coordinator emits
   `hubFilesystemMutated()` after the mounted/local filesystem sync step succeeds. This lets hub sync acknowledge the
   file watcher change as a local editor mutation instead of reloading it as an external hub edit.
@@ -48,8 +49,10 @@
   - emits `viewSessionSnapshotReconciled(noteId, refreshed, success, errorMessage)` back to QML-facing adapters
   - when mismatch is reported for a non-authoritative session, triggers `refreshNoteSnapshotForNote(...)` on the main
     thread
-  - when mismatch is reported for a caller-authoritative session, first persists that view-session text back into RAW,
-    then refreshes the visible note snapshot from the repaired filesystem state.
+  - when mismatch is reported for a caller-authoritative session, persists only an applicable view-session diff back into
+    RAW, then refreshes the visible note snapshot from the repaired filesystem state
+  - a whole-document view-session replacement is treated as unsafe and becomes a refresh request instead of a full body
+    write.
 - The same queue now also owns selected-note lazy body reads:
   - `loadNoteBodyTextForNote(noteId, noteDirectoryPath = {})` resolves the note path on the main thread, preferring
     the caller-provided path when present
@@ -74,8 +77,9 @@
   sequence ordering across in-flight completions.
 - Reconcile requests are also coalesced by note id plus normalized session text; if a later queued request upgrades the
   same session text to `preferViewSessionOnMismatch`, that stronger editor-authoritative policy must be preserved.
-- Explicit note-directory paths must survive request enqueue/coalescing so a queued same-id operation does not drift to
-  a different `.wsnote` package before the worker lane executes it.
+- Explicit note-directory paths and base body sources must survive request enqueue/coalescing so a queued same-id
+  operation does not drift to a different `.wsnote` package or apply a diff from the wrong pull base before the worker
+  lane executes it.
 
 ## Regression Checks
 
@@ -85,6 +89,8 @@
   the RAW body changed.
 - Persist completion that wrote a version diff timestamp must also notify hub sync through `hubFilesystemMutated()`;
   unchanged body snapshots must not emit that signal.
+- Direct body persistence must preserve concurrent filesystem-only edits when the editor push was based on an older
+  body source and changed a different region.
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
 - A successful open-count update must reload note metadata on the bound content controller so `openCount` becomes
@@ -96,8 +102,8 @@
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
 - Session/filesystem reconciliation must return success without reload when RAW already matches the current view
   session snapshot, and that check must not perform note reads on the UI thread anymore.
-- Caller-authoritative reconciliation must repair RAW from the current view snapshot instead of refreshing stale RAW
-  back into the visible session.
+- Caller-authoritative reconciliation must repair RAW from the current view snapshot only when the view snapshot can be
+  represented as a safe diff. It must not replace the full current body with an unrelated editor payload.
 - Lazy selected-note body reads must execute on the worker lane and must not require the note-list model to carry the
   same full body text as selection state.
 - Lazy selected-note body reads must preserve structured RAW tags such as `<paragraph>`, `<resource ... />`, and

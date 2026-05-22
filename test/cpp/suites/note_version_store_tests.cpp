@@ -1,6 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 #include "app/models/file/diff/WhatSonLocalNoteVersionStore.hpp"
+#include "app/models/file/diff/WhatSonNoteVersionDiffBuilder.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -331,4 +332,53 @@ void WhatSonCppRegressionTests::localNoteVersionStore_prunesSnapshotsToLatestOne
     QVERIFY(lastSnapshot.value(QStringLiteral("bodyDocumentText")).toString().contains(QStringLiteral("Revision 101")));
     QCOMPARE(root.value(QStringLiteral("currentSnapshotId")).toString(), lastSnapshotId);
     QCOMPARE(root.value(QStringLiteral("headSnapshotId")).toString(), lastSnapshotId);
+}
+
+void WhatSonCppRegressionTests::noteVersionDiffBuilder_appliesSegmentOntoCurrentDocument()
+{
+    const QString base = QStringLiteral("Alpha\nBeta\nGamma");
+    const QString incoming = QStringLiteral("Alpha\nBeta remote\nGamma");
+    const QString current = QStringLiteral("<bold>Alpha</bold>\nBeta\nGamma");
+
+    WhatSonNoteVersionDiffBuilder diffBuilder;
+    const WhatSonNoteVersionDiffSegment segment =
+        diffBuilder.diffSegment(base, incoming, QStringLiteral("body.wsnbody"));
+
+    bool applied = false;
+    QString errorMessage;
+    const QString merged = diffBuilder.applyDiffSegmentOntoCurrent(
+        base,
+        current,
+        segment,
+        &applied,
+        &errorMessage);
+
+    QVERIFY2(applied, qPrintable(errorMessage));
+    QCOMPARE(
+        merged,
+        QStringLiteral("<bold>Alpha</bold>\nBeta remote\nGamma"));
+}
+
+void WhatSonCppRegressionTests::noteVersionDiffBuilder_rejectsWholePayloadReplacementAgainstDivergedCurrent()
+{
+    const QString base = QStringLiteral("Alpha\nBeta");
+    const QString incoming = QStringLiteral("Completely different editor payload");
+    const QString current = QStringLiteral("Alpha\nRemote filesystem line\nBeta");
+
+    WhatSonNoteVersionDiffBuilder diffBuilder;
+    const WhatSonNoteVersionDiffSegment segment =
+        diffBuilder.diffSegment(base, incoming, QStringLiteral("body.wsnbody"));
+
+    bool applied = true;
+    QString errorMessage;
+    const QString merged = diffBuilder.applyDiffSegmentOntoCurrent(
+        base,
+        current,
+        segment,
+        &applied,
+        &errorMessage);
+
+    QVERIFY(!applied);
+    QVERIFY(errorMessage.contains(QStringLiteral("whole document")));
+    QCOMPARE(merged, current);
 }

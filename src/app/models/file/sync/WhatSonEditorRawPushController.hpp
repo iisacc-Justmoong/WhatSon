@@ -14,8 +14,8 @@ class WhatSonEditorRawPushController final : public QObject
 public:
     using RawPushCallback = std::function<bool(
         const QString& editorFilePath,
-        const QString& editorDocumentText,
-        bool hasEditorDocumentText,
+        const QString& bodySourceText,
+        bool hasBodySourceText,
         const QString& reason,
         QString* errorMessage)>;
 
@@ -26,14 +26,15 @@ public:
 
     Q_INVOKABLE void requestIdlePush(
         const QString& editorFilePath,
-        const QString& editorDocumentText);
+        const QString& bodySourceText);
     Q_INVOKABLE void requestModifiedCountPush(
         const QString& editorFilePath,
         int modifiedCount,
-        const QString& editorDocumentText);
+        const QString& bodySourceText);
     Q_INVOKABLE bool pushBeforeNoteDeparture(const QString& editorFilePath);
     Q_INVOKABLE bool flushPendingPush();
     Q_INVOKABLE bool discardPendingPushForFile(const QString& editorFilePath);
+    Q_INVOKABLE bool hasPendingPushForFile(const QString& editorFilePath) const;
 
 public slots:
     void setIdleIntervalMs(int idleIntervalMs);
@@ -53,9 +54,9 @@ private:
     struct PendingPush final
     {
         QString editorFilePath;
-        QString editorDocumentText;
+        QString bodySourceText;
         QString reason;
-        bool hasEditorDocumentText = false;
+        bool hasBodySourceText = false;
     };
 
     static QString normalizedPath(const QString& path);
@@ -68,7 +69,7 @@ private:
     QTimer m_idleTimer;
     PendingPush m_pendingPush;
     QString m_modifiedCountFilePath;
-    int m_idleIntervalMs = 0;
+    int m_idleIntervalMs = 250;
     int m_lastModifiedCount = -1;
     bool m_hasPendingPush = false;
 };

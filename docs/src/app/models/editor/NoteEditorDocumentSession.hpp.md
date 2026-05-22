@@ -18,16 +18,19 @@ Declares the active note editor document session object.
 - Exposes `loading`, `readOnly`, and `lastError` so QML can keep the native editor surface guarded while C++ loads or
   clears a note.
 - Routes note-entry/open RAW pulls through `file/sync/WhatSonEditorRawPullController`.
-- Carries the loaded note `lastModified` timestamp with the editor-file context so RAW pushes can resolve
-  multi-device conflicts by timestamp.
+- Carries the loaded note `lastModified` timestamp and RAW source with the editor-file context so RAW pushes can apply
+  editor changes as diffs onto the current filesystem body.
 - Provides `recordEditorUserActivity()` and `requestActiveNoteIdleRawPull()` for the active-note idle pull loop. The
   idle loop pulls every 5000 ms while the editor surface is quiet, and the session only applies a filesystem body when
   its `lastModified` timestamp is newer than the loaded session timestamp.
-- Emits `editorDocumentTextPulled(...)` when a newer filesystem body replaces the live editor document, and
+- Emits `editorDocumentTextPulled(...)` when a newer filesystem body diff is merged into the live editor document, and
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
-- Provides `persistEditorFile(path)` for fallback file-based surface persistence.
-- Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
-  push triggers into `file/sync/WhatSonEditorRawPushController`.
+- Provides `persistEditorFile(path)` for explicit fallback file-based surface persistence.
+- Provides `markEditorSessionFileReadyForRawPush(path)` so QML can declare that LVRS finished reading the mounted
+  `.wsnsource` file before sync pushes are accepted.
+- Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which convert the current
+  editor document into canonical RAW source inside this session, reject unsafe transient empty editor payloads, then
+  forward only validated RAW payloads into `file/sync/WhatSonEditorRawPushController`.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
@@ -66,9 +69,9 @@ Declares the active note editor document session object.
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
   persistence stay in `InAppClipboardManager`.
-- Resource insertion must treat the returned canonical source as authoritative for note departure until a newer
-  modified-count editor payload arrives. This prevents a stale session file or pre-paste pending push from removing the
-  inserted image when the user moves to another note.
+- Resource insertion and other C++ RAW command results must treat the returned canonical source as authoritative for
+  note departure until a newer validated modified-count RAW payload arrives. This prevents a stale session file or
+  pre-paste pending push from removing the inserted image when the user moves to another note.
 - Resource object placeholder restoration must preserve text on both sides of `QChar::ObjectReplacementCharacter`.
   Qt can serialize text typed immediately below an image into the same block as the image object, and that text is still
   a separate canonical source line.
@@ -83,12 +86,15 @@ Declares the active note editor document session object.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
-- LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
-  `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
-  note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
+- LVRS가 session file 읽기를 끝내면 QML은 `markEditorSessionFileReadyForRawPush(...)`로 현재 `.wsnsource`를
+  push 가능 상태로 표시한다. 이후 session file 저장이 끝나거나 editor surface revision이 증가하면
+  `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 현재 editor document를 C++ 세션 안에서
+  canonical RAW source로 변환하고, 안전한 RAW payload만 sync push controller로 전달한다. note 이탈 시에는 세션이
+  session file fallback이 아니라 active RAW source나 pending RAW payload를 flush한다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
   다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다
-  최신일 때만 editor document를 교체한다. 오래된 pull은 `editorFilesystemPullIgnored(...)`로 무시된다.
+  최신일 때만 loaded RAW base에서 filesystem RAW로의 diff를 active RAW source에 병합한다. 오래된 pull이나
+  적용 불가능한 diff는 `editorFilesystemPullIgnored(...)`로 무시된다.
 - 노트 진입/open 시 filesystem RAW pull 요청은 sync pull controller를 먼저 지나며, 실제 `.wsnbody` 읽기와 editor
   session file mount는 기존 C++ 세션/코디네이터 경로에 남는다.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해

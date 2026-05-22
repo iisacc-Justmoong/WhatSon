@@ -19,9 +19,10 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
 - `persistEditorTextForNote(noteId, text)`: accepts an already-approved body snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
-- `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text, baseLastModifiedAt = "")`: direct worker-lane save
-  path used when the caller already captured the destination note directory. The optional base timestamp lets the
-  file-store transaction resolve multi-device body conflicts by timestamp.
+- `persistEditorTextForNoteAtPath(noteId, noteDirectoryPath, text, baseLastModifiedAt = "", baseBodySourceText = "",
+  hasBaseBodySourceText = false)`: direct worker-lane save path used when the caller already captured the destination
+  note directory. The optional base timestamp preserves the pull-time clock context, and the optional base body lets the
+  worker apply the editor diff onto the current filesystem body instead of replacing that body wholesale.
 - `captureDirectPersistenceContextForNote(noteId, &noteDirectoryPath)`: allows note-id callers to snapshot the current
   direct persistence target before a later hierarchy transition can change the active view-model.
 - `noteDirectoryPathForNote(noteId)`: exposes the current best-effort note-directory resolution without requiring the
@@ -34,7 +35,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
   includes the header `lastModified` timestamp so editor idle pulls can decide whether the filesystem copy is newer.
 - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText, ..., noteDirectoryPath = "")`: reads the
   current note RAW body source from filesystem, compares it against the provided view-session text, and only requests
-  snapshot refresh when they differ.
+  snapshot refresh when they differ. If the view session is caller-authoritative, only a safe diff is persisted; whole
+  document replacement payloads are refused.
 - `bindSelectedNote(noteId, noteDirectoryPath = "")`: selected-note session bind contract that can retain the exact
   mounted package directory across selection/mount transitions.
 - `refreshNoteSnapshotForNote(noteId)`: reloads one note's metadata/body snapshot through the bound content view-model.
@@ -56,8 +58,9 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
 - Repeated autosaves for the same note coalesce to the newest pending persistence payload.
 - Repeated pending tracked-stat refresh requests for the same note coalesce into one pending request.
 - Repeated selected-note body load requests for the same note keep only the newest pending worker read for that note.
-- Requests that already captured an explicit note-directory path must preserve that package target while pending, so
-  same-id duplicate `.wsnote` packages do not alias each other inside the queue.
+- Requests that already captured an explicit note-directory path and base body must preserve that package target and
+  base body while pending, so same-id duplicate `.wsnote` packages or different editor pull bases do not alias each
+  other inside the queue.
 
 ## Regression Checks
 
@@ -67,6 +70,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
   view-model and then schedule tracked-stat refresh as a follow-up management task.
 - A successful body persistence request that produced a timestamped version diff must emit `hubFilesystemMutated()` so
   the hub sync controller can classify the watcher change as a local mutation.
+- Direct body persistence with an editor base body must apply the editor delta to the current filesystem source. A
+  concurrent filesystem insertion must survive when the editor pushes a separate local edit.
 - Selecting a note must still bump header open-count metadata, but that work must happen through the coordinator-owned
   background lane instead of synchronously inside editor selection refresh.
 - When the content view-model contract cannot resolve a concrete note package path, direct body persistence must reject
@@ -75,6 +80,8 @@ follow-ups after a caller has accepted a body snapshot for disk synchronization.
   enqueue a direct body write for that note even after the active content view-model changed.
 - Session/filesystem reconciliation must not force a metadata reload when the session text already matches filesystem
   RAW.
+- Caller-authoritative reconciliation may persist only a safe view-session diff; an unrelated whole-editor-payload
+  replacement must refresh the view instead of overwriting the current RAW body.
 - Selected note body reads must stay asynchronous and must not be satisfied by mirroring full note bodies through the
   note-list model contract.
 - Selected note body loads must preserve the same structured source contract that

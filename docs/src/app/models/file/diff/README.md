@@ -30,8 +30,9 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
   does not own low-level file IO, JSON serialization, diff formatting, or snapshot identity rules directly.
 - `WhatSonNoteVersionFileGateway` owns note path resolution plus UTF-8 read/write/materialization.
 - `WhatSonNoteVersionStateCodec` owns the `.wsnversion` JSON schema boundary.
-- `WhatSonNoteVersionDiffBuilder` owns in-memory diff segment and unified patch construction.
-  Diff segments are stamped with `generatedAtUtc` when the builder creates them.
+- `WhatSonNoteVersionDiffBuilder` owns in-memory diff segment construction, unified patch construction, and safe segment
+  application onto a current document. Diff segments are stamped with `generatedAtUtc` when the builder creates them;
+  whole-document replacement segments are rejected when the current text already diverged from the base.
 - `WhatSonNoteVersionSnapshotBuilder` owns snapshot lookup, parent resolution, ID generation, and snapshot payload
   assembly.
 - `VersionLimitManager` owns the retention policy for persisted snapshot history. `.wsnversion` keeps only the latest
@@ -39,7 +40,8 @@ Owns note snapshot diff/version logic centered on `.wsnversion` persistence and 
 
 ## Dependency Direction
 - Depends on note document/header/body types under `src/app/models/file/note`.
-- Consumed by note store update flow for capture/diff/checkout/rollback operations.
+- Consumed by note store update flow for capture/diff/checkout/rollback operations and by editor sync paths that need
+  to merge push/pull deltas instead of replacing an entire note body.
 
 ## 한국어
 

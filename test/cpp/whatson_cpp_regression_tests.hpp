@@ -1313,6 +1313,11 @@ private slots:
     void noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile();
     void noteEditorDocumentSession_discardsStalePendingPushWhenImportedResourceIsInserted();
     void noteEditorDocumentSession_preservesTextTypedImmediatelyAfterResourceObjectOnRawPush();
+    void noteEditorDocumentSession_rejectsTransientEmptyEditorTextBeforeRawPush();
+    void noteEditorDocumentSession_rejectsEmptyRichTextSessionPayloadBeforeRawPush();
+    void noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile();
+    void noteEditorDocumentSession_persistsStagedRawResourceAfterTransientEmptyPush();
+    void noteEditorDocumentSession_mergesIdlePullDiffIntoDirtySession();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
     void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
@@ -1338,8 +1343,10 @@ private slots:
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
     void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
+    void noteManagementCoordinator_reconcileRejectsWholeEditorSnapshotReplacement();
     void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
     void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
+    void noteManagementCoordinator_directBodyPersistAppliesEditorDiffToCurrentFilesystemBody();
     void timestampConflictResolver_prefersNewestBodyAfterBaseDivergence();
     void timestampConflictResolver_reportsStrictlyNewerTimestamp();
     void localNoteFileStore_keepsFilesystemBodyWhenTimestampConflictIsNewer();
@@ -1357,6 +1364,8 @@ private slots:
     void localNoteVersionStore_reportsVersionDiffFilesystemPushForSync();
     void localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten();
     void localNoteVersionStore_prunesSnapshotsToLatestOneHundred();
+    void noteVersionDiffBuilder_appliesSegmentOntoCurrentDocument();
+    void noteVersionDiffBuilder_rejectsWholePayloadReplacementAgainstDivergedCurrent();
     void noteManagementCoordinator_openCountReloadsPersistedMetadata();
     void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
     void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();

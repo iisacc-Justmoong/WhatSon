@@ -5,6 +5,7 @@ void WhatSonCppRegressionTests::editorRawPushController_pushesOnIdleModifiedCoun
     ensureCoreApplication();
 
     WhatSonEditorRawPushController controller;
+    QVERIFY(controller.idleIntervalMs() > 0);
     QStringList pushedReasons;
     QStringList pushedTexts;
     controller.setRawPushCallback(
@@ -25,6 +26,8 @@ void WhatSonCppRegressionTests::editorRawPushController_pushesOnIdleModifiedCoun
     controller.requestIdlePush(
         QStringLiteral("/tmp/surface.wsnsource"),
         QStringLiteral("idle surface"));
+    QTest::qWait(qMin(50, controller.idleIntervalMs() / 2));
+    QCOMPARE(finishedSpy.count(), 0);
     QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
     QCOMPARE(pushedReasons.constLast(), QStringLiteral("idle"));
     QCOMPARE(pushedTexts.constLast(), QStringLiteral("idle surface"));

@@ -96,13 +96,13 @@ viewer routing is based on the entry type/format and the already-resolved `sourc
 fields. The layout does not parse resource packages or mutate resource metadata.
 
 `noteEditorSession` is consumed to bind the editor session file into `LV.TextEditor`, to notify the C++ session when
-LVRS finishes reading and syncing the currently mounted session file, to forward the current full editor document text
-with the mounted path and local revision for direct RAW persistence, and to insert already-imported resource metadata
-returned from `inAppClipboard`. The `textEdited(text)` signal payload is not used as the persistence payload because it
-may be plain text that omits rich resource-frame markers. `readFinished(path)` must match the current
-`editorSourceFilePath` before the session is marked ready for RAW input; `syncFinished(path)` is ignored when `path` is
-not the current `editorSourceFilePath`, and C++ also rejects stale idle payloads once direct RAW input has advanced the
-active source.
+LVRS finishes reading the currently mounted session file, to ask the C++ session to convert the current full editor
+document into a verified RAW push payload, and to insert already-imported resource metadata returned from
+`inAppClipboard`. The `textEdited(text)` signal payload is not used as the persistence payload because it may be plain
+text that omits rich resource-frame markers. `readFinished(path)` must match the current `editorSourceFilePath` before
+the session is marked ready for RAW input; `syncFinished(path)` is ignored when `path` is not the current
+`editorSourceFilePath`, during programmatic document replacement, and while frame reproject is applying. C++ rejects
+transient empty payloads and keeps active RAW source as the save/sync baseline.
 Other restored-shell state must not be used to mount parser, projection, renderer, generic resource editor, or editor
 view-mode backend logic. Calendar routing is limited to the already-owned day/week/month/year controllers and overlay
 visibility signals.
@@ -181,7 +181,9 @@ classified as a local modified-count push.
 - LVRS session file sync와 editor revision 증가 이벤트는 QML에서 직접 저장하지 않고
   `NoteEditorDocumentSession`의 RAW push 요청 함수로 넘긴다. 이때 `textEdited(text)` signal payload가 아니라
   현재 전체 `contentsTextEditor.editorDocumentText`를 전달한다. signal payload는 plain text일 수 있어 이미지
-  resource frame marker를 잃을 수 있기 때문이다. 실제 debounce, note-departure flush, RAW 변환은 C++ 쪽 책임이다.
+  resource frame marker를 잃을 수 있기 때문이다. QML은 pulled-document 적용, C++ command-result replacement,
+  frame reproject 중에는 이 push를 막고, 실제 debounce, note-departure flush, RAW 변환, transient-empty 거절은 C++
+  쪽 책임이다.
 - C++ 세션이 idle filesystem pull에서 더 최신 본문을 찾으면 `editorDocumentTextPulled(...)`를 내보낸다. 이
   layout은 공개 editor wrapper hook으로 문서를 교체하되, 그 교체로 발생한 revision tick은 로컬 수정 push로
   분류하지 않는다.

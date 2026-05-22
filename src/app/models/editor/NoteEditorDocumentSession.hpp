@@ -53,6 +53,7 @@ public:
         const QString& noteDirectoryPath);
     Q_INVOKABLE bool clearEditor();
     Q_INVOKABLE bool persistEditorFile(const QString& editorFilePath);
+    Q_INVOKABLE bool markEditorSessionFileReadyForRawPush(const QString& editorFilePath);
     Q_INVOKABLE void requestEditorIdleRawPush(
         const QString& editorFilePath,
         const QString& editorDocumentText);
@@ -132,6 +133,8 @@ private:
         QString noteId;
         QString noteDirectoryPath;
         QString loadedLastModifiedAt;
+        QString loadedBodySourceText;
+        bool readyForRawPush = false;
     };
 
     QString sessionRootPath() const;
@@ -155,6 +158,11 @@ private:
     bool persistBodySourceTextForEditorFile(
         const QString& editorFilePath,
         const QString& bodySourceText);
+    bool prepareBodySourceTextForRawPush(
+        const QString& editorFilePath,
+        const QString& editorDocumentText,
+        const QString& reason,
+        QString* bodySourceText);
     bool stageActiveSourceMutationForCurrentEditorFile(
         const QString& bodySourceText,
         const QString& editorDocumentText,
