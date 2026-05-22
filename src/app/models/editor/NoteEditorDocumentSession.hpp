@@ -88,6 +88,11 @@ public:
         int cursorPosition,
         int selectionLength,
         int key);
+    Q_INVOKABLE QVariantMap handleStyleBoundaryKeyInSource(
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength,
+        int key);
 
 signals:
     void noteActiveStateChanged();

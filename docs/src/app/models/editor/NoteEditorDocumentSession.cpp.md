@@ -42,7 +42,12 @@ Implements the active note editor document session.
    `.wsnbody` RAW source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a
    fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position. A collapsed
    style-selector command expands to the current non-empty visible source line instead of inserting an empty
-   `<style></style>` wrapper that would be lost on the next editor round-trip.
+   `<style></style>` wrapper that would be lost on the next editor round-trip. For an active note, the style command
+   also writes that fresh projection to the mounted `.wsnsource` session file and enqueues the canonical `<style ...>`
+   RAW body persist immediately, so neither LVRS file sync nor a later filesystem pull can restore the pre-style
+   paragraph snapshot during the idle RAW-push window. Source-visible text mapping treats `<style>` tags as invisible
+   wrappers, matching bold/link/tag behavior, so a later LVRS-normalized rich-text payload with the same visible text
+   cannot flatten the active styled RAW source back into a plain paragraph.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -127,7 +132,13 @@ Implements the active note editor document session.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`. Style selector commands with no selection expand to the
-  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers.
+  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers. Valid style
+  selector mutations are staged into the active editor session file and persisted into the note body before QML replaces
+  the live LVRS text, matching the resource insertion race guard while making `.wsnbody` authoritative immediately.
+  The same source-visible mapper hides `<style>` wrappers when validating later raw pushes, preserving the active style
+  source if LVRS returns equivalent visible text without the original style markers. Plain Enter/Return inside a
+  rendered `<style>` span is handled as a semantic boundary edit: the source remains styled through `</style>`, a
+  following source line is created or reused, and the caret moves outside the style wrapper.
 - Callout boundary keys are also source mutations owned by this class. Backspace at the callout content start removes
   only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does not.
   Enter/Return inside a callout never inserts text inside the wrapper; it places the cursor on the following source
@@ -176,7 +187,10 @@ Implements the active note editor document session.
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
   style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체로 확장하며, 빈 줄에서는
-  즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다.
+  즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다. 유효한 style selector mutation은 active editor
+  session file에 즉시 stage되고 `.wsnbody` RAW body에도 바로 persist되어 LVRS idle sync가 이전 paragraph snapshot으로
+  되돌리지 못하게 한다. styled rendered text 내부의 plain Enter/Return은 native `TextEdit`에 맡기지 않고
+  `</style>` 뒤 다음 source line으로 커서를 옮기는 boundary edit로 처리한다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
 - 콜아웃 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
   제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지

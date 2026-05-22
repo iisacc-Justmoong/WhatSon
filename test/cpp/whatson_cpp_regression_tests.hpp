@@ -1318,6 +1318,8 @@ private slots:
     void noteEditorDocumentSession_preservesTextTypedImmediatelyAfterResourceObjectOnRawPush();
     void noteEditorDocumentSession_rejectsTransientEmptyEditorTextBeforeRawPush();
     void noteEditorDocumentSession_rejectsEmptyRichTextSessionPayloadBeforeRawPush();
+    void noteEditorDocumentSession_stagesStyleInsertionInSessionFileBeforeRawPush();
+    void noteEditorDocumentSession_enterInsideStyleMovesCursorOutside();
     void noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile();
     void noteEditorDocumentSession_persistsStagedRawResourceAfterTransientEmptyPush();
     void noteEditorDocumentSession_mergesIdlePullDiffIntoDirtySession();
@@ -1328,6 +1330,7 @@ private slots:
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
     void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
     void noteBodyPersistence_roundTripsCanonicalStyleTagAttributes();
+    void noteBodyPersistence_recoversQtTextEditSerializedStyleAnchors();
     void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
     void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
     void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();

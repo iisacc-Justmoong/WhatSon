@@ -1592,6 +1592,144 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rejectsEmptyRichTextSe
         QStringLiteral("Alpha\nBeta"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_stagesStyleInsertionInSessionFileBeforeRawPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("style-session-stage-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        QStringLiteral("Alpha Beta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    const QVariantMap insertion = session.insertStyleTagIntoSource(
+        QStringLiteral("Title"),
+        originalEditorHtml,
+        0,
+        0);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        insertion.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+
+    const QString stagedEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY(stagedEditorHtml.contains(QStringLiteral("whatson-style-source")));
+    QVERIFY(stagedEditorHtml.contains(QStringLiteral("font-size:26px;")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, stagedEditorHtml),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+
+    const QString plainEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha Beta"));
+    QVERIFY(!plainEditorHtml.contains(QStringLiteral("whatson-style-source")));
+
+    QSignalSpy plainRoundTripPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 1, plainEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(plainRoundTripPersistedSpy.count(), 1, 3000);
+    QCOMPARE(plainRoundTripPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedAfterPlainRoundTrip = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedAfterPlainRoundTrip),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideStyleMovesCursorOutside()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("style-enter-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        QStringLiteral("Alpha Beta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QSignalSpy stylePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    const QVariantMap insertion = session.insertStyleTagIntoSource(
+        QStringLiteral("Title"),
+        originalEditorHtml,
+        QStringLiteral("Alpha Beta").size(),
+        0);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QTRY_COMPARE_WITH_TIMEOUT(stylePersistedSpy.count(), 1, 3000);
+    QCOMPARE(stylePersistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QVariantMap enterResult = session.handleStyleBoundaryKeyInSource(
+        insertion.value(QStringLiteral("editorDocumentText")).toString(),
+        QStringLiteral("Alpha Beta").size(),
+        0,
+        Qt::Key_Return);
+    QVERIFY(enterResult.value(QStringLiteral("handled")).toBool());
+    QVERIFY(enterResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        enterResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>\n"));
+    QCOMPARE(
+        enterResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>\n").size());
+    QVERIFY(enterResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("whatson-style-source")));
+    QVERIFY(enterResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("font-size:26px;")));
+
+    const QString plainEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha Beta\n"));
+    QVERIFY(!plainEditorHtml.contains(QStringLiteral("whatson-style-source")));
+
+    QSignalSpy enterPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 1, plainEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(enterPersistedSpy.count(), 1, 3000);
+    QCOMPARE(enterPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>\n"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile()
 {
     QTemporaryDir workspaceDirectory;

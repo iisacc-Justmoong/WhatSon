@@ -214,6 +214,24 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     QVERIFY2(recoveredSource == sourceText, qPrintable(roundTrippedEditorHtml));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_recoversQtTextEditSerializedStyleAnchors()
+{
+    const QString qtTextEditHtml = QStringLiteral(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">"
+        "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /></head>"
+        "<body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\">"
+        "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px;"
+        " -qt-block-indent:0; text-indent:0px; line-height:12px;\">"
+        "<a name=\"whatson-style-source:3c7374796c65207374796c653d225469746c65223e\"></a>"
+        "<span style=\" font-family:'Pretendard'; font-size:26px; font-weight:700; color:rgba(255,255,255,0.8);\">Alpha</span>"
+        "<span style=\" font-family:'Pretendard'; font-size:26px; font-weight:700; color:rgba(255,255,255,0.8);\"> Beta</span>"
+        "</p></body></html>");
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), qtTextEditHtml),
+        QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()
 {
     const QString crossedInlineSource = QStringLiteral("<bold>첫 줄\n둘째 줄</bold>");
