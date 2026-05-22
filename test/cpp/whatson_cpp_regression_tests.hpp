@@ -1309,7 +1309,6 @@ private slots:
     void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
     void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
     void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
-    void noteEditorDocumentSession_insertsImportedResourceIntoLoadedBodySource();
     void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
     void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
     void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
@@ -1375,10 +1374,8 @@ private slots:
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
-    void noteEditorDocumentSession_writesRawPushPayloadToMountedSessionFile();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
-    void noteEditorDocumentSession_ignoresStaleIdleSyncAfterDirectRawInput();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();

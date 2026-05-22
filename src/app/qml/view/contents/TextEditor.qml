@@ -24,7 +24,6 @@ LV.TextEditor {
     readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
     readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
     readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
-    readonly property int editorCursorPosition: Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0))
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
@@ -124,7 +123,7 @@ LV.TextEditor {
     }
 
     function bumpEditorPlainTextRevision() {
-        textEditor.editorPlainTextRevision = textEditor.editorPlainTextRevision + 1;
+        textEditor.editorPlainTextRevision = (textEditor.editorPlainTextRevision + 1) % 1000000;
     }
 
     function bumpEditorLineMetricsRevision() {
@@ -542,12 +541,6 @@ LV.TextEditor {
         return true;
     }
 
-    function editorDocumentNeedsTextChangeFrameRefresh() {
-        const documentText = textEditor.editorDocumentText;
-        return documentText.indexOf("whatson-callout") !== -1
-                || documentText.indexOf("data-callout") !== -1;
-    }
-
     function scheduleEditorFrameViewportRefresh() {
         if (textEditor.editorFrameViewportRefreshApplying)
             return false;
@@ -765,8 +758,7 @@ LV.TextEditor {
         textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        if (!textEditor.editorFrameViewportRefreshApplying
-                && textEditor.editorDocumentNeedsTextChangeFrameRefresh())
+        if (!textEditor.editorFrameViewportRefreshApplying)
             textEditor.scheduleEditorFrameViewportRefresh();
     }
     onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()

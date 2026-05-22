@@ -106,10 +106,6 @@ void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorSourceFilePath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function markEditorSessionFileReadyForRawPush(path)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onReadFinished: function(path)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function requestEditorModifiedRawPush(editorDocumentText)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onTextEdited: function(text)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorModifiedCountRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextPulled(noteId, editorDocumentText)")));
@@ -175,7 +171,6 @@ void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsO
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorSelectedText")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorCursorPosition")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorSelectedTextForCurrentSelection()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(selectionStart, selectionEnd)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));

@@ -118,9 +118,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorPlainTextRevision: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral("property int editorLineMetricsRevision: 0")));
     QVERIFY(textEditorSource.contains(QStringLiteral(
-        "textEditor.editorPlainTextRevision = textEditor.editorPlainTextRevision + 1")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral(
         "textEditor.editorPlainTextRevision = (textEditor.editorPlainTextRevision + 1) % 1000000")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral(
+        "textEditor.editorPlainTextRevision = textEditor.editorPlainTextRevision + 1")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorMeasuredContentHeight")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorRenderedLineCount")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("editorVisualLineHeight")));
@@ -130,6 +130,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorSurfacePlainText()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function cursorLineIndexForLogicalCursor()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorDocumentText")));
     QVERIFY(textEditorSource.contains(QStringLiteral("slice(0, safeCursorPosition).split(\"\\n\").length - 1")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(0, safeLength)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorResourceObjectReplacementText: \"\\uFFFC\"")));
@@ -142,6 +143,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!textEditorSource.contains(QStringLiteral("function lineLooksLikeResourceFrameFileName(lineText)")));
     QVERIFY(!textEditorSource.contains(QStringLiteral("function resourceFrameSpanLengthAt(lineRecords, lineIndex)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineStartPositions()")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function buildSourceAlignedLineStartPositions()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("const lineRecords = textEditor.editorPlainTextLineRecords();")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedLineIndexForPosition(position)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function sourceAlignedOverflowMetricFor(lineIndex, lineStartPositions, fallbackMetric, fallbackHeight)")));
@@ -234,12 +236,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("if (textEditor.editorFrameViewportRefreshApplying)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorFrameViewportRefreshApplying = true;")));
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorFrameViewportRefreshApplying = false;")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function editorDocumentNeedsTextChangeFrameRefresh()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("documentText.indexOf(\"whatson-callout\") !== -1")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("documentText.indexOf(\"data-callout\") !== -1")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorDocumentNeedsTextChangeFrameRefresh()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onTextChanged:")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("&& textEditor.editorDocumentNeedsTextChangeFrameRefresh()")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("if (!textEditor.editorFrameViewportRefreshApplying)\n            textEditor.scheduleEditorFrameViewportRefresh();")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("&& textEditor.editorDocumentNeedsTextChangeFrameRefresh()")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("if (!textEditor.editorFrameViewportRefreshApplying)\n            textEditor.scheduleEditorFrameViewportRefresh();")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function refreshEditorInputCommandFilterOwner()")));

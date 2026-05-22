@@ -88,12 +88,6 @@ namespace
         int editorEnd = 0;
     };
 
-    struct EditorProjectionSegment final
-    {
-        QString html;
-        bool resourceFrame = false;
-    };
-
     QString sourceTagName(QStringView tagToken)
     {
         if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
@@ -604,71 +598,6 @@ namespace
                 lockedFrameDisplayHeight));
     }
 
-    QString explicitEmptySourceLineHtml()
-    {
-        return QStringLiteral("&#8203;");
-    }
-
-    QString editorHtmlProjectionFragmentFromSourceLines(
-        const QString& noteId,
-        const QStringList& sourceLines,
-        const int editorViewportWidth,
-        const bool preserveEmptyOnlySegment)
-    {
-        if (sourceLines.isEmpty())
-        {
-            return {};
-        }
-
-        const bool allLinesEmpty = std::all_of(
-            sourceLines.cbegin(),
-            sourceLines.cend(),
-            [](const QString& line)
-            {
-                return line.isEmpty();
-            });
-        if (allLinesEmpty)
-        {
-            if (!preserveEmptyOnlySegment && sourceLines.size() == 1)
-            {
-                return {};
-            }
-
-            QStringList placeholders;
-            placeholders.reserve(sourceLines.size());
-            for (int index = 0; index < sourceLines.size(); ++index)
-            {
-                placeholders.push_back(explicitEmptySourceLineHtml());
-            }
-            return placeholders.join(QStringLiteral("<br/>"));
-        }
-
-        return WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(
-            WhatSon::NoteBodyPersistence::serializeBodyDocument(
-                noteId,
-                sourceLines.join(QLatin1Char('\n'))),
-            editorViewportWidth);
-    }
-
-    QString joinedEditorProjectionSegments(const QVector<EditorProjectionSegment>& segments)
-    {
-        QString html;
-        for (int index = 0; index < segments.size(); ++index)
-        {
-            const EditorProjectionSegment& segment = segments.at(index);
-            if (index > 0)
-            {
-                const EditorProjectionSegment& previousSegment = segments.at(index - 1);
-                if (!previousSegment.resourceFrame && !segment.resourceFrame)
-                {
-                    html += QStringLiteral("<br/>");
-                }
-            }
-            html += segment.html;
-        }
-        return html;
-    }
-
     QString editorHtmlFromBodySourceForNoteContext(
         const QString& noteId,
         const QString& bodySourceText,
@@ -678,25 +607,22 @@ namespace
     {
         const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
         const QStringList sourceLines = normalizedSourceText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        QVector<EditorProjectionSegment> htmlSegments;
-        htmlSegments.reserve(sourceLines.size());
+        QStringList htmlLines;
+        htmlLines.reserve(sourceLines.size());
         QStringList pendingSourceLines;
         pendingSourceLines.reserve(sourceLines.size());
 
-        const auto flushPendingSourceLines = [&](const bool nextSegmentIsResource)
+        const auto flushPendingSourceLines = [&]()
         {
             if (pendingSourceLines.isEmpty())
             {
                 return;
             }
-            htmlSegments.push_back({
-                editorHtmlProjectionFragmentFromSourceLines(
+            htmlLines.push_back(
+                WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
                     noteId,
-                    pendingSourceLines,
-                    editorViewportWidth,
-                    nextSegmentIsResource || !htmlSegments.isEmpty()),
-                false
-            });
+                    pendingSourceLines.join(QLatin1Char('\n')),
+                    editorViewportWidth));
             pendingSourceLines.clear();
         };
 
@@ -715,22 +641,18 @@ namespace
                 continue;
             }
 
-            flushPendingSourceLines(true);
+            flushPendingSourceLines();
             const int lockedFrameDisplayHeight = lockedFrameDisplayHeightsBySourceTag == nullptr
                 ? 0
                 : lockedFrameDisplayHeightsBySourceTag->value(resourceLine, 0);
-            htmlSegments.push_back({
-                resourceFrameHtml(
-                    resourceLine,
-                    noteDirectoryPath,
-                    editorViewportWidth,
-                    lockedFrameDisplayHeight),
-                true
-            });
+            htmlLines.push_back(resourceFrameHtml(
+                resourceLine,
+                noteDirectoryPath,
+                editorViewportWidth,
+                lockedFrameDisplayHeight));
         }
-        flushPendingSourceLines(false);
-        return WhatSon::NoteBodyPersistence::editorHtmlDocumentFromProjection(
-            joinedEditorProjectionSegments(htmlSegments));
+        flushPendingSourceLines();
+        return htmlLines.join(QStringLiteral("<br/>"));
     }
 
     QHash<QString, int> resourceFrameDisplayHeightsBySourceTag(const QString& editorDocumentText)
@@ -1233,11 +1155,9 @@ bool NoteEditorDocumentSession::openNoteForEditing(
     setLoading(true);
     setLastError(QString());
     m_activeBodySourceText.clear();
-    m_directRawSourceByEditorFile.clear();
 
     m_pendingLoadNoteId = normalizedNoteId;
     m_pendingLoadNoteDirectoryPath = normalizedNoteDirectoryPath;
-    m_rawPushReadyEditorFilePath.clear();
     m_pendingLoadSequence = m_rawPullController.requestNoteOpenPull(
         normalizedNoteId,
         normalizedNoteDirectoryPath);
@@ -1267,8 +1187,6 @@ bool NoteEditorDocumentSession::clearEditor()
     m_pendingIdlePullNoteId.clear();
     m_pendingIdlePullNoteDirectoryPath.clear();
     m_activeBodySourceText.clear();
-    m_rawPushReadyEditorFilePath.clear();
-    m_directRawSourceByEditorFile.clear();
     setActiveNoteContext(QString(), QString());
     setParsedLineCount(0);
     setLoading(false);
@@ -1302,37 +1220,7 @@ void NoteEditorDocumentSession::requestEditorIdleRawPush(
     const QString& editorFilePath,
     const QString& editorDocumentText)
 {
-    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
-    if (normalizedEditorFilePath.isEmpty()
-        || normalizedEditorFilePath != m_rawPushReadyEditorFilePath)
-    {
-        return;
-    }
-    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
-    if (contextIterator != m_editorFileContexts.constEnd()
-        && contextIterator->noteId == m_activeNoteId
-        && contextIterator->noteDirectoryPath == m_activeNoteDirectoryPath
-        && m_directRawSourceByEditorFile.contains(normalizedEditorFilePath))
-    {
-        QString idleSourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
-            contextIterator->noteId,
-            editorDocumentText);
-        idleSourceText = restoreResourceObjectPlaceholdersFromActiveSource(
-            idleSourceText,
-            m_activeBodySourceText);
-        if (WhatSon::NoteBodyPersistence::normalizeBodyPlainText(idleSourceText)
-            != m_directRawSourceByEditorFile.value(normalizedEditorFilePath))
-        {
-            return;
-        }
-        return;
-    }
-    if (!writeCurrentEditorSnapshotToSessionFile(normalizedEditorFilePath, editorDocumentText))
-    {
-        return;
-    }
-
-    m_rawPushController.requestIdlePush(normalizedEditorFilePath, editorDocumentText);
+    m_rawPushController.requestIdlePush(editorFilePath, editorDocumentText);
 }
 
 void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
@@ -1340,45 +1228,11 @@ void NoteEditorDocumentSession::requestEditorModifiedCountRawPush(
     const int modifiedCount,
     const QString& editorDocumentText)
 {
-    Q_UNUSED(modifiedCount);
     recordEditorUserActivity();
-    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
-    if (normalizedEditorFilePath.isEmpty()
-        || normalizedEditorFilePath != m_rawPushReadyEditorFilePath)
-    {
-        return;
-    }
-    if (!persistEditorDocumentTextDirectlyToRaw(normalizedEditorFilePath, editorDocumentText))
-    {
-        return;
-    }
-    m_rawPushController.discardPendingPushForFile(normalizedEditorFilePath);
-}
-
-bool NoteEditorDocumentSession::markEditorSessionFileReadyForRawPush(const QString& editorFilePath)
-{
-    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
-    if (normalizedEditorFilePath.isEmpty()
-        || normalizedEditorFilePath != normalizePath(m_editorFilePath)
-        || m_loading
-        || m_readOnly
-        || m_activeNoteId.trimmed().isEmpty()
-        || m_activeNoteDirectoryPath.trimmed().isEmpty())
-    {
-        return false;
-    }
-
-    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
-    if (contextIterator == m_editorFileContexts.constEnd()
-        || contextIterator->noteId != m_activeNoteId
-        || contextIterator->noteDirectoryPath != m_activeNoteDirectoryPath)
-    {
-        return false;
-    }
-
-    m_rawPushReadyEditorFilePath = normalizedEditorFilePath;
-    setLastError(QString());
-    return true;
+    m_rawPushController.requestModifiedCountPush(
+        editorFilePath,
+        modifiedCount,
+        editorDocumentText);
 }
 
 void NoteEditorDocumentSession::recordEditorUserActivity()
@@ -1408,11 +1262,6 @@ bool NoteEditorDocumentSession::persistEditorDocumentText(
         || contextIterator->noteDirectoryPath.trimmed().isEmpty())
     {
         setLastError(QStringLiteral("Editor file context is unavailable."));
-        return false;
-    }
-
-    if (!writeCurrentEditorSnapshotToSessionFile(normalizedEditorFilePath, editorDocumentText))
-    {
         return false;
     }
 
@@ -1448,114 +1297,11 @@ bool NoteEditorDocumentSession::persistEditorDocumentText(
     return enqueued;
 }
 
-bool NoteEditorDocumentSession::persistEditorDocumentTextDirectlyToRaw(
-    const QString& editorFilePath,
-    const QString& editorDocumentText)
-{
-    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
-    if (normalizedEditorFilePath.isEmpty())
-    {
-        setLastError(QStringLiteral("Editor file path is empty."));
-        return false;
-    }
-
-    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
-    if (contextIterator == m_editorFileContexts.constEnd()
-        || contextIterator->noteId.trimmed().isEmpty()
-        || contextIterator->noteDirectoryPath.trimmed().isEmpty())
-    {
-        setLastError(QStringLiteral("Editor file context is unavailable."));
-        return false;
-    }
-
-    if (!writeCurrentEditorSnapshotToSessionFile(normalizedEditorFilePath, editorDocumentText))
-    {
-        return false;
-    }
-
-    QString sourceText = WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
-        contextIterator->noteId,
-        editorDocumentText);
-    const QString activeSourceTextForContext =
-        contextIterator->noteId == m_activeNoteId
-        && contextIterator->noteDirectoryPath == m_activeNoteDirectoryPath
-            ? m_activeBodySourceText
-            : QString();
-    sourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
-        restoreResourceObjectPlaceholdersFromActiveSource(
-            sourceText,
-            activeSourceTextForContext));
-
-    WhatSonLocalNoteFileStore fileStore;
-    WhatSonLocalNoteDocument document;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = contextIterator->noteId;
-    readRequest.noteDirectoryPath = contextIterator->noteDirectoryPath;
-
-    QString errorMessage;
-    emit editorSourcePersistRequested(contextIterator->noteId, normalizedEditorFilePath);
-    if (!fileStore.readNote(readRequest, &document, &errorMessage))
-    {
-        setLastError(errorMessage);
-        emit editorSourcePersistFinished(contextIterator->noteId, false, errorMessage);
-        return false;
-    }
-
-    document.bodyPlainText = sourceText;
-    document.bodySourceText = sourceText;
-
-    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-    updateRequest.document = std::move(document);
-    updateRequest.persistHeader = false;
-    updateRequest.persistBody = true;
-    updateRequest.touchLastModified = true;
-    updateRequest.incrementModifiedCount = true;
-    updateRequest.resolveTimestampConflicts = false;
-    updateRequest.refreshIncomingBacklinkStatistics = false;
-    updateRequest.refreshAffectedBacklinkTargets = false;
-
-    WhatSonLocalNoteDocument persistedDocument;
-    WhatSonLocalNoteFileStore::UpdateResult updateResult;
-    if (!fileStore.updateNote(updateRequest, &persistedDocument, &errorMessage, &updateResult))
-    {
-        setLastError(errorMessage);
-        emit editorSourcePersistFinished(contextIterator->noteId, false, errorMessage);
-        return false;
-    }
-
-    const QString canonicalSourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(
-        WhatSon::NoteBodyPersistence::serializeBodyDocument(contextIterator->noteId, sourceText));
-    m_directRawSourceByEditorFile.insert(normalizedEditorFilePath, canonicalSourceText);
-    if (contextIterator->noteId == m_activeNoteId
-        && contextIterator->noteDirectoryPath == m_activeNoteDirectoryPath)
-    {
-        m_activeBodySourceText = canonicalSourceText;
-    }
-    if (auto mutableContext = m_editorFileContexts.find(normalizedEditorFilePath);
-        mutableContext != m_editorFileContexts.end())
-    {
-        mutableContext->loadedLastModifiedAt = persistedDocument.headerStore.lastModifiedAt();
-    }
-    setParsedLineCount(lineCountForEditorSource(canonicalSourceText));
-    setLastError(QString());
-    if (updateResult.versionDiffPushedToFilesystem)
-    {
-        emit hubFilesystemMutated();
-    }
-    emit editorSourcePersistFinished(contextIterator->noteId, true, QString());
-    return true;
-}
-
 bool NoteEditorDocumentSession::pushActiveEditorBeforeNoteDeparture()
 {
     const QString normalizedEditorFilePath = normalizePath(m_editorFilePath);
     if (normalizedEditorFilePath.isEmpty())
     {
-        return true;
-    }
-    if (m_directRawSourceByEditorFile.contains(normalizedEditorFilePath))
-    {
-        m_rawPushController.discardPendingPushForFile(normalizedEditorFilePath);
         return true;
     }
 
@@ -2064,8 +1810,6 @@ bool NoteEditorDocumentSession::applyLoadedBodyTextToEditorSession(
     m_editorFileContexts.insert(
         sessionFilePath,
         {loadedNoteId, loadedNoteDirectoryPath, loadedLastModifiedAt.trimmed()});
-    m_rawPushReadyEditorFilePath.clear();
-    m_directRawSourceByEditorFile.remove(sessionFilePath);
     setActiveNoteContext(loadedNoteId, loadedNoteDirectoryPath);
     m_activeBodySourceText = normalizedBodySourceText;
     setParsedLineCount(lineCountForEditorSource(normalizedBodySourceText));
@@ -2290,37 +2034,6 @@ bool NoteEditorDocumentSession::readEditorSourceFile(
     {
         *outText = QString::fromUtf8(file.readAll());
     }
-    return true;
-}
-
-bool NoteEditorDocumentSession::writeCurrentEditorSnapshotToSessionFile(
-    const QString& editorFilePath,
-    const QString& editorDocumentText)
-{
-    const QString normalizedEditorFilePath = normalizePath(editorFilePath);
-    if (normalizedEditorFilePath.isEmpty())
-    {
-        setLastError(QStringLiteral("Editor file path is empty."));
-        return false;
-    }
-
-    const auto contextIterator = m_editorFileContexts.constFind(normalizedEditorFilePath);
-    if (contextIterator == m_editorFileContexts.constEnd()
-        || contextIterator->noteId.trimmed().isEmpty()
-        || contextIterator->noteDirectoryPath.trimmed().isEmpty())
-    {
-        setLastError(QStringLiteral("Editor file context is unavailable."));
-        return false;
-    }
-
-    QString writeError;
-    if (!writeEditorSourceFile(normalizedEditorFilePath, editorDocumentText, &writeError))
-    {
-        setLastError(writeError);
-        return false;
-    }
-
-    setLastError(QString());
     return true;
 }
 

@@ -26,19 +26,13 @@ Declares the active note editor document session object.
 - Emits `editorDocumentTextPulled(...)` when a newer filesystem body replaces the live editor document, and
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for fallback file-based surface persistence.
-- Provides `markEditorSessionFileReadyForRawPush(path)` so QML can acknowledge the LVRS `readFinished(path)` event for
-  the currently mounted session file before idle or modified-count push triggers are accepted.
-- Provides `requestEditorModifiedCountRawPush(...)`, which accepts the fresh LVRS `textEdited(text)` payload after the
-  current session file has been marked ready, converts it to RAW immediately, and writes the selected `.wsnbody` without
-  waiting for the idle sync path.
-- Provides `requestEditorIdleRawPush(...)` as a fallback for LVRS session-file sync completion. Idle payloads are ignored
-  when direct RAW input has already advanced the active source.
+- Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which forward editor-surface
+  push triggers into `file/sync/WhatSonEditorRawPushController`.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
-  `InAppClipboardManager`, applies the current editor cursor/selection to the active or editor-derived RAW source, and
-  returns canonical source plus an editor HTML projection for the live LVRS surface. Paste-time persistence follows the
-  ordinary LVRS editor sync path used by the 2026-05-19 image paste flow.
+  `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, and returns
+  an editor HTML projection for the live LVRS surface.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
@@ -71,8 +65,6 @@ Declares the active note editor document session object.
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
   persistence stay in `InAppClipboardManager`.
-- Resource paste follows the editor command result path and must not create `.wsresource` packages or inspect clipboard
-  MIME data inside this session.
 
 ## 한국어
 
@@ -84,12 +76,9 @@ Declares the active note editor document session object.
   거터의 실제 row 개수는 이 값만 따르며, LVRS rendered wrap-line count를 따르지 않는다.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
-- LVRS가 현재 session file의 `readFinished(path)`를 낸 뒤에만
-  `markEditorSessionFileReadyForRawPush(path)`가 해당 파일을 write 가능한 editor 세션으로 승격한다. 앱 시작 직후의
-  blank editor나 이전 파일의 늦은 read-finished 이벤트는 새로 선택된 노트를 덮어쓰는 RAW push를 열지 못한다.
-- LVRS `textEdited(text)` 입력은 `requestEditorModifiedCountRawPush(...)`로 들어와 즉시 RAW로 변환되고 선택된
-  `.wsnbody`에 기록된다. `syncFinished(path)`는 fallback idle trigger일 뿐이며, direct RAW 입력보다 오래된 payload는
-  active source로 승격되지 않는다. note 이탈 시에는 direct RAW 저장이 없을 때만 fallback flush를 수행한다.
+- LVRS가 session file 저장을 끝내거나 editor surface revision이 증가하면
+  `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 sync push controller로 전달한다.
+  note 이탈 시에는 세션이 같은 controller를 통해 현재 표면을 즉시 RAW로 flush한다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
   다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다
   최신일 때만 editor document를 교체한다. 오래된 pull은 `editorFilesystemPullIgnored(...)`로 무시된다.
@@ -98,9 +87,8 @@ Declares the active note editor document session object.
 - 저장 과정에서 timestamp가 찍힌 `.wsnversion` diff가 파일시스템에 쓰이면 `hubFilesystemMutated()`를 전달해
   hub sync가 로컬 변경으로 인식할 수 있게 한다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
-  active RAW source 또는 현재 LVRS editor snapshot에서 복원한 RAW source에 현재 커서/선택 범위를 적용한 뒤
-  canonical RAW `<resource ... />` 참조와 editor HTML projection을 반환한다. paste 시점의 저장은 2026-05-19
-  흐름처럼 일반 LVRS editor sync 경로를 따른다. clipboard MIME 판별과 package persistence는 이 세션의 책임이 아니다.
+  canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입한다. clipboard MIME 판별과 package
+  persistence는 이 세션의 책임이 아니다.
 - `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트
