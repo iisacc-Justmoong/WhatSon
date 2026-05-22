@@ -2318,8 +2318,7 @@ bool NoteEditorDocumentSession::applyLoadedBodyTextToEditorSession(
     const auto existingContextIterator = m_editorFileContexts.constFind(sessionFilePath);
     const bool readyForRawPush =
         emitPulledDocumentText
-        &&
-        existingContextIterator != m_editorFileContexts.constEnd()
+        && existingContextIterator != m_editorFileContexts.constEnd()
         && existingContextIterator->readyForRawPush;
     m_editorFileContexts.insert(
         sessionFilePath,

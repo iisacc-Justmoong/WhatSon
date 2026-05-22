@@ -158,6 +158,31 @@ bool scheduleStartupRuntimeLoadAfterFirstIdle(
         lvrs::QmlAppLifecycleStage::AfterFirstIdle,
         true);
 }
+
+void destroyQmlRootObjectsBeforeApplicationShutdown(QQmlApplicationEngine& engine)
+{
+    QVector<QPointer<QObject>> rootObjects;
+    const QList<QObject*> engineRootObjects = engine.rootObjects();
+    rootObjects.reserve(engineRootObjects.size());
+    for (QObject* rootObject : engineRootObjects)
+    {
+        rootObjects.prepend(QPointer<QObject>(rootObject));
+    }
+
+    for (const QPointer<QObject>& rootObjectGuard : rootObjects)
+    {
+        QObject* rootObject = rootObjectGuard.data();
+        if (rootObject == nullptr)
+        {
+            continue;
+        }
+
+        rootObject->setProperty("visible", false);
+        delete rootObject;
+    }
+
+    engine.collectGarbage();
+}
 } // namespace
 
 int main(int argc, char* argv[])
@@ -220,6 +245,16 @@ int main(int argc, char* argv[])
         .arg(launchOptions.onboardingOnly ? QStringLiteral("onboardingOnly") : QStringLiteral("workspace")));
 
     QQmlApplicationEngine engine;
+    QObject::connect(
+        &app,
+        &QCoreApplication::aboutToQuit,
+        &engine,
+        [&engine]()
+        {
+            destroyQmlRootObjectsBeforeApplicationShutdown(engine);
+        },
+        Qt::DirectConnection);
+
     CalendarBoardStore calendarBoardStore;
     SystemCalendarStore systemCalendarStore;
     LibraryHierarchyController libraryHierarchyController;

@@ -1217,6 +1217,7 @@ class WhatSonCppRegressionTests final : public QObject
 private slots:
     void appLaunchSupport_requiresMountedHubForStartupWorkspace();
     void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
+    void qmlLaunchSupport_destroysRootObjectsBeforeGuiApplicationTeardown();
     void foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace();
     void startupRuntimeLoad_usesLvrsAfterFirstIdleLifecycleTask();
     void architecturePolicyLock_blocksMutableWiringAfterLock();

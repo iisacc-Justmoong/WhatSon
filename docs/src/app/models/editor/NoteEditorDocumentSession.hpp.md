@@ -26,11 +26,13 @@ Declares the active note editor document session object.
 - Emits `editorDocumentTextPulled(...)` when a newer filesystem body diff is merged into the live editor document, and
   `editorFilesystemPullIgnored(...)` when an idle pull is stale, inactive, or failed.
 - Provides `persistEditorFile(path)` for explicit fallback file-based surface persistence.
-- Provides `markEditorSessionFileReadyForRawPush(path)` so QML can declare that LVRS finished reading the mounted
-  `.wsnsource` file before sync pushes are accepted.
+- Provides `markEditorSessionFileReadyForRawPush(path)` so QML can declare that LVRS finished reading the freshly
+  mounted `.wsnsource` file before sync pushes are accepted. Note entry/open remounts clear any readiness inherited
+  from an earlier visit to the same session path.
 - Provides `requestEditorIdleRawPush(...)` and `requestEditorModifiedCountRawPush(...)`, which convert the current
   editor document into canonical RAW source inside this session, reject unsafe transient empty editor payloads, then
-  forward only validated RAW payloads into `file/sync/WhatSonEditorRawPushController`.
+  forward only validated RAW payloads into `file/sync/WhatSonEditorRawPushController`. Idle push also treats an empty
+  rich-text HTML shell as transient when the active RAW source is non-empty.
 - Forwards `hubFilesystemMutated()` from the note-management coordinator when a successful editor persistence writes
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
@@ -87,9 +89,11 @@ Declares the active note editor document session object.
 - `editorViewportWidth`는 QML이 공개 LVRS editor item 폭에서 전달하는 값이며, 이미지 resource frame의 media 영역과
   콜아웃의 생성형 frame chrome이 현재 editor 폭에 맞게 다시 렌더되도록 C++ 렌더러에 전달된다.
 - LVRS가 session file 읽기를 끝내면 QML은 `markEditorSessionFileReadyForRawPush(...)`로 현재 `.wsnsource`를
-  push 가능 상태로 표시한다. 이후 session file 저장이 끝나거나 editor surface revision이 증가하면
+  push 가능 상태로 표시한다. note를 새로 mount할 때는 같은 session path라도 이전 ready 상태를 재사용하지 않는다.
+  이후 session file 저장이 끝나거나 editor surface revision이 증가하면
   `requestEditorIdleRawPush(...)` / `requestEditorModifiedCountRawPush(...)`가 현재 editor document를 C++ 세션 안에서
-  canonical RAW source로 변환하고, 안전한 RAW payload만 sync push controller로 전달한다. note 이탈 시에는 세션이
+  canonical RAW source로 변환하고, 빈 rich-text shell 같은 transient idle payload를 거른 뒤 안전한 RAW payload만
+  sync push controller로 전달한다. note 이탈 시에는 세션이
   session file fallback이 아니라 active RAW source나 pending RAW payload를 flush한다.
 - editor surface가 cursor/text 활동을 보고하면 `recordEditorUserActivity()`가 active-note idle pull timer를
   다시 시작한다. 5초 동안 조용하면 filesystem RAW를 다시 pull하고, 반환된 `lastModified`가 현재 session context보다

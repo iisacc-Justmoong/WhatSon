@@ -32,6 +32,19 @@ void WhatSonCppRegressionTests::qmlLaunchSupport_routesRootLoadingThroughLvrsApp
     QVERIFY(!mainSource.contains(QStringLiteral("window->requestActivate();")));
 }
 
+void WhatSonCppRegressionTests::qmlLaunchSupport_destroysRootObjectsBeforeGuiApplicationTeardown()
+{
+    const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+
+    QVERIFY(mainSource.contains(QStringLiteral("void destroyQmlRootObjectsBeforeApplicationShutdown(")));
+    QVERIFY(mainSource.contains(QStringLiteral("engine.rootObjects()")));
+    QVERIFY(mainSource.contains(QStringLiteral("rootObject->setProperty(\"visible\", false)")));
+    QVERIFY(mainSource.contains(QStringLiteral("delete rootObject")));
+    QVERIFY(mainSource.contains(QStringLiteral("&QCoreApplication::aboutToQuit")));
+    QVERIFY(mainSource.contains(QStringLiteral("destroyQmlRootObjectsBeforeApplicationShutdown(engine);")));
+    QVERIFY(mainSource.contains(QStringLiteral("Qt::DirectConnection")));
+}
+
 void WhatSonCppRegressionTests::foregroundServiceGate_startsSchedulerAndPermissionsAfterVisibleWorkspace()
 {
     const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));

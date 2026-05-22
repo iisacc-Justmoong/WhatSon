@@ -62,6 +62,10 @@
 - Foreground scheduler and permission startup now run through LVRS `ForegroundServiceGate`; `main.cpp` builds a
   lifecycle context from the loaded workspace root and starts those services only after a visible workspace window is
   present.
+- `main.cpp` connects `QCoreApplication::aboutToQuit` to an explicit QML root-object teardown step. The loaded
+  `LV.ApplicationWindow` roots are hidden and deleted while `QGuiApplication` and Qt's font database are still alive,
+  preventing shutdown-time `QQuickText` geometry/font recalculation from reaching `QGuiApplication::~QGuiApplication()`
+  and aborting as "WhatSon quit unexpectedly."
 - Startup runtime loading now runs as a non-fatal LVRS `QmlBootstrapTask` at
   `QmlAppLifecycleStage::AfterFirstIdle`; the old partial startup load plus deferred Event/Preset prefetch path has
   been removed.
