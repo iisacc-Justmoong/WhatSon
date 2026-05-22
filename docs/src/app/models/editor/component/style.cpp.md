@@ -6,8 +6,11 @@ Implements the editor-domain projection and recovery helpers for the proprietary
 
 ## Current Rules
 
-- LVRS text tokens such as `Title`, `Title2`, `Header`, `Header2`, `Body`, `Description`, `Caption`, and `Disabled`
-  map to fixed Pretendard size, weight, line-height, and color values.
+- LVRS text tokens such as `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`, `Description`, `Caption`,
+  `Footnote`, and legacy `Disabled` map to fixed Pretendard size, weight, line-height, and color values.
+- The canonical toolbar `style` attribute values are `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`,
+  `Description`, `Caption`, and `Footnote`. Empty or missing `style` attributes normalize to `Body`; inserting `Body`
+  therefore uses the bare `<style>` opening token.
 - Explicit attributes (`font`, `weight`, `size`, `color`, `background`, `align`, and existing `height`) override or
   extend the token projection when editor HTML is generated.
 - Editor projection emits `<!--whatson-style-source:...-->` metadata plus a styled `<span>` so the original opening

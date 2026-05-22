@@ -22,6 +22,9 @@ The content surface is stacked as an LVRS `VStack`: the Figma-driven `ContentEdi
 editor/image row, and the row keeps its original gutter/editor/minimap or image-viewer routing. The toolbar is visible
 only for the note editor surface and emits view-level signals back to the existing format dispatch; it does not own
 parser, projection, source mutation, or persistence behavior.
+The toolbar `style` selector forwards the chosen `<style ...>` tag `style` attribute string to
+`NoteEditorDocumentSession.insertStyleTagIntoSource(...)`, then reports `editor.toolbar.style.<value>` through the
+existing view-hook surface after the LVRS document replacement succeeds. Parser and mutation policy remain outside QML.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.

@@ -35,9 +35,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
   text or into a serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`. Component-specific template
   definitions can live under `component/`; `SetTag` consumes those descriptors and owns the generic mutation result
-  shape. The paired `style` text wrapper is part of this allow-list; `component/style` owns its LVRS token metrics,
-  marker-backed editor HTML projection, and source recovery helpers so note-body persistence delegates the component
-  policy rather than embedding it inline.
+  shape. The paired `style` text wrapper is part of this allow-list; `component/style` owns its canonical `style`
+  attribute values, LVRS token metrics, Body fallback opening token, marker-backed editor HTML projection, and source
+  recovery helpers so note-body persistence delegates the component policy rather than embedding it inline.
 - `TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
   static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
   the actual `.wsnbody` document is updated.
@@ -113,9 +113,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   the image cannot inherit frame styling from Qt rich text character-format carryover. It does not emit type/file-name
   display metadata or visible header/footer chrome.
 - `component/style` owns the proprietary paired `<style ...>...</style>` source wrapper. It provides the static wrapper
-  tokens to `SetTag`, maps LVRS text token names to Pretendard metrics/color, projects explicit attributes such as
-  `font`, `weight`, `size`, `color`, `background`, `align`, and existing `height` into editor CSS, and emits/recovers
-  the marker-backed `<span>` used by the LVRS text editor path.
+  tokens to `SetTag`, maps canonical toolbar values (`Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`,
+  `Description`, `Caption`, `Footnote`) to Pretendard metrics/color, treats an empty `style` attribute as Body, projects
+  explicit attributes such as `font`, `weight`, `size`, `color`, `background`, `align`, and existing `height` into editor
+  CSS, and emits/recovers the marker-backed `<span>` used by the LVRS text editor path.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -136,6 +137,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 위치: `docs/src/app/models/editor`
 - 역할: 이 파일은 editor model shard의 구조, 책임, CMake 등록 계약, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
+- 현재: `component/style`은 toolbar style selector의 canonical 값과 Body fallback token을 소유한다.
   소유하고, `SetTag`는 공통 source mutation과 결과 map 생성을 맡는다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.

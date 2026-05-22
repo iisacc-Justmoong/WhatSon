@@ -37,9 +37,10 @@ Implements the active note editor document session.
    `hubFilesystemMutated()` for the composition-root hub-sync wiring.
    Before note context changes or clears, the session flushes the active RAW source or the controller's pending RAW
    payload; it no longer falls back to re-reading an arbitrary session-file snapshot for sync.
-8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the session mutates the loaded `.wsnbody` RAW source,
-   maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a fresh editor HTML
-   projection, and maps the source cursor back to the rendered editor cursor position.
+8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the toolbar style selector calls
+   `insertStyleTagIntoSource(...)` for the `<style>` tag `style` attribute values. The session mutates the loaded
+   `.wsnbody` RAW source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a
+   fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -116,10 +117,11 @@ Implements the active note editor document session.
   observed race where a remounted note path and a still-blank LVRS document snapshot briefly overlap.
 - The session does not decide hub-sync policy itself; it only forwards the coordinator's version-diff filesystem
   mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
-- Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
-  current editor document text, cursor, selection length, and selected visible text; source mutation, same-tag toggle
-  removal, projection, and line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the
-  format mutation basis so a lossy RichText projection cannot drop blank source rows before selection mapping.
+- Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`, and style selector values are
+  inserted through `insertStyleTagIntoSource(...)`. QML supplies only the tag/style name, current editor document text,
+  cursor, selection length, and selected visible text; source mutation, same-tag toggle removal, projection, and
+  line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the format mutation basis so a
+  lossy RichText projection cannot drop blank source rows before selection mapping.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`.
@@ -164,8 +166,9 @@ Implements the active note editor document session.
   `data-frame-display-height`를 읽어 frame height를 초기 auto 값으로 고정하므로, resize는 frame 폭과 x축 중앙
   offset만 바꾸고 높이는 바꾸지 않는다. callout은 현재 편집된 content의 wrap 높이에 맞춰 좌측 막대 이미지를 다시
   생성한다.
-- 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, 로드된 `.wsnbody` RAW source를 기준으로
-  mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
+- 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, toolbar style selector는
+  `insertStyleTagIntoSource(...)`로 `<style>` tag `style` attribute 값을 전달한다. 두 경로 모두 로드된
+  `.wsnbody` RAW source를 기준으로 mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.

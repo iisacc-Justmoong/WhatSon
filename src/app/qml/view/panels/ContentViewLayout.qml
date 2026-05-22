@@ -267,6 +267,36 @@ Item {
         }
         return replaced;
     }
+    function applyEditorStyleTagStyle(styleValue, allowSelectionSnapshot) {
+        if (!contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.noteEditorSession.insertStyleTagIntoSource === undefined)
+            return false;
+
+        const selectionState = contentViewLayout.editorFormatSelectionForCommand(
+                    Boolean(allowSelectionSnapshot));
+        const styleResult = contentViewLayout.noteEditorSession.insertStyleTagIntoSource(
+                    styleValue,
+                    selectionState.documentText,
+                    selectionState.selectionStart,
+                    selectionState.selectionLength,
+                    selectionState.selectedText);
+        if (!styleResult || !Boolean(styleResult.valid))
+            return false;
+
+        const editorDocumentText = styleResult.editorDocumentText !== undefined
+                && styleResult.editorDocumentText !== null
+                ? String(styleResult.editorDocumentText)
+                : String(styleResult.bodySourceText);
+        const replaced = contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText,
+                    Number(styleResult.cursorPosition) || 0);
+        if (replaced) {
+            contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.requestViewHook("editor.toolbar.style." + String(styleValue));
+        }
+        return replaced;
+    }
     function rememberEditorFormatSelectionSnapshot() {
         if (contentViewLayout.editorFormatContextMenuPointerActive || editorFormatContextMenu.opened)
             return false;
@@ -416,6 +446,9 @@ Item {
 
                 onFormatTagRequested: function(tagName) {
                     contentViewLayout.applyEditorFormatTag(tagName);
+                }
+                onStyleTagStyleRequested: function(styleValue) {
+                    contentViewLayout.applyEditorStyleTagStyle(styleValue);
                 }
                 onToolbarActionRequested: function(actionName) {
                     contentViewLayout.requestViewHook(actionName);

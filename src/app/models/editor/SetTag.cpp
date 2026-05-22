@@ -424,6 +424,44 @@ QVariantMap SetTag::insertNamedTagIntoSource(
     return result;
 }
 
+QVariantMap SetTag::insertStyleTagIntoSource(
+    const QString& styleValue,
+    const QString& bodySourceText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    const QString openingToken =
+        WhatSon::EditorComponent::Style::openingTokenForStyleAttributeValue(styleValue);
+    if (openingToken.isEmpty())
+    {
+        const QString errorMessage =
+            QStringLiteral("Unsupported style tag style value: %1").arg(styleValue.trimmed());
+        updateLastError(errorMessage);
+        return buildInvalidResult(
+            WhatSon::EditorComponent::Style::canonicalName(),
+            bodySourceText,
+            cursorPosition,
+            selectionLength,
+            errorMessage);
+    }
+
+    clearLastError();
+    QVariantMap result = buildSourceInsertionResult(
+        {
+            WhatSon::EditorComponent::Style::canonicalName(),
+            openingToken,
+            WhatSon::EditorComponent::Style::closingToken()
+        },
+        bodySourceText,
+        cursorPosition,
+        selectionLength);
+    result.insert(
+        QStringLiteral("styleValue"),
+        WhatSon::EditorComponent::Style::normalizedStyleAttributeValue(styleValue));
+    emit tagInserted(result);
+    return result;
+}
+
 QVariantMap SetTag::insertIntoBodyDocument(
     const QString& noteId,
     const QString& bodyDocumentText,

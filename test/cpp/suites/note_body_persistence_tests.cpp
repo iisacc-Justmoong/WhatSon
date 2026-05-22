@@ -119,11 +119,13 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     const QVector<StyleTokenExpectation> styleExpectations = {
         {QStringLiteral("Title"), 26, 700, 26, QStringLiteral("#E5FFFFFF")},
         {QStringLiteral("Title2"), 22, 700, 22, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Subtitle"), 17, 500, 17, QStringLiteral("#CCFFFFFF")},
         {QStringLiteral("Header"), 17, 600, 17, QStringLiteral("#E5FFFFFF")},
         {QStringLiteral("Header2"), 15, 600, 15, QStringLiteral("#E5FFFFFF")},
         {QStringLiteral("Body"), 12, 500, 12, QStringLiteral("#CCFFFFFF")},
         {QStringLiteral("Description"), 12, 600, 12, QStringLiteral("#99FFFFFF")},
-        {QStringLiteral("Caption"), 11, 400, 11, QStringLiteral("#80FFFFFF")}
+        {QStringLiteral("Caption"), 11, 400, 11, QStringLiteral("#80FFFFFF")},
+        {QStringLiteral("Footnote"), 10, 400, 10, QStringLiteral("#66FFFFFF")}
     };
 
     for (const StyleTokenExpectation& expectation : styleExpectations)
@@ -153,6 +155,18 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
             tokenRecoveredSource == tokenSourceText,
             qPrintable(tokenRoundTrippedHtml));
     }
+
+    const QString bodyFallbackSourceText = QStringLiteral("<style>Body fallback text</style>");
+    const QString bodyFallbackEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        bodyFallbackSourceText);
+    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-size:12px;")));
+    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-weight:500;")));
+    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("line-height:12px;")));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), bodyFallbackEditorHtml),
+        bodyFallbackSourceText);
 
     const QString sourceText = QStringLiteral(
         "<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14 "

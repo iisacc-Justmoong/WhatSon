@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 namespace WhatSon::EditorComponent
 {
@@ -29,6 +30,9 @@ namespace WhatSon::EditorComponent
         static QString openingToken();
         static QString closingToken();
         static QString defaultEditorFontFamily();
+        static QStringList styleAttributeValues();
+        static QString normalizedStyleAttributeValue(QString value);
+        static QString openingTokenForStyleAttributeValue(QString value);
         static StyleToken lvrsTextStyleTokenFromName(QString tokenName);
         static QString bodyEditorCssDeclaration();
         static QString attributeValueFromRawToken(const QString& rawTagText, const QString& attributeName);

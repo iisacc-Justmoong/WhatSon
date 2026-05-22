@@ -2014,6 +2014,75 @@ QVariantMap NoteEditorDocumentSession::insertFormatTagIntoSource(
     return result;
 }
 
+QVariantMap NoteEditorDocumentSession::insertStyleTagIntoSource(
+    const QString& styleValue,
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const QString& selectedText)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
+        sourceText,
+        cursorPosition,
+        selectionLength,
+        selectedText);
+    const int sourceSelectionStart = sourcePositionForEditorSelectionStart(
+        sourceText,
+        editorSelectionRange.editorStart);
+    const int sourceSelectionEnd = editorSelectionRange.editorStart == editorSelectionRange.editorEnd
+        ? sourceSelectionStart
+        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionRange.editorEnd);
+
+    SetTag tagInput;
+    QVariantMap result = tagInput.insertStyleTagIntoSource(
+        styleValue,
+        sourceText,
+        sourceSelectionStart,
+        sourceSelectionEnd - sourceSelectionStart);
+
+    const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        resultSourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+    result.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+    result.insert(
+        QStringLiteral("editorSelectionLength"),
+        editorSelectionRange.editorEnd - editorSelectionRange.editorStart);
+
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        setLastError(result.value(QStringLiteral("errorMessage")).toString());
+        return result;
+    }
+
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        editorCursorPositionForSourcePosition(
+            resultSourceText,
+            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+    setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    if (hasActiveNote())
+    {
+        m_activeBodySourceText = resultSourceText;
+        m_activeBodySourceDirtyForEditorSession = true;
+        m_rawPushController.discardPendingPushForFile(m_editorFilePath);
+    }
+    setLastError(QString());
+    return result;
+}
+
 QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
     const QString& editorDocumentText,
     const int cursorPosition,

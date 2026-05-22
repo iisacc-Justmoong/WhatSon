@@ -30,6 +30,11 @@ public:
         const QString& bodySourceText,
         int cursorPosition,
         int selectionLength = 0);
+    Q_INVOKABLE QVariantMap insertStyleTagIntoSource(
+        const QString& styleValue,
+        const QString& bodySourceText,
+        int cursorPosition,
+        int selectionLength = 0);
     Q_INVOKABLE QVariantMap insertIntoBodyDocument(
         const QString& noteId,
         const QString& bodyDocumentText,

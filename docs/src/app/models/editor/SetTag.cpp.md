@@ -12,6 +12,9 @@ Implements the `SetTag` editor-domain input object.
   placeholder `resource` body block.
   `component/style` provides the style wrapper tokens while `SetTag` converts that descriptor into the generic insertion
   flow.
+- `insertStyleTagIntoSource(...)` is the specialized style wrapper entrypoint used by the editor toolbar. It validates
+  the requested style value through `component/style`, preserves toggle behavior through the shared insertion flow, and
+  emits the bare `<style>` token for Body fallback.
 - Selection mutation wraps selected source text between the opening and closing tokens.
 - If a non-empty selection is already exactly enclosed by the same paired static tag, applying that tag toggles the
   format off by removing the surrounding tokens instead of nesting a duplicate wrapper. The result reports this through

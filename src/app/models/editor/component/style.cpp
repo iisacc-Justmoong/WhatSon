@@ -191,44 +191,129 @@ namespace WhatSon::EditorComponent
 
     StyleToken Style::lvrsTextStyleTokenFromName(QString tokenName)
     {
+        const QString styleAttributeValue = normalizedStyleAttributeValue(tokenName);
+
+        if (styleAttributeValue == QStringLiteral("Title"))
+        {
+            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#E5FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Title2"))
+        {
+            return {true, QStringLiteral("title2"), 22, QFont::Bold, QStringLiteral("Bold"), 22, QStringLiteral("#E5FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Subtitle"))
+        {
+            return {true, QStringLiteral("subtitle"), 17, QFont::Medium, QStringLiteral("Medium"), 17, QStringLiteral("#CCFFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Header"))
+        {
+            return {true, QStringLiteral("header"), 17, QFont::DemiBold, QStringLiteral("SemiBold"), 17, QStringLiteral("#E5FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Header2"))
+        {
+            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#E5FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Body"))
+        {
+            return {true, QStringLiteral("body"), 12, QFont::Medium, QStringLiteral("Medium"), 12, QStringLiteral("#CCFFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Description"))
+        {
+            return {true, QStringLiteral("description"), 12, QFont::DemiBold, QStringLiteral("SemiBold"), 12, QStringLiteral("#99FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Caption"))
+        {
+            return {true, QStringLiteral("caption"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#80FFFFFF")};
+        }
+        if (styleAttributeValue == QStringLiteral("Footnote"))
+        {
+            return {true, QStringLiteral("footnote"), 10, QFont::Normal, QStringLiteral("Regular"), 10, QStringLiteral("#66FFFFFF")};
+        }
+
         tokenName = tokenName.trimmed().toCaseFolded();
         tokenName.remove(QLatin1Char('-'));
         tokenName.remove(QLatin1Char('_'));
         tokenName.remove(QLatin1Char(' '));
-
-        if (tokenName == QStringLiteral("title"))
-        {
-            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#E5FFFFFF")};
-        }
-        if (tokenName == QStringLiteral("title2"))
-        {
-            return {true, QStringLiteral("title2"), 22, QFont::Bold, QStringLiteral("Bold"), 22, QStringLiteral("#E5FFFFFF")};
-        }
-        if (tokenName == QStringLiteral("header"))
-        {
-            return {true, QStringLiteral("header"), 17, QFont::DemiBold, QStringLiteral("SemiBold"), 17, QStringLiteral("#E5FFFFFF")};
-        }
-        if (tokenName == QStringLiteral("header2"))
-        {
-            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#E5FFFFFF")};
-        }
-        if (tokenName == QStringLiteral("body"))
-        {
-            return {true, QStringLiteral("body"), 12, QFont::Medium, QStringLiteral("Medium"), 12, QStringLiteral("#CCFFFFFF")};
-        }
-        if (tokenName == QStringLiteral("description"))
-        {
-            return {true, QStringLiteral("description"), 12, QFont::DemiBold, QStringLiteral("SemiBold"), 12, QStringLiteral("#99FFFFFF")};
-        }
-        if (tokenName == QStringLiteral("caption"))
-        {
-            return {true, QStringLiteral("caption"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#80FFFFFF")};
-        }
         if (tokenName == QStringLiteral("disabled"))
         {
             return {true, QStringLiteral("disabled"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")};
         }
         return {};
+    }
+
+    QStringList Style::styleAttributeValues()
+    {
+        return {
+            QStringLiteral("Title"),
+            QStringLiteral("Title2"),
+            QStringLiteral("Subtitle"),
+            QStringLiteral("Header"),
+            QStringLiteral("Header2"),
+            QStringLiteral("Body"),
+            QStringLiteral("Description"),
+            QStringLiteral("Caption"),
+            QStringLiteral("Footnote")
+        };
+    }
+
+    QString Style::normalizedStyleAttributeValue(QString value)
+    {
+        value = decodeXmlEntities(value).trimmed().toCaseFolded();
+        value.remove(QLatin1Char('-'));
+        value.remove(QLatin1Char('_'));
+        value.remove(QLatin1Char(' '));
+
+        if (value.isEmpty() || value == QStringLiteral("body"))
+        {
+            return QStringLiteral("Body");
+        }
+        if (value == QStringLiteral("title"))
+        {
+            return QStringLiteral("Title");
+        }
+        if (value == QStringLiteral("title2"))
+        {
+            return QStringLiteral("Title2");
+        }
+        if (value == QStringLiteral("subtitle"))
+        {
+            return QStringLiteral("Subtitle");
+        }
+        if (value == QStringLiteral("header"))
+        {
+            return QStringLiteral("Header");
+        }
+        if (value == QStringLiteral("header2"))
+        {
+            return QStringLiteral("Header2");
+        }
+        if (value == QStringLiteral("description"))
+        {
+            return QStringLiteral("Description");
+        }
+        if (value == QStringLiteral("caption"))
+        {
+            return QStringLiteral("Caption");
+        }
+        if (value == QStringLiteral("footnote"))
+        {
+            return QStringLiteral("Footnote");
+        }
+        return {};
+    }
+
+    QString Style::openingTokenForStyleAttributeValue(QString value)
+    {
+        const QString normalizedValue = normalizedStyleAttributeValue(value);
+        if (normalizedValue.isEmpty())
+        {
+            return {};
+        }
+        if (normalizedValue == QStringLiteral("Body"))
+        {
+            return openingToken();
+        }
+        return QStringLiteral("<style style=\"%1\">").arg(escapeHtmlAttribute(normalizedValue));
     }
 
     QString Style::bodyEditorCssDeclaration()

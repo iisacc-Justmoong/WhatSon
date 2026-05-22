@@ -15,6 +15,9 @@ methods for inserting those templates into editor source text or into a serializ
 - `configureTagName(...)` changes the active tag only when the requested name resolves to a known static template.
 - `insertIntoSource(...)` inserts the active template into editor-facing body source text.
 - `insertNamedTagIntoSource(...)` performs the same mutation without changing the active tag.
+- `insertStyleTagIntoSource(...)` inserts the custom style wrapper with a canonical `style` attribute value. The
+  `Body` value intentionally serializes as `<style>...</style>` because missing/empty style attributes fall back to
+  Body.
 - Paired inline/static wrappers are toggle-aware: when the selected source text is exactly enclosed by the same tag,
   mutation removes that wrapper and returns `toggledOff: true`.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to
@@ -22,9 +25,9 @@ methods for inserting those templates into editor source text or into a serializ
   `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - `resource` is a static placeholder block (`<resource />`) and is line-isolated during source mutation so persistence
   stores it as a direct body child rather than escaped paragraph prose.
-- `style` is a paired static wrapper (`<style>...</style>`) whose wrapper tokens and projection helpers live in
-  `component/style`. Attribute values such as `font`, `size`, `color`, and existing `height` are set by the normal
-  tag-attribute path and interpreted by the style component during HTML projection.
+- `style` is a paired static wrapper (`<style>...</style>`) whose wrapper tokens, canonical `style` attribute values,
+  and projection helpers live in `component/style`. Attribute values such as `font`, `size`, `color`, and existing
+  `height` are set by the normal tag-attribute path and interpreted by the style component during HTML projection.
 - Unsupported tag names return an invalid result and leave source/document text unchanged.
 
 ## Signals And Slots

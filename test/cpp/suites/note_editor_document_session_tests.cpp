@@ -642,6 +642,42 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         breakResult.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("Alpha\n</break>\n Beta\nGamma"));
     QVERIFY(breakResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("<br/>")));
+
+    const QVariantMap titleStyleResult = session.insertStyleTagIntoSource(
+        QStringLiteral("Title"),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(titleStyleResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        titleStyleResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style style=\"Title\">Beta</style>\nGamma"));
+    QVERIFY(titleStyleResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("font-size:26px;")));
+    QCOMPARE(
+        titleStyleResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("Alpha <style style=\"Title\">Beta</style>").size());
+
+    const QVariantMap bodyStyleResult = session.insertStyleTagIntoSource(
+        QStringLiteral("Body"),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(bodyStyleResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        bodyStyleResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style>Beta</style>\nGamma"));
+    QVERIFY(bodyStyleResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("font-size:12px;")));
+    QVERIFY(!bodyStyleResult.value(QStringLiteral("openingToken")).toString().contains(QStringLiteral("style=\"Body\"")));
+
+    const QVariantMap invalidStyleResult = session.insertStyleTagIntoSource(
+        QStringLiteral("Unknown"),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(!invalidStyleResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        invalidStyleResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha Beta\nGamma"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()

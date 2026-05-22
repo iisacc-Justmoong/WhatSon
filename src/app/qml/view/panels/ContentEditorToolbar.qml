@@ -34,9 +34,22 @@ LV.HStack {
     readonly property real responsiveAvailableContentWidth: Math.max(LV.Theme.gapNone, editorToolbar.width - editorToolbar.toolbarPadding * 2)
     readonly property int firstVisibleToolbarItemIndex: editorToolbar.firstVisibleToolbarItemIndexForWidth(editorToolbar.responsiveAvailableContentWidth)
     readonly property bool formatButtonsEnabled: editorToolbar.enabled && !editorToolbar.editorReadOnly
+    readonly property var styleTagStyleValues: [
+        "Title",
+        "Title2",
+        "Subtitle",
+        "Header",
+        "Header2",
+        "Body",
+        "Description",
+        "Caption",
+        "Footnote"
+    ]
     property bool editorReadOnly: false
+    property string selectedStyleTagStyleValue: "Title"
 
     signal formatTagRequested(string tagName)
+    signal styleTagStyleRequested(string styleValue)
     signal toolbarActionRequested(string actionName)
 
     objectName: "EditorToolbar"
@@ -99,6 +112,34 @@ LV.HStack {
         return itemIndex >= editorToolbar.firstVisibleToolbarItemIndex;
     }
 
+    function styleTagStyleMenuItems() {
+        const result = [];
+        for (let valueIndex = 0; valueIndex < editorToolbar.styleTagStyleValues.length; ++valueIndex) {
+            const styleValue = String(editorToolbar.styleTagStyleValues[valueIndex]);
+            result.push({
+                "id": "style-tag-style-" + styleValue,
+                "label": styleValue,
+                "styleValue": styleValue,
+                "eventName": "editor.toolbar.style",
+                "eventPayload": ({
+                    "style": styleValue
+                })
+            });
+        }
+        return result;
+    }
+
+    function openStyleTagStyleContextMenu(anchorItem) {
+        if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
+            return false;
+
+        styleTagStyleContextMenu.items = editorToolbar.styleTagStyleMenuItems();
+        styleTagStyleContextMenu.selectedIndex = editorToolbar.styleTagStyleValues.indexOf(editorToolbar.selectedStyleTagStyleValue);
+        styleTagStyleContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
+        editorToolbar.toolbarActionRequested("editor.toolbar.style");
+        return true;
+    }
+
     component ToolbarComboBox: LV.ComboBox {
         id: toolbarComboBox
 
@@ -108,6 +149,7 @@ LV.HStack {
         property string figmaNodeId: ""
         property string figmaStepperNodeId: ""
         property int preferredToolbarWidth: LV.Theme.gapNone
+        property bool opensStyleTagStyleMenu: false
 
         arrow: LV.Stepper.Down
         Layout.minimumWidth: LV.Theme.gapNone
@@ -117,7 +159,14 @@ LV.HStack {
         tone: LV.ComboBox.Tone.Primary
         width: toolbarComboBox.preferredToolbarWidth
 
-        onClicked: editorToolbar.toolbarActionRequested(toolbarComboBox.actionName)
+        onClicked: {
+            if (toolbarComboBox.opensStyleTagStyleMenu) {
+                editorToolbar.openStyleTagStyleContextMenu(toolbarComboBox);
+                return;
+            }
+            if (toolbarComboBox.actionName.length > 0)
+                editorToolbar.toolbarActionRequested(toolbarComboBox.actionName);
+        }
     }
 
     component ToolbarGlyphButton: LV.IconButton {
@@ -246,12 +295,14 @@ LV.HStack {
 
                 ToolbarComboBox {
                     actionName: "editor.toolbar.style"
+                    enabled: editorToolbar.formatButtonsEnabled
                     figmaLabelNodeId: "I397:8570;254:868"
                     figmaNodeId: "397:8570"
                     figmaStepperNodeId: "I397:8570;254:869"
                     objectName: "style"
+                    opensStyleTagStyleMenu: true
                     preferredToolbarWidth: editorToolbar.figmaComboLargeWidth
-                    text: "Title"
+                    text: editorToolbar.selectedStyleTagStyleValue
                     visible: editorToolbar.toolbarResponsiveItemVisible(0)
                 }
 
@@ -436,6 +487,29 @@ LV.HStack {
                     tone: LV.AbstractButton.Default
                 }
             }
+        }
+    }
+
+    LV.ContextMenu {
+        id: styleTagStyleContextMenu
+
+        autoCloseOnTrigger: true
+        itemWidth: editorToolbar.figmaComboLargeWidth
+        items: editorToolbar.styleTagStyleMenuItems()
+        modal: false
+        objectName: "styleTagStyleContextMenu"
+        parent: editorToolbar.Window.window ? editorToolbar.Window.window.contentItem : null
+        selectedIndex: editorToolbar.styleTagStyleValues.indexOf(editorToolbar.selectedStyleTagStyleValue)
+
+        onItemTriggered: function(index, item) {
+            const styleValue = item && item.styleValue !== undefined && item.styleValue !== null
+                    ? String(item.styleValue)
+                    : "";
+            if (styleValue.length === 0)
+                return;
+
+            editorToolbar.selectedStyleTagStyleValue = styleValue;
+            editorToolbar.styleTagStyleRequested(styleValue);
         }
     }
 }

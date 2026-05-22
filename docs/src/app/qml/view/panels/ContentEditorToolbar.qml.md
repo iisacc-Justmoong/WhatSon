@@ -21,9 +21,17 @@ while staying a view-only command surface.
   metadata values.
 
 ## Behavior
-The toolbar exposes only two signals:
+The toolbar exposes only view-level signals:
 - `formatTagRequested(tagName)` for the existing editor format dispatch in `ContentViewLayout.qml`.
+- `styleTagStyleRequested(styleValue)` when the left `style` selector chooses a `<style ...>` tag `style`
+  attribute value.
 - `toolbarActionRequested(actionName)` for view-local hooks such as selector/menu button clicks.
+
+The leftmost `style` selector opens an LVRS `ContextMenu` instead of behaving as a bare button. Its string values are
+`Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`, `Description`, `Caption`, and `Footnote`. `Body` is the
+display fallback for an empty `style` attribute. Selecting an item updates only the selector display state and emits the
+selected string; `ContentViewLayout.qml` forwards that value to the C++ session API so source mutation remains outside
+this toolbar surface.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
