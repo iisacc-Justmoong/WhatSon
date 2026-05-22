@@ -22,8 +22,9 @@ methods for inserting those templates into editor source text or into a serializ
   `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - `resource` is a static placeholder block (`<resource />`) and is line-isolated during source mutation so persistence
   stores it as a direct body child rather than escaped paragraph prose.
-- `style` is a paired static wrapper (`<style>...</style>`). Attribute values such as `font`, `size`, `color`, and
-  `height` are set by the normal tag-attribute path and interpreted by note-body persistence during HTML projection.
+- `style` is a paired static wrapper (`<style>...</style>`) whose wrapper tokens and projection helpers live in
+  `component/style`. Attribute values such as `font`, `size`, `color`, and existing `height` are set by the normal
+  tag-attribute path and interpreted by the style component during HTML projection.
 - Unsupported tag names return an invalid result and leave source/document text unchanged.
 
 ## Signals And Slots

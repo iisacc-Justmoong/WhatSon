@@ -47,6 +47,7 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/component/Break.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/component/Callout.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/component/ResourceImageFrame.cpp"
+        "${CMAKE_SOURCE_DIR}/src/app/models/editor/component/style.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/EditorInputCommandFilter.hpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/EditorInputCommandFilter.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/editor/TagInsertionWriter.cpp"

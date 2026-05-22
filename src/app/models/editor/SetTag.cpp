@@ -1,5 +1,6 @@
 #include "app/models/editor/SetTag.h"
 
+#include "app/models/editor/component/style.h"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 
 #include <algorithm>
@@ -165,9 +166,9 @@ namespace
         if (normalized == QStringLiteral("style"))
         {
             return {
-                QStringLiteral("style"),
-                QStringLiteral("<style>"),
-                QStringLiteral("</style>")
+                WhatSon::EditorComponent::Style::canonicalName(),
+                WhatSon::EditorComponent::Style::openingToken(),
+                WhatSon::EditorComponent::Style::closingToken()
             };
         }
         if (normalized == QStringLiteral("break")

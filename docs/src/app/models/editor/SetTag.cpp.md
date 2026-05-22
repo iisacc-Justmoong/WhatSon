@@ -10,7 +10,8 @@ Implements the `SetTag` editor-domain input object.
   heading-style wrappers such as `header`, `subheader`, and `title`, inline formatting tags such as `bold` and
   `highlight`, canonical body `tag`, the custom `<style>...</style>` wrapper, the source divider token `break`, and a
   placeholder `resource` body block.
-  converts that descriptor into the generic `SetTag` insertion flow.
+  `component/style` provides the style wrapper tokens while `SetTag` converts that descriptor into the generic insertion
+  flow.
 - Selection mutation wraps selected source text between the opening and closing tokens.
 - If a non-empty selection is already exactly enclosed by the same paired static tag, applying that tag toggles the
   format off by removing the surrounding tokens instead of nesting a duplicate wrapper. The result reports this through

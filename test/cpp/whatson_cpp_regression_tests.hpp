@@ -58,6 +58,7 @@
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
+#include "app/models/editor/component/style.h"
 #include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/editor/SetProperty.h"
@@ -1296,6 +1297,7 @@ private slots:
     void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
     void calloutComponent_rendersFigmaCalloutBlock();
     void calloutComponent_plansBoundaryEditsAgainstDecoratedCursor();
+    void styleComponent_ownsStyleRawTokenProjection();
     void resourceFrame_rendersImageOnlyContainer();
     void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();

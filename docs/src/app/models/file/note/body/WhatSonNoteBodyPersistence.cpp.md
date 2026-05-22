@@ -94,7 +94,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   - `style` -> marker-backed `<span>` styling from `.wsnbody` attributes:
     `style` names an LVRS text token (`Title`, `Title2`, `Header`, `Header2`, `Body`, `Description`, `Caption`,
     `Disabled`) and supplies that token's size, weight, line height, and text color; `font`, `weight`, `size`, `color`,
-    `background`, `align`, and `height` remain optional overrides for the projected renderer CSS
+    `background`, `align`, and `height` remain optional overrides for the projected renderer CSS. The token metrics,
+    marker projection, and style-span matching policy are delegated to `models/editor/component/style`.
   - `callout` -> `component/Callout` HTML block with the Figma `280:7897` full-width wrapping surface
   - divider block tags (`<break/>` and legacy `<hr/>`) -> logical editor break line
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS

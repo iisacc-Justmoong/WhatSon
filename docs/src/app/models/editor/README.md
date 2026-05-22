@@ -13,6 +13,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   - `component/Break.cpp`
   - `component/Callout.h`
   - `component/Callout.cpp`
+  - `component/style.h`
+  - `component/style.cpp`
   - `component/ResourceImageFrame.h`
   - `component/ResourceImageFrame.cpp`
   - `EditorInputCommandFilter.hpp`
@@ -33,9 +35,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `SetTag` is the static `.wsnbody` RAW tag input object. It exposes a fixed allow-list of body tag templates,
   text or into a serialized `.wsnbody` document via `WhatSon::NoteBodyPersistence`. Component-specific template
   definitions can live under `component/`; `SetTag` consumes those descriptors and owns the generic mutation result
-  shape. The paired `style` text wrapper is part of this allow-list; its `style` attribute names an LVRS text token, and
-  note-body persistence projects the token metrics/color plus optional key/value overrides rather than letting QML own
-  that policy.
+  shape. The paired `style` text wrapper is part of this allow-list; `component/style` owns its LVRS token metrics,
+  marker-backed editor HTML projection, and source recovery helpers so note-body persistence delegates the component
+  policy rather than embedding it inline.
 - `TagInsertionWriter` is the persisted tag insertion command object. It reads a local `.wsnote`, delegates
   static tag source mutation to `SetTag`, and writes the resulting source back through `WhatSonLocalNoteFileStore` so
   the actual `.wsnbody` document is updated.
@@ -110,6 +112,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   source line origin. It does not put resource-frame background/border CSS on the `<img>` object, so text typed below
   the image cannot inherit frame styling from Qt rich text character-format carryover. It does not emit type/file-name
   display metadata or visible header/footer chrome.
+- `component/style` owns the proprietary paired `<style ...>...</style>` source wrapper. It provides the static wrapper
+  tokens to `SetTag`, maps LVRS text token names to Pretendard metrics/color, projects explicit attributes such as
+  `font`, `weight`, `size`, `color`, `background`, `align`, and existing `height` into editor CSS, and emits/recovers
+  the marker-backed `<span>` used by the LVRS text editor path.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
