@@ -195,23 +195,23 @@ namespace WhatSon::EditorComponent
 
         if (styleAttributeValue == QStringLiteral("Title"))
         {
-            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#E5FFFFFF")};
+            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#0a84ff")};
         }
         if (styleAttributeValue == QStringLiteral("Title2"))
         {
-            return {true, QStringLiteral("title2"), 22, QFont::Bold, QStringLiteral("Bold"), 22, QStringLiteral("#E5FFFFFF")};
+            return {true, QStringLiteral("title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22, QStringLiteral("#A571E6")};
         }
         if (styleAttributeValue == QStringLiteral("Subtitle"))
         {
-            return {true, QStringLiteral("subtitle"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#CCFFFFFF")};
+            return {true, QStringLiteral("subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15, QStringLiteral("#548AF7")};
         }
         if (styleAttributeValue == QStringLiteral("Header"))
         {
-            return {true, QStringLiteral("header"), 17, QFont::DemiBold, QStringLiteral("SemiBold"), 17, QStringLiteral("#E5FFFFFF")};
+            return {true, QStringLiteral("header"), 17, QFont::Bold, QStringLiteral("Bold"), 17, QStringLiteral("#32d74b")};
         }
         if (styleAttributeValue == QStringLiteral("Header2"))
         {
-            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#E5FFFFFF")};
+            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#D6AE58")};
         }
         if (styleAttributeValue == QStringLiteral("Body"))
         {
@@ -219,11 +219,11 @@ namespace WhatSon::EditorComponent
         }
         if (styleAttributeValue == QStringLiteral("Description"))
         {
-            return {true, QStringLiteral("description"), 12, QFont::DemiBold, QStringLiteral("SemiBold"), 12, QStringLiteral("#99FFFFFF")};
+            return {true, QStringLiteral("description"), 12, QFont::Normal, QStringLiteral("Regular"), 12, QStringLiteral("#99FFFFFF")};
         }
         if (styleAttributeValue == QStringLiteral("Caption"))
         {
-            return {true, QStringLiteral("caption"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#80FFFFFF")};
+            return {true, QStringLiteral("caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11, QStringLiteral("#80FFFFFF")};
         }
         if (styleAttributeValue == QStringLiteral("Footnote"))
         {

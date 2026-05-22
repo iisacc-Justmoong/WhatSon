@@ -469,6 +469,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: styleTagStyleContextMenu")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"styleTagStyleContextMenu\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("itemDelegate: styleTagStyleMenuItemDelegate")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("showIconSlot: false")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: descriptor.previewPixelSize")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("font.pixelSize: styleMenuItem.previewPixelSize")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewTokenName: \"LV.Theme.textTitle\"")));
@@ -477,11 +478,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewWeightTokenName: \"LV.Theme.textHeaderWeight\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewWeightTokenName: \"LV.Theme.textCaptionWeight\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewWeightTokenName: \"LV.Theme.textDescriptionWeight\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName: \"LV.Theme.primary\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName: \"LV.Theme.accentPurple\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName: \"LV.Theme.accentBlue\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName: \"LV.Theme.success\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName: \"LV.Theme.accentYellowMuted\"")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("previewColorTokenName:")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("previewColor: descriptor.previewColor")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("property color previewColor")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("color: styleMenuItem.previewColor")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: LV.Theme.textTitle")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: LV.Theme.textTitle2")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: LV.Theme.textBodyLg")));
@@ -492,7 +492,6 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: LV.Theme.textCaption")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewPixelSize: LV.Theme.textDisabled")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewWeight: LV.Theme.textBodyWeight")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("previewColor: LV.Theme.bodyColor")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("items: editorToolbar.styleTagStyleMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("selectedIndex: editorToolbar.styleTagStyleValues.indexOf(editorToolbar.selectedStyleTagStyleValue)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("onItemTriggered: function(index, item)")));

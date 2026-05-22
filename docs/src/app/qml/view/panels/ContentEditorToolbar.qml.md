@@ -35,8 +35,12 @@ this toolbar surface.
 The menu items use a custom LVRS `MenuItem` delegate that previews each style with the same LVRS typography token
 descriptor used by the style component contract. For example, `Title` binds to `LV.Theme.textTitle`, so the context
 menu row displays the `Title` label at that token's pixel size instead of using the default menu text size. The same
-descriptor also supplies token-aligned weight, style name, line height, letter spacing, and color metadata for the
-preview row.
+descriptor also supplies token-aligned weight, style name, line height, and letter spacing for the preview row. Style
+preview descriptors may mix size and weight tokens instead of staying inside one text token; for example `Title`
+previews as `textTitle` plus `textTitleWeight`, while `Header` previews as a bold `textHeader` variant. The context menu
+preview intentionally carries no per-style color metadata, leaving item text color to the default LVRS label/menu
+state. Style selector menu entries disable the LVRS `MenuItem` left icon slot through `showIconSlot: false`, so the
+preview text starts without the default menu icon placeholder.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
@@ -47,8 +51,11 @@ It does not read files, own note/session state, parse editor text, or persist fo
 
 ## Guardrails
 - Keep root and layout primitives in LVRS (`LV.HStack`, `LV.ComboBox`, `LV.IconButton`, `LV.IconMenuButton`).
-- Keep the style selector popup on LVRS `ContextMenu`/`MenuItem` delegates and bind preview typography to LVRS theme
-  tokens instead of hard-coded QML font sizes.
+- Keep the style selector popup on LVRS `ContextMenu`/`MenuItem` delegates and bind preview size, weight, style name,
+  and line height to LVRS theme tokens instead of hard-coded QML visual values. Do not add per-style colors to the
+  context menu item previews.
+- Keep the style selector popup's `showIconSlot: false` binding in place; do not fake this by painting over the icon
+  area or shrinking unrelated menu metrics.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 

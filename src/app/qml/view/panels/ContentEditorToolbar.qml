@@ -120,99 +120,99 @@ LV.HStack {
         if (normalizedStyleValue === "Title") {
             return {
                 previewTokenName: "LV.Theme.textTitle",
+                previewWeightTokenName: "LV.Theme.textTitleWeight",
                 previewPixelSize: LV.Theme.textTitle,
                 previewWeight: LV.Theme.textTitleWeight,
                 previewStyleName: LV.Theme.textTitleStyleName,
                 previewLineHeight: LV.Theme.textTitleLineHeight,
-                previewLetterSpacing: LV.Theme.textTitleLetterSpacing,
-                previewColor: LV.Theme.titleHeaderColor
+                previewLetterSpacing: LV.Theme.textTitleLetterSpacing
             };
         }
         if (normalizedStyleValue === "Title2") {
             return {
                 previewTokenName: "LV.Theme.textTitle2",
+                previewWeightTokenName: "LV.Theme.textHeaderWeight",
                 previewPixelSize: LV.Theme.textTitle2,
-                previewWeight: LV.Theme.textTitle2Weight,
-                previewStyleName: LV.Theme.textTitle2StyleName,
+                previewWeight: LV.Theme.textHeaderWeight,
+                previewStyleName: LV.Theme.textHeaderStyleName,
                 previewLineHeight: LV.Theme.textTitle2LineHeight,
-                previewLetterSpacing: LV.Theme.textTitle2LetterSpacing,
-                previewColor: LV.Theme.titleHeaderColor
+                previewLetterSpacing: LV.Theme.textTitle2LetterSpacing
             };
         }
         if (normalizedStyleValue === "Subtitle") {
             return {
                 previewTokenName: "LV.Theme.textBodyLg",
+                previewWeightTokenName: "LV.Theme.textBodyWeight",
                 previewPixelSize: LV.Theme.textBodyLg,
-                previewWeight: LV.Theme.textBodyLgWeight,
-                previewStyleName: LV.Theme.textBodyLgStyleName,
+                previewWeight: LV.Theme.textBodyWeight,
+                previewStyleName: LV.Theme.textBodyStyleName,
                 previewLineHeight: LV.Theme.textHeader2LineHeight,
-                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing,
-                previewColor: LV.Theme.bodyColor
+                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing
             };
         }
         if (normalizedStyleValue === "Header") {
             return {
                 previewTokenName: "LV.Theme.textHeader",
+                previewWeightTokenName: "LV.Theme.textTitleWeight",
                 previewPixelSize: LV.Theme.textHeader,
-                previewWeight: LV.Theme.textHeaderWeight,
-                previewStyleName: LV.Theme.textHeaderStyleName,
+                previewWeight: LV.Theme.textTitleWeight,
+                previewStyleName: LV.Theme.textTitleStyleName,
                 previewLineHeight: LV.Theme.textHeaderLineHeight,
-                previewLetterSpacing: LV.Theme.textHeaderLetterSpacing,
-                previewColor: LV.Theme.titleHeaderColor
+                previewLetterSpacing: LV.Theme.textHeaderLetterSpacing
             };
         }
         if (normalizedStyleValue === "Header2") {
             return {
                 previewTokenName: "LV.Theme.textHeader2",
+                previewWeightTokenName: "LV.Theme.textHeaderWeight",
                 previewPixelSize: LV.Theme.textHeader2,
-                previewWeight: LV.Theme.textHeader2Weight,
-                previewStyleName: LV.Theme.textHeader2StyleName,
+                previewWeight: LV.Theme.textHeaderWeight,
+                previewStyleName: LV.Theme.textHeaderStyleName,
                 previewLineHeight: LV.Theme.textHeader2LineHeight,
-                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing,
-                previewColor: LV.Theme.titleHeaderColor
+                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing
             };
         }
         if (normalizedStyleValue === "Description") {
             return {
                 previewTokenName: "LV.Theme.textDescription",
+                previewWeightTokenName: "LV.Theme.textCaptionWeight",
                 previewPixelSize: LV.Theme.textDescription,
-                previewWeight: LV.Theme.textDescriptionWeight,
-                previewStyleName: LV.Theme.textDescriptionStyleName,
+                previewWeight: LV.Theme.textCaptionWeight,
+                previewStyleName: LV.Theme.textCaptionStyleName,
                 previewLineHeight: LV.Theme.textDescriptionLineHeight,
-                previewLetterSpacing: LV.Theme.textDescriptionLetterSpacing,
-                previewColor: LV.Theme.descriptionColor
+                previewLetterSpacing: LV.Theme.textDescriptionLetterSpacing
             };
         }
         if (normalizedStyleValue === "Caption") {
             return {
                 previewTokenName: "LV.Theme.textCaption",
+                previewWeightTokenName: "LV.Theme.textDescriptionWeight",
                 previewPixelSize: LV.Theme.textCaption,
-                previewWeight: LV.Theme.textCaptionWeight,
-                previewStyleName: LV.Theme.textCaptionStyleName,
+                previewWeight: LV.Theme.textDescriptionWeight,
+                previewStyleName: LV.Theme.textDescriptionStyleName,
                 previewLineHeight: LV.Theme.textCaptionLineHeight,
-                previewLetterSpacing: LV.Theme.textCaptionLetterSpacing,
-                previewColor: LV.Theme.captionColor
+                previewLetterSpacing: LV.Theme.textCaptionLetterSpacing
             };
         }
         if (normalizedStyleValue === "Footnote") {
             return {
                 previewTokenName: "LV.Theme.textDisabled",
+                previewWeightTokenName: "LV.Theme.textCaptionWeight",
                 previewPixelSize: LV.Theme.textDisabled,
-                previewWeight: LV.Theme.textDisabledWeight,
-                previewStyleName: LV.Theme.textDisabledStyleName,
+                previewWeight: LV.Theme.textCaptionWeight,
+                previewStyleName: LV.Theme.textCaptionStyleName,
                 previewLineHeight: LV.Theme.textDisabledLineHeight,
-                previewLetterSpacing: LV.Theme.textDisabledLetterSpacing,
-                previewColor: LV.Theme.disabledColor
+                previewLetterSpacing: LV.Theme.textDisabledLetterSpacing
             };
         }
         return {
             previewTokenName: "LV.Theme.textBody",
+            previewWeightTokenName: "LV.Theme.textBodyWeight",
             previewPixelSize: LV.Theme.textBody,
             previewWeight: LV.Theme.textBodyWeight,
             previewStyleName: LV.Theme.textBodyStyleName,
             previewLineHeight: LV.Theme.textBodyLineHeight,
-            previewLetterSpacing: LV.Theme.textBodyLetterSpacing,
-            previewColor: LV.Theme.bodyColor
+            previewLetterSpacing: LV.Theme.textBodyLetterSpacing
         };
     }
 
@@ -238,13 +238,14 @@ LV.HStack {
                 id: "style-tag-style-" + styleValue,
                 label: styleValue,
                 styleValue: styleValue,
+                showIconSlot: false,
                 previewTokenName: descriptor.previewTokenName,
+                previewWeightTokenName: descriptor.previewWeightTokenName,
                 previewPixelSize: descriptor.previewPixelSize,
                 previewWeight: descriptor.previewWeight,
                 previewStyleName: descriptor.previewStyleName,
                 previewLineHeight: descriptor.previewLineHeight,
                 previewLetterSpacing: descriptor.previewLetterSpacing,
-                previewColor: descriptor.previewColor,
                 eventName: "editor.toolbar.style",
                 eventPayload: ({
                     style: styleValue
@@ -402,10 +403,6 @@ LV.HStack {
             property var modelData: ({})
             property int index: modelData.index === undefined ? -1 : modelData.index
             property var entry: modelData.entry
-            property color previewColor: styleMenuItem.entry
-                    && styleMenuItem.entry.previewColor !== undefined
-                    ? styleMenuItem.entry.previewColor
-                    : LV.Theme.bodyColor
             property real previewLetterSpacing: styleMenuItem.entry
                     && styleMenuItem.entry.previewLetterSpacing !== undefined
                     ? Number(styleMenuItem.entry.previewLetterSpacing) || 0
@@ -433,6 +430,7 @@ LV.HStack {
             label: styleMenuItem.entry && styleMenuItem.entry.label !== undefined
                     ? String(styleMenuItem.entry.label)
                     : ""
+            showIconSlot: false
             state: styleMenuItem.modelData.state === undefined
                     ? styleMenuItem.defaultState
                     : styleMenuItem.modelData.state
@@ -445,9 +443,6 @@ LV.HStack {
                 LV.Label {
                     id: stylePreviewLabel
 
-                    color: styleMenuItem.effectiveEnabled
-                           ? styleMenuItem.previewColor
-                           : LV.Theme.disabledColor
                     elide: Text.ElideRight
                     font.letterSpacing: styleMenuItem.previewLetterSpacing
                     font.pixelSize: styleMenuItem.previewPixelSize
