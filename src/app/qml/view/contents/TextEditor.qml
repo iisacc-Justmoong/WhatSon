@@ -436,14 +436,13 @@ LV.TextEditor {
     }
 
     function restoreEditorCursorPosition(nextCursorPosition) {
-        const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));
-        const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);
+        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
         textEditor.forceEditorFocus();
         textEditor.cursorPosition = targetCursorPosition;
         textEditor.deselect();
         textEditor.ensureCursorVisibleInViewport();
         Qt.callLater(function () {
-            const deferredCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);
+            const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);
             textEditor.forceEditorFocus();
             textEditor.cursorPosition = deferredCursorPosition;
             textEditor.deselect();
@@ -493,14 +492,13 @@ LV.TextEditor {
         const selectionStart = textEditor.normalizedSelectionStart();
         const selectionEnd = textEditor.normalizedSelectionEnd();
         const hasSelection = selectionEnd > selectionStart;
-        const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));
+        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
 
         textEditor.editorFrameViewportRefreshApplying = true;
         try {
             textEditor.text = nextText === undefined || nextText === null
                     ? ""
                     : String(nextText);
-            const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);
 
             if (hasSelection)
                 textEditor.select(

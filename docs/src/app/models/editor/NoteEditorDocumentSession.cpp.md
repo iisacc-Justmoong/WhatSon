@@ -37,10 +37,10 @@ Implements the active note editor document session.
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
-    Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, delegates the
-    callout-specific boundary rule to `component/Callout`, applies the returned source edit, and reprojects the editor
-    document. The callout frame-chrome object replacement and renderer-only line characters are skipped for source
-    mapping and then re-applied when returning the decorated TextEdit cursor position.
+    Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, unwraps or
+    removes a callout at its content start, or moves the cursor to the line after the callout when Enter/Return is
+    pressed inside it. The callout frame-chrome object replacement is skipped for source mapping and then re-applied when
+    returning the decorated TextEdit cursor position.
 
 ## Guardrails
 
@@ -96,14 +96,14 @@ Implements the active note editor document session.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`.
-- Callout boundary keys are source mutations applied by this class, but the callout-specific range parsing and edit
-  planning live in `component/Callout`. Backspace at the callout content start removes only the `<callout>` wrapper when
-  content exists, or removes the whole empty callout source line when it does not. Enter/Return inside a callout never
-  inserts text inside the wrapper; it places the cursor on the following source line outside the wrapper, creating that
-  following line for a trailing callout. Because the visual callout frame uses one generated chrome object for the
-  leading bar, the session supplies source-visible cursor mapping and applies the `CalloutBoundaryEdit` returned by the
-  component. If Enter is pressed on the frame chrome immediately before the callout content, `component/Callout` plans a
-  new line before `<callout>` instead of consuming the key as an inside-callout exit.
+- Callout boundary keys are also source mutations owned by this class. Backspace at the callout content start removes
+  only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does not.
+  Enter/Return inside a callout never inserts text inside the wrapper; it places the cursor on the following source
+  line outside the wrapper, creating that following line for a trailing callout. Because the visual callout frame uses
+  one generated chrome object for the leading bar, this class converts between decorated TextEdit offsets and source-visible
+  offsets before applying the boundary rule. If Enter is pressed on the frame chrome immediately before the callout
+  content, the session treats that as the source position before `<callout>` and inserts a new line above the callout
+  instead of consuming the key as an inside-callout exit.
 - It must not expose the raw XML body file as the editor file path.
 
 ## 한국어
@@ -139,11 +139,9 @@ Implements the active note editor document session.
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
-  첫 렌더링 위치로 매핑한다.
-- 콜아웃 경계 키는 이 세션이 적용하지만, 콜아웃 source range 탐색과 boundary edit 계획은 `component/Callout`이
-  맡는다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만 제거하고, 내용이 없으면 빈 콜아웃 줄
-  전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지 않고 닫는 태그 뒤 다음 source line으로
-  커서를 옮긴다. trailing callout이면 그 다음 줄을 새로 만든다. 세션은 source-visible cursor mapper를 제공하고
-  `CalloutBoundaryEdit`를 active source와 editor HTML projection에 반영한다. content 바로 왼쪽의 frame chrome
-  위치에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치에 새 줄 삽입을 계획해, 거터 라인이
-  줄지 않고 정상적으로 늘어나게 한다.
+- 콜아웃 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
+  제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지
+  않고 닫는 태그 뒤 다음 source line으로 커서를 옮긴다. trailing callout이면 그 다음 줄을 새로 만든다. leading bar
+  frame chrome의 object replacement는 source 좌표에서는 제외하고 TextEdit에 돌려줄 때만 장식 offset으로 다시
+  반영한다. 다만 content 바로 왼쪽의 frame chrome 위치에서 Enter를 누르면 이를 콜아웃 내부 탈출로 보지 않고
+  `<callout>` 앞 source 위치에 새 줄을 삽입해, 거터 라인이 줄지 않고 정상적으로 늘어나게 한다.

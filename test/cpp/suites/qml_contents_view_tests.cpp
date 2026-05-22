@@ -168,29 +168,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function boundedCursorPosition(value)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("const deferredCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);")));
     QVERIFY(textEditorSource.contains(QStringLiteral("function replaceEditorFrameDocumentText(nextText, nextCursorPosition)")));
-    const qsizetype frameReplaceFunctionIndex =
-        textEditorSource.indexOf(QStringLiteral("function replaceEditorFrameDocumentText(nextText, nextCursorPosition)"));
-    QVERIFY(frameReplaceFunctionIndex >= 0);
-    const qsizetype frameReplaceTextAssignIndex =
-        textEditorSource.indexOf(QStringLiteral("textEditor.text = nextText"), frameReplaceFunctionIndex);
-    QVERIFY(frameReplaceTextAssignIndex > frameReplaceFunctionIndex);
-    QVERIFY(!textEditorSource.mid(frameReplaceFunctionIndex, frameReplaceTextAssignIndex - frameReplaceFunctionIndex)
-                 .contains(QStringLiteral("boundedCursorPosition(nextCursorPosition)")));
-    QVERIFY(textEditorSource.indexOf(
-                QStringLiteral(
-                    "const requestedCursorPosition = Math.max(0, Math.floor(Number(nextCursorPosition) || 0));"),
-                frameReplaceFunctionIndex)
-            > frameReplaceFunctionIndex);
-    QVERIFY(textEditorSource.indexOf(
-                QStringLiteral(
-                    "const targetCursorPosition = textEditor.boundedCursorPosition(requestedCursorPosition);"),
-                frameReplaceTextAssignIndex)
-            > frameReplaceTextAssignIndex);
     QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
     QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
