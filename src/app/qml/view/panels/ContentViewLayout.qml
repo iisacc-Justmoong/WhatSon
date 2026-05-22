@@ -451,8 +451,8 @@ Item {
                     onReadFinished: function(path) {
                         contentViewLayout.markEditorSessionFileReadyForRawPush(path);
                     }
-                    onTextEdited: function(text) {
-                        contentViewLayout.requestEditorModifiedRawPush(text);
+                    onTextEdited: function() {
+                        contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
                     }
                     onSyncFinished: function(path) {
                         const syncedPath = path === undefined || path === null ? "" : String(path).trim();

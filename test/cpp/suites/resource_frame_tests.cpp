@@ -25,8 +25,9 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
 
     QVERIFY(html.contains(QStringLiteral("<!--whatson-resource-source:")));
     QVERIFY(html.startsWith(QStringLiteral("<!--whatson-resource-source:")));
-    QVERIFY(html.contains(QStringLiteral("class=\"whatson-resource-frame\"")));
-    QVERIFY(html.contains(QStringLiteral("<table")));
+    QVERIFY(html.contains(QStringLiteral("class=\"whatson-resource-frame whatson-resource-media\"")));
+    QVERIFY(!html.contains(QStringLiteral("<table")));
+    QVERIFY(!html.contains(QStringLiteral("</table>")));
     QVERIFY(html.contains(QStringLiteral("margin-top:0px")));
     QVERIFY(html.contains(QStringLiteral("margin-bottom:0px")));
     QVERIFY(html.contains(QStringLiteral("margin-left:0px")));
@@ -56,10 +57,11 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(!html.contains(QStringLiteral("capture.wsresource")));
     QVERIFY(html.contains(QStringLiteral("<img src=\"file://")));
     QVERIFY(html.contains(QStringLiteral("alt=\"\"")));
-    QVERIFY(html.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(html.contains(QStringLiteral("width=\"960\"")));
+    QVERIFY(html.contains(QStringLiteral("height=\"540\"")));
     QVERIFY(!html.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!html.contains(QStringLiteral("height=\"352\"")));
-    QVERIFY(html.contains(QStringLiteral("height:auto")));
+    QVERIFY(html.contains(QStringLiteral("vertical-align:top")));
     QVERIFY(html.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(html.contains(QStringLiteral("data-source-width=\"1600\"")));
     QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
@@ -120,6 +122,8 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(centeredHtml.contains(QStringLiteral("data-display-top=\"0\"")));
     QVERIFY(centeredHtml.contains(QStringLiteral("data-frame-render-width=\"960\"")));
     QVERIFY(centeredHtml.contains(QStringLiteral("data-frame-display-height=\"180\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("width=\"960\"")));
+    QVERIFY(centeredHtml.contains(QStringLiteral("height=\"180\"")));
 
     const QImage centeredPreviewImage(previewPathFromHtml(centeredHtml));
     QVERIFY(!centeredPreviewImage.isNull());
@@ -159,6 +163,8 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-display-left=\"120\"")));
     QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-frame-render-width=\"1200\"")));
     QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("width=\"1200\"")));
+    QVERIFY(widerLockedHeightHtml.contains(QStringLiteral("height=\"540\"")));
 
     const QImage widerLockedHeightPreviewImage(previewPathFromHtml(widerLockedHeightHtml));
     QVERIFY(!widerLockedHeightPreviewImage.isNull());
@@ -176,6 +182,8 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-display-left=\"-120\"")));
     QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-frame-render-width=\"720\"")));
     QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("data-frame-display-height=\"540\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("width=\"720\"")));
+    QVERIFY(narrowerLockedHeightHtml.contains(QStringLiteral("height=\"540\"")));
 
     const QImage narrowerLockedHeightPreviewImage(previewPathFromHtml(narrowerLockedHeightHtml));
     QVERIFY(!narrowerLockedHeightPreviewImage.isNull());

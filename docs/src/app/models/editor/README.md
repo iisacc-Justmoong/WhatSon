@@ -75,8 +75,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource command
-  insertions and static format-tag source insertions for editor command flows, and persists LVRS `textEdited(text)` payloads directly to the selected `.wsnbody` after converting them
-  to canonical source. Idle RAW push requests are accepted only after LVRS `readFinished(path)` has marked the current
+  insertions and static format-tag source insertions for editor command flows, and persists the current full editor
+  document text directly to the selected `.wsnbody` after converting it to canonical source. The LVRS
+  `textEdited(text)` signal payload is not used as that persistence payload because it can omit rich resource-frame
+  markers. Idle RAW push requests are accepted only after LVRS `readFinished(path)` has marked the current
   mounted session file ready; modified-count input writes both the mounted session file and RAW body immediately, so the
   note editor shape at that call site becomes the filesystem baseline. The
   active editor session source becomes the save/sync truth for the active note after persistence converts that same
@@ -94,12 +96,11 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   generated chrome. Backspace on an explicit empty source paragraph is also a session-owned boundary edit: the first key
   press deletes the empty RAW source line and refreshes parsed line count instead of only deleting a hidden placeholder.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
-  image-resource frame as structured editor HTML, marker-wrapped source recovery, editor-width responsive media sizing
-  from the current editor viewport width, initial auto-height locking across later viewport reprojection, dynamic
-  centered image placement inside that frame-width media raster, and an image-only visible rendering surface inside the
-  frame container. Its table margins are zeroed, and the session projection places resource frames without adding
-  synthetic `<br/>` separators around them. It does not emit type/file-name display metadata or visible header/footer
-  chrome.
+  image-resource frame as a marker-wrapped atomic image object, marker-wrapped source recovery, editor-width responsive
+  media sizing from the current editor viewport width, initial auto-height locking across later viewport reprojection,
+  dynamic centered image placement inside that frame-width media raster, and an image-only visible rendering surface.
+  The emitted object has zero margins and `vertical-align:top`, so the resource frame top aligns with the canonical
+  source line origin. It does not emit type/file-name display metadata or visible header/footer chrome.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -146,8 +147,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
   resource 삽입은 2026-05-19 image paste command-result 흐름처럼 현재 커서/선택 범위를 적용한 source/editor HTML
-  결과를 반환하고, 저장은 일반 LVRS sync 흐름을 따른다. LVRS `textEdited(text)` 입력은 `readFinished(path)` 이후 즉시 canonical RAW로
-  변환되어 selected `.wsnbody`에 쓰이며, mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
+  결과를 반환하고, 저장은 일반 LVRS sync 흐름을 따른다. `readFinished(path)` 이후 editor revision이 증가하면 QML은
+  `textEdited(text)` signal payload가 아니라 현재 전체 editor document text를 전달하고, 세션은 이를 canonical RAW로
+  변환해 selected `.wsnbody`에 쓴다. mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
   남고 direct RAW 입력보다 오래된 payload를 active source로 되돌리지 않는다. active editor session
   source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
   pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
@@ -159,11 +161,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   빈 source paragraph의 Backspace는 첫 입력에서 빈 RAW source line을 삭제하고 parsed line count를 갱신하므로
   hidden placeholder만 삭제된 채 거터 row가 남지 않는다.
 - 현재: `component/ResourceImageFrame`은 standalone image `<resource ... />` 라인을 Figma `292:50` 기준의 editor
-  resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 structured HTML frame이며 editor width 100%를 채운다.
-  frame container 안에서 보이는 콘텐츠는 이미지 하나뿐이며, 이미지 media raster의 intrinsic width는 현재 editor
-  viewport 폭을 따른다. 첫 auto height는 `data-frame-display-height`로 고정되고 이후 viewport 재투영에서는 frame
-  폭과 x축 중앙 offset만 다시 계산한다. 실제 이미지 표시 박스는 frame 폭 안에서 동적으로 중앙 정렬된다. resource
-  frame table margin은 0으로 고정되고, 세션 projection은 resource frame 앞뒤에 합성 `<br/>` separator를 추가하지
-  않는다. 따라서 frame 좌상단은 canonical resource source line의 시작 위치에 맞는다. resource type, `...`, file
-  name 표시 정보는 HTML에도 내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
+  resource frame으로 렌더링한다. 이 frame은 source marker로 감싼 atomic image object이며, 캐시 raster의 intrinsic
+  width는 현재 editor viewport 폭을 따른다. 첫 auto height는 `data-frame-display-height`로 고정되고 이후 viewport
+  재투영에서는 frame 폭과 x축 중앙 offset만 다시 계산한다. 실제 이미지 표시 박스는 frame 폭 안에서 동적으로 중앙
+  정렬된다. resource frame object의 margin은 0으로 고정되고 `vertical-align:top`으로 배치되므로 frame 좌상단은
+  canonical resource source line의 시작 위치에 맞는다. resource type, `...`, file name 표시 정보는 HTML에도
+  내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

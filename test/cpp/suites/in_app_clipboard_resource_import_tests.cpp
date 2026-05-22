@@ -392,6 +392,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
 
     NoteEditorDocumentSession session;
     session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
 
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-editor-paste-note"), noteDirectoryPath));
@@ -428,18 +429,19 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_insertsImageResourceThrough
     QVERIFY(bodySourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("whatson-resource-frame")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-resource-preview=\"image-only-frame\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-preview=\"structured-frame\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-preview=\"single-object-raster\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-type-label")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("data-resource-file-name")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"8\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("vertical-align:top")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("whatson-resource-type-display")));
@@ -495,6 +497,7 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
 
     NoteEditorDocumentSession session;
     session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
 
     QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
     QVERIFY(session.openNoteForEditing(QStringLiteral("system-clipboard-editor-paste-note"), noteDirectoryPath));
@@ -520,11 +523,12 @@ void WhatSonCppRegressionTests::clipboardEditorPaste_capturesSystemClipboardImag
     QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
     QVERIFY(result.value(QStringLiteral("bodySourceText")).toString().contains(
         importedResource.value(QStringLiteral("resourcePath")).toString()));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"960\"")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"9\"")));
     QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height=\"352\"")));
-    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("height:auto")));
+    QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("vertical-align:top")));
     QVERIFY(result.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
 
     const QString resourcesFilePath =

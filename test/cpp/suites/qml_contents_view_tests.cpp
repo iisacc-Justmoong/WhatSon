@@ -364,8 +364,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onReadFinished: function(path)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.markEditorSessionFileReadyForRawPush(path);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function requestEditorModifiedRawPush(editorDocumentText)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onTextEdited: function(text)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestEditorModifiedRawPush(text);")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onTextEdited: function()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.requestEditorModifiedRawPush(text);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("const syncedPath")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("syncedPath !== contentViewLayout.editorSourceFilePath")));

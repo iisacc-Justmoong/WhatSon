@@ -839,9 +839,10 @@ namespace
                 return;
             }
             htmlLines.push_back(
-                WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
-                    noteId,
-                    pendingSourceLines.join(QLatin1Char('\n')),
+                WhatSon::NoteBodyPersistence::htmlProjectionFromBodyDocument(
+                    WhatSon::NoteBodyPersistence::serializeBodyDocument(
+                        noteId,
+                        pendingSourceLines.join(QLatin1Char('\n'))),
                     editorViewportWidth));
             pendingSourceLines.clear();
         };
@@ -872,7 +873,8 @@ namespace
                 lockedFrameDisplayHeight));
         }
         flushPendingSourceLines();
-        return htmlLines.join(QStringLiteral("<br/>"));
+        return WhatSon::NoteBodyPersistence::editorHtmlDocumentFromProjection(
+            htmlLines.join(QStringLiteral("<br/>")));
     }
 
     QHash<QString, int> resourceFrameDisplayHeightsBySourceTag(const QString& editorDocumentText)

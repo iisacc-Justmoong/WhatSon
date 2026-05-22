@@ -1068,8 +1068,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
         QStringLiteral(">%1<").arg(QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName())));
     QVERIFY(!editorDocumentText.contains(QFileInfo(importedResource.value(QStringLiteral("resourcePath")).toString()).fileName()));
     QVERIFY(editorDocumentText.contains(QStringLiteral("<img src=\"file://")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("<table")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"100%\"")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("<table")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("width=\"960\"")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("height=\"540\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("max-width:100%")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-width=\"960\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-display-height=\"540\"")));
@@ -1081,7 +1082,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral(" width=\"480\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("width=\"338\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
-    QVERIFY(editorDocumentText.contains(QStringLiteral("height:auto")));
+    QVERIFY(editorDocumentText.contains(QStringLiteral("vertical-align:top")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
@@ -1090,13 +1091,22 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("font-weight:700")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("cellpadding=\"6\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("&lt;resource")));
+    QTextDocument editorPlainDocument;
+    editorPlainDocument.setHtml(editorDocumentText);
+    const QString resourceObjectLine(QChar::ObjectReplacementCharacter);
+    const QString editorPlainText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(editorPlainDocument.toPlainText());
+    QVERIFY(editorPlainText.contains(QStringLiteral("Alpha\n") + resourceObjectLine));
+    QVERIFY2(
+        !editorPlainText.contains(QStringLiteral("\n\n") + resourceObjectLine),
+        qPrintable(editorPlainText));
 
     const QVariantMap reprojectedResult = session.reprojectResourceFramesForEditorWidth(editorDocumentText, 1200);
     QVERIFY(reprojectedResult.value(QStringLiteral("valid")).toBool());
     QVERIFY(reprojectedResult.value(QStringLiteral("changed")).toBool());
     const QString reprojectedEditorText = reprojectedResult.value(QStringLiteral("editorDocumentText")).toString();
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("width=\"100%\"")));
-    QVERIFY(reprojectedEditorText.contains(QStringLiteral("height:auto")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("width=\"1200\"")));
+    QVERIFY(reprojectedEditorText.contains(QStringLiteral("height=\"540\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-width=\"960\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-height=\"540\"")));
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-display-left=\"120\"")));
@@ -1104,7 +1114,6 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(reprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"540\"")));
     QVERIFY(!reprojectedEditorText.contains(QStringLiteral("data-display-height=\"675\"")));
     QVERIFY(!reprojectedEditorText.contains(QStringLiteral("data-frame-display-height=\"675\"")));
-    QVERIFY(!reprojectedEditorText.contains(QStringLiteral(" width=\"1200\"")));
 
     const QVariantMap narrowerReprojectedResult =
         session.reprojectResourceFramesForEditorWidth(reprojectedEditorText, 720);
@@ -1144,6 +1153,34 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(persistedSourceText.contains(QStringLiteral("Alpha")));
     QVERIFY(persistedSourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(persistedSourceText.contains(QStringLiteral("Beta")));
+
+    QString editedBelowFrameDocumentText = editorDocumentText;
+    const QString typedBelowFrameText = QStringLiteral(
+        "Typed below frame 01\n"
+        "Typed below frame 02\n"
+        "Typed below frame 03\n"
+        "Typed below frame 04");
+    QString typedBelowFrameHtml = typedBelowFrameText.toHtmlEscaped();
+    typedBelowFrameHtml.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
+    QVERIFY(editedBelowFrameDocumentText.replace(
+        QStringLiteral("</body>"),
+        QStringLiteral("<p>%1</p></body>").arg(typedBelowFrameHtml))
+        != editorDocumentText);
+
+    QSignalSpy modifiedPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        1,
+        editedBelowFrameDocumentText);
+    QTRY_COMPARE_WITH_TIMEOUT(modifiedPersistedSpy.count(), 1, 3000);
+    QCOMPARE(modifiedPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString modifiedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    const QString modifiedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(modifiedBodyDocument);
+    QVERIFY(modifiedSourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    QVERIFY(modifiedSourceText.contains(QStringLiteral("Typed below frame 04")));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()

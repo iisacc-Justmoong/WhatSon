@@ -15,8 +15,8 @@
   viewport geometry required by the sibling minimap.
 - `editorViewportWidth` is also bound into `NoteEditorDocumentSession.editorViewportWidth`, and viewport-width or text
   changes schedule the C++ `reprojectResourceFramesForEditorWidth(...)` hook through a short debounce timer. The hook
-  keeps image resource frames at `width:100%` while using an intrinsic media bitmap width that Qt rich text can lay
-  out, and it regenerates callout frame chrome when edited text wraps to more lines.
+  renders image resource frames as one atomic image object whose intrinsic width follows the editor viewport width, and
+  it regenerates callout frame chrome when edited text wraps to more lines.
 - `editorBottomViewportPaddingRatio` defaults to `0.75`; the wrapper applies that viewport-relative value to the public
   LVRS editor item's bottom padding so the last line can be scrolled into the upper part of the visible editor.
 - The wrapper also binds the public LVRS `editorItem.height` to the measured document end plus the same bottom padding.

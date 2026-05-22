@@ -68,10 +68,11 @@ Implements the active note editor document session.
 - Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
   `component/ResourceImageFrame` and wraps that frame in `whatson-resource-source` markers so the persistence boundary can
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context
-  render as `<img src="file://...">` inside the Figma `292:50` resource frame; unresolved or non-image resources still
+  render as a single `<img src="file://...">` carrying the Figma `292:50` resource frame; unresolved or non-image resources still
   render as a visible resource frame with the stored resource reference.
 - Resource frame projection uses `editorViewportWidth` from QML as the media raster's intrinsic width, while preserving
-  a structured `width="100%"` frame, `height:auto` media, and dynamic centered image placement in the emitted HTML.
+  explicit frame `width`/`height` attributes, `vertical-align:top`, and dynamic centered image placement in the emitted
+  HTML.
   The first projection records `data-frame-display-height`; `reprojectResourceFramesForEditorWidth(...)` parses that
   existing marker and reuses it as the locked frame height, so a window resize changes frame width and x-axis centering
   without changing the initial auto height. The same reproject hook also recognizes callout frames and regenerates their
