@@ -657,6 +657,20 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         titleStyleResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
         QStringLiteral("Alpha <style style=\"Title\">Beta</style>").size());
 
+    const QVariantMap currentLineStyleResult = session.insertStyleTagIntoSource(
+        QStringLiteral("Subtitle"),
+        editorHtml,
+        2,
+        0);
+    QVERIFY(currentLineStyleResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        currentLineStyleResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style style=\"Subtitle\">Alpha Beta</style>\nGamma"));
+    QVERIFY(currentLineStyleResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("font-size:15px;")));
+    QVERIFY(!currentLineStyleResult.value(QStringLiteral("bodySourceText")).toString().contains(QStringLiteral("<style style=\"Subtitle\"></style>")));
+    QCOMPARE(currentLineStyleResult.value(QStringLiteral("editorSelectionStart")).toInt(), 0);
+    QCOMPARE(currentLineStyleResult.value(QStringLiteral("editorSelectionLength")).toInt(), QStringLiteral("Alpha Beta").size());
+
     const QVariantMap bodyStyleResult = session.insertStyleTagIntoSource(
         QStringLiteral("Body"),
         editorHtml,

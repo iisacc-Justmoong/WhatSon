@@ -33,19 +33,18 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
         int weight = 0;
         QString styleName;
         int lineHeight = 0;
-        QString color;
     };
 
     const QVector<StyleTokenExpectation> styleExpectations = {
-        {QStringLiteral("Title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#0a84ff")},
-        {QStringLiteral("Title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22, QStringLiteral("#A571E6")},
-        {QStringLiteral("Subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15, QStringLiteral("#548AF7")},
-        {QStringLiteral("Header"), 17, QFont::Bold, QStringLiteral("Bold"), 17, QStringLiteral("#32d74b")},
-        {QStringLiteral("Header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#D6AE58")},
-        {QStringLiteral("Body"), 12, QFont::Medium, QStringLiteral("Medium"), 12, QStringLiteral("#CCFFFFFF")},
-        {QStringLiteral("Description"), 12, QFont::Normal, QStringLiteral("Regular"), 12, QStringLiteral("#99FFFFFF")},
-        {QStringLiteral("Caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11, QStringLiteral("#80FFFFFF")},
-        {QStringLiteral("Footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")}
+        {QStringLiteral("Title"), 26, QFont::Bold, QStringLiteral("Bold"), 26},
+        {QStringLiteral("Title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22},
+        {QStringLiteral("Subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15},
+        {QStringLiteral("Header"), 17, QFont::Bold, QStringLiteral("Bold"), 17},
+        {QStringLiteral("Header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15},
+        {QStringLiteral("Body"), 12, QFont::Medium, QStringLiteral("Medium"), 12},
+        {QStringLiteral("Description"), 12, QFont::Normal, QStringLiteral("Regular"), 12},
+        {QStringLiteral("Caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11},
+        {QStringLiteral("Footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11}
     };
 
     for (const StyleTokenExpectation& expectation : styleExpectations)
@@ -57,7 +56,13 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
         QCOMPARE(token.weight, expectation.weight);
         QCOMPARE(token.styleName, expectation.styleName);
         QCOMPARE(token.lineHeight, expectation.lineHeight);
-        QCOMPARE(token.color, expectation.color);
+
+        const QString tokenCss = Style::cssDeclarationFromRawToken(
+            QStringLiteral("<style style=\"%1\">").arg(expectation.value));
+        QVERIFY(tokenCss.contains(QStringLiteral("font-size:%1px;").arg(expectation.pixelSize)));
+        QVERIFY(tokenCss.contains(QStringLiteral("font-weight:%1;").arg(expectation.weight)));
+        QVERIFY(tokenCss.contains(QStringLiteral("line-height:%1px;").arg(expectation.lineHeight)));
+        QVERIFY(!tokenCss.contains(QStringLiteral("color:")));
     }
 
     const WhatSon::EditorComponent::StyleToken bodyFallbackToken =

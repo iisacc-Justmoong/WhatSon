@@ -32,6 +32,11 @@ namespace
         return value;
     }
 
+    QString defaultEditorTextColor()
+    {
+        return QStringLiteral("#CCFFFFFF");
+    }
+
     QString sanitizedCssValue(QString value)
     {
         value = value.trimmed();
@@ -195,39 +200,39 @@ namespace WhatSon::EditorComponent
 
         if (styleAttributeValue == QStringLiteral("Title"))
         {
-            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#0a84ff")};
+            return {true, QStringLiteral("title"), 26, QFont::Bold, QStringLiteral("Bold"), 26};
         }
         if (styleAttributeValue == QStringLiteral("Title2"))
         {
-            return {true, QStringLiteral("title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22, QStringLiteral("#A571E6")};
+            return {true, QStringLiteral("title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22};
         }
         if (styleAttributeValue == QStringLiteral("Subtitle"))
         {
-            return {true, QStringLiteral("subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15, QStringLiteral("#548AF7")};
+            return {true, QStringLiteral("subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15};
         }
         if (styleAttributeValue == QStringLiteral("Header"))
         {
-            return {true, QStringLiteral("header"), 17, QFont::Bold, QStringLiteral("Bold"), 17, QStringLiteral("#32d74b")};
+            return {true, QStringLiteral("header"), 17, QFont::Bold, QStringLiteral("Bold"), 17};
         }
         if (styleAttributeValue == QStringLiteral("Header2"))
         {
-            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#D6AE58")};
+            return {true, QStringLiteral("header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15};
         }
         if (styleAttributeValue == QStringLiteral("Body"))
         {
-            return {true, QStringLiteral("body"), 12, QFont::Medium, QStringLiteral("Medium"), 12, QStringLiteral("#CCFFFFFF")};
+            return {true, QStringLiteral("body"), 12, QFont::Medium, QStringLiteral("Medium"), 12};
         }
         if (styleAttributeValue == QStringLiteral("Description"))
         {
-            return {true, QStringLiteral("description"), 12, QFont::Normal, QStringLiteral("Regular"), 12, QStringLiteral("#99FFFFFF")};
+            return {true, QStringLiteral("description"), 12, QFont::Normal, QStringLiteral("Regular"), 12};
         }
         if (styleAttributeValue == QStringLiteral("Caption"))
         {
-            return {true, QStringLiteral("caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11, QStringLiteral("#80FFFFFF")};
+            return {true, QStringLiteral("caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11};
         }
         if (styleAttributeValue == QStringLiteral("Footnote"))
         {
-            return {true, QStringLiteral("footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")};
+            return {true, QStringLiteral("footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11};
         }
 
         tokenName = tokenName.trimmed().toCaseFolded();
@@ -236,7 +241,7 @@ namespace WhatSon::EditorComponent
         tokenName.remove(QLatin1Char(' '));
         if (tokenName == QStringLiteral("disabled"))
         {
-            return {true, QStringLiteral("disabled"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")};
+            return {true, QStringLiteral("disabled"), 11, QFont::Normal, QStringLiteral("Regular"), 11};
         }
         return {};
     }
@@ -325,7 +330,7 @@ namespace WhatSon::EditorComponent
                 QString::number(bodyToken.pixelSize),
                 QString::number(bodyToken.weight),
                 QString::number(bodyToken.lineHeight),
-                bodyToken.color);
+                defaultEditorTextColor());
     }
 
     QString Style::attributeValueFromRawToken(const QString& rawTagText, const QString& attributeName)
@@ -361,7 +366,6 @@ namespace WhatSon::EditorComponent
             declarations.push_back(QStringLiteral("font-size:%1px;").arg(styleToken.pixelSize));
             declarations.push_back(QStringLiteral("font-weight:%1;").arg(styleToken.weight));
             declarations.push_back(QStringLiteral("line-height:%1px;").arg(styleToken.lineHeight));
-            declarations.push_back(QStringLiteral("color:%1;").arg(styleToken.color));
         }
 
         const auto appendStringDeclaration =

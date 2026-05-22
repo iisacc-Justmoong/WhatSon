@@ -7,12 +7,10 @@ Implements the editor-domain projection and recovery helpers for the proprietary
 ## Current Rules
 
 - LVRS text tokens such as `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`, `Description`, `Caption`,
-  `Footnote`, and legacy `Disabled` map to the app's LVRS token-aligned Pretendard size, weight, line-height, and
-  color values. The mapping deliberately mixes typography and color tokens so each semantic style has a stronger
-  preview personality: `Title` uses the primary accent, `Title2` uses purple, `Subtitle` uses accent blue, `Header`
-  uses success green, and `Header2` uses muted yellow while Body/Description/Caption/Footnote remain on the text color
-  ramp. `Subtitle` follows the `textBodyLg`-sized token contract, while `Footnote` follows the disabled text token
-  contract.
+  `Footnote`, and legacy `Disabled` map to the same Pretendard size, weight, style name, and line-height recipe used by
+  `ContentEditorToolbar.qml` style-menu preview descriptors. Token-derived style projection intentionally does not add
+  per-style colors; styled spans inherit the editor body color unless an explicit `color` attribute is authored.
+  `Subtitle` follows the `textBodyLg`-sized token contract, while `Footnote` follows the disabled text token contract.
 - The canonical toolbar `style` attribute values are `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`,
   `Description`, `Caption`, and `Footnote`. Empty or missing `style` attributes normalize to `Body`; inserting `Body`
   therefore uses the bare `<style>` opening token.

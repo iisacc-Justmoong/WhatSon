@@ -40,7 +40,9 @@ Implements the active note editor document session.
 8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the toolbar style selector calls
    `insertStyleTagIntoSource(...)` for the `<style>` tag `style` attribute values. The session mutates the loaded
    `.wsnbody` RAW source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a
-   fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position.
+   fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position. A collapsed
+   style-selector command expands to the current non-empty visible source line instead of inserting an empty
+   `<style></style>` wrapper that would be lost on the next editor round-trip.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -124,7 +126,8 @@ Implements the active note editor document session.
   lossy RichText projection cannot drop blank source rows before selection mapping.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
-  span and repairs the source range before calling `SetTag`.
+  span and repairs the source range before calling `SetTag`. Style selector commands with no selection expand to the
+  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers.
 - Callout boundary keys are also source mutations owned by this class. Backspace at the callout content start removes
   only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does not.
   Enter/Return inside a callout never inserts text inside the wrapper; it places the cursor on the following source
@@ -172,6 +175,8 @@ Implements the active note editor document session.
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
+  style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체로 확장하며, 빈 줄에서는
+  즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
 - 콜아웃 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
   제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. 콜아웃 내부 Enter/Return은 wrapper 안에 줄바꿈을 넣지

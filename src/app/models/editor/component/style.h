@@ -13,7 +13,6 @@ namespace WhatSon::EditorComponent
         int weight = 0;
         QString styleName;
         int lineHeight = 0;
-        QString color;
     };
 
     struct StyleSourceBaseline final

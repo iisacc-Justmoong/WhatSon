@@ -88,6 +88,14 @@ namespace
         int editorEnd = 0;
     };
 
+    struct SourceSelectionRange final
+    {
+        int sourceStart = 0;
+        int sourceEnd = 0;
+        int editorStart = 0;
+        int editorEnd = 0;
+    };
+
     QString sourceTagName(QStringView tagToken)
     {
         if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
@@ -437,6 +445,46 @@ namespace
         }
 
         return visibleCharacters.at(boundedEditorPosition - 1).sourceEnd;
+    }
+
+    SourceSelectionRange styleSourceRangeForEditorSelection(
+        const QString& bodySourceText,
+        const EditorSelectionRange& editorSelectionRange)
+    {
+        if (editorSelectionRange.editorEnd > editorSelectionRange.editorStart)
+        {
+            return {
+                sourcePositionForEditorSelectionStart(bodySourceText, editorSelectionRange.editorStart),
+                sourcePositionForEditorSelectionEnd(bodySourceText, editorSelectionRange.editorEnd),
+                editorSelectionRange.editorStart,
+                editorSelectionRange.editorEnd
+            };
+        }
+
+        const QString visibleText = visibleTextForSourceText(bodySourceText);
+        const int editorCursor = clampedPosition(editorSelectionRange.editorStart, visibleText.size());
+        const int lineStart = editorCursor > 0
+            ? visibleText.lastIndexOf(QLatin1Char('\n'), editorCursor - 1) + 1
+            : 0;
+        int lineEnd = visibleText.indexOf(QLatin1Char('\n'), editorCursor);
+        if (lineEnd < 0)
+        {
+            lineEnd = visibleText.size();
+        }
+
+        const QString currentLineText = visibleText.mid(lineStart, lineEnd - lineStart);
+        if (currentLineText.trimmed().isEmpty())
+        {
+            const int sourceCursor = sourcePositionForEditorSelectionStart(bodySourceText, editorCursor);
+            return {sourceCursor, sourceCursor, editorCursor, editorCursor};
+        }
+
+        return {
+            sourcePositionForEditorSelectionStart(bodySourceText, lineStart),
+            sourcePositionForEditorSelectionEnd(bodySourceText, lineEnd),
+            lineStart,
+            lineEnd
+        };
     }
 
     struct CalloutSourceRange final
@@ -2034,19 +2082,35 @@ QVariantMap NoteEditorDocumentSession::insertStyleTagIntoSource(
         cursorPosition,
         selectionLength,
         selectedText);
-    const int sourceSelectionStart = sourcePositionForEditorSelectionStart(
-        sourceText,
-        editorSelectionRange.editorStart);
-    const int sourceSelectionEnd = editorSelectionRange.editorStart == editorSelectionRange.editorEnd
-        ? sourceSelectionStart
-        : sourcePositionForEditorSelectionEnd(sourceText, editorSelectionRange.editorEnd);
+    const SourceSelectionRange sourceSelectionRange =
+        styleSourceRangeForEditorSelection(sourceText, editorSelectionRange);
+    if (sourceSelectionRange.sourceEnd <= sourceSelectionRange.sourceStart)
+    {
+        const QString errorMessage =
+            QStringLiteral("Style tag insertion requires selected text or a non-empty current line.");
+        QVariantMap emptyResult;
+        emptyResult.insert(QStringLiteral("valid"), false);
+        emptyResult.insert(QStringLiteral("changed"), false);
+        emptyResult.insert(QStringLiteral("tagName"), QStringLiteral("style"));
+        emptyResult.insert(QStringLiteral("bodySourceText"), sourceText);
+        emptyResult.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
+        emptyResult.insert(QStringLiteral("cursorPosition"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("sourceCursorPosition"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionStart"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionLength"), 0);
+        emptyResult.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("editorSelectionLength"), 0);
+        emptyResult.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return emptyResult;
+    }
 
     SetTag tagInput;
     QVariantMap result = tagInput.insertStyleTagIntoSource(
         styleValue,
         sourceText,
-        sourceSelectionStart,
-        sourceSelectionEnd - sourceSelectionStart);
+        sourceSelectionRange.sourceStart,
+        sourceSelectionRange.sourceEnd - sourceSelectionRange.sourceStart);
 
     const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
     const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
@@ -2056,10 +2120,10 @@ QVariantMap NoteEditorDocumentSession::insertStyleTagIntoSource(
         m_editorViewportWidth);
     result.insert(QStringLiteral("editorDocumentText"), editorHtml);
     result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
-    result.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+    result.insert(QStringLiteral("editorSelectionStart"), sourceSelectionRange.editorStart);
     result.insert(
         QStringLiteral("editorSelectionLength"),
-        editorSelectionRange.editorEnd - editorSelectionRange.editorStart);
+        sourceSelectionRange.editorEnd - sourceSelectionRange.editorStart);
 
     if (!result.value(QStringLiteral("valid")).toBool())
     {

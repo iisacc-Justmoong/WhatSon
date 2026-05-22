@@ -113,19 +113,18 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
         int pixelSize = 0;
         int weight = 0;
         int lineHeight = 0;
-        QString color;
     };
 
     const QVector<StyleTokenExpectation> styleExpectations = {
-        {QStringLiteral("Title"), 26, 700, 26, QStringLiteral("#0a84ff")},
-        {QStringLiteral("Title2"), 22, 600, 22, QStringLiteral("#A571E6")},
-        {QStringLiteral("Subtitle"), 15, 500, 15, QStringLiteral("#548AF7")},
-        {QStringLiteral("Header"), 17, 700, 17, QStringLiteral("#32d74b")},
-        {QStringLiteral("Header2"), 15, 600, 15, QStringLiteral("#D6AE58")},
-        {QStringLiteral("Body"), 12, 500, 12, QStringLiteral("#CCFFFFFF")},
-        {QStringLiteral("Description"), 12, 400, 12, QStringLiteral("#99FFFFFF")},
-        {QStringLiteral("Caption"), 11, 600, 11, QStringLiteral("#80FFFFFF")},
-        {QStringLiteral("Footnote"), 11, 400, 11, QStringLiteral("#4DFFFFFF")}
+        {QStringLiteral("Title"), 26, 700, 26},
+        {QStringLiteral("Title2"), 22, 600, 22},
+        {QStringLiteral("Subtitle"), 15, 500, 15},
+        {QStringLiteral("Header"), 17, 700, 17},
+        {QStringLiteral("Header2"), 15, 600, 15},
+        {QStringLiteral("Body"), 12, 500, 12},
+        {QStringLiteral("Description"), 12, 400, 12},
+        {QStringLiteral("Caption"), 11, 600, 11},
+        {QStringLiteral("Footnote"), 11, 400, 11}
     };
 
     for (const StyleTokenExpectation& expectation : styleExpectations)
@@ -140,7 +139,11 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-size:%1px;").arg(expectation.pixelSize)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-weight:%1;").arg(expectation.weight)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("line-height:%1px;").arg(expectation.lineHeight)));
-        QVERIFY(tokenEditorHtml.contains(QStringLiteral("color:%1;").arg(expectation.color)));
+        QVERIFY(tokenEditorHtml.contains(
+            QStringLiteral("<span style=\"font-family:Pretendard;font-size:%1px;font-weight:%2;line-height:%3px;\">")
+                .arg(expectation.pixelSize)
+                .arg(expectation.weight)
+                .arg(expectation.lineHeight)));
         QCOMPARE(
             WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), tokenEditorHtml),
             tokenSourceText);

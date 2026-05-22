@@ -51,7 +51,8 @@ Declares the active note editor document session object.
   and projection path for the toolbar's `<style>` tag `style` attribute choices. The session keeps the loaded
   `.wsnbody` RAW source as the format mutation basis and maps rendered break tags such as `<next />`/`<br>` as one
   logical newline. QML also passes `selectedText` so the session can repair a drifted RichText selection offset before
-  mutating RAW source.
+  mutating RAW source. Collapsed style selector commands expand to the current non-empty visible source line; an empty
+  current line is rejected so the editor does not create and immediately lose a zero-width `<style>` wrapper.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. Enter/Return inside a callout moves the cursor to the next source line outside the wrapper,
@@ -123,7 +124,8 @@ Declares the active note editor document session object.
   mapping과 projection 경로로 처리한다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
-  visible 범위를 다시 찾는다.
+  visible 범위를 다시 찾는다. style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체를
+  대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
   콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로 이동시키고, 뒤에
