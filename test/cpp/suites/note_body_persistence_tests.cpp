@@ -117,15 +117,15 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     };
 
     const QVector<StyleTokenExpectation> styleExpectations = {
-        {QStringLiteral("Title"), 26, 700, 26, QStringLiteral("#E5FFFFFF")},
-        {QStringLiteral("Title2"), 22, 700, 22, QStringLiteral("#E5FFFFFF")},
-        {QStringLiteral("Subtitle"), 17, 500, 17, QStringLiteral("#CCFFFFFF")},
-        {QStringLiteral("Header"), 17, 600, 17, QStringLiteral("#E5FFFFFF")},
-        {QStringLiteral("Header2"), 15, 600, 15, QStringLiteral("#E5FFFFFF")},
+        {QStringLiteral("Title"), 26, 700, 26, QStringLiteral("#0a84ff")},
+        {QStringLiteral("Title2"), 22, 600, 22, QStringLiteral("#A571E6")},
+        {QStringLiteral("Subtitle"), 15, 500, 15, QStringLiteral("#548AF7")},
+        {QStringLiteral("Header"), 17, 700, 17, QStringLiteral("#32d74b")},
+        {QStringLiteral("Header2"), 15, 600, 15, QStringLiteral("#D6AE58")},
         {QStringLiteral("Body"), 12, 500, 12, QStringLiteral("#CCFFFFFF")},
-        {QStringLiteral("Description"), 12, 600, 12, QStringLiteral("#99FFFFFF")},
-        {QStringLiteral("Caption"), 11, 400, 11, QStringLiteral("#80FFFFFF")},
-        {QStringLiteral("Footnote"), 10, 400, 10, QStringLiteral("#66FFFFFF")}
+        {QStringLiteral("Description"), 12, 400, 12, QStringLiteral("#99FFFFFF")},
+        {QStringLiteral("Caption"), 11, 600, 11, QStringLiteral("#80FFFFFF")},
+        {QStringLiteral("Footnote"), 11, 400, 11, QStringLiteral("#4DFFFFFF")}
     };
 
     for (const StyleTokenExpectation& expectation : styleExpectations)

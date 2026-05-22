@@ -114,9 +114,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   display metadata or visible header/footer chrome.
 - `component/style` owns the proprietary paired `<style ...>...</style>` source wrapper. It provides the static wrapper
   tokens to `SetTag`, maps canonical toolbar values (`Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`,
-  `Description`, `Caption`, `Footnote`) to Pretendard metrics/color, treats an empty `style` attribute as Body, projects
-  explicit attributes such as `font`, `weight`, `size`, `color`, `background`, `align`, and existing `height` into editor
-  CSS, and emits/recovers the marker-backed `<span>` used by the LVRS text editor path.
+  `Description`, `Caption`, `Footnote`) to LVRS token-aligned Pretendard metrics/color, treats an empty `style`
+  attribute as Body, projects explicit attributes such as `font`, `weight`, `size`, `color`, `background`, `align`, and
+  existing `height` into editor CSS, and emits/recovers the marker-backed `<span>` used by the LVRS text editor path.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -137,7 +137,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 위치: `docs/src/app/models/editor`
 - 역할: 이 파일은 editor model shard의 구조, 책임, CMake 등록 계약, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 현재: `component/style`은 toolbar style selector의 canonical 값과 Body fallback token을 소유한다.
+- 현재: `component/style`은 toolbar style selector의 canonical 값, LVRS token-aligned style metric, Body fallback
+  token을 소유한다.
   소유하고, `SetTag`는 공통 source mutation과 결과 map 생성을 맡는다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.

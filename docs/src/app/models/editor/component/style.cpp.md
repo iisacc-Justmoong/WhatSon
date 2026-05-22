@@ -7,7 +7,9 @@ Implements the editor-domain projection and recovery helpers for the proprietary
 ## Current Rules
 
 - LVRS text tokens such as `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`, `Description`, `Caption`,
-  `Footnote`, and legacy `Disabled` map to fixed Pretendard size, weight, line-height, and color values.
+  `Footnote`, and legacy `Disabled` map to the app's LVRS token-aligned Pretendard size, weight, line-height, and
+  color values. `Subtitle` follows the `textBodyLg`-sized token contract, while `Footnote` follows the disabled text
+  token contract.
 - The canonical toolbar `style` attribute values are `Title`, `Title2`, `Subtitle`, `Header`, `Header2`, `Body`,
   `Description`, `Caption`, and `Footnote`. Empty or missing `style` attributes normalize to `Body`; inserting `Body`
   therefore uses the bare `<style>` opening token.

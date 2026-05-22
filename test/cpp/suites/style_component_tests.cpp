@@ -26,34 +26,44 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
     QCOMPARE(Style::openingTokenForStyleAttributeValue(QStringLiteral("Body")), QStringLiteral("<style>"));
     QCOMPARE(Style::openingTokenForStyleAttributeValue(QStringLiteral("Footnote")), QStringLiteral("<style style=\"Footnote\">"));
 
-    const WhatSon::EditorComponent::StyleToken titleToken =
-        Style::lvrsTextStyleTokenFromName(QStringLiteral("Title"));
-    QVERIFY(titleToken.valid);
-    QCOMPARE(titleToken.pixelSize, 26);
-    QCOMPARE(titleToken.weight, QFont::Bold);
-    QCOMPARE(titleToken.lineHeight, 26);
-    QCOMPARE(titleToken.color, QStringLiteral("#E5FFFFFF"));
+    struct StyleTokenExpectation final
+    {
+        QString value;
+        int pixelSize = 0;
+        int weight = 0;
+        QString styleName;
+        int lineHeight = 0;
+        QString color;
+    };
+
+    const QVector<StyleTokenExpectation> styleExpectations = {
+        {QStringLiteral("Title"), 26, QFont::Bold, QStringLiteral("Bold"), 26, QStringLiteral("#0a84ff")},
+        {QStringLiteral("Title2"), 22, QFont::DemiBold, QStringLiteral("SemiBold"), 22, QStringLiteral("#A571E6")},
+        {QStringLiteral("Subtitle"), 15, QFont::Medium, QStringLiteral("Medium"), 15, QStringLiteral("#548AF7")},
+        {QStringLiteral("Header"), 17, QFont::Bold, QStringLiteral("Bold"), 17, QStringLiteral("#32d74b")},
+        {QStringLiteral("Header2"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#D6AE58")},
+        {QStringLiteral("Body"), 12, QFont::Medium, QStringLiteral("Medium"), 12, QStringLiteral("#CCFFFFFF")},
+        {QStringLiteral("Description"), 12, QFont::Normal, QStringLiteral("Regular"), 12, QStringLiteral("#99FFFFFF")},
+        {QStringLiteral("Caption"), 11, QFont::DemiBold, QStringLiteral("SemiBold"), 11, QStringLiteral("#80FFFFFF")},
+        {QStringLiteral("Footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")}
+    };
+
+    for (const StyleTokenExpectation& expectation : styleExpectations)
+    {
+        const WhatSon::EditorComponent::StyleToken token =
+            Style::lvrsTextStyleTokenFromName(expectation.value);
+        QVERIFY(token.valid);
+        QCOMPARE(token.pixelSize, expectation.pixelSize);
+        QCOMPARE(token.weight, expectation.weight);
+        QCOMPARE(token.styleName, expectation.styleName);
+        QCOMPARE(token.lineHeight, expectation.lineHeight);
+        QCOMPARE(token.color, expectation.color);
+    }
 
     const WhatSon::EditorComponent::StyleToken bodyFallbackToken =
         Style::lvrsTextStyleTokenFromName(QString());
     QVERIFY(bodyFallbackToken.valid);
     QCOMPARE(bodyFallbackToken.name, QStringLiteral("body"));
-
-    const WhatSon::EditorComponent::StyleToken subtitleToken =
-        Style::lvrsTextStyleTokenFromName(QStringLiteral("Subtitle"));
-    QVERIFY(subtitleToken.valid);
-    QCOMPARE(subtitleToken.pixelSize, 17);
-    QCOMPARE(subtitleToken.weight, QFont::Medium);
-    QCOMPARE(subtitleToken.lineHeight, 17);
-    QCOMPARE(subtitleToken.color, QStringLiteral("#CCFFFFFF"));
-
-    const WhatSon::EditorComponent::StyleToken footnoteToken =
-        Style::lvrsTextStyleTokenFromName(QStringLiteral("Footnote"));
-    QVERIFY(footnoteToken.valid);
-    QCOMPARE(footnoteToken.pixelSize, 10);
-    QCOMPARE(footnoteToken.weight, QFont::Normal);
-    QCOMPARE(footnoteToken.lineHeight, 10);
-    QCOMPARE(footnoteToken.color, QStringLiteral("#66FFFFFF"));
 
     const QString rawOpening = QStringLiteral(
         "<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14 "

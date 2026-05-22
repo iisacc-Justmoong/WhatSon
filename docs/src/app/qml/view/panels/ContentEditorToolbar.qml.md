@@ -32,6 +32,11 @@ The leftmost `style` selector opens an LVRS `ContextMenu` instead of behaving as
 display fallback for an empty `style` attribute. Selecting an item updates only the selector display state and emits the
 selected string; `ContentViewLayout.qml` forwards that value to the C++ session API so source mutation remains outside
 this toolbar surface.
+The menu items use a custom LVRS `MenuItem` delegate that previews each style with the same LVRS typography token
+descriptor used by the style component contract. For example, `Title` binds to `LV.Theme.textTitle`, so the context
+menu row displays the `Title` label at that token's pixel size instead of using the default menu text size. The same
+descriptor also supplies token-aligned weight, style name, line height, letter spacing, and color metadata for the
+preview row.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
@@ -42,6 +47,8 @@ It does not read files, own note/session state, parse editor text, or persist fo
 
 ## Guardrails
 - Keep root and layout primitives in LVRS (`LV.HStack`, `LV.ComboBox`, `LV.IconButton`, `LV.IconMenuButton`).
+- Keep the style selector popup on LVRS `ContextMenu`/`MenuItem` delegates and bind preview typography to LVRS theme
+  tokens instead of hard-coded QML font sizes.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 

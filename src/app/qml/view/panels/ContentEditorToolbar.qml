@@ -112,17 +112,142 @@ LV.HStack {
         return itemIndex >= editorToolbar.firstVisibleToolbarItemIndex;
     }
 
+    function styleTagStylePreviewDescriptor(styleValue) {
+        const normalizedStyleValue = styleValue === undefined || styleValue === null
+                ? "Body"
+                : String(styleValue).trim();
+
+        if (normalizedStyleValue === "Title") {
+            return {
+                previewTokenName: "LV.Theme.textTitle",
+                previewPixelSize: LV.Theme.textTitle,
+                previewWeight: LV.Theme.textTitleWeight,
+                previewStyleName: LV.Theme.textTitleStyleName,
+                previewLineHeight: LV.Theme.textTitleLineHeight,
+                previewLetterSpacing: LV.Theme.textTitleLetterSpacing,
+                previewColor: LV.Theme.titleHeaderColor
+            };
+        }
+        if (normalizedStyleValue === "Title2") {
+            return {
+                previewTokenName: "LV.Theme.textTitle2",
+                previewPixelSize: LV.Theme.textTitle2,
+                previewWeight: LV.Theme.textTitle2Weight,
+                previewStyleName: LV.Theme.textTitle2StyleName,
+                previewLineHeight: LV.Theme.textTitle2LineHeight,
+                previewLetterSpacing: LV.Theme.textTitle2LetterSpacing,
+                previewColor: LV.Theme.titleHeaderColor
+            };
+        }
+        if (normalizedStyleValue === "Subtitle") {
+            return {
+                previewTokenName: "LV.Theme.textBodyLg",
+                previewPixelSize: LV.Theme.textBodyLg,
+                previewWeight: LV.Theme.textBodyLgWeight,
+                previewStyleName: LV.Theme.textBodyLgStyleName,
+                previewLineHeight: LV.Theme.textHeader2LineHeight,
+                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing,
+                previewColor: LV.Theme.bodyColor
+            };
+        }
+        if (normalizedStyleValue === "Header") {
+            return {
+                previewTokenName: "LV.Theme.textHeader",
+                previewPixelSize: LV.Theme.textHeader,
+                previewWeight: LV.Theme.textHeaderWeight,
+                previewStyleName: LV.Theme.textHeaderStyleName,
+                previewLineHeight: LV.Theme.textHeaderLineHeight,
+                previewLetterSpacing: LV.Theme.textHeaderLetterSpacing,
+                previewColor: LV.Theme.titleHeaderColor
+            };
+        }
+        if (normalizedStyleValue === "Header2") {
+            return {
+                previewTokenName: "LV.Theme.textHeader2",
+                previewPixelSize: LV.Theme.textHeader2,
+                previewWeight: LV.Theme.textHeader2Weight,
+                previewStyleName: LV.Theme.textHeader2StyleName,
+                previewLineHeight: LV.Theme.textHeader2LineHeight,
+                previewLetterSpacing: LV.Theme.textHeader2LetterSpacing,
+                previewColor: LV.Theme.titleHeaderColor
+            };
+        }
+        if (normalizedStyleValue === "Description") {
+            return {
+                previewTokenName: "LV.Theme.textDescription",
+                previewPixelSize: LV.Theme.textDescription,
+                previewWeight: LV.Theme.textDescriptionWeight,
+                previewStyleName: LV.Theme.textDescriptionStyleName,
+                previewLineHeight: LV.Theme.textDescriptionLineHeight,
+                previewLetterSpacing: LV.Theme.textDescriptionLetterSpacing,
+                previewColor: LV.Theme.descriptionColor
+            };
+        }
+        if (normalizedStyleValue === "Caption") {
+            return {
+                previewTokenName: "LV.Theme.textCaption",
+                previewPixelSize: LV.Theme.textCaption,
+                previewWeight: LV.Theme.textCaptionWeight,
+                previewStyleName: LV.Theme.textCaptionStyleName,
+                previewLineHeight: LV.Theme.textCaptionLineHeight,
+                previewLetterSpacing: LV.Theme.textCaptionLetterSpacing,
+                previewColor: LV.Theme.captionColor
+            };
+        }
+        if (normalizedStyleValue === "Footnote") {
+            return {
+                previewTokenName: "LV.Theme.textDisabled",
+                previewPixelSize: LV.Theme.textDisabled,
+                previewWeight: LV.Theme.textDisabledWeight,
+                previewStyleName: LV.Theme.textDisabledStyleName,
+                previewLineHeight: LV.Theme.textDisabledLineHeight,
+                previewLetterSpacing: LV.Theme.textDisabledLetterSpacing,
+                previewColor: LV.Theme.disabledColor
+            };
+        }
+        return {
+            previewTokenName: "LV.Theme.textBody",
+            previewPixelSize: LV.Theme.textBody,
+            previewWeight: LV.Theme.textBodyWeight,
+            previewStyleName: LV.Theme.textBodyStyleName,
+            previewLineHeight: LV.Theme.textBodyLineHeight,
+            previewLetterSpacing: LV.Theme.textBodyLetterSpacing,
+            previewColor: LV.Theme.bodyColor
+        };
+    }
+
+    function styleTagStyleMenuPreferredWidth() {
+        let maxPreviewWidth = editorToolbar.figmaComboLargeWidth;
+        for (let valueIndex = 0; valueIndex < editorToolbar.styleTagStyleValues.length; ++valueIndex) {
+            const styleValue = String(editorToolbar.styleTagStyleValues[valueIndex]);
+            const descriptor = editorToolbar.styleTagStylePreviewDescriptor(styleValue);
+            maxPreviewWidth = Math.max(
+                        maxPreviewWidth,
+                        Math.ceil(styleValue.length * descriptor.previewPixelSize * 0.62)
+                        + LV.Theme.gap16);
+        }
+        return maxPreviewWidth;
+    }
+
     function styleTagStyleMenuItems() {
         const result = [];
         for (let valueIndex = 0; valueIndex < editorToolbar.styleTagStyleValues.length; ++valueIndex) {
             const styleValue = String(editorToolbar.styleTagStyleValues[valueIndex]);
+            const descriptor = editorToolbar.styleTagStylePreviewDescriptor(styleValue);
             result.push({
-                "id": "style-tag-style-" + styleValue,
-                "label": styleValue,
-                "styleValue": styleValue,
-                "eventName": "editor.toolbar.style",
-                "eventPayload": ({
-                    "style": styleValue
+                id: "style-tag-style-" + styleValue,
+                label: styleValue,
+                styleValue: styleValue,
+                previewTokenName: descriptor.previewTokenName,
+                previewPixelSize: descriptor.previewPixelSize,
+                previewWeight: descriptor.previewWeight,
+                previewStyleName: descriptor.previewStyleName,
+                previewLineHeight: descriptor.previewLineHeight,
+                previewLetterSpacing: descriptor.previewLetterSpacing,
+                previewColor: descriptor.previewColor,
+                eventName: "editor.toolbar.style",
+                eventPayload: ({
+                    style: styleValue
                 })
             });
         }
@@ -134,6 +259,7 @@ LV.HStack {
             return false;
 
         styleTagStyleContextMenu.items = editorToolbar.styleTagStyleMenuItems();
+        styleTagStyleContextMenu.itemWidth = editorToolbar.styleTagStyleMenuPreferredWidth();
         styleTagStyleContextMenu.selectedIndex = editorToolbar.styleTagStyleValues.indexOf(editorToolbar.selectedStyleTagStyleValue);
         styleTagStyleContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
         editorToolbar.toolbarActionRequested("editor.toolbar.style");
@@ -265,6 +391,81 @@ LV.HStack {
         width: editorToolbar.figmaIconButtonWidth
 
         onClicked: editorToolbar.toolbarActionRequested(modeButton.actionName)
+    }
+
+    Component {
+        id: styleTagStyleMenuItemDelegate
+
+        LV.MenuItem {
+            id: styleMenuItem
+
+            property var modelData: ({})
+            property int index: modelData.index === undefined ? -1 : modelData.index
+            property var entry: modelData.entry
+            property color previewColor: styleMenuItem.entry
+                    && styleMenuItem.entry.previewColor !== undefined
+                    ? styleMenuItem.entry.previewColor
+                    : LV.Theme.bodyColor
+            property real previewLetterSpacing: styleMenuItem.entry
+                    && styleMenuItem.entry.previewLetterSpacing !== undefined
+                    ? Number(styleMenuItem.entry.previewLetterSpacing) || 0
+                    : LV.Theme.textBodyLetterSpacing
+            property int previewLineHeight: styleMenuItem.entry
+                    && styleMenuItem.entry.previewLineHeight !== undefined
+                    ? Math.max(1, Math.round(Number(styleMenuItem.entry.previewLineHeight) || 1))
+                    : LV.Theme.textBodyLineHeight
+            property int previewPixelSize: styleMenuItem.entry
+                    && styleMenuItem.entry.previewPixelSize !== undefined
+                    ? Math.max(1, Math.round(Number(styleMenuItem.entry.previewPixelSize) || 1))
+                    : LV.Theme.textBody
+            property string previewStyleName: styleMenuItem.entry
+                    && styleMenuItem.entry.previewStyleName !== undefined
+                    ? String(styleMenuItem.entry.previewStyleName)
+                    : LV.Theme.textBodyStyleName
+            property int previewWeight: styleMenuItem.entry
+                    && styleMenuItem.entry.previewWeight !== undefined
+                    ? Math.round(Number(styleMenuItem.entry.previewWeight) || LV.Theme.textBodyWeight)
+                    : LV.Theme.textBodyWeight
+
+            enabled: styleMenuItem.modelData.enabled !== false
+            itemHeight: Math.max(LV.Theme.gap20, styleMenuItem.previewLineHeight + LV.Theme.gap8)
+            itemWidth: styleTagStyleContextMenu.minimumItemWidth
+            label: styleMenuItem.entry && styleMenuItem.entry.label !== undefined
+                    ? String(styleMenuItem.entry.label)
+                    : ""
+            state: styleMenuItem.modelData.state === undefined
+                    ? styleMenuItem.defaultState
+                    : styleMenuItem.modelData.state
+            width: parent ? parent.width : styleTagStyleContextMenu.resolvedItemWidth
+
+            contentItem: Item {
+                implicitHeight: stylePreviewLabel.implicitHeight
+                implicitWidth: stylePreviewLabel.implicitWidth
+
+                LV.Label {
+                    id: stylePreviewLabel
+
+                    color: styleMenuItem.effectiveEnabled
+                           ? styleMenuItem.previewColor
+                           : LV.Theme.disabledColor
+                    elide: Text.ElideRight
+                    font.letterSpacing: styleMenuItem.previewLetterSpacing
+                    font.pixelSize: styleMenuItem.previewPixelSize
+                    font.styleName: styleMenuItem.previewStyleName
+                    font.weight: styleMenuItem.previewWeight
+                    height: implicitHeight
+                    lineHeight: styleMenuItem.previewLineHeight
+                    lineHeightMode: Text.FixedHeight
+                    style: body
+                    text: styleMenuItem.label
+                    verticalAlignment: Text.AlignVCenter
+                    width: parent.width
+                    y: Math.round((parent.height - height) * 0.5)
+                }
+            }
+
+            onClicked: styleTagStyleContextMenu.triggerEntry(styleMenuItem.index)
+        }
     }
 
     Item {
@@ -494,7 +695,8 @@ LV.HStack {
         id: styleTagStyleContextMenu
 
         autoCloseOnTrigger: true
-        itemWidth: editorToolbar.figmaComboLargeWidth
+        itemDelegate: styleTagStyleMenuItemDelegate
+        itemWidth: editorToolbar.styleTagStyleMenuPreferredWidth()
         items: editorToolbar.styleTagStyleMenuItems()
         modal: false
         objectName: "styleTagStyleContextMenu"

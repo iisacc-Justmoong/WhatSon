@@ -203,7 +203,7 @@ namespace WhatSon::EditorComponent
         }
         if (styleAttributeValue == QStringLiteral("Subtitle"))
         {
-            return {true, QStringLiteral("subtitle"), 17, QFont::Medium, QStringLiteral("Medium"), 17, QStringLiteral("#CCFFFFFF")};
+            return {true, QStringLiteral("subtitle"), 15, QFont::DemiBold, QStringLiteral("SemiBold"), 15, QStringLiteral("#CCFFFFFF")};
         }
         if (styleAttributeValue == QStringLiteral("Header"))
         {
@@ -227,7 +227,7 @@ namespace WhatSon::EditorComponent
         }
         if (styleAttributeValue == QStringLiteral("Footnote"))
         {
-            return {true, QStringLiteral("footnote"), 10, QFont::Normal, QStringLiteral("Regular"), 10, QStringLiteral("#66FFFFFF")};
+            return {true, QStringLiteral("footnote"), 11, QFont::Normal, QStringLiteral("Regular"), 11, QStringLiteral("#4DFFFFFF")};
         }
 
         tokenName = tokenName.trimmed().toCaseFolded();
