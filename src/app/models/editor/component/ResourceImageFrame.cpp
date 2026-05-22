@@ -15,8 +15,7 @@
 namespace
 {
     constexpr int kFigmaFrameWidth = 480;
-    constexpr int kFrameRadius = 12;
-    constexpr auto kFrameRenderVersion = "figma-292-50-atomic-image-frame-v1";
+    constexpr auto kFrameRenderVersion = "figma-292-50-atomic-image-frame-v2";
 
     QString htmlAttribute(QString value)
     {
@@ -371,19 +370,17 @@ namespace WhatSon::EditorComponent
         html += sourceMarker(descriptor.sourceTag);
         html += QStringLiteral("-->");
         html += QStringLiteral(
-            "<img src=\"%3\" alt=\"\" class=\"whatson-resource-frame whatson-resource-media\" "
+            "<img src=\"%2\" alt=\"\" class=\"whatson-resource-frame whatson-resource-media\" "
             "data-figma-node-id=\"292:50\" "
             "data-resource-preview=\"image-only-frame\" data-media-preview=\"media-raster\" "
             "data-max-width-height-ratio=\"1:1\"%1 "
             "data-media-alignment=\"center\" "
-            "width=\"%4\" height=\"%5\" "
-            "style=\"display:block;width:%4px;height:%5px;max-width:100%;max-height:100%;"
+            "width=\"%3\" height=\"%4\" "
+            "style=\"display:block;width:%3px;height:%4px;max-width:100%;max-height:100%;"
             "margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px;"
-            "background-color:#1E1F20;border:1px solid #2C2E2F;border-radius:%2px;"
             "vertical-align:top;object-fit:contain;\" />")
             .arg(
                 metricAttributes,
-                QString::number(kFrameRadius),
                 htmlAttribute(previewImageUrl),
                 QString::number(frameRenderWidth),
                 QString::number(frameDisplayHeight));

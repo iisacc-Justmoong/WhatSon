@@ -63,6 +63,9 @@ void WhatSonCppRegressionTests::resourceFrame_rendersImageOnlyContainer()
     QVERIFY(!html.contains(QStringLiteral("height=\"352\"")));
     QVERIFY(html.contains(QStringLiteral("vertical-align:top")));
     QVERIFY(html.contains(QStringLiteral("object-fit:contain")));
+    QVERIFY(!html.contains(QStringLiteral("background-color:#1E1F20")));
+    QVERIFY(!html.contains(QStringLiteral("border:1px")));
+    QVERIFY(!html.contains(QStringLiteral("border-radius")));
     QVERIFY(html.contains(QStringLiteral("data-source-width=\"1600\"")));
     QVERIFY(html.contains(QStringLiteral("data-source-height=\"900\"")));
     QVERIFY(html.contains(QStringLiteral("data-display-width=\"960\"")));

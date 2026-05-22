@@ -32,7 +32,9 @@ Declares the active note editor document session object.
   a timestamped version diff to `.wsnversion`.
 - Provides `insertImportedResourcesIntoSource(...)`, which receives resource package metadata already persisted by
   `InAppClipboardManager`, inserts canonical RAW `<resource ... />` calls at the current editor cursor/selection, and returns
-  an editor HTML projection for the live LVRS surface.
+  an editor HTML projection for the live LVRS surface. When an active note is mounted, the same projection is staged to
+  the `.wsnsource` session file and older pending push payloads for that file are discarded before control returns to
+  QML.
 - Provides `reprojectResourceFramesForEditorWidth(...)`, which recovers the current editor document as canonical source
   and re-renders resource frames plus generated callout frame chrome for the current editor viewport width. Resource
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
@@ -64,6 +66,12 @@ Declares the active note editor document session object.
   exposes them as visible text.
 - Resource insertion must consume only imported package metadata. Clipboard MIME detection and `.wsresource` package
   persistence stay in `InAppClipboardManager`.
+- Resource insertion must treat the returned canonical source as authoritative for note departure until a newer
+  modified-count editor payload arrives. This prevents a stale session file or pre-paste pending push from removing the
+  inserted image when the user moves to another note.
+- Resource object placeholder restoration must preserve text on both sides of `QChar::ObjectReplacementCharacter`.
+  Qt can serialize text typed immediately below an image into the same block as the image object, and that text is still
+  a separate canonical source line.
 
 ## 한국어
 
@@ -87,7 +95,12 @@ Declares the active note editor document session object.
   hub sync가 로컬 변경으로 인식할 수 있게 한다.
 - `insertImportedResourcesIntoSource(...)`는 `InAppClipboardManager`가 이미 `.wsresource`로 등록한 metadata만 받아
   canonical RAW `<resource ... />` 참조를 현재 커서/선택 위치에 삽입한다. clipboard MIME 판별과 package
-  persistence는 이 세션의 책임이 아니다.
+  persistence는 이 세션의 책임이 아니다. active note가 mount된 상태에서는 반환할 editor HTML projection을
+  `.wsnsource` session file에 즉시 기록하고, 같은 파일의 오래된 pending push를 폐기한다. 이후 사용자가 노트를
+  이동해도 더 최신 modified-count payload가 없다면 note-departure flush는 이 canonical source를 저장 기준으로
+  사용한다.
+- 이미지 object placeholder 복원은 `QChar::ObjectReplacementCharacter` 앞뒤 텍스트를 보존해야 한다. Qt가 이미지
+  바로 아래에 입력한 텍스트를 image object와 같은 block으로 직렬화해도, 그 텍스트는 별도 canonical source line이다.
 - `reprojectResourceFramesForEditorWidth(...)`는 현재 editor HTML을 canonical source로 복원한 뒤 resource frame과
   callout frame chrome이 있을 때 새 viewport 폭으로 다시 렌더한다. resource의 기존 `data-frame-display-height`는
   초기 auto height로 보존되고, callout의 좌측 막대는 현재 편집된 콘텐츠의 wrap 높이로 재생성된다. QML은 텍스트

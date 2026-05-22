@@ -35,7 +35,9 @@ Implements the active note editor document session.
    projection, and maps the source cursor back to the rendered editor cursor position.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
-   standalone resource source line as a resource frame.
+   standalone resource source line as a resource frame. For an active note, that command result is also written to the
+   mounted `.wsnsource` session file immediately, any older pending RAW push for that file is discarded, and the new
+   active source is marked as the note-departure save baseline until a later modified-count editor payload supersedes it.
 10. Editor key filters call `handleCalloutBoundaryKeyInSource(...)` before native text handling for plain
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, unwraps or
     removes a callout at its content start, or moves the cursor to the line after the callout when Enter/Return is
@@ -65,6 +67,9 @@ Implements the active note editor document session.
   gutter uses that metadata as its row count and must not derive row count from LVRS rendered wrap-line geometry.
 - Imported-resource insertion consumes metadata returned by `InAppClipboardManager`; it must not inspect MIME data or create
   resource packages itself.
+- Imported-resource insertion is an authoritative source mutation. It stages the projected editor HTML into the mounted
+  session file and invalidates stale pending push payloads so moving to another note cannot persist the pre-paste editor
+  snapshot over the new `<resource ... />` source line.
 - Standalone `<resource ... />` source lines are atomic editor slots. The session renders them with
   `component/ResourceImageFrame` and wraps that frame in `whatson-resource-source` markers so the persistence boundary can
   recover the exact canonical source tag. Image resources whose package asset resolves from the active note/hub context
@@ -82,12 +87,17 @@ Implements the active note editor document session.
 - When Qt serializes the rich editor document and strips those HTML markers, image frames remain as rich-text object
   replacement characters. `persistEditorFile(...)` restores those object placeholders from the active canonical source
   resource lines before delegating `.wsnbody` persistence, preserving the resource reference across real editor save
-  round-trips.
+  round-trips. If text typed immediately below the image is serialized into the same rich-text block as the object
+  replacement character, the restore path splits that line into the resource source line plus the trailing typed text
+  line instead of replacing the whole block with only the resource.
 - If Backspace/Delete removes the rich-text object, the missing object means the resource frame was deleted; no
   header/footer chrome cleanup path is kept in the current image-only frame contract.
 - After a successful editor persistence callback, the session canonicalizes the persisted source through the same
   `.wsnbody` serializer/read-back boundary before refreshing `parsedLineCount`. This keeps deleted atomic resource
   objects from leaving a transient trailing editor line in the gutter contract.
+- Before note departure, an imported-resource command result that has not yet been superseded by a modified-count editor
+  payload is persisted from the active canonical source, not from the possibly stale mounted session file and not from an
+  older queued idle/modified push.
 - The session does not decide hub-sync policy itself; it only forwards the coordinator's version-diff filesystem
   mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`. QML supplies only the tag name,
@@ -124,10 +134,14 @@ Implements the active note editor document session.
   asset을 active note/hub 기준으로 찾을 수 있으면 `file://` 이미지로 표시된다. 저장 시에는
   `whatson-resource-source` marker가 다시 canonical `<resource ... />` source tag로 복구된다. Qt RichText 직렬화가
   marker를 제거한 경우에도 `persistEditorFile(...)`은 active canonical source의 resource line과 이미지 object
-  placeholder를 기준으로 `<resource ... />`를 복원한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는
+  placeholder를 기준으로 `<resource ... />`를 복원한다. 이미지 바로 아래에 입력한 첫 텍스트가 object replacement와
+  같은 rich-text block으로 직렬화되어도, 복원 경로는 그 줄을 resource source line과 뒤따르는 텍스트 source line으로
+  분리해 보존한다. Backspace/Delete 뒤 이미지 object가 사라진 경우에는
   resource frame이 삭제된 것으로 본다. persistence 성공 콜백 뒤에는 `.wsnbody` serializer/read-back 경계의
   canonical source로 parsed line count를 다시 맞춰, 삭제된 atomic frame 뒤의 임시 trailing line이 거터 계약에
-  남지 않게 한다.
+  남지 않게 한다. active note에서 이미지 resource 삽입 결과는 즉시 mounted `.wsnsource`에도 기록되고, 그 파일에
+  남아 있던 오래된 pending push는 폐기된다. 이후 노트를 떠날 때 아직 더 최신 modified-count payload가 없다면
+  note-departure flush는 stale session file이 아니라 이 active canonical source를 `.wsnbody`에 저장한다.
 - editor viewport 폭이 바뀌거나 callout 텍스트가 편집되면 QML이 짧은 debounce 뒤
   `reprojectResourceFramesForEditorWidth(...)`를 호출한다. 이 함수는 현재 editor HTML을 source로 복원하고, resource
   frame 또는 callout frame chrome이 있는 경우 새 폭으로 projection을 다시 만든다. resource는 기존

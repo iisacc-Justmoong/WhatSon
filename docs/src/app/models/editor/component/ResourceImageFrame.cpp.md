@@ -12,6 +12,9 @@ Implements the editor image resource-frame HTML renderer.
   stroke, and one centered auto-height media area.
 - The emitted HTML exposes a single `whatson-resource-frame whatson-resource-media` `<img>` as the component container.
   The cached raster is the visible resource frame, so Qt rich text receives one atomic object for the source line.
+- The cached raster carries the visible frame fill. The emitted `<img>` must not carry CSS `background-color`, `border`,
+  or `border-radius`, because Qt can reuse the image object's character format for text typed immediately after the
+  object.
 - The frame renders only one visible child: the media `<img>`. Type, `...`, and file-name values are not emitted into the
   frame HTML as display text or diagnostic attributes.
 - The frame is not wrapped in a synthetic outer block, because that block can confuse Qt rich-text flow height and let
@@ -40,6 +43,8 @@ Implements the editor image resource-frame HTML renderer.
   not survive contract changes or height-lock changes.
 - The HTML keeps an `object-fit:contain` style marker for the design contract even though Qt rich text support for CSS
   object fitting is limited.
+- The HTML keeps only neutral sizing/placement CSS on the `<img>` object. Visual fill must stay in the cached raster so
+  typed note text below the image does not inherit resource-frame background styling.
 - The frame is surrounded by `<!--whatson-resource-source:...-->` comments so
   `WhatSonNoteBodyPersistence` can restore the exact canonical source tag when those comments survive the editor
   round-trip.
@@ -54,6 +59,8 @@ Implements the editor image resource-frame HTML renderer.
   diagnostic attribute로도 내보내지 않는다.
 - frame image의 상하좌우 margin은 0으로 고정하고 `vertical-align:top`을 사용한다. resource source line의 위치는
   editor session projection이 결정하므로, resource line 위에 추가 spacer row를 만들면 안 된다.
+- `<img>` 자체에는 `background-color`, `border`, `border-radius` CSS를 싣지 않는다. Qt rich text가 image object의
+  char format을 바로 뒤에 입력한 텍스트에 이어 붙일 수 있으므로, 보이는 frame fill은 캐시 raster 안에만 둔다.
 - 이미지는 현재 editor viewport 폭으로 캐시 PNG를 만들며, 실제 이미지 표시 박스는 frame 폭 안에서 중앙 정렬한다.
   Figma 480px 기준은 design baseline metadata로만 남긴다.
 - resource frame은 synthetic outer block을 사용하지 않는다. 별도 outer block은 Qt rich text 흐름 높이를

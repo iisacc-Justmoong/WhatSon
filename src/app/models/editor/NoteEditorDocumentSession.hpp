@@ -152,6 +152,13 @@ private:
     bool persistEditorDocumentText(
         const QString& editorFilePath,
         const QString& editorDocumentText);
+    bool persistBodySourceTextForEditorFile(
+        const QString& editorFilePath,
+        const QString& bodySourceText);
+    bool stageActiveSourceMutationForCurrentEditorFile(
+        const QString& bodySourceText,
+        const QString& editorDocumentText,
+        QString* errorMessage = nullptr);
     bool pushActiveEditorBeforeNoteDeparture();
     bool applyLoadedBodyTextToEditorSession(
         const QString& noteId,
@@ -195,6 +202,7 @@ private:
     QString m_pendingIdlePullNoteId;
     QString m_pendingIdlePullNoteDirectoryPath;
     QString m_activeBodySourceText;
+    bool m_activeBodySourceDirtyForEditorSession = false;
     quint64 m_pendingLoadSequence = 0;
     quint64 m_pendingIdlePullSequence = 0;
     int m_parsedLineCount = 0;

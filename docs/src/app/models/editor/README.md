@@ -85,7 +85,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   payload to canonical source, and idle filesystem pulls cannot replace it with an older session snapshot. Note-departure
   flushes also persist that active source instead of falling back to stale mounted session-file
   contents. This protects ordinary typed editor input while image paste follows the 2026-05-19 command-result and LVRS
-  sync flow.
+  sync flow. Imported image-resource command results are staged to the mounted `.wsnsource` file immediately and discard
+  older pending pushes for that file; until later user typing supplies a newer modified-count payload, note departure
+  persists that active canonical source.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -100,7 +102,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   media sizing from the current editor viewport width, initial auto-height locking across later viewport reprojection,
   dynamic centered image placement inside that frame-width media raster, and an image-only visible rendering surface.
   The emitted object has zero margins and `vertical-align:top`, so the resource frame top aligns with the canonical
-  source line origin. It does not emit type/file-name display metadata or visible header/footer chrome.
+  source line origin. It does not put resource-frame background/border CSS on the `<img>` object, so text typed below
+  the image cannot inherit frame styling from Qt rich text character-format carryover. It does not emit type/file-name
+  display metadata or visible header/footer chrome.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -147,9 +151,12 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported
   resource 삽입은 2026-05-19 image paste command-result 흐름처럼 현재 커서/선택 범위를 적용한 source/editor HTML
-  결과를 반환하고, 저장은 일반 LVRS sync 흐름을 따른다. `readFinished(path)` 이후 editor revision이 증가하면 QML은
+  결과를 반환한다. active note에서는 이 결과를 mounted `.wsnsource` file에도 즉시 기록하고, 이미지 삽입 전의
+  오래된 pending push는 폐기한다. 이후 더 최신 modified-count payload가 들어오기 전까지 note-departure flush는
+  이 active canonical source를 저장한다. `readFinished(path)` 이후 editor revision이 증가하면 QML은
   `textEdited(text)` signal payload가 아니라 현재 전체 editor document text를 전달하고, 세션은 이를 canonical RAW로
-  변환해 selected `.wsnbody`에 쓴다. mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
+  변환해 selected `.wsnbody`에 쓴다. 이미지 바로 아래 첫 텍스트가 image object와 같은 rich-text block으로
+  직렬화되어도 복원 경로는 object 앞/뒤 텍스트를 별도 source line으로 보존한다. mounted session file도 같은 payload로 갱신된다. idle sync는 fallback으로만
   남고 direct RAW 입력보다 오래된 payload를 active source로 되돌리지 않는다. active editor session
   source는 그 payload가 canonical source로 persistence된 뒤 활성 노트 저장과 sync의 기준이 되며, idle filesystem
   pull은 오래된 snapshot으로 되돌리지 않는다. note-departure flush도 낡은 mounted session file 대신 이 active source를 저장한다.
@@ -165,6 +172,7 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   width는 현재 editor viewport 폭을 따른다. 첫 auto height는 `data-frame-display-height`로 고정되고 이후 viewport
   재투영에서는 frame 폭과 x축 중앙 offset만 다시 계산한다. 실제 이미지 표시 박스는 frame 폭 안에서 동적으로 중앙
   정렬된다. resource frame object의 margin은 0으로 고정되고 `vertical-align:top`으로 배치되므로 frame 좌상단은
-  canonical resource source line의 시작 위치에 맞는다. resource type, `...`, file name 표시 정보는 HTML에도
-  내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
+  canonical resource source line의 시작 위치에 맞는다. `<img>` object에는 배경색/테두리 CSS를 싣지 않아 뒤에
+  입력되는 텍스트가 resource-frame char format을 상속하지 않게 한다. resource type, `...`, file name 표시 정보는
+  HTML에도 내보내지 않으며, 표시용 header/footer와 복원용 렌더 텍스트 목록도 제공하지 않는다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

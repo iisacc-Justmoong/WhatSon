@@ -62,6 +62,37 @@ namespace
         updateRequest.incomingLastModifiedAt = lastModifiedAt;
         return fileStore.updateNote(updateRequest, nullptr, errorMessage);
     }
+
+    QVariantList importClipboardImageEntriesForNoteEditorSessionTest(
+        const QString& hubPath,
+        QString* errorMessage)
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+
+        QImage clipboardImage(QSize(1600, 900), QImage::Format_ARGB32_Premultiplied);
+        clipboardImage.fill(qRgba(18, 110, 190, 255));
+
+        InAppClipboardManager clipboard;
+        if (!clipboard.setImageResource(clipboardImage, QStringLiteral("image/png")))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = clipboard.lastError();
+            }
+            return {};
+        }
+        clipboard.setCurrentHubPath(hubPath);
+
+        const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
+        if (importedEntries.isEmpty() && errorMessage != nullptr)
+        {
+            *errorMessage = clipboard.lastError();
+        }
+        return importedEntries;
+    }
 } // namespace
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument()
@@ -1084,6 +1115,9 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
     QVERIFY(!editorDocumentText.contains(QStringLiteral("height=\"352\"")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("vertical-align:top")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("object-fit:contain")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("background-color:#1E1F20")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("border:1px")));
+    QVERIFY(!editorDocumentText.contains(QStringLiteral("border-radius")));
     QVERIFY(editorDocumentText.contains(QStringLiteral("data-max-width-height-ratio=\"1:1\"")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<input")));
     QVERIFY(!editorDocumentText.contains(QStringLiteral("<textarea")));
@@ -1181,6 +1215,239 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_rendersImportedClipboa
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(modifiedBodyDocument);
     QVERIFY(modifiedSourceText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
     QVERIFY(modifiedSourceText.contains(QStringLiteral("Typed below frame 04")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardNavigationHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-navigation-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+    const QString otherNoteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-navigation-other-note"),
+        QStringLiteral("Other"),
+        &createError);
+    QVERIFY2(!otherNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QString importError;
+    const QVariantList importedEntries = importClipboardImageEntriesForNoteEditorSessionTest(hubPath, &importError);
+    QVERIFY2(importedEntries.size() == 1, qPrintable(importError));
+    const QString resourcePath =
+        importedEntries.constFirst().toMap().value(QStringLiteral("resourcePath")).toString();
+    QVERIFY(!resourcePath.isEmpty());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-navigation-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        originalEditorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertion.value(QStringLiteral("bodySourceText")).toString().contains(resourcePath));
+
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(session.editorFilePath(), originalEditorHtml));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QVERIFY(session.openNoteForEditing(
+        QStringLiteral("clipboard-navigation-other-note"),
+        otherNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    const QString persistedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Alpha")));
+    QVERIFY(persistedSourceText.contains(resourcePath));
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Beta")));
+
+    QTRY_VERIFY_WITH_TIMEOUT(loadedSpy.count() >= 2, 3000);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-navigation-note"), noteDirectoryPath));
+    QTRY_VERIFY_WITH_TIMEOUT(loadedSpy.count() >= 3, 3000);
+    const QString remountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY(remountedEditorSource.contains(QStringLiteral("whatson-resource-frame")));
+    QVERIFY(remountedEditorSource.contains(QStringLiteral("whatson-resource-source")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_discardsStalePendingPushWhenImportedResourceIsInserted()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardPendingPushHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-pending-note"),
+        QStringLiteral("Alpha\nBeta"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+    const QString otherNoteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-pending-other-note"),
+        QStringLiteral("Other"),
+        &createError);
+    QVERIFY2(!otherNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QString importError;
+    const QVariantList importedEntries = importClipboardImageEntriesForNoteEditorSessionTest(hubPath, &importError);
+    QVERIFY2(importedEntries.size() == 1, qPrintable(importError));
+    const QString resourcePath =
+        importedEntries.constFirst().toMap().value(QStringLiteral("resourcePath")).toString();
+    QVERIFY(!resourcePath.isEmpty());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-pending-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        1,
+        originalEditorHtml);
+
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        originalEditorHtml,
+        QStringLiteral("Alpha").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+    QVERIFY(insertion.value(QStringLiteral("bodySourceText")).toString().contains(resourcePath));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    QVERIFY(session.openNoteForEditing(
+        QStringLiteral("clipboard-pending-other-note"),
+        otherNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    const QString persistedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Alpha")));
+    QVERIFY(persistedSourceText.contains(resourcePath));
+    QVERIFY(persistedSourceText.contains(QStringLiteral("Beta")));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesTextTypedImmediatelyAfterResourceObjectOnRawPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString hubPath = createMinimalHubFixture(
+        workspaceDirectory.path(),
+        QStringLiteral("ClipboardObjectTextHub.wshub"),
+        &createError);
+    QVERIFY2(!hubPath.isEmpty(), qPrintable(createError));
+
+    const QString libraryDirectoryPath =
+        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents")))
+            .filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        libraryDirectoryPath,
+        QStringLiteral("clipboard-object-text-note"),
+        QStringLiteral("이젠 텍스트마저 사라졌다.\n아래에 이미지를 삽입할 것이다."),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    QString importError;
+    const QVariantList importedEntries = importClipboardImageEntriesForNoteEditorSessionTest(hubPath, &importError);
+    QVERIFY2(importedEntries.size() == 1, qPrintable(importError));
+    const QString resourcePath =
+        importedEntries.constFirst().toMap().value(QStringLiteral("resourcePath")).toString();
+    QVERIFY(!resourcePath.isEmpty());
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+    session.setEditorViewportWidth(960);
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(QStringLiteral("clipboard-object-text-note"), noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    const QVariantMap insertion = session.insertImportedResourcesIntoSource(
+        originalEditorHtml,
+        QStringLiteral("이젠 텍스트마저 사라졌다.\n아래에 이미지를 삽입할 것이다.").size(),
+        0,
+        importedEntries);
+    QVERIFY(insertion.value(QStringLiteral("valid")).toBool());
+
+    const QString focusSyncEditorText =
+        QStringLiteral("이젠 텍스트마저 사라졌다.\n"
+                       "아래에 이미지를 삽입할 것이다.\n")
+        + QString(QChar::ObjectReplacementCharacter)
+        + QStringLiteral("그 밑에 텍스트를 입력했다.\n"
+                         "그러나 하단의 텍스트에 대해서는 거터가 할당되지 않고 논리적으로 무시된다.\n"
+                         "그 이후의 텍스트들에 대해서는 거터 라인 넘버가 한 칸씩 밀린 체로 생성되지만\n"
+                         "정체불명의 배경색 프레임이 함께 존재하게 되었다.");
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(session.editorFilePath(), focusSyncEditorText);
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    const QString persistedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
+    const QString expectedSourceText =
+        QStringLiteral("이젠 텍스트마저 사라졌다.\n"
+                       "아래에 이미지를 삽입할 것이다.\n")
+        + insertion.value(QStringLiteral("bodySourceText")).toString().section(QLatin1Char('\n'), 2, 2)
+        + QStringLiteral("\n그 밑에 텍스트를 입력했다.\n"
+                         "그러나 하단의 텍스트에 대해서는 거터가 할당되지 않고 논리적으로 무시된다.\n"
+                         "그 이후의 텍스트들에 대해서는 거터 라인 넘버가 한 칸씩 밀린 체로 생성되지만\n"
+                         "정체불명의 배경색 프레임이 함께 존재하게 되었다.");
+
+    QCOMPARE(persistedSourceText, expectedSourceText);
+    QVERIFY(persistedSourceText.contains(resourcePath));
+    QCOMPARE(session.parsedLineCount(), 7);
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange()
