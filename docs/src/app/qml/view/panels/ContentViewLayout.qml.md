@@ -5,6 +5,7 @@
 note editor contents views, the image-resource viewer, and the navigation-driven calendar overlays.
 
 ## Composition
+- `ContentEditorToolbar`
 - `ContentsView.Gutter`
 - `ContentsView.ImageEditor`
 - `ContentsView.TextEditor`
@@ -16,6 +17,11 @@ note editor contents views, the image-resource viewer, and the navigation-driven
 
 The image editor is mounted only when the active list model exposes `currentResourceEntry` and the selected entry is an
 image resource. Its input is the current resource entry map; it does not create a generic resource editor surface.
+
+The content surface is stacked as an LVRS `VStack`: the Figma-driven `ContentEditorToolbar` sits above the existing
+editor/image row, and the row keeps its original gutter/editor/minimap or image-viewer routing. The toolbar is visible
+only for the note editor surface and emits view-level signals back to the existing format dispatch; it does not own
+parser, projection, source mutation, or persistence behavior.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -124,6 +130,8 @@ classified as a local modified-count push.
   visibility.
 - Keep minimap wiring limited to editor document text, viewport geometry, source font tokens, and the editor viewport
   scroll hook.
+- Keep editor toolbar wiring limited to LVRS controls, Figma metadata, view hooks, and the existing format command
+  dispatch.
 - Keep editor native key interception limited to `EditorInputCommandFilter`; resource import, source insertion, and
   resource reload stay in C++.
 - Keep format shortcut and selected-text context-menu handling limited to command dispatch; static tag allow-lists,

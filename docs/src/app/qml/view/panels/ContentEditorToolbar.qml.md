@@ -1,0 +1,41 @@
+# `src/app/qml/view/panels/ContentEditorToolbar.qml`
+
+## Role
+`ContentEditorToolbar.qml` is the LVRS-only editor toolbar mounted at the top of `ContentViewLayout.qml`.
+It mirrors the Figma `EditorToolbar` frame (`399:9846`) as a compact 784x20 content row with 2px padding on every side
+while staying a view-only command surface.
+
+## Figma Contract
+- Root frame: `EditorToolbar`, node `399:9846`, `784 x 20`, horizontal, space-between. The QML root adds
+  `LV.Theme.gap2` padding around that Figma content frame.
+- Left group: `StyleBar`, node `398:8628`, `664 x 20`, 12px spacing.
+- Selector instances: `style` (`397:8570`), `font` (`399:8668`), `fontSize` (`399:8663`), `fontWeight`
+  (`399:8673`), and `lineHeight` (`399:8678`) are LVRS `ComboBox` controls with `Arrow=Down` and `Tone=primary`.
+- Format group: `formatBar`, node `398:8627`, uses LVRS icon buttons for `bold`, `italic`, `underline`,
+  `strikethrough`, and `highlight`.
+- Color group: `colorBar`, node `399:9827`, uses LVRS menu buttons for text color and background swatches.
+- Right group: `Frame 1000000891`, node `400:8662`, contains `generaladd` (`399:9835`) and active `rendererKit`
+  (`400:8656`) toggle buttons.
+- Token values are preserved through LVRS theme tokens where they already exist: `panelBackground10`, `panelBackground12`,
+  `primary`, body typography, `gap20`, `gap12`, and `gap4`. Figma-only swatch colors are kept locally as read-only
+  metadata values.
+
+## Behavior
+The toolbar exposes only two signals:
+- `formatTagRequested(tagName)` for the existing editor format dispatch in `ContentViewLayout.qml`.
+- `toolbarActionRequested(actionName)` for view-local hooks such as selector/menu button clicks.
+
+When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
+on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
+`fontWeight`, `formatBar`, `colorBar`, then `lineHeight`; the right mode group remains the anchored minimum surface.
+
+It does not read files, own note/session state, parse editor text, or persist formatting. All source mutation remains in
+`NoteEditorDocumentSession`, `SetTag`, and the note-body persistence layer.
+
+## Guardrails
+- Keep root and layout primitives in LVRS (`LV.HStack`, `LV.ComboBox`, `LV.IconButton`, `LV.IconMenuButton`).
+- Preserve Figma node ids as QML metadata properties when adding toolbar controls.
+- Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
+
+## Tests
+- `test/cpp/suites/qml_contents_view_tests.cpp`

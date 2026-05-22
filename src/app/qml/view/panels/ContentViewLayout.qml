@@ -398,139 +398,163 @@ Item {
         anchors.fill: parent
         color: contentViewLayout.displayColor
 
-        RowLayout {
+        LV.VStack {
+            id: contentViewStack
+
             anchors.fill: parent
             enabled: !contentViewLayout.calendarOverlayActive
             spacing: LV.Theme.gapNone
             visible: !contentViewLayout.calendarOverlayActive
 
-            ContentsView.Gutter {
-                Layout.fillHeight: true
-                Layout.preferredWidth: visible ? implicitWidth : 0
-                contentY: contentsTextEditor.viewportContentY
-                currentLineIndex: contentsTextEditor.editorCursorLineIndex
-                fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight
-                lineCount: contentViewLayout.editorParsedLineCount
-                lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor
-                lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
-                parsedLineCount: contentViewLayout.editorParsedLineCount
-                selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
-                selectedNoteId: contentViewLayout.editorActiveNoteId
-                sourceFilePath: contentViewLayout.editorSourceFilePath
-                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.gutterVisible
-            }
+            ContentEditorToolbar {
+                id: contentEditorToolbar
 
-            ContentsView.ImageEditor {
-                id: contentsImageEditor
-
-                Layout.fillHeight: true
                 Layout.fillWidth: true
-                resourceEntry: contentViewLayout.currentResourceEntry
-                visible: contentViewLayout.imageResourceSelected
-            }
-
-            Item {
-                id: contentsTextEditorStack
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                enabled: contentViewLayout.noteEditorSurfaceVisible
+                Layout.preferredHeight: visible ? implicitHeight : 0
+                editorReadOnly: contentViewLayout.editorReadOnly
                 visible: contentViewLayout.noteEditorSurfaceVisible
 
-                ContentsView.TextEditor {
-                    id: contentsTextEditor
-
-                    anchors.fill: parent
-                    clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
-                    editorInputCommandFilter: contentViewLayout.editorInputCommandFilter
-                    enabled: contentViewLayout.noteEditorSurfaceVisible
-                    editorReadOnly: contentViewLayout.editorReadOnly
-                    inAppClipboard: contentViewLayout.inAppClipboard
-                    noteBodyFilePath: contentViewLayout.editorSourceFilePath
-                    noteEditorSession: contentViewLayout.noteEditorSession
-                    objectName: "contentsDisplayTextEditor"
-                    visible: contentViewLayout.noteEditorSurfaceVisible
-
-                    onReadFinished: function(path) {
-                        contentViewLayout.markEditorSessionFileReadyForRawPush(path);
-                    }
-                    onTextEdited: function() {
-                        contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
-                    }
-                    onSyncFinished: function(path) {
-                        const syncedPath = path === undefined || path === null ? "" : String(path).trim();
-                        if (syncedPath.length === 0
-                                || syncedPath !== contentViewLayout.editorSourceFilePath) {
-                            return;
-                        }
-                        if (contentViewLayout.noteEditorSurfaceVisible
-                                && !contentViewLayout.editorApplyingPulledDocumentText
-                                && !contentsTextEditor.editorProgrammaticDocumentApplying
-                                && !contentsTextEditor.editorFrameViewportRefreshApplying
-                                && contentViewLayout.noteEditorSession
-                                && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
-                            contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
-                                        syncedPath,
-                                        contentsTextEditor.editorDocumentText);
-                        }
-                    }
-                    onEditorPlainTextRevisionChanged: {
-                        contentViewLayout.clearEditorFormatSelectionSnapshot();
-                    }
-                    onEditorDocumentTextChanged: {
-                        contentViewLayout.clearEditorFormatSelectionSnapshot();
-                    }
-                    onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
-                    onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
-                    onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
-
-                    TapHandler {
-                        id: editorFormatContextMenuTapHandler
-
-                        acceptedButtons: Qt.RightButton
-                        acceptedModifiers: Qt.KeyboardModifierMask
-                        enabled: contentViewLayout.editorFormatContextMenuAvailable
-                        gesturePolicy: TapHandler.DragThreshold
-                        grabPermissions: PointerHandler.ApprovesTakeOverByAnything
-
-                        onPressedChanged: {
-                            if (pressed) {
-                                contentViewLayout.editorFormatContextMenuPointerActive = true;
-                            } else {
-                                Qt.callLater(function () {
-                                    if (!editorFormatContextMenu.opened)
-                                        contentViewLayout.editorFormatContextMenuPointerActive = false;
-                                });
-                            }
-                        }
-
-                        onTapped: function (eventPoint, button) {
-                            if (button !== Qt.RightButton)
-                                return;
-                            contentViewLayout.openEditorFormatContextMenuFromPointer(
-                                        contentsTextEditor,
-                                        eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
-                                        eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
-                                        "rightClick");
-                        }
-                    }
+                onFormatTagRequested: function(tagName) {
+                    contentViewLayout.applyEditorFormatTag(tagName);
                 }
-
+                onToolbarActionRequested: function(actionName) {
+                    contentViewLayout.requestViewHook(actionName);
+                }
             }
 
-            ContentsView.Minimap {
+            RowLayout {
                 Layout.fillHeight: true
-                Layout.preferredWidth: visible ? implicitWidth : 0
-                documentText: contentsTextEditor.editorDocumentText
-                scrollTarget: contentsTextEditor.scrollEditorViewportTo
-                sourceContentHeight: contentsTextEditor.editorViewportContentHeight
-                sourceContentWidth: contentsTextEditor.editorViewportWidth
-                sourceContentY: contentsTextEditor.viewportContentY
-                sourceFontFamily: LV.Theme.fontBody
-                sourceFontLetterSpacing: LV.Theme.textBodyLetterSpacing
-                sourceFontPixelSize: LV.Theme.textBody
-                sourceFontWeight: LV.Theme.textBodyWeight
-                sourceViewportHeight: contentsTextEditor.editorViewportHeight
-                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.minimapVisible
+                Layout.fillWidth: true
+                spacing: LV.Theme.gapNone
+
+                ContentsView.Gutter {
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: visible ? implicitWidth : 0
+                    contentY: contentsTextEditor.viewportContentY
+                    currentLineIndex: contentsTextEditor.editorCursorLineIndex
+                    fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight
+                    lineCount: contentViewLayout.editorParsedLineCount
+                    lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor
+                    lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
+                    parsedLineCount: contentViewLayout.editorParsedLineCount
+                    selectedNoteDirectoryPath: contentViewLayout.editorActiveNoteDirectoryPath
+                    selectedNoteId: contentViewLayout.editorActiveNoteId
+                    sourceFilePath: contentViewLayout.editorSourceFilePath
+                    visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.gutterVisible
+                }
+
+                ContentsView.ImageEditor {
+                    id: contentsImageEditor
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    resourceEntry: contentViewLayout.currentResourceEntry
+                    visible: contentViewLayout.imageResourceSelected
+                }
+
+                Item {
+                    id: contentsTextEditorStack
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    enabled: contentViewLayout.noteEditorSurfaceVisible
+                    visible: contentViewLayout.noteEditorSurfaceVisible
+
+                    ContentsView.TextEditor {
+                        id: contentsTextEditor
+
+                        anchors.fill: parent
+                        clipboardEditorPaste: contentViewLayout.clipboardEditorPaste
+                        editorInputCommandFilter: contentViewLayout.editorInputCommandFilter
+                        enabled: contentViewLayout.noteEditorSurfaceVisible
+                        editorReadOnly: contentViewLayout.editorReadOnly
+                        inAppClipboard: contentViewLayout.inAppClipboard
+                        noteBodyFilePath: contentViewLayout.editorSourceFilePath
+                        noteEditorSession: contentViewLayout.noteEditorSession
+                        objectName: "contentsDisplayTextEditor"
+                        visible: contentViewLayout.noteEditorSurfaceVisible
+
+                        onReadFinished: function(path) {
+                            contentViewLayout.markEditorSessionFileReadyForRawPush(path);
+                        }
+                        onTextEdited: function() {
+                            contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
+                        }
+                        onSyncFinished: function(path) {
+                            const syncedPath = path === undefined || path === null ? "" : String(path).trim();
+                            if (syncedPath.length === 0
+                                    || syncedPath !== contentViewLayout.editorSourceFilePath) {
+                                return;
+                            }
+                            if (contentViewLayout.noteEditorSurfaceVisible
+                                    && !contentViewLayout.editorApplyingPulledDocumentText
+                                    && !contentsTextEditor.editorProgrammaticDocumentApplying
+                                    && !contentsTextEditor.editorFrameViewportRefreshApplying
+                                    && contentViewLayout.noteEditorSession
+                                    && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
+                                contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
+                                            syncedPath,
+                                            contentsTextEditor.editorDocumentText);
+                            }
+                        }
+                        onEditorPlainTextRevisionChanged: {
+                            contentViewLayout.clearEditorFormatSelectionSnapshot();
+                        }
+                        onEditorDocumentTextChanged: {
+                            contentViewLayout.clearEditorFormatSelectionSnapshot();
+                        }
+                        onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                        onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+                        onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
+
+                        TapHandler {
+                            id: editorFormatContextMenuTapHandler
+
+                            acceptedButtons: Qt.RightButton
+                            acceptedModifiers: Qt.KeyboardModifierMask
+                            enabled: contentViewLayout.editorFormatContextMenuAvailable
+                            gesturePolicy: TapHandler.DragThreshold
+                            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+
+                            onPressedChanged: {
+                                if (pressed) {
+                                    contentViewLayout.editorFormatContextMenuPointerActive = true;
+                                } else {
+                                    Qt.callLater(function () {
+                                        if (!editorFormatContextMenu.opened)
+                                            contentViewLayout.editorFormatContextMenuPointerActive = false;
+                                    });
+                                }
+                            }
+
+                            onTapped: function (eventPoint, button) {
+                                if (button !== Qt.RightButton)
+                                    return;
+                                contentViewLayout.openEditorFormatContextMenuFromPointer(
+                                            contentsTextEditor,
+                                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
+                                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
+                                            "rightClick");
+                            }
+                        }
+                    }
+
+                }
+
+                ContentsView.Minimap {
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: visible ? implicitWidth : 0
+                    documentText: contentsTextEditor.editorDocumentText
+                    scrollTarget: contentsTextEditor.scrollEditorViewportTo
+                    sourceContentHeight: contentsTextEditor.editorViewportContentHeight
+                    sourceContentWidth: contentsTextEditor.editorViewportWidth
+                    sourceContentY: contentsTextEditor.viewportContentY
+                    sourceFontFamily: LV.Theme.fontBody
+                    sourceFontLetterSpacing: LV.Theme.textBodyLetterSpacing
+                    sourceFontPixelSize: LV.Theme.textBody
+                    sourceFontWeight: LV.Theme.textBodyWeight
+                    sourceViewportHeight: contentsTextEditor.editorViewportHeight
+                    visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.minimapVisible
+                }
             }
         }
 

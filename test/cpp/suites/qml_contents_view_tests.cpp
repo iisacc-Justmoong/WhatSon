@@ -8,6 +8,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
     const QString minimapSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Minimap.qml"));
     const QString contentViewLayoutSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
+    const QString contentEditorToolbarSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/panels/ContentEditorToolbar.qml"));
     const QStringList placeholderEditorFiles{
         QStringLiteral("3DEditor.qml"),
         QStringLiteral("AudioEditor.qml"),
@@ -36,6 +37,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!textEditorSource.isEmpty());
     QVERIFY(!minimapSource.isEmpty());
     QVERIFY(!contentViewLayoutSource.isEmpty());
+    QVERIFY(!contentEditorToolbarSource.isEmpty());
     for (const QString& placeholderFileName : placeholderEditorFiles)
     {
         const QString placeholderSource =
@@ -280,6 +282,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(!textEditorSource.contains(QStringLiteral("filePath: \"\"")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var noteEditorSession: null")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property bool gutterVisible: true")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.VStack {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentViewStack")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentEditorToolbar {")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentEditorToolbar")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Layout.preferredHeight: visible ? implicitHeight : 0")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("visible: contentViewLayout.noteEditorSurfaceVisible")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onFormatTagRequested: function(tagName)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorFormatTag(tagName);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var currentResourceEntry")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool resourceListActive")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool imageResourceSelected")));
@@ -392,6 +402,83 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("CalendarView.DayCalendarPage {")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("StackLayout")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorViewModeController")));
+
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("LV.HStack {")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"EditorToolbar\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property string figmaNodeId: \"399:9846\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaWidth: LV.Theme.scaleMetric(784)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaHeight: LV.Theme.gap20")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int toolbarPadding: LV.Theme.gap2")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("implicitWidth: editorToolbar.figmaWidth + editorToolbar.toolbarPadding * 2")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("implicitHeight: editorToolbar.figmaHeight + editorToolbar.toolbarPadding * 2")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("height: editorToolbar.implicitHeight")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: editorToolbarContentFrame")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("Layout.margins: editorToolbar.toolbarPadding")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: editorToolbarContent")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int responsiveToolbarItemCount: 7")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral(
+        "readonly property real responsiveAvailableContentWidth: Math.max(LV.Theme.gapNone, editorToolbar.width - editorToolbar.toolbarPadding * 2)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral(
+        "readonly property int firstVisibleToolbarItemIndex: editorToolbar.firstVisibleToolbarItemIndexForWidth(editorToolbar.responsiveAvailableContentWidth)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function firstVisibleToolbarItemIndexForWidth(availableWidth)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function toolbarRequiredWidthFromIndex(firstVisibleIndex)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function toolbarResponsiveItemVisible(itemIndex)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(0)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(1)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(2)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(3)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(4)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(5)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("visible: editorToolbar.toolbarResponsiveItemVisible(6)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("Layout.preferredWidth: visible ? implicitWidth : LV.Theme.gapNone")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaPanelBackground10: LV.Theme.panelBackground10")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaPanelBackground12: LV.Theme.panelBackground12")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaAccent: LV.Theme.primary")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaGray11: \"#CED0D6\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaGreen6: \"#57965C\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaHighlight: \"#FFD60A\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaHighlightOverlay: \"#54FFD91A\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property color figmaTitleHeader: \"#E6FFFFFF\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaBodyTextSize: LV.Theme.textBody")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaBodyLineHeight: LV.Theme.textBodyLineHeight")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaBodyWeight: LV.Theme.textBodyWeight")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaComboLargeWidth: LV.Theme.scaleMetric(97)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaComboSmallWidth: LV.Theme.scaleMetric(54)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaComboWeightWidth: LV.Theme.scaleMetric(88)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaIconButtonWidth: LV.Theme.gap20")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaIconMenuButtonWidth: LV.Theme.scaleMetric(34)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaStyleBarWidth: LV.Theme.scaleMetric(664)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int figmaModeBarWidth: LV.Theme.scaleMetric(44)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("LV.ComboBox {")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"397:8570\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:8668\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:8663\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:8673\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:8678\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaComponentName: \"ComboBox/Tone=primary, Arrow=Down\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"Title\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"Pretendard\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"12\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"Regular\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"1.1\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("arrow: LV.Stepper.Down")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"398:8627\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:9827\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"400:8662\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaComponentName: \"Button/Type=IconButton, Kind=borderless\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaComponentName: \"Button/Type=IconMenuButton, Kind=borderless\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaComponentName: \"Button/Type=IconButton, Kind=default\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"bold\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"italic\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"underline\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"strikethrough\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"highlight\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("iconName: \"generaladd\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("iconName: \"rendererKit\"")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("QtQuick.Controls")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("TextEdit {")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("noteEditorSession")));
 
     const QList<QString> qmlSources = {gutterSource, imageEditorSource, textEditorSource, minimapSource};
     for (const QString &qmlSource : qmlSources) {
