@@ -1900,6 +1900,79 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_boundaryEnterUsesCurre
         calloutEditorLines.join(QLatin1Char('\n')));
 }
 
+void WhatSonCppRegressionTests::noteBodyPersistence_recoversNativeEmptyLineInsertion()
+{
+    const auto recoveredSourceAfterNativeEmptyLine =
+        [](const QString& noteId, const QString& sourceText) -> QString
+        {
+            const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(noteId, sourceText);
+            QTextDocument editorDocument;
+            editorDocument.setHtml(editorHtml);
+            QTextCursor editorCursor(&editorDocument);
+            editorCursor.movePosition(QTextCursor::End);
+            editorCursor.insertBlock();
+            return WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+                noteId,
+                editorDocument.toHtml());
+        };
+
+    QCOMPARE(
+        recoveredSourceAfterNativeEmptyLine(
+            QStringLiteral("plain-native-empty-line-note"),
+            QStringLiteral("Alpha\n")),
+        QStringLiteral("Alpha\n\n"));
+    QCOMPARE(
+        recoveredSourceAfterNativeEmptyLine(
+            QStringLiteral("style-native-empty-line-note"),
+            QStringLiteral("<style style=\"Title\">Title</style>\n")),
+        QStringLiteral("<style style=\"Title\">Title</style>\n\n"));
+    QCOMPARE(
+        recoveredSourceAfterNativeEmptyLine(
+            QStringLiteral("callout-native-empty-line-note"),
+            QStringLiteral("<callout>Inside</callout>\n")),
+        QStringLiteral("<callout>Inside</callout>\n\n"));
+    const QString mixedSourceText =
+        QStringLiteral("첫 번째 줄에 텍스트 입력\n"
+                       "세 번째 줄에 이미지를 놓을 것이다.\n"
+                       "무슨 여기에 텍스트를 입력하면, 아 되는구\n"
+                       "<resource type=\"image\" format=\".png\" path=\"untitled.wsresources/capture.wsresource\" id=\"capture\" />\n"
+                       "그 밑에<bold> 다시 텍스트를 두었다 </bold>\n"
+                       "<style style=\"Title\">\n"
+                       "타이틀</style>\n"
+                       "텍스트 입력 <style font=\"American Typewriter\">이 부분의 폰트는 바뀌었다</style> \n"
+                       "아래로 줄 이동 <style font=\"Apple Color Emoji\">여기도 폰트가 다르다</style>\n");
+    QCOMPARE(
+        recoveredSourceAfterNativeEmptyLine(
+            QStringLiteral("mixed-native-empty-line-note"),
+            mixedSourceText),
+        mixedSourceText + QLatin1Char('\n'));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout()
+{
+    const QString sourceText = QStringLiteral("<callout>Inside</callout>\n");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("callout-native-empty-line-note"),
+        sourceText,
+        142);
+
+    QTextDocument editorDocument;
+    editorDocument.setHtml(editorHtml);
+    QTextCursor editorCursor(&editorDocument);
+    editorCursor.movePosition(QTextCursor::End);
+    editorCursor.insertBlock();
+
+    NoteEditorDocumentSession session;
+    const QVariantMap result = session.reprojectResourceFramesForEditorWidth(
+        editorDocument.toHtml(),
+        142);
+
+    QVERIFY(result.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        result.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<callout>Inside</callout>\n\n"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush()
 {
     QTemporaryDir workspaceDirectory;

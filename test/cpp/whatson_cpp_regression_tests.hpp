@@ -77,6 +77,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
@@ -84,7 +85,11 @@
 #include <QJSEngine>
 #include <QJSValue>
 #include <QProcess>
+#include <QQmlComponent>
+#include <QQmlContext>
 #include <QQmlEngine>
+#include <QQuickItem>
+#include <QQuickWindow>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
@@ -92,10 +97,12 @@
 #include <QThreadPool>
 #include <QTemporaryDir>
 #include <QTextBlock>
+#include <QTextCursor>
 #include <QUrl>
 #include <QVariantMap>
 #include <QtTest>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -1310,6 +1317,8 @@ private slots:
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_boundaryEnterUsesCurrentEditorSnapshotAfterBackspace();
+    void noteBodyPersistence_recoversNativeEmptyLineInsertion();
+    void noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout();
     void noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush();
     void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
     void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
@@ -1388,6 +1397,7 @@ private slots:
     void projectsHierarchyParser_roundTripsNestedProjectTree();
     void projectsHierarchyController_keepsNestedProjectPolicy();
     void qmlContentsView_keepsOnlyAllowedContentsViews();
+    void qmlContentsTextEditor_returnKeyExtendsEmptyLine();
     void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
     void qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks();
     void qmlNavigationCalendarButtons_mountCalendarPagesInContentSurface();

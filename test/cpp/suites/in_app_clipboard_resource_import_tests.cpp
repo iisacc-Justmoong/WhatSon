@@ -73,13 +73,15 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("event->accept();")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("pasteImageResourceIntoEditor(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("handleCalloutBoundaryKeyInSource(")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleStyleBoundaryKeyEvent")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleStyleBoundaryKeyInSource(")));
     QVERIFY(!editorInputFilterSource.contains(QStringLiteral("handleEmptyParagraphBoundaryKeyInSource(")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("editorCommandCursorPosition(selectionStart, selectionLength)")));
     QVERIFY(!editorInputFilterSource.contains(QStringLiteral("editorCaretPosition(selectionStart)")));
     QVERIFY(!editorInputFilterSource.contains(QStringLiteral("const int pasteSelectionLength = 0")));
-    QVERIFY(editorInputFilterSource.contains(QStringLiteral("property(\"editorCursorPosition\")")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Backspace")));
-    QVERIFY(editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("Qt::Key_Return")));
+    QVERIFY(!editorInputFilterSource.contains(QStringLiteral("Qt::Key_Enter")));
     QVERIFY(editorInputFilterSource.contains(QStringLiteral("replaceEditorDocumentText")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")).exists());
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/file/resource/ResourcesImportController.hpp")).exists());

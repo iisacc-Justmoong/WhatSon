@@ -183,6 +183,7 @@ target_link_libraries(whatson_cpp_regression_tests PRIVATE
         Qt6::Test
         Qt6::Qml
         Qt6::Quick
+        LVRS::LVRS
         iiXml::iiXml
         iiHtmlBlock::iiHtmlBlock
 )

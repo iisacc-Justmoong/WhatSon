@@ -584,6 +584,179 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     }
 }
 
+void WhatSonCppRegressionTests::qmlContentsTextEditor_returnKeyExtendsEmptyLine()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+    const QString mixedSourceText =
+        QStringLiteral("첫 번째 줄에 텍스트 입력\n"
+                       "세 번째 줄에 이미지를 놓을 것이다.\n"
+                       "무슨 여기에 텍스트를 입력하면, 아 되는구\n"
+                       "<resource type=\"image\" format=\".png\" path=\"untitled.wsresources/capture.wsresource\" id=\"capture\" />\n"
+                       "그 밑에<bold> 다시 텍스트를 두었다 </bold>\n"
+                       "<style style=\"Title\">\n"
+                       "타이틀</style>\n"
+                       "텍스트 입력 <style font=\"American Typewriter\">이 부분의 폰트는 바뀌었다</style> \n"
+                       "아래로 줄 이동 <style font=\"Apple Color Emoji\">여기도 폰트가 다르다</style>\n");
+    QString createError;
+    const QString noteId = QStringLiteral("qml-empty-line-enter-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        tempDir.path(),
+        noteId,
+        mixedSourceText,
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession noteEditorSession;
+    noteEditorSession.setSessionRootPathForTests(sessionRootDir.path());
+    QSignalSpy loadedSpy(&noteEditorSession, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(noteEditorSession.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(noteEditorSession.markEditorSessionFileReadyForRawPush(noteEditorSession.editorFilePath()));
+    EditorInputCommandFilter editorInputCommandFilter;
+    InAppClipboardStore inAppClipboard;
+    ClipboardEditorPaste clipboardEditorPaste;
+
+    const QString lvrsSourceImportPath =
+        QDir::home().filePath(QStringLiteral(".local/LVRS/platforms/macos/lib/qt6/qml/LVRS"));
+    QVERIFY2(
+        QDir(lvrsSourceImportPath).exists(),
+        qPrintable(QStringLiteral("LVRS QML import path is missing: %1").arg(lvrsSourceImportPath)));
+    const QString lvrsTestImportRoot = tempDir.filePath(QStringLiteral("qml"));
+    const QString lvrsTestImportPath = QDir(lvrsTestImportRoot).filePath(QStringLiteral("LVRS"));
+    QVERIFY(QDir().mkpath(lvrsTestImportPath));
+    QDirIterator lvrsIterator(
+        lvrsSourceImportPath,
+        QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    while (lvrsIterator.hasNext())
+    {
+        lvrsIterator.next();
+        const QFileInfo entryInfo = lvrsIterator.fileInfo();
+        const QString relativePath = QDir(lvrsSourceImportPath).relativeFilePath(entryInfo.filePath());
+        const QString targetPath = QDir(lvrsTestImportPath).filePath(relativePath);
+        if (entryInfo.isDir())
+        {
+            QVERIFY(QDir().mkpath(targetPath));
+            continue;
+        }
+
+        QVERIFY(QDir().mkpath(QFileInfo(targetPath).absolutePath()));
+        QVERIFY2(
+            QFile::copy(entryInfo.filePath(), targetPath),
+            qPrintable(QStringLiteral("Failed to copy LVRS QML import file: %1").arg(relativePath)));
+    }
+
+    QFile lvrsQmldir(QDir(lvrsTestImportPath).filePath(QStringLiteral("qmldir")));
+    QVERIFY(lvrsQmldir.open(QIODevice::ReadOnly | QIODevice::Text));
+    QStringList lvrsQmldirLines =
+        QString::fromUtf8(lvrsQmldir.readAll()).split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+    lvrsQmldir.close();
+    lvrsQmldirLines.erase(
+        std::remove_if(
+            lvrsQmldirLines.begin(),
+            lvrsQmldirLines.end(),
+            [](const QString& line)
+            {
+                return line.trimmed().startsWith(QStringLiteral("prefer "));
+            }),
+        lvrsQmldirLines.end());
+    QVERIFY(lvrsQmldir.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    lvrsQmldir.write(lvrsQmldirLines.join(QLatin1Char('\n')).toUtf8());
+    lvrsQmldir.close();
+
+    QQmlEngine engine;
+    engine.addImportPath(lvrsTestImportRoot);
+    engine.rootContext()->setContextProperty(QStringLiteral("testNoteEditorSession"), &noteEditorSession);
+    engine.rootContext()->setContextProperty(QStringLiteral("testEditorInputCommandFilter"), &editorInputCommandFilter);
+    engine.rootContext()->setContextProperty(QStringLiteral("testInAppClipboard"), &inAppClipboard);
+    engine.rootContext()->setContextProperty(QStringLiteral("testClipboardEditorPaste"), &clipboardEditorPaste);
+    const QString contentsImportUrl =
+        QUrl::fromLocalFile(QDir::current().absoluteFilePath(QStringLiteral("src/app/qml/view/contents"))).toString();
+    const QString qml = QStringLiteral(R"(
+import QtQuick
+import LVRS 1.0 as LV
+import "%1" as ContentsView
+
+LV.ApplicationWindow {
+    id: root
+    width: 420
+    height: 260
+    visible: false
+    desktopMinWidth: 0
+    desktopMinHeight: 0
+    mobileMinWidth: 0
+    mobileMinHeight: 0
+    property var suppliedClipboardEditorPaste: testClipboardEditorPaste
+    property var suppliedEditorInputCommandFilter: testEditorInputCommandFilter
+    property var suppliedInAppClipboard: testInAppClipboard
+    property var suppliedNoteEditorSession: testNoteEditorSession
+
+    ContentsView.TextEditor {
+        id: editor
+        width: 360
+        height: 180
+        clipboardEditorPaste: root.suppliedClipboardEditorPaste
+        editorReadOnly: false
+        editorInputCommandFilter: root.suppliedEditorInputCommandFilter
+        inAppClipboard: root.suppliedInAppClipboard
+        noteBodyFilePath: root.suppliedNoteEditorSession.editorFilePath
+        noteEditorSession: root.suppliedNoteEditorSession
+    }
+}
+)")
+        .arg(contentsImportUrl);
+
+    QQmlComponent component(&engine);
+    component.setData(
+        qml.toUtf8(),
+        QUrl::fromLocalFile(QDir::current().absoluteFilePath(QStringLiteral("test/qml/ContentsTextEditorReturn.qml"))));
+    QScopedPointer<QObject> root(component.create());
+    QVERIFY2(root, qPrintable(component.errorString()));
+    auto* window = qobject_cast<QQuickWindow*>(root.data());
+    QVERIFY(window);
+    window->show();
+    QTRY_VERIFY(window->isVisible());
+
+    QObject* editor = root->findChild<QObject*>(QStringLiteral("contentsTextEditor"));
+    QVERIFY(editor);
+    auto* editorItem = root->findChild<QQuickItem*>(QStringLiteral("textEditorRichTextEdit"));
+    QVERIFY(editorItem);
+    QTRY_VERIFY(editor->property("text").toString().contains(QStringLiteral("첫 번째 줄에 텍스트 입력")));
+    QVERIFY(QMetaObject::invokeMethod(editor, "forceEditorFocus"));
+    QTRY_VERIFY(editor->property("focused").toBool());
+    const int initialCursorPosition = editor->property("length").toInt();
+    QVERIFY(initialCursorPosition > 0);
+    QVERIFY(editor->setProperty("cursorPosition", initialCursorPosition));
+    QVERIFY(!editor->property("readOnly").toBool());
+
+    QTest::keyClick(window, Qt::Key_Return);
+    QTRY_VERIFY2(
+        editor->property("cursorPosition").toInt() > initialCursorPosition,
+        qPrintable(QStringLiteral(
+            "Return did not advance the contents TextEditor cursor. cursor=%1 initial=%2 length=%3 readOnly=%4 focused=%5 itemFocus=%6 textLength=%7")
+            .arg(editor->property("cursorPosition").toInt())
+            .arg(initialCursorPosition)
+            .arg(editor->property("length").toInt())
+            .arg(editor->property("readOnly").toBool())
+            .arg(editor->property("focused").toBool())
+            .arg(editorItem->property("activeFocus").toBool())
+            .arg(editor->property("editorDocumentText").toString().size())));
+    const int emptyLineCursorPosition = editor->property("cursorPosition").toInt();
+    const QRectF emptyLineCursorRect = editorItem->property("cursorRectangle").toRectF();
+
+    QTest::keyClick(window, Qt::Key_Return);
+    QTRY_VERIFY(editor->property("cursorPosition").toInt() > emptyLineCursorPosition);
+    const QRectF nextEmptyLineCursorRect = editorItem->property("cursorRectangle").toRectF();
+    QVERIFY2(
+        nextEmptyLineCursorRect.y() > emptyLineCursorRect.y(),
+        qPrintable(QStringLiteral("Contents TextEditor Return on an empty line must create another line: before y=%1, after y=%2")
+            .arg(emptyLineCursorRect.y())
+            .arg(nextEmptyLineCursorRect.y())));
+}
+
 void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
 {
     const QString gutterSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/Gutter.qml"));

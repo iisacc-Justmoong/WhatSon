@@ -49,9 +49,8 @@
   `getText(selectionStart, selectionEnd)` before falling back to `selectedText`, keeping the visible selected text
   available as the C++ RAW-source repair anchor.
 - The wrapper attaches `EditorInputCommandFilter` to the public LVRS `editorItem` as the editor-wide native key filter.
-  The filter delegates image paste shortcuts to `ClipboardEditorPaste`, delegates callout Backspace/Enter boundaries to
-  `NoteEditorDocumentSession`, and consumes the native event only when the delegated C++ command reports that it was
-  handled.
+  The filter delegates image paste shortcuts to `ClipboardEditorPaste`, delegates callout Backspace boundaries to
+  `NoteEditorDocumentSession`, and leaves Return/Enter on the native editor path.
 - `scrollEditorViewportTo(contentY)` is a view-local hook used by the minimap to request a viewport scroll without
   introducing an editor backend object.
 - `editorLogicalLineMetricFor(lineIndex)` maps a canonical source line index to the rendered rectangle of that line's
@@ -146,9 +145,9 @@
   bottomPadding으로만 표현한다.
 - 포맷 command 뒤 C++이 계산한 editor HTML 결과는 공개 `LV.TextEditor.text`/`cursorPosition` API로 반영한다.
   RichText 문서 교체 직후 커서가 초기 위치로 되돌아가지 않도록 즉시 한 번, 다음 QML tick에서 한 번 더 공개
-  cursor API로 복원한다. 이미지 resource paste와 콜아웃 경계 키는 `EditorInputCommandFilter` C++ event filter가
-  공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. 지원
-  리소스가 없는 일반 paste는 공개 `paste()` API와 native `TextEdit` 경로에 남긴다.
+  cursor API로 복원한다. 이미지 resource paste와 콜아웃 Backspace 경계 키는 `EditorInputCommandFilter` C++ event filter가
+  공개 editor item에서 받아 각각 `ClipboardEditorPaste`와 `NoteEditorDocumentSession`으로 위임한다. Return/Enter와 지원
+  리소스가 없는 일반 paste는 공개 native `TextEdit` 경로에 남긴다.
 - resource/callout frame chrome refresh는 별도 교체 경로를 사용해 현재 selection을 보존하고, 이미 editor focus가
   있던 경우에만 focus를 유지한다. 갱신은 `editorFrameViewportRefreshDelayMs` 이후에 debounce되며, 적용 중에는
   `editorFrameViewportRefreshApplying`으로 재예약을 막고 IME composing 중이면 다시 미룬다. 따라서 생성형 frame

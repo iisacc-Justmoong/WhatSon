@@ -57,12 +57,10 @@ Declares the active note editor document session object.
   visible source line; an empty current line is rejected so the editor does not create and immediately lose a zero-width
   `<style>` wrapper. Later plain editor raw pushes preserve existing style wrapper boundaries for whitespace-only
   Space/Enter insertions, keeping that whitespace outside the wrapper unless a style command explicitly changes the
-  source. `handleStyleBoundaryKeyInSource(...)` consumes plain Enter/Return inside styled rendered text and moves the
-  source cursor after `</style>` on the following source line.
+  source. Live Return/Enter stays on the native editor path.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
-  callout frame entirely. Enter/Return inside a callout moves the cursor to the next source line outside the wrapper,
-  adding that line break when the callout is currently the trailing source node.
+  callout frame entirely. Return/Enter is not wired through the editor input filter.
 
 ## Guardrails
 
@@ -134,11 +132,8 @@ Declares the active note editor document session object.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
   visible 범위를 다시 찾는다. style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체를
-  대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다. `handleStyleBoundaryKeyInSource(...)`는
-  styled rendered text 내부의 plain Enter/Return을 `</style>` 뒤 다음 source line으로 나가는 동작으로 처리하되,
-  직전 Backspace가 아직 modified-count RAW push를 끝내지 못했더라도 현재 editor document를 source 기준으로 삼아
-  삭제된 문자를 되살리지 않는다.
-- `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 내부 key boundary를 처리한다. 콜아웃 content 시작점의
+  대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다. live Return/Enter는 native editor 입력으로
+  처리하고, style boundary 공백은 저장 경계에서 wrapper 밖으로 병합한다.
+- `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 Backspace key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
-  콜아웃 내부 Enter/Return은 콜아웃을 유지한 채 커서를 닫는 태그 바깥 다음 source line으로 이동시키고, 뒤에
-  줄이 없으면 새 줄을 추가한다.
+  Return/Enter는 editor input filter가 이 세션으로 넘기지 않는다.
