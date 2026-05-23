@@ -52,6 +52,9 @@ Implements the active note editor document session.
    text inside an existing `<style>` wrapper or at its content boundary, the session applies that single visible edit to
    the active RAW wrapper instead of accepting renderer-shifted or missing style marker positions. Ordinary characters
    remain inside the wrapper, while newline remains the explicit wrapper exit.
+   The toolbar also asks `toolbarStyleContextAtCursor(...)` for the current cursor context; this maps the LVRS editor
+   cursor back to the active RAW source and reports the innermost `<style ...>` wrapper's `style`, `font`, `size`,
+   `weight`, and `height` values for display. Outside a style wrapper it returns the Body/Pretendard defaults.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -147,6 +150,9 @@ Implements the active note editor document session.
   pre-existing `<style>` wrapper does not disappear unless a style command explicitly mutates it. Ordinary typed text at
   the style end is preserved inside the wrapper; Return/Enter is the explicit style exit and is placed outside the
   wrapper.
+- Cursor-driven toolbar display values are queried through `toolbarStyleContextAtCursor(...)`. This method is read-only:
+  it parses only the active editor RAW source around the mapped cursor position and never mutates the session file,
+  `.wsnbody`, or pending push state.
 - Callout Backspace boundary keys are also source mutations owned by this class. Backspace at the callout content start
   removes only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does
   not. Because the visual callout frame uses one generated chrome object for the leading bar, this class converts
@@ -198,6 +204,10 @@ Implements the active note editor document session.
   active RAW wrapper에 반영하므로, 이어 입력이나 Backspace만으로 `<style>` tag가 사라지지 않는다. styled rendered
   text 끝에서 이어 입력한 일반 텍스트는 wrapper 안에 유지하고, plain Enter/Return만 wrapper 밖 다음 source line으로
   나가는 boundary edit로 처리한다.
+  toolbar 표시값은 `toolbarStyleContextAtCursor(...)`가 제공한다. 이 함수는 현재 cursor를 RAW source 좌표로 되돌린
+  뒤 가장 안쪽의 `<style ...>` wrapper를 찾아 `style`, `font`, `size`, `weight`, `height` 표시값을 반환하며, wrapper
+  밖에서는 Body/Pretendard 기본값을 반환한다. 이는 읽기 전용 조회이며 source mutation이나 persistence를 수행하지
+  않는다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
 - 콜아웃 Backspace 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
   제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. leading bar frame chrome의 object replacement는 source

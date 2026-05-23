@@ -51,6 +51,9 @@ LV.HStack {
     property bool editorReadOnly: false
     property var fontFamilyProvider: null
     property string selectedFontFamily: "Pretendard"
+    property string selectedFontSizeValue: "12"
+    property string selectedFontWeightValue: "Medium"
+    property string selectedLineHeightValue: "12"
     property string selectedStyleTagStyleValue: "Title"
 
     signal fontFamilyRequested(string fontFamily)
@@ -116,6 +119,36 @@ LV.HStack {
 
     function toolbarResponsiveItemVisible(itemIndex) {
         return itemIndex >= editorToolbar.firstVisibleToolbarItemIndex;
+    }
+
+    function styleContextString(styleContext, key, fallbackValue) {
+        if (!styleContext || styleContext[key] === undefined || styleContext[key] === null)
+            return fallbackValue;
+        const value = String(styleContext[key]).trim();
+        return value.length > 0 ? value : fallbackValue;
+    }
+
+    function applyStyleContext(styleContext) {
+        editorToolbar.selectedStyleTagStyleValue = editorToolbar.styleContextString(
+                    styleContext,
+                    "styleValue",
+                    "Body");
+        editorToolbar.selectedFontFamily = editorToolbar.styleContextString(
+                    styleContext,
+                    "fontFamily",
+                    "Pretendard");
+        editorToolbar.selectedFontSizeValue = editorToolbar.styleContextString(
+                    styleContext,
+                    "fontSize",
+                    "12");
+        editorToolbar.selectedFontWeightValue = editorToolbar.styleContextString(
+                    styleContext,
+                    "fontWeight",
+                    "Medium");
+        editorToolbar.selectedLineHeightValue = editorToolbar.styleContextString(
+                    styleContext,
+                    "lineHeight",
+                    "12");
     }
 
     function styleTagStylePreviewDescriptor(styleValue) {
@@ -703,7 +736,7 @@ LV.HStack {
                     figmaStepperNodeId: "I399:8663;254:869"
                     objectName: "fontSize"
                     preferredToolbarWidth: editorToolbar.figmaComboSmallWidth
-                    text: "12"
+                    text: editorToolbar.selectedFontSizeValue
                     visible: editorToolbar.toolbarResponsiveItemVisible(2)
                 }
 
@@ -714,7 +747,7 @@ LV.HStack {
                     figmaStepperNodeId: "I399:8673;254:869"
                     objectName: "fontWeight"
                     preferredToolbarWidth: editorToolbar.figmaComboWeightWidth
-                    text: "Regular"
+                    text: editorToolbar.selectedFontWeightValue
                     visible: editorToolbar.toolbarResponsiveItemVisible(3)
                 }
 
@@ -822,7 +855,7 @@ LV.HStack {
                     figmaStepperNodeId: "I399:8678;254:869"
                     objectName: "lineHeight"
                     preferredToolbarWidth: editorToolbar.figmaComboSmallWidth
-                    text: "1.1"
+                    text: editorToolbar.selectedLineHeightValue
                     visible: editorToolbar.toolbarResponsiveItemVisible(6)
                 }
             }

@@ -294,6 +294,7 @@ Item {
                     Number(styleResult.cursorPosition) || 0);
         if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.refreshEditorToolbarStyleContext();
             contentViewLayout.requestViewHook("editor.toolbar.style." + String(styleValue));
         }
         return replaced;
@@ -324,9 +325,34 @@ Item {
                     Number(styleResult.cursorPosition) || 0);
         if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.refreshEditorToolbarStyleContext();
             contentViewLayout.requestViewHook("editor.toolbar.font." + String(fontFamily));
         }
         return replaced;
+    }
+    function refreshEditorToolbarStyleContext() {
+        if (!contentEditorToolbar || contentEditorToolbar.applyStyleContext === undefined)
+            return false;
+
+        if (!contentViewLayout.noteEditorSurfaceVisible
+                || !contentsTextEditor
+                || !contentViewLayout.noteEditorSession
+                || contentViewLayout.noteEditorSession.toolbarStyleContextAtCursor === undefined) {
+            contentEditorToolbar.applyStyleContext({});
+            return false;
+        }
+
+        const styleContext = contentViewLayout.noteEditorSession.toolbarStyleContextAtCursor(
+                    contentsTextEditor.editorDocumentText,
+                    contentsTextEditor.cursorPosition,
+                    contentsTextEditor.editorSelectionLength);
+        if (!styleContext || !Boolean(styleContext.valid)) {
+            contentEditorToolbar.applyStyleContext({});
+            return false;
+        }
+
+        contentEditorToolbar.applyStyleContext(styleContext);
+        return true;
     }
     function rememberEditorFormatSelectionSnapshot() {
         if (contentViewLayout.editorFormatContextMenuPointerActive || editorFormatContextMenu.opened)
@@ -543,9 +569,11 @@ Item {
 
                         onReadFinished: function(path) {
                             contentViewLayout.markEditorSessionFileReadyForRawPush(path);
+                            contentViewLayout.refreshEditorToolbarStyleContext();
                         }
                         onTextEdited: function() {
                             contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
+                            contentViewLayout.refreshEditorToolbarStyleContext();
                         }
                         onSyncFinished: function(path) {
                             const syncedPath = path === undefined || path === null ? "" : String(path).trim();
@@ -566,10 +594,13 @@ Item {
                         }
                         onEditorPlainTextRevisionChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
+                            contentViewLayout.refreshEditorToolbarStyleContext();
                         }
                         onEditorDocumentTextChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
+                            contentViewLayout.refreshEditorToolbarStyleContext();
                         }
+                        onCursorPositionChanged: contentViewLayout.refreshEditorToolbarStyleContext()
                         onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                         onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                         onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()

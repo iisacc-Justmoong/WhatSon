@@ -2,6 +2,7 @@
 
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
+#include "app/models/editor/component/style.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/diff/WhatSonNoteVersionDiffBuilder.hpp"
@@ -648,6 +649,86 @@ namespace
                 return left.openingStart < right.openingStart;
             });
         return ranges;
+    }
+
+    QString toolbarFontWeightDisplayValue(const WhatSon::EditorComponent::StyleToken& styleToken)
+    {
+        return styleToken.valid && !styleToken.styleName.trimmed().isEmpty()
+            ? styleToken.styleName.trimmed()
+            : QStringLiteral("Regular");
+    }
+
+    QVariantMap toolbarStyleContextResult(
+        const QString& openingToken = QString(),
+        const bool hasStyleWrapper = false)
+    {
+        using WhatSon::EditorComponent::Style;
+
+        const QString rawStyleValue = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("style"))
+            : QString();
+        QString styleValue = Style::normalizedStyleAttributeValue(rawStyleValue);
+        if (styleValue.isEmpty())
+        {
+            styleValue = QStringLiteral("Body");
+        }
+
+        const WhatSon::EditorComponent::StyleToken styleToken =
+            Style::lvrsTextStyleTokenFromName(styleValue);
+        const QString rawFontFamily = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("font"))
+            : QString();
+        const QString fontFamily = hasStyleWrapper
+            ? Style::normalizedFontFamilyAttributeValue(rawFontFamily)
+            : QString();
+        const QString rawFontSize = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("size")).trimmed()
+            : QString();
+        const QString rawFontWeight = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("weight")).trimmed()
+            : QString();
+        const QString rawLineHeight = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("height")).trimmed()
+            : QString();
+
+        QVariantMap result;
+        result.insert(QStringLiteral("valid"), true);
+        result.insert(QStringLiteral("hasStyleWrapper"), hasStyleWrapper);
+        result.insert(QStringLiteral("styleValue"), styleValue);
+        result.insert(
+            QStringLiteral("fontFamily"),
+            fontFamily.isEmpty() ? Style::defaultEditorFontFamily() : fontFamily);
+        result.insert(
+            QStringLiteral("fontSize"),
+            rawFontSize.isEmpty()
+                ? QString::number(styleToken.valid ? styleToken.pixelSize : 12)
+                : rawFontSize);
+        result.insert(
+            QStringLiteral("fontWeight"),
+            rawFontWeight.isEmpty()
+                ? toolbarFontWeightDisplayValue(styleToken)
+                : rawFontWeight);
+        result.insert(
+            QStringLiteral("lineHeight"),
+            rawLineHeight.isEmpty()
+                ? QString::number(styleToken.valid ? styleToken.lineHeight : 12)
+                : rawLineHeight);
+        result.insert(
+            QStringLiteral("color"),
+            hasStyleWrapper
+                ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("color")).trimmed()
+                : QString());
+        result.insert(
+            QStringLiteral("background"),
+            hasStyleWrapper
+                ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("background")).trimmed()
+                : QString());
+        result.insert(
+            QStringLiteral("align"),
+            hasStyleWrapper
+                ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("align")).trimmed()
+                : QString());
+        return result;
     }
 
     bool textContainsLineBreak(const QString& text)
@@ -2604,6 +2685,74 @@ QVariantMap NoteEditorDocumentSession::insertStyleFontTagIntoSource(
     setParsedLineCount(lineCountForEditorSource(resultSourceText));
     setLastError(QString());
     return result;
+}
+
+QVariantMap NoteEditorDocumentSession::toolbarStyleContextAtCursor(
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    Q_UNUSED(selectionLength)
+
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+
+    if (sourceText.isEmpty())
+    {
+        return toolbarStyleContextResult();
+    }
+
+    const int boundedCursorPosition =
+        clampedPosition(
+            visibleEditorCursorPositionForDecoratedCursor(editorDocumentText, cursorPosition),
+            visibleCharactersForSourceText(sourceText).size());
+    const int sourceCursorStart =
+        sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition);
+    const int sourceCursorEnd =
+        sourcePositionForEditorSelectionEnd(sourceText, boundedCursorPosition);
+
+    const QVector<StyleSourceRange> ranges = styleSourceRanges(sourceText);
+    const StyleSourceRange* bestRange = nullptr;
+    for (const StyleSourceRange& range : ranges)
+    {
+        if (!range.isValid() || range.contentEnd <= range.contentStart)
+        {
+            continue;
+        }
+
+        const bool startsInside =
+            sourceCursorStart >= range.contentStart
+            && sourceCursorStart < range.contentEnd;
+        const bool endsInside =
+            sourceCursorEnd > range.contentStart
+            && sourceCursorEnd <= range.contentEnd;
+        if (!startsInside && !endsInside)
+        {
+            continue;
+        }
+
+        if (bestRange == nullptr
+            || (range.contentEnd - range.contentStart)
+                < (bestRange->contentEnd - bestRange->contentStart))
+        {
+            bestRange = &range;
+        }
+    }
+
+    if (bestRange == nullptr)
+    {
+        return toolbarStyleContextResult();
+    }
+
+    const QString openingToken =
+        sourceText.mid(bestRange->openingStart, bestRange->openingEnd - bestRange->openingStart);
+    return toolbarStyleContextResult(openingToken, true);
 }
 
 QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(

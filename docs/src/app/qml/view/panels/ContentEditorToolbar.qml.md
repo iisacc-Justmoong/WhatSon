@@ -51,6 +51,9 @@ previewed with each returned `fontFamily`. Selecting a row updates only the tool
 system font lists can be much taller than the window, the font popup replaces the menu content surface with a bounded
 LVRS `Flickable` and routes wheel input through `LV.WheelScrollGuard` while preserving the same `LV.ContextMenu`
 trigger and `LV.MenuItem` delegate contract. It intentionally does not draw a visible scrollbar.
+`ContentViewLayout.qml` may call `applyStyleContext(...)` with the C++ session's cursor-derived toolbar context. The
+toolbar then updates its displayed style, font family, font size, font weight, and line-height strings without mutating
+editor source. Menu selections still emit commands; cursor context updates are display-only.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
@@ -70,6 +73,8 @@ It does not read files, own note/session state, parse editor text, or persist fo
   JavaScript-side system font list.
 - Keep the font selector popup vertically bounded and wheel-scrollable without drawing a visible scrollbar, because
   system font lists can exceed the available window height.
+- Keep cursor-derived toolbar values as display state only. The toolbar may apply the context map returned by the C++
+  session, but it must not parse `<style ...>` source or infer editor formatting itself.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 

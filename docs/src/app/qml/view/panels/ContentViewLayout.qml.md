@@ -30,6 +30,9 @@ context menu, and forwards the chosen family to `NoteEditorDocumentSession.inser
 session wraps the selected text or current non-empty line in `<style font="...">...</style>`, stages the editor HTML
 session file, persists the canonical `.wsnbody` source for active notes, and reports
 `editor.toolbar.font.<family>` through the existing view-hook surface after replacement succeeds.
+The layout also refreshes toolbar display state from `NoteEditorDocumentSession.toolbarStyleContextAtCursor(...)` when
+the editor cursor, document text, or mounted session changes. QML only copies the returned display strings into
+`ContentEditorToolbar`; parsing the active `<style ...>` wrapper remains a C++ session responsibility.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -78,6 +81,8 @@ editor surface with `getText(selectionStart, selectionEnd)` and passed as a repa
 reports a drifted offset. The C++ session uses the loaded `.wsnbody` RAW source as the format mutation basis, so a
 lossy editor RichText projection cannot remove blank source rows before selection is mapped. Applying the same paired
 format to the exact text already enclosed by that format toggles it off in `SetTag`; QML does not special-case this.
+The same editor cursor/document notifications also refresh the toolbar selectors so the style/font/size/weight/line-height
+controls reflect the current `<style ...>` wrapper under the caret rather than the last command the user clicked.
 Highlight is bound to `Meta+Shift+E` /
 `Ctrl+Shift+E`, break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`, callout is bound to `Meta+Shift+C` /
 format shortcuts: a selection becomes the rendered callout contents, while an empty selection inserts an empty visual

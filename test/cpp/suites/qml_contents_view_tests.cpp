@@ -296,6 +296,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorStyleTagStyle(styleValue);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorStyleTagFont(fontFamily, allowSelectionSnapshot)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleFontTagIntoSource")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function refreshEditorToolbarStyleContext()")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.toolbarStyleContextAtCursor")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentEditorToolbar.applyStyleContext(styleContext);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onFontFamilyRequested: function(fontFamily)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorStyleTagFont(fontFamily);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var currentResourceEntry")));
@@ -466,8 +469,12 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedStyleTagStyleValue: \"Title\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property var fontFamilyProvider: null")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontFamily: \"Pretendard\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontSizeValue: \"12\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontWeightValue: \"Medium\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedLineHeightValue: \"12\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal styleTagStyleRequested(string styleValue)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal fontFamilyRequested(string fontFamily)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function applyStyleContext(styleContext)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function styleTagStyleMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuPreferredWidth(items)")));
@@ -551,9 +558,9 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.openFontFamilyContextMenu(toolbarComboBox);")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: editorToolbar.selectedFontFamily")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.fontFamilyRequested(fontFamily);")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"12\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"Regular\"")));
-    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: \"1.1\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: editorToolbar.selectedFontSizeValue")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: editorToolbar.selectedFontWeightValue")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: editorToolbar.selectedLineHeightValue")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("arrow: LV.Stepper.Down")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"398:8627\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("figmaNodeId: \"399:9827\"")));

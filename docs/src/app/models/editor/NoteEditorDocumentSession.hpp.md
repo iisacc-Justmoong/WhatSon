@@ -58,6 +58,10 @@ Declares the active note editor document session object.
   `<style>` wrapper. Later plain editor raw pushes preserve existing style wrapper boundaries for inserted, deleted, or
   replaced visible text inside the wrapper. Ordinary typing at the style content end remains inside the wrapper, while
   `handleStyleBoundaryKeyInSource(...)` handles Return/Enter as the explicit exit to the following source line.
+- Provides `toolbarStyleContextAtCursor(...)`, a read-only toolbar binding query that maps the current LVRS editor
+  cursor back to RAW source and returns display values from the innermost active `<style ...>` wrapper. QML consumes
+  the returned `styleValue`, `fontFamily`, `fontSize`, `fontWeight`, and `lineHeight` strings; outside a wrapper the
+  query returns the editor Body defaults.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. Return/Enter is not wired through the editor input filter.
@@ -135,6 +139,10 @@ Declares the active note editor document session object.
   대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다. 이후 marker 없는 plain editor payload가
   들어와도 wrapper 내부의 삽입, 삭제, 치환은 active RAW의 `<style>` 안쪽 edit로 병합한다. style 끝에서 이어
   입력한 일반 문자는 wrapper 안에 보존하고, Return/Enter만 wrapper 밖 다음 source line으로 이동한다.
+- `toolbarStyleContextAtCursor(...)`는 현재 LVRS editor cursor를 RAW source 좌표로 변환해 가장 안쪽의
+  `<style ...>` wrapper에서 toolbar 표시용 `styleValue`, `fontFamily`, `fontSize`, `fontWeight`, `lineHeight` 값을
+  읽어 반환한다. wrapper 밖에서는 Body/Pretendard 기본 표시값을 반환하며, 이 조회는 파일이나 source를 변경하지
+  않는다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 Backspace key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
   Return/Enter는 editor input filter가 이 세션으로 넘기지 않는다.

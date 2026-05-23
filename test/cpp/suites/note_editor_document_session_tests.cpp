@@ -750,6 +750,63 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceI
         QStringLiteral("Alpha Beta\nGamma"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleContextAtCursor()
+{
+    NoteEditorDocumentSession session;
+    const QString sourceText =
+        QStringLiteral("Alpha <style font=\"menslo\">Beta</style> "
+                       "<style style=\"Title\" font=\"SF Pro\" size=\"18\" weight=\"700\" height=\"1.4\">Gamma</style> "
+                       "Delta");
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("style-context-note"),
+        sourceText);
+
+    const QVariantMap outsideContext = session.toolbarStyleContextAtCursor(editorHtml, 1, 0);
+    QVERIFY(outsideContext.value(QStringLiteral("valid")).toBool());
+    QVERIFY(!outsideContext.value(QStringLiteral("hasStyleWrapper")).toBool());
+    QCOMPARE(outsideContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
+    QCOMPARE(outsideContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Pretendard"));
+    QCOMPARE(outsideContext.value(QStringLiteral("fontSize")).toString(), QStringLiteral("12"));
+
+    const QVariantMap fontContext = session.toolbarStyleContextAtCursor(
+        editorHtml,
+        QStringLiteral("Alpha Be").size(),
+        0);
+    QVERIFY(fontContext.value(QStringLiteral("valid")).toBool());
+    QVERIFY(fontContext.value(QStringLiteral("hasStyleWrapper")).toBool());
+    QCOMPARE(fontContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
+    QCOMPARE(fontContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("menslo"));
+    QCOMPARE(fontContext.value(QStringLiteral("fontSize")).toString(), QStringLiteral("12"));
+
+    const QVariantMap fontBoundaryContext = session.toolbarStyleContextAtCursor(
+        editorHtml,
+        QStringLiteral("Alpha Beta").size(),
+        0);
+    QVERIFY(fontBoundaryContext.value(QStringLiteral("hasStyleWrapper")).toBool());
+    QCOMPARE(fontBoundaryContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("menslo"));
+
+    const QVariantMap titleContext = session.toolbarStyleContextAtCursor(
+        editorHtml,
+        QStringLiteral("Alpha Beta Ga").size(),
+        0);
+    QVERIFY(titleContext.value(QStringLiteral("valid")).toBool());
+    QVERIFY(titleContext.value(QStringLiteral("hasStyleWrapper")).toBool());
+    QCOMPARE(titleContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Title"));
+    QCOMPARE(titleContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("SF Pro"));
+    QCOMPARE(titleContext.value(QStringLiteral("fontSize")).toString(), QStringLiteral("18"));
+    QCOMPARE(titleContext.value(QStringLiteral("fontWeight")).toString(), QStringLiteral("700"));
+    QCOMPARE(titleContext.value(QStringLiteral("lineHeight")).toString(), QStringLiteral("1.4"));
+
+    const QVariantMap afterContext = session.toolbarStyleContextAtCursor(
+        editorHtml,
+        QStringLiteral("Alpha Beta Gamma ").size(),
+        0);
+    QVERIFY(afterContext.value(QStringLiteral("valid")).toBool());
+    QVERIFY(!afterContext.value(QStringLiteral("hasStyleWrapper")).toBool());
+    QCOMPARE(afterContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
+    QCOMPARE(afterContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Pretendard"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()
 {
     NoteEditorDocumentSession session;

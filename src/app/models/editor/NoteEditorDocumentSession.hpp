@@ -89,6 +89,10 @@ public:
         int cursorPosition,
         int selectionLength,
         const QString& selectedText = QString());
+    Q_INVOKABLE QVariantMap toolbarStyleContextAtCursor(
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength = 0);
     Q_INVOKABLE QVariantMap handleCalloutBoundaryKeyInSource(
         const QString& editorDocumentText,
         int cursorPosition,
