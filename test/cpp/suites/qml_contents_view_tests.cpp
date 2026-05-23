@@ -294,6 +294,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleTagIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onStyleTagStyleRequested: function(styleValue)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorStyleTagStyle(styleValue);")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorStyleTagFont(fontFamily, allowSelectionSnapshot)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleFontTagIntoSource")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onFontFamilyRequested: function(fontFamily)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorStyleTagFont(fontFamily);")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var currentResourceEntry")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool resourceListActive")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool imageResourceSelected")));
@@ -468,6 +472,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuPreferredWidth(items)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuSelectedIndex(items)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int fontFamilyMenuMaximumVisibleRows")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuViewportHeight(itemCount)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function openFontFamilyContextMenu(anchorItem)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function styleTagStylePreviewDescriptor(styleValue)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function styleTagStyleMenuPreferredWidth()")));
@@ -483,6 +489,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("itemDelegate: fontFamilyMenuItemDelegate")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("items: editorToolbar.fontFamilyMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("selectedIndex: editorToolbar.fontFamilyMenuSelectedIndex(")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("contentItem: Flickable {")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: fontFamilyMenuFlickable")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("contentHeight: fontFamilyMenuColumn.implicitHeight")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("interactive: contentHeight > height")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("LV.WheelScrollGuard {")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("targetFlickable: fontFamilyMenuFlickable")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("objectName: \"fontFamilyMenuScrollThumb\"")));
+    QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("objectName: \"fontFamilyMenuScrollTrack\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("font.family: fontMenuItem.fontFamily")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.fontFamilyProvider.refreshFontFamilies();")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.fontFamilyProvider.requestProviderHook(\"font-menu\")")));

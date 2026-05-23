@@ -25,9 +25,11 @@ surface. The editor document binding is the editor HTML session file path that r
 right-click format context menu live in `ContentViewLayout.qml` only as command dispatch and call the C++
 `NoteEditorDocumentSession` format API. Gutter row count follows `NoteEditorDocumentSession.parsedLineCount`; the QML
 `TextEditor` wrapper only provides rendered start positions for those logical source lines so wrapped continuation rows
-remain unnumbered. The editor toolbar receives `EditorFontFamilyProvider` only as a menu-data source for the font
-selector; QML does not query system fonts directly. The adaptive/mobile editor route keeps the same surface but
-disables the gutter and minimap rails.
+remain unnumbered. The editor toolbar receives `EditorFontFamilyProvider` as the menu-data source for the font
+selector, while `ContentViewLayout.qml` dispatches chosen families to the C++ session API that writes
+`<style font="...">` source. The font menu stays bounded and scrollable in QML so long system font lists remain
+reachable without querying system fonts directly. The adaptive/mobile editor route keeps the same surface but disables
+the gutter and minimap rails.
 
 ## Why This Directory Is Important
 If a runtime object exists in C++ but behaves incorrectly in the UI, this directory is usually where the mismatch becomes visible first.
@@ -45,6 +47,8 @@ If a runtime object exists in C++ but behaves incorrectly in the UI, this direct
   거터 row 개수는 `NoteEditorDocumentSession.parsedLineCount`만 따르고, QML `TextEditor` wrapper는 해당
   logical source line의 렌더 시작 위치만 제공해 wrap continuation row에는 번호를 만들지 않는다. adaptive/mobile
   editor route는 같은 surface를 쓰되 거터와 미니맵 rail을 끈다. 에디터 toolbar font selector는
-  `EditorFontFamilyProvider`가 제공하는 menu data만 소비하며 QML이 시스템 font API를 직접 조회하지 않는다.
+  `EditorFontFamilyProvider`가 제공하는 menu data를 소비하고, 선택된 family는 C++ 세션 API를 통해
+  `<style font="...">` source mutation으로 이어진다. font menu는 긴 시스템 font 목록도 선택할 수 있도록 QML에서
+  제한 높이의 scrollable popup으로 유지하며, QML이 시스템 font API를 직접 조회하지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

@@ -16,6 +16,8 @@ Implements the editor-domain projection and recovery helpers for the proprietary
   therefore uses the bare `<style>` opening token.
 - Explicit attributes (`font`, `weight`, `size`, `color`, `background`, `align`, and existing `height`) override or
   extend the token projection when editor HTML is generated.
+- Toolbar font-family values are normalized and escaped here before `SetTag` creates `<style font="...">` source
+  wrappers.
 - Editor projection emits `<!--whatson-style-source:...-->` metadata plus a styled `<span>` so the original opening
   token survives rich-text editing.
 - Recovery helpers recognize the marker/anchor fallback shapes that `QTextDocument::toHtml()` may preserve, compare

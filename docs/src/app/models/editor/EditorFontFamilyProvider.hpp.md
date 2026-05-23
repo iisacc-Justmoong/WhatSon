@@ -12,4 +12,5 @@
 
 ## Boundaries
 - This class reads system font metadata only.
-- It does not inspect the live `LV.TextEditor`, parse note source, or apply font attributes to `.wsnbody`.
+- It does not inspect the live `LV.TextEditor` or parse note source. Applying the selected family to `.wsnbody` is
+  owned by `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`.

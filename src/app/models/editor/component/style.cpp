@@ -321,6 +321,24 @@ namespace WhatSon::EditorComponent
         return QStringLiteral("<style style=\"%1\">").arg(escapeHtmlAttribute(normalizedValue));
     }
 
+    QString Style::normalizedFontFamilyAttributeValue(QString value)
+    {
+        value = decodeXmlEntities(value).trimmed().simplified();
+        value.remove(QLatin1Char('<'));
+        value.remove(QLatin1Char('>'));
+        return value;
+    }
+
+    QString Style::openingTokenForFontFamily(QString value)
+    {
+        const QString normalizedValue = normalizedFontFamilyAttributeValue(value);
+        if (normalizedValue.isEmpty())
+        {
+            return {};
+        }
+        return QStringLiteral("<style font=\"%1\">").arg(escapeHtmlAttribute(normalizedValue));
+    }
+
     QString Style::bodyEditorCssDeclaration()
     {
         const StyleToken bodyToken = lvrsTextStyleTokenFromName(QStringLiteral("body"));

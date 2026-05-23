@@ -11,5 +11,5 @@ menu display, and builds LVRS menu item descriptors with:
 - `eventName: "editor.toolbar.font"`
 - `eventPayload.fontFamily`
 
-The provider deliberately stops at menu data. Applying the selected family to the editor selection belongs to the next
-editor source-mutation contract.
+The provider deliberately stops at menu data. Applying the selected family to the editor selection is handled by
+`NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`, which writes the `<style font="...">` source wrapper.

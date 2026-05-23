@@ -638,6 +638,143 @@ namespace
         return ranges;
     }
 
+    bool isNonEmptyWhitespaceText(const QString& text)
+    {
+        if (text.isEmpty())
+        {
+            return false;
+        }
+
+        for (const QChar ch : text)
+        {
+            if (!ch.isSpace())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool styleBoundarySourcePositionForWhitespaceInsertion(
+        const QString& bodySourceText,
+        const int editorInsertionPosition,
+        int* outSourcePosition)
+    {
+        bool matched = false;
+        int sourcePosition = -1;
+        const QVector<StyleSourceRange> ranges = styleSourceRanges(bodySourceText);
+        for (const StyleSourceRange& range : ranges)
+        {
+            if (!range.isValid())
+            {
+                continue;
+            }
+
+            const int contentEditorStart =
+                editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
+            const int contentEditorEnd =
+                editorCursorPositionForSourcePosition(bodySourceText, range.contentEnd);
+            if (editorInsertionPosition == contentEditorEnd)
+            {
+                sourcePosition = matched ? std::max(sourcePosition, range.closingEnd) : range.closingEnd;
+                matched = true;
+                continue;
+            }
+            if (editorInsertionPosition == contentEditorStart)
+            {
+                sourcePosition = matched ? std::min(sourcePosition, range.openingStart) : range.openingStart;
+                matched = true;
+            }
+        }
+
+        if (!matched)
+        {
+            return false;
+        }
+        if (outSourcePosition != nullptr)
+        {
+            *outSourcePosition = sourcePosition;
+        }
+        return true;
+    }
+
+    bool mergeWhitespaceInsertionWithActiveStyleBoundaries(
+        const QString& activeSourceText,
+        const QString& editorSourceText,
+        QString* outSourceText)
+    {
+        if (outSourceText != nullptr)
+        {
+            outSourceText->clear();
+        }
+
+        const QString normalizedActiveSourceText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(activeSourceText);
+        const QString normalizedEditorSourceText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(editorSourceText);
+        if (styleSourceRanges(normalizedActiveSourceText).isEmpty())
+        {
+            return false;
+        }
+
+        const QString activeVisibleText = visibleTextForSourceText(normalizedActiveSourceText);
+        const QString editorVisibleText = visibleTextForSourceText(normalizedEditorSourceText);
+        if (editorVisibleText.size() <= activeVisibleText.size())
+        {
+            return false;
+        }
+
+        int commonPrefixLength = 0;
+        while (commonPrefixLength < activeVisibleText.size()
+               && commonPrefixLength < editorVisibleText.size()
+               && activeVisibleText.at(commonPrefixLength) == editorVisibleText.at(commonPrefixLength))
+        {
+            ++commonPrefixLength;
+        }
+
+        int commonSuffixLength = 0;
+        while (commonSuffixLength < activeVisibleText.size() - commonPrefixLength
+               && commonSuffixLength < editorVisibleText.size() - commonPrefixLength
+               && activeVisibleText.at(activeVisibleText.size() - 1 - commonSuffixLength)
+                   == editorVisibleText.at(editorVisibleText.size() - 1 - commonSuffixLength))
+        {
+            ++commonSuffixLength;
+        }
+
+        const int removedVisibleLength =
+            activeVisibleText.size() - commonPrefixLength - commonSuffixLength;
+        if (removedVisibleLength != 0)
+        {
+            return false;
+        }
+
+        const QString insertedVisibleText = editorVisibleText.mid(
+            commonPrefixLength,
+            editorVisibleText.size() - commonPrefixLength - commonSuffixLength);
+        if (!isNonEmptyWhitespaceText(insertedVisibleText))
+        {
+            return false;
+        }
+
+        int insertionSourcePosition = -1;
+        if (!styleBoundarySourcePositionForWhitespaceInsertion(
+                normalizedActiveSourceText,
+                commonPrefixLength,
+                &insertionSourcePosition))
+        {
+            insertionSourcePosition =
+                sourcePositionForEditorSelectionEnd(normalizedActiveSourceText, commonPrefixLength);
+        }
+
+        if (outSourceText != nullptr)
+        {
+            *outSourceText = normalizedActiveSourceText.left(insertionSourcePosition)
+                + insertedVisibleText
+                + normalizedActiveSourceText.mid(insertionSourcePosition);
+        }
+        return true;
+    }
+
     bool calloutRangeContainsEditorCursor(
         const QString& bodySourceText,
         const CalloutSourceRange& range,
@@ -2276,11 +2413,12 @@ QVariantMap NoteEditorDocumentSession::insertStyleTagIntoSource(
     return result;
 }
 
-QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
+QVariantMap NoteEditorDocumentSession::insertStyleFontTagIntoSource(
+    const QString& fontFamily,
     const QString& editorDocumentText,
     const int cursorPosition,
     const int selectionLength,
-    const int key)
+    const QString& selectedText)
 {
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
@@ -2290,6 +2428,106 @@ QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
     const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
         ? activeSourceText
         : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
+        sourceText,
+        cursorPosition,
+        selectionLength,
+        selectedText);
+    const SourceSelectionRange sourceSelectionRange =
+        styleSourceRangeForEditorSelection(sourceText, editorSelectionRange);
+    if (sourceSelectionRange.sourceEnd <= sourceSelectionRange.sourceStart)
+    {
+        const QString errorMessage =
+            QStringLiteral("Style font insertion requires selected text or a non-empty current line.");
+        QVariantMap emptyResult;
+        emptyResult.insert(QStringLiteral("valid"), false);
+        emptyResult.insert(QStringLiteral("changed"), false);
+        emptyResult.insert(QStringLiteral("tagName"), QStringLiteral("style"));
+        emptyResult.insert(QStringLiteral("bodySourceText"), sourceText);
+        emptyResult.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
+        emptyResult.insert(QStringLiteral("cursorPosition"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("sourceCursorPosition"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionStart"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionLength"), 0);
+        emptyResult.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("editorSelectionLength"), 0);
+        emptyResult.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return emptyResult;
+    }
+
+    SetTag tagInput;
+    QVariantMap result = tagInput.insertStyleFontTagIntoSource(
+        fontFamily,
+        sourceText,
+        sourceSelectionRange.sourceStart,
+        sourceSelectionRange.sourceEnd - sourceSelectionRange.sourceStart);
+
+    const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        resultSourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+    result.insert(QStringLiteral("editorSelectionStart"), sourceSelectionRange.editorStart);
+    result.insert(
+        QStringLiteral("editorSelectionLength"),
+        sourceSelectionRange.editorEnd - sourceSelectionRange.editorStart);
+
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        setLastError(result.value(QStringLiteral("errorMessage")).toString());
+        return result;
+    }
+
+    QString stageError;
+    if (!stageActiveSourceMutationForCurrentEditorFile(resultSourceText, editorHtml, &stageError))
+    {
+        const QString errorMessage = stageError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to stage style font in the editor session file.")
+            : stageError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    if (hasActiveNote()
+        && !persistBodySourceTextForEditorFile(m_editorFilePath, resultSourceText))
+    {
+        const QString errorMessage = m_lastError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to persist style font in the note body.")
+            : m_lastError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        editorCursorPositionForSourcePosition(
+            resultSourceText,
+            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+    setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    setLastError(QString());
+    return result;
+}
+
+QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const int key)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
     const int boundedDecoratedCursorPosition =
         clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
     const int boundedCursorPosition =
@@ -2472,11 +2710,7 @@ QVariantMap NoteEditorDocumentSession::handleStyleBoundaryKeyInSource(
     const QString noteId = m_activeNoteId.trimmed().isEmpty()
         ? QStringLiteral("note")
         : m_activeNoteId.trimmed();
-    const QString activeSourceText =
-        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
-    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
-        ? activeSourceText
-        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const QString sourceText = bodySourceTextForEditorDocument(noteId, editorDocumentText);
     const int boundedDecoratedCursorPosition =
         clampedPosition(cursorPosition, plainTextForEditorDocumentText(editorDocumentText).size());
     const int boundedCursorPosition =
@@ -3004,6 +3238,14 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
         if (visibleTextForSourceText(activeSourceText) == visibleTextForSourceText(editorSourceText))
         {
             return activeSourceText;
+        }
+        QString styleBoundaryPreservedSourceText;
+        if (mergeWhitespaceInsertionWithActiveStyleBoundaries(
+                activeSourceText,
+                editorSourceText,
+                &styleBoundaryPreservedSourceText))
+        {
+            return styleBoundaryPreservedSourceText;
         }
         return restoreResourceObjectPlaceholdersFromActiveSource(
             editorSourceText,

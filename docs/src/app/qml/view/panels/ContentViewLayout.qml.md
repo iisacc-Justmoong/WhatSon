@@ -26,8 +26,10 @@ The toolbar `style` selector forwards the chosen `<style ...>` tag `style` attri
 `NoteEditorDocumentSession.insertStyleTagIntoSource(...)`, then reports `editor.toolbar.style.<value>` through the
 existing view-hook surface after the LVRS document replacement succeeds. Parser and mutation policy remain outside QML.
 The toolbar `font` selector receives `EditorFontFamilyProvider` from the shell, lets the toolbar open the system-font
-context menu, and reports `editor.toolbar.font.<family>` as a view hook when a family is chosen. It does not apply
-font attributes to source yet.
+context menu, and forwards the chosen family to `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`. The C++
+session wraps the selected text or current non-empty line in `<style font="...">...</style>`, stages the editor HTML
+session file, persists the canonical `.wsnbody` source for active notes, and reports
+`editor.toolbar.font.<family>` through the existing view-hook surface after replacement succeeds.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -192,8 +194,10 @@ classified as a local modified-count push.
   처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
   콜아웃 시각 프레임을 즉시 만든다.
 - 에디터 toolbar의 font selector는 shell에서 전달된 `EditorFontFamilyProvider`를 `ContentEditorToolbar`에 넘겨
-  시스템 font family 목록을 `LV.ContextMenu`로 표시하게 한다. 현재 단계에서는 선택한 font family를 view hook으로
-  보고할 뿐, `.wsnbody` source mutation은 수행하지 않는다.
+  시스템 font family 목록을 `LV.ContextMenu`로 표시하게 한다. 선택한 font family는
+  `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`로 전달되어 선택 영역 또는 현재 non-empty line을
+  `<style font="...">...</style>`로 감싸고, active note에서는 mounted editor session file과 `.wsnbody` source에
+  즉시 반영된다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, generic resource editor,
   editor view mode 백엔드는 mount하지 않는다. Calendar overlay는 이미 노출된 calendar controller와
   `LibraryHierarchyController.activateNoteById(...)` bridge만 사용한다.

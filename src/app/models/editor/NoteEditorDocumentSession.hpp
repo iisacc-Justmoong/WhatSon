@@ -83,6 +83,12 @@ public:
         int cursorPosition,
         int selectionLength,
         const QString& selectedText = QString());
+    Q_INVOKABLE QVariantMap insertStyleFontTagIntoSource(
+        const QString& fontFamily,
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength,
+        const QString& selectedText = QString());
     Q_INVOKABLE QVariantMap handleCalloutBoundaryKeyInSource(
         const QString& editorDocumentText,
         int cursorPosition,

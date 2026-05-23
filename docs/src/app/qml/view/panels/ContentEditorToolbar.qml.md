@@ -46,7 +46,11 @@ preview text starts without the default menu icon placeholder.
 The second `font` selector still displays `Pretendard` by default because that is the editor body font. Clicking it now
 refreshes `EditorFontFamilyProvider`, reads its `fontFamilyMenuItems()`, and opens an LVRS `ContextMenu` whose rows are
 previewed with each returned `fontFamily`. Selecting a row updates only the toolbar display and emits
-`fontFamilyRequested(fontFamily)`; source mutation is intentionally left for a later editor-session contract.
+`fontFamilyRequested(fontFamily)`. `ContentViewLayout.qml` owns the command dispatch that turns that signal into
+`NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`, so this toolbar stays a view-only menu surface. Because
+system font lists can be much taller than the window, the font popup replaces the menu content surface with a bounded
+LVRS `Flickable` and routes wheel input through `LV.WheelScrollGuard` while preserving the same `LV.ContextMenu`
+trigger and `LV.MenuItem` delegate contract. It intentionally does not draw a visible scrollbar.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
@@ -64,6 +68,8 @@ It does not read files, own note/session state, parse editor text, or persist fo
   area or shrinking unrelated menu metrics.
 - Keep the font selector popup backed by `EditorFontFamilyProvider`; QML must not call `QFontDatabase` or invent a
   JavaScript-side system font list.
+- Keep the font selector popup vertically bounded and wheel-scrollable without drawing a visible scrollbar, because
+  system font lists can exceed the available window height.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 

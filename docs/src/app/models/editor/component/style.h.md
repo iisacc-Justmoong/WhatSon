@@ -10,6 +10,8 @@ Declares the editor-domain component contract for the proprietary `.wsnbody` `<s
 - `Style::styleAttributeValues()`, `Style::normalizedStyleAttributeValue(...)`, and
   `Style::openingTokenForStyleAttributeValue(...)` own the canonical toolbar-facing `style` attribute values. `Body`
   is the fallback for an empty attribute and therefore serializes as `<style>` instead of `<style style="Body">`.
+- `Style::normalizedFontFamilyAttributeValue(...)` and `Style::openingTokenForFontFamily(...)` own toolbar font
+  selector value normalization and `<style font="...">` source token generation.
 - `StyleToken` captures the LVRS text token metrics used by editor projection.
 - `StyleSourceBaseline` captures the formatting baseline used when rich editor spans are converted back to canonical
   source tags.

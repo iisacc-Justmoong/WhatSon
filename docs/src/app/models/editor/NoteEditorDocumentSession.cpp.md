@@ -38,7 +38,8 @@ Implements the active note editor document session.
    Before note context changes or clears, the session flushes the active RAW source or the controller's pending RAW
    payload; it no longer falls back to re-reading an arbitrary session-file snapshot for sync.
 8. Editor format shortcuts call `insertFormatTagIntoSource(...)`; the toolbar style selector calls
-   `insertStyleTagIntoSource(...)` for the `<style>` tag `style` attribute values. The session mutates the loaded
+   `insertStyleTagIntoSource(...)` for the `<style>` tag `style` attribute values, and the toolbar font selector calls
+   `insertStyleFontTagIntoSource(...)` for the `<style>` tag `font` attribute value. The session mutates the loaded
    `.wsnbody` RAW source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a
    fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position. A collapsed
    style-selector command expands to the current non-empty visible source line instead of inserting an empty
@@ -47,7 +48,9 @@ Implements the active note editor document session.
    RAW body persist immediately, so neither LVRS file sync nor a later filesystem pull can restore the pre-style
    paragraph snapshot during the idle RAW-push window. Source-visible text mapping treats `<style>` tags as invisible
    wrappers, matching bold/link/tag behavior, so a later LVRS-normalized rich-text payload with the same visible text
-   cannot flatten the active styled RAW source back into a plain paragraph.
+   cannot flatten the active styled RAW source back into a plain paragraph. If a later plain editor push only inserts
+   whitespace at an existing `<style>` source boundary, the session merges that whitespace into the active RAW source
+   outside the wrapper instead of accepting the renderer-shifted style marker positions.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -57,7 +60,9 @@ Implements the active note editor document session.
     Backspace/Enter on callout boundaries. The session maps the rendered cursor back to loaded RAW source, unwraps or
     removes a callout at its content start, or moves the cursor to the line after the callout when Enter/Return is
     pressed inside it. The callout frame-chrome object replacement is skipped for source mapping and then re-applied when
-    returning the decorated TextEdit cursor position.
+    returning the decorated TextEdit cursor position. Boundary helpers rebuild their source basis from the current
+    editor document before applying Enter/Return so a character removed by a just-finished Backspace cannot be restored
+    from stale active RAW source.
 
 ## Guardrails
 
@@ -124,8 +129,9 @@ Implements the active note editor document session.
   observed race where a remounted note path and a still-blank LVRS document snapshot briefly overlap.
 - The session does not decide hub-sync policy itself; it only forwards the coordinator's version-diff filesystem
   mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
-- Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`, and style selector values are
-  inserted through `insertStyleTagIntoSource(...)`. QML supplies only the tag/style name, current editor document text,
+- Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`, style selector values are
+  inserted through `insertStyleTagIntoSource(...)`, and font selector values are inserted through
+  `insertStyleFontTagIntoSource(...)`. QML supplies only the tag/style/font name, current editor document text,
   cursor, selection length, and selected visible text; source mutation, same-tag toggle removal, projection, and
   line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the format mutation basis so a
   lossy RichText projection cannot drop blank source rows before selection mapping.
@@ -136,9 +142,13 @@ Implements the active note editor document session.
   selector mutations are staged into the active editor session file and persisted into the note body before QML replaces
   the live LVRS text, matching the resource insertion race guard while making `.wsnbody` authoritative immediately.
   The same source-visible mapper hides `<style>` wrappers when validating later raw pushes, preserving the active style
-  source if LVRS returns equivalent visible text without the original style markers. Plain Enter/Return inside a
+  source if LVRS returns equivalent visible text without the original style markers. Plain Space/Enter raw pushes that
+  only add whitespace at an existing style boundary are merged against the active RAW source so the pre-existing
+  `<style>` wrapper does not drift unless a style command explicitly mutates it. Plain Enter/Return inside a
   rendered `<style>` span is handled as a semantic boundary edit: the source remains styled through `</style>`, a
-  following source line is created or reused, and the caret moves outside the style wrapper.
+  following source line is created or reused, and the caret moves outside the style wrapper. The boundary edit uses the
+  current editor document as its source basis rather than stale active RAW source, preserving immediately preceding
+  Backspace edits even if the modified-count RAW push has not completed yet.
 - Callout boundary keys are also source mutations owned by this class. Backspace at the callout content start removes
   only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does not.
   Enter/Return inside a callout never inserts text inside the wrapper; it places the cursor on the following source
@@ -181,7 +191,8 @@ Implements the active note editor document session.
   offset만 바꾸고 높이는 바꾸지 않는다. callout은 현재 편집된 content의 wrap 높이에 맞춰 좌측 막대 이미지를 다시
   생성한다.
 - 포맷 단축키는 이 세션의 `insertFormatTagIntoSource(...)`로 들어오며, toolbar style selector는
-  `insertStyleTagIntoSource(...)`로 `<style>` tag `style` attribute 값을 전달한다. 두 경로 모두 로드된
+  `insertStyleTagIntoSource(...)`로 `<style>` tag `style` attribute 값을 전달하고, toolbar font selector는
+  `insertStyleFontTagIntoSource(...)`로 `<style>` tag `font` attribute 값을 전달한다. 세 경로 모두 로드된
   `.wsnbody` RAW source를 기준으로 mutation한다. editor RichText projection이 빈 source row를 손실해도 selection 좌표는 `.wsnbody` source의 논리
   row를 기준으로 변환한다. `<next />`와 `<br>` 같은 source-level rendered break는 selection 논리 좌표에서 newline
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph

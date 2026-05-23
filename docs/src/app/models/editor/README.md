@@ -49,7 +49,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `GetProperty` is the read-side `.wsnbody` tag-attribute capture object. It stores the current tag's dynamic
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
 - `EditorFontFamilyProvider` reads Qt system font families for the editor toolbar font selector, normalizes them into a
-  stable sorted list, and returns LVRS context-menu item descriptors. It does not apply font attributes to note source.
+  stable sorted list, and returns LVRS context-menu item descriptors. The provider does not mutate note source itself;
+  selected families are passed through `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`.
 - `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
@@ -101,7 +102,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   later user typing supplies a newer validated modified-count RAW payload, note departure persists that active canonical
   source. `<style>` wrappers are invisible to the session's source-visible text mapper, so a later LVRS-normalized
   rich-text save that has the same visible characters but lacks style markers is not allowed to overwrite the active
-  styled RAW source with a plain paragraph.
+  styled RAW source with a plain paragraph. Plain Space/Enter raw pushes that only add whitespace at a pre-existing
+  style boundary are merged into the active RAW source outside that wrapper, so style marker positions do not drift
+  unless a style selector or font selector command explicitly changes them.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -109,8 +112,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   session returns the cursor position in decorated LVRS rich-text coordinates after generated callout chrome so the
   caret starts inside the callout content span. Backspace at that same decorated content start maps back to the loaded
   RAW source content start and delegates the wrapper/empty-line edit plan to `component/Callout` instead of deleting
-  generated chrome. Backspace on an explicit empty source paragraph is also a session-owned boundary edit: the first key
-  press deletes the empty RAW source line and refreshes parsed line count instead of only deleting a hidden placeholder.
+  generated chrome. Callout/style Enter boundary helpers use the current editor document snapshot before mutating RAW,
+  so a character removed immediately before Enter is not restored from stale active source. Backspace on an explicit
+  empty source paragraph is also a session-owned boundary edit: the first key press deletes the empty RAW source line
+  and refreshes parsed line count instead of only deleting a hidden placeholder.
 - `component/ResourceImageFrame` owns standalone image `<resource ... />` editor frame rendering. It implements the Figma `292:50`
   image-resource frame as a marker-wrapped atomic image object, marker-wrapped source recovery, editor-width responsive
   media sizing from the current editor viewport width, initial auto-height locking across later viewport reprojection,
@@ -126,6 +131,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `size`, `color`, `background`, `align`, and existing `height` into editor CSS, and emits/recovers the marker-backed
   `<span>` used by the LVRS text editor path. Token-derived projection does not add per-style colors; styled spans
   inherit the editor body color unless a source `color` attribute is present.
+- `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)` uses the same style-source selection mapping as the
+  style selector, then inserts `<style font="...">...</style>` through `SetTag`. Active notes stage the projected editor
+  HTML into the mounted `.wsnsource` file and persist the canonical `.wsnbody` body immediately.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -154,13 +162,16 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   유효한 style mutation은 active editor session file에 즉시 stage되고 실제 `.wsnbody` RAW body에도 바로 persist되어
   LVRS idle sync가 이전 paragraph snapshot으로 되돌리는 레이스를 막는다. source-visible text 계산에서도
   `<style>` wrapper를 invisible tag로 취급하여, LVRS가 marker 없는 동등 가시 텍스트를 내보내도 active styled
-  RAW source가 plain paragraph로 평탄화되지 않는다. styled text 내부 Enter는 `</style>` 뒤 다음 source line으로
+  RAW source가 plain paragraph로 평탄화되지 않는다. 기존 style boundary에서 Space/Enter가 만든 순수 공백
+  RAW push는 active RAW source를 기준으로 wrapper 밖에 병합하므로, style selector나 font selector 명령이 아닌
+  일반 입력만으로 `<style>` 위치가 밀리지 않는다. styled text 내부 Enter는 `</style>` 뒤 다음 source line으로
   나가는 boundary edit로 처리되어 새 줄이 Title/Subtitle 같은 wrapper 안으로 들어가지 않는다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
 - 현재: `EditorFontFamilyProvider`는 Qt system font family 목록을 읽어 editor toolbar font selector의
-  `LV.ContextMenu` 항목으로 제공한다. 선택한 family를 source에 적용하는 mutation은 아직 이 객체의 책임이 아니다.
+  `LV.ContextMenu` 항목으로 제공한다. 선택한 family 자체는 `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`
+  로 전달되어 `<style font="...">` source mutation으로 적용된다.
 - 현재: `component/Break`는 standalone editor source token `</break>`를 소유한다. `</break>`, `<break/>`, legacy
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.

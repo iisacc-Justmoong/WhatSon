@@ -30,6 +30,9 @@ LV.HStack {
     readonly property int figmaBodyTextSize: LV.Theme.textBody
     readonly property int figmaBodyLineHeight: LV.Theme.textBodyLineHeight
     readonly property int figmaBodyWeight: LV.Theme.textBodyWeight
+    readonly property int fontFamilyMenuEstimatedRowHeight: LV.Theme.scaleMetric(16)
+    readonly property int fontFamilyMenuMaximumVisibleRows: 18
+    readonly property int fontFamilyMenuViewportMargin: LV.Theme.gap20
     readonly property int responsiveToolbarItemCount: 7
     readonly property real responsiveAvailableContentWidth: Math.max(LV.Theme.gapNone, editorToolbar.width - editorToolbar.toolbarPadding * 2)
     readonly property int firstVisibleToolbarItemIndex: editorToolbar.firstVisibleToolbarItemIndexForWidth(editorToolbar.responsiveAvailableContentWidth)
@@ -296,6 +299,61 @@ LV.HStack {
         return -1;
     }
 
+    function fontFamilyMenuContentHeightForCount(itemCount) {
+        const count = Math.max(0, Math.round(Number(itemCount) || 0));
+        if (count <= 0)
+            return editorToolbar.fontFamilyMenuEstimatedRowHeight;
+        return count * editorToolbar.fontFamilyMenuEstimatedRowHeight
+                + Math.max(0, count - 1) * fontFamilyContextMenu.itemSpacing;
+    }
+
+    function fontFamilyMenuViewportHeight(itemCount) {
+        const contentHeight = editorToolbar.fontFamilyMenuContentHeightForCount(itemCount);
+        const maximumContentHeight = editorToolbar.fontFamilyMenuContentHeightForCount(
+                    editorToolbar.fontFamilyMenuMaximumVisibleRows);
+        const windowObject = editorToolbar.Window.window;
+        const windowContentHeight = windowObject && windowObject.contentItem
+                ? Number(windowObject.contentItem.height)
+                : (windowObject ? Number(windowObject.height) : 0);
+        const availableContentHeight = windowContentHeight > 0
+                ? Math.max(
+                      editorToolbar.fontFamilyMenuEstimatedRowHeight,
+                      windowContentHeight
+                      - editorToolbar.fontFamilyMenuViewportMargin * 2
+                      - fontFamilyContextMenu.topPadding
+                      - fontFamilyContextMenu.bottomPadding)
+                : maximumContentHeight;
+        return Math.max(
+                    editorToolbar.fontFamilyMenuEstimatedRowHeight,
+                    Math.min(contentHeight, maximumContentHeight, availableContentHeight));
+    }
+
+    function clampFontFamilyMenuContentY(contentY) {
+        const maximumContentY = Math.max(
+                    0,
+                    Number(fontFamilyMenuFlickable.contentHeight)
+                    - Number(fontFamilyMenuFlickable.height));
+        return Math.max(0, Math.min(maximumContentY, Number(contentY) || 0));
+    }
+
+    function scrollFontFamilyMenuToSelectedIndex() {
+        if (!fontFamilyMenuFlickable || fontFamilyContextMenu.selectedIndex < 0)
+            return;
+        const rowStride = editorToolbar.fontFamilyMenuEstimatedRowHeight
+                + fontFamilyContextMenu.itemSpacing;
+        const targetTop = Math.max(0, fontFamilyContextMenu.selectedIndex * rowStride);
+        const targetBottom = targetTop + editorToolbar.fontFamilyMenuEstimatedRowHeight;
+        const visibleTop = Number(fontFamilyMenuFlickable.contentY) || 0;
+        const visibleBottom = visibleTop + Number(fontFamilyMenuFlickable.height);
+
+        if (targetTop < visibleTop) {
+            fontFamilyMenuFlickable.contentY = editorToolbar.clampFontFamilyMenuContentY(targetTop);
+        } else if (targetBottom > visibleBottom) {
+            fontFamilyMenuFlickable.contentY = editorToolbar.clampFontFamilyMenuContentY(
+                        targetBottom - fontFamilyMenuFlickable.height);
+        }
+    }
+
     function openStyleTagStyleContextMenu(anchorItem) {
         if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
             return false;
@@ -324,6 +382,7 @@ LV.HStack {
         fontFamilyContextMenu.itemWidth = editorToolbar.fontFamilyMenuPreferredWidth(menuItems);
         fontFamilyContextMenu.selectedIndex = editorToolbar.fontFamilyMenuSelectedIndex(menuItems);
         fontFamilyContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
+        Qt.callLater(editorToolbar.scrollFontFamilyMenuToSelectedIndex);
         if (editorToolbar.fontFamilyProvider
                 && editorToolbar.fontFamilyProvider.requestProviderHook !== undefined)
             editorToolbar.fontFamilyProvider.requestProviderHook("font-menu");
@@ -845,6 +904,83 @@ LV.HStack {
         objectName: "fontFamilyContextMenu"
         parent: editorToolbar.Window.window ? editorToolbar.Window.window.contentItem : null
         selectedIndex: editorToolbar.fontFamilyMenuSelectedIndex(fontFamilyContextMenu.items)
+
+        contentItem: Flickable {
+            id: fontFamilyMenuFlickable
+
+            boundsBehavior: Flickable.StopAtBounds
+            boundsMovement: Flickable.StopAtBounds
+            clip: true
+            contentHeight: fontFamilyMenuColumn.implicitHeight
+            contentWidth: width
+            flickableDirection: Flickable.VerticalFlick
+            implicitHeight: editorToolbar.fontFamilyMenuViewportHeight(fontFamilyContextMenu.entryCount)
+            implicitWidth: fontFamilyContextMenu.resolvedItemWidth
+            interactive: contentHeight > height
+            objectName: "fontFamilyMenuFlickable"
+            width: fontFamilyContextMenu.resolvedItemWidth
+
+            Column {
+                id: fontFamilyMenuColumn
+
+                spacing: fontFamilyContextMenu.itemSpacing
+                width: fontFamilyMenuFlickable.width
+
+                Repeater {
+                    model: fontFamilyContextMenu.entryDelegateItems
+
+                    delegate: Item {
+                        id: fontFamilyMenuDelegateRoot
+
+                        required property var modelData
+                        property Item delegateItem: null
+
+                        height: implicitHeight
+                        implicitHeight: delegateItem ? delegateItem.implicitHeight : 0
+                        implicitWidth: delegateItem ? delegateItem.implicitWidth : fontFamilyContextMenu.minimumItemWidth
+                        width: fontFamilyContextMenu.resolvedItemWidth
+
+                        function rebuildDelegate() {
+                            if (delegateItem) {
+                                delegateItem.destroy();
+                                delegateItem = null;
+                            }
+                            delegateItem = fontFamilyContextMenu.createEntryDelegate(
+                                        fontFamilyMenuDelegateRoot,
+                                        modelData);
+                            if (!delegateItem)
+                                return;
+                            delegateItem.width = Qt.binding(function() { return fontFamilyMenuDelegateRoot.width; });
+                            delegateItem.height = Qt.binding(function() { return fontFamilyMenuDelegateRoot.height; });
+                        }
+
+                        Component.onCompleted: rebuildDelegate()
+                        onModelDataChanged: rebuildDelegate()
+
+                        Connections {
+                            target: fontFamilyContextMenu
+
+                            function onItemDelegateChanged() {
+                                if (!fontFamilyMenuDelegateRoot.modelData.divider)
+                                    fontFamilyMenuDelegateRoot.rebuildDelegate();
+                            }
+
+                            function onDividerDelegateChanged() {
+                                if (fontFamilyMenuDelegateRoot.modelData.divider)
+                                    fontFamilyMenuDelegateRoot.rebuildDelegate();
+                            }
+                        }
+                    }
+                }
+            }
+
+            LV.WheelScrollGuard {
+                consumeInside: true
+                targetFlickable: fontFamilyMenuFlickable
+            }
+        }
+
+        onOpened: editorToolbar.scrollFontFamilyMenuToSelectedIndex()
 
         onItemTriggered: function(index, item) {
             const fontFamily = item && item.fontFamily !== undefined && item.fontFamily !== null

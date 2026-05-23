@@ -694,6 +694,62 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
         QStringLiteral("Alpha Beta\nGamma"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("style-font-note"),
+        QStringLiteral("Alpha Beta\nGamma"));
+
+    const QVariantMap selectedFontResult = session.insertStyleFontTagIntoSource(
+        QStringLiteral("Menlo"),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(selectedFontResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        selectedFontResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style font=\"Menlo\">Beta</style>\nGamma"));
+    QVERIFY(selectedFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("font-family:Menlo;")));
+    QCOMPARE(selectedFontResult.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Menlo"));
+
+    const QVariantMap currentLineFontResult = session.insertStyleFontTagIntoSource(
+        QStringLiteral("Noto Sans CJK KR"),
+        editorHtml,
+        2,
+        0);
+    QVERIFY(currentLineFontResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        currentLineFontResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style font=\"Noto Sans CJK KR\">Alpha Beta</style>\nGamma"));
+    QVERIFY(currentLineFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("font-family:Noto Sans CJK KR;")));
+    QCOMPARE(currentLineFontResult.value(QStringLiteral("editorSelectionStart")).toInt(), 0);
+    QCOMPARE(currentLineFontResult.value(QStringLiteral("editorSelectionLength")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap escapedFontResult = session.insertStyleFontTagIntoSource(
+        QStringLiteral("A&B \"Serif\""),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(escapedFontResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(escapedFontResult.value(QStringLiteral("bodySourceText")).toString().contains(
+        QStringLiteral("<style font=\"A&amp;B &quot;Serif&quot;\">Beta</style>")));
+    QVERIFY(escapedFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("font-family:A&amp;B &quot;Serif&quot;;")));
+
+    const QVariantMap invalidFontResult = session.insertStyleFontTagIntoSource(
+        QStringLiteral(""),
+        editorHtml,
+        6,
+        4);
+    QVERIFY(!invalidFontResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        invalidFontResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha Beta\nGamma"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()
 {
     NoteEditorDocumentSession session;
@@ -1728,6 +1784,188 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_enterInsideStyleMovesC
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         QStringLiteral("<style style=\"Title\">Alpha Beta</style>\n"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_boundaryEnterUsesCurrentEditorSnapshotAfterBackspace()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QStringList sourceLines;
+    for (int lineNumber = 1; lineNumber < 10; ++lineNumber)
+    {
+        sourceLines.push_back(QStringLiteral("Line %1").arg(lineNumber));
+    }
+    sourceLines.push_back(QStringLiteral("<style style=\"Title\">Line 10 \\</style>"));
+
+    const QString noteId = QStringLiteral("style-backspace-enter-note");
+    QString createError;
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        sourceLines.join(QLatin1Char('\n')),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    QStringList editorLines = sourceLines;
+    editorLines.last() = QStringLiteral("<style style=\"Title\">Line 10 </style>");
+    const QString editorHtmlAfterBackspace = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        editorLines.join(QLatin1Char('\n')));
+    const int cursorAfterBackspace = QStringLiteral(
+        "Line 1\n"
+        "Line 2\n"
+        "Line 3\n"
+        "Line 4\n"
+        "Line 5\n"
+        "Line 6\n"
+        "Line 7\n"
+        "Line 8\n"
+        "Line 9\n"
+        "Line 10 ").size();
+
+    const QVariantMap enterResult = session.handleStyleBoundaryKeyInSource(
+        editorHtmlAfterBackspace,
+        cursorAfterBackspace,
+        0,
+        Qt::Key_Return);
+
+    QVERIFY(enterResult.value(QStringLiteral("handled")).toBool());
+    QVERIFY(enterResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(!enterResult.value(QStringLiteral("bodySourceText")).toString().contains(QLatin1Char('\\')));
+
+    editorLines.last() = QStringLiteral("<style style=\"Title\">Line 10 </style>\n");
+    QCOMPARE(
+        enterResult.value(QStringLiteral("bodySourceText")).toString(),
+        editorLines.join(QLatin1Char('\n')));
+
+    QStringList calloutSourceLines;
+    for (int lineNumber = 1; lineNumber < 10; ++lineNumber)
+    {
+        calloutSourceLines.push_back(QStringLiteral("Callout line %1").arg(lineNumber));
+    }
+    calloutSourceLines.push_back(QStringLiteral("<callout>Line 10 \\</callout>"));
+
+    const QString calloutNoteId = QStringLiteral("callout-backspace-enter-note");
+    const QString calloutNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        calloutNoteId,
+        calloutSourceLines.join(QLatin1Char('\n')),
+        &createError);
+    QVERIFY2(!calloutNoteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession calloutSession;
+    calloutSession.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy calloutLoadedSpy(&calloutSession, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(calloutSession.openNoteForEditing(calloutNoteId, calloutNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(calloutLoadedSpy.count(), 1, 3000);
+    QVERIFY(calloutSession.markEditorSessionFileReadyForRawPush(calloutSession.editorFilePath()));
+
+    QStringList calloutEditorLines = calloutSourceLines;
+    calloutEditorLines.last() = QStringLiteral("<callout>Line 10 </callout>");
+    const QString calloutEditorHtmlAfterBackspace = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        calloutNoteId,
+        calloutEditorLines.join(QLatin1Char('\n')));
+    QTextDocument calloutEditorDocument;
+    calloutEditorDocument.setHtml(calloutEditorHtmlAfterBackspace);
+    const QString calloutEditorPlainText = calloutEditorDocument.toPlainText();
+    const int calloutCursorAfterBackspace =
+        calloutEditorPlainText.indexOf(QStringLiteral("Line 10 "))
+        + QStringLiteral("Line 10 ").size();
+
+    const QVariantMap calloutEnterResult = calloutSession.handleCalloutBoundaryKeyInSource(
+        calloutEditorHtmlAfterBackspace,
+        calloutCursorAfterBackspace,
+        0,
+        Qt::Key_Return);
+
+    QVERIFY(calloutEnterResult.value(QStringLiteral("handled")).toBool());
+    QVERIFY(calloutEnterResult.value(QStringLiteral("valid")).toBool());
+    QVERIFY(!calloutEnterResult.value(QStringLiteral("bodySourceText")).toString().contains(QLatin1Char('\\')));
+
+    calloutEditorLines.last() = QStringLiteral("<callout>Line 10</callout>\n");
+    QCOMPARE(
+        calloutEnterResult.value(QStringLiteral("bodySourceText")).toString(),
+        calloutEditorLines.join(QLatin1Char('\n')));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("style-plain-whitespace-note");
+    const QString fontSource =
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled</style>Omega");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        fontSource,
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString shiftedFontEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled </style>Omega"));
+    QSignalSpy fontPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 1, shiftedFontEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(fontPersistedSpy.count(), 1, 3000);
+    QCOMPARE(fontPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled</style> Omega"));
+
+    const QString titleNoteId = QStringLiteral("style-plain-whitespace-title-note");
+    const QString titleSource = QStringLiteral("<style style=\"Title\">Title</style>");
+    const QString titleNoteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        titleNoteId,
+        titleSource,
+        &createError);
+    QVERIFY2(!titleNoteDirectoryPath.isEmpty(), qPrintable(createError));
+    QSignalSpy reloadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(titleNoteId, titleNoteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(reloadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString shiftedTitleEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        titleNoteId,
+        QStringLiteral("<style style=\"Title\">Title\n</style>"));
+    QSignalSpy titlePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 2, shiftedTitleEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(titlePersistedSpy.count(), 1, 3000);
+    QCOMPARE(titlePersistedSpy.takeFirst().at(1).toBool(), true);
+
+    persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(titleNoteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("<style style=\"Title\">Title</style>\n"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile()

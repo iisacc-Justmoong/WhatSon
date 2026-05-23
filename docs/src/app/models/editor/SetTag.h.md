@@ -18,6 +18,8 @@ methods for inserting those templates into editor source text or into a serializ
 - `insertStyleTagIntoSource(...)` inserts the custom style wrapper with a canonical `style` attribute value. The
   `Body` value intentionally serializes as `<style>...</style>` because missing/empty style attributes fall back to
   Body.
+- `insertStyleFontTagIntoSource(...)` inserts the custom style wrapper with an explicit `font` attribute value, for
+  example `<style font="Menlo">...</style>`.
 - Paired inline/static wrappers are toggle-aware: when the selected source text is exactly enclosed by the same tag,
   mutation removes that wrapper and returns `toggledOff: true`.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to
