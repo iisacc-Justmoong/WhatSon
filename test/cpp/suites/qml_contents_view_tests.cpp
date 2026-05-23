@@ -727,6 +727,44 @@ LV.ApplicationWindow {
     QTRY_VERIFY(editor->property("text").toString().contains(QStringLiteral("첫 번째 줄에 텍스트 입력")));
     QVERIFY(QMetaObject::invokeMethod(editor, "forceEditorFocus"));
     QTRY_VERIFY(editor->property("focused").toBool());
+
+    const QString styledPrefix = QStringLiteral("첫 번째");
+    const QVariantMap fontInsertion = noteEditorSession.insertStyleFontTagIntoSource(
+        QStringLiteral("Menlo"),
+        editor->property("editorDocumentText").toString(),
+        0,
+        styledPrefix.size(),
+        styledPrefix);
+    QVERIFY(fontInsertion.value(QStringLiteral("valid")).toBool());
+    QVERIFY(QMetaObject::invokeMethod(
+        editor,
+        "replaceEditorDocumentText",
+        Q_ARG(QVariant, fontInsertion.value(QStringLiteral("editorDocumentText"))),
+        Q_ARG(QVariant, fontInsertion.value(QStringLiteral("cursorPosition")))));
+    QTRY_COMPARE(
+        editor->property("cursorPosition").toInt(),
+        fontInsertion.value(QStringLiteral("cursorPosition")).toInt());
+
+    QTest::keyClick(window, Qt::Key_Space);
+    QTest::keyClick(window, Qt::Key_Exclam);
+    QTRY_VERIFY(editor->property("editorDocumentText").toString().contains(QStringLiteral("!")));
+    QSignalSpy typedPersistedSpy(&noteEditorSession, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    noteEditorSession.requestEditorModifiedCountRawPush(
+        noteEditorSession.editorFilePath(),
+        2,
+        editor->property("editorDocumentText").toString());
+    QTRY_COMPARE_WITH_TIMEOUT(typedPersistedSpy.count(), 1, 3000);
+    QCOMPARE(typedPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    QFile persistedBodyFile(WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QVERIFY(persistedBodyFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString persistedBodyDocument = QString::fromUtf8(persistedBodyFile.readAll());
+    const QString persistedSourceText =
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument);
+    QVERIFY2(
+        persistedSourceText.startsWith(QStringLiteral("<style font=\"Menlo\">첫 번째! </style> 줄에 텍스트 입력\n")),
+        qPrintable(persistedSourceText));
+
     const int initialCursorPosition = editor->property("length").toInt();
     QVERIFY(initialCursorPosition > 0);
     QVERIFY(editor->setProperty("cursorPosition", initialCursorPosition));

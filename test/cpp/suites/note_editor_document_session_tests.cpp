@@ -1900,6 +1900,63 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_boundaryEnterUsesCurre
         calloutEditorLines.join(QLatin1Char('\n')));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_styleFontTypingContinuesInsideStyle()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("style-font-continuation-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        QStringLiteral("Alpha Beta\nGamma"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString originalEditorHtml = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QSignalSpy fontPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    const QVariantMap fontInsertion = session.insertStyleFontTagIntoSource(
+        QStringLiteral("Menlo"),
+        originalEditorHtml,
+        QStringLiteral("Alpha ").size(),
+        QStringLiteral("Beta").size(),
+        QStringLiteral("Beta"));
+    QVERIFY(fontInsertion.value(QStringLiteral("valid")).toBool());
+    QTRY_COMPARE_WITH_TIMEOUT(fontPersistedSpy.count(), 1, 3000);
+    QCOMPARE(fontPersistedSpy.takeFirst().at(1).toBool(), true);
+    QCOMPARE(
+        fontInsertion.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style font=\"Menlo\">Beta</style>\nGamma"));
+
+    QTextDocument editorDocument;
+    editorDocument.setHtml(fontInsertion.value(QStringLiteral("editorDocumentText")).toString());
+    QTextCursor editorCursor(&editorDocument);
+    editorCursor.setPosition(fontInsertion.value(QStringLiteral("cursorPosition")).toInt());
+    editorCursor.insertText(QStringLiteral(" continues"));
+
+    QSignalSpy typedPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 2, editorDocument.toHtml());
+    QTRY_COMPARE_WITH_TIMEOUT(typedPersistedSpy.count(), 1, 3000);
+    QCOMPARE(typedPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha <style font=\"Menlo\">Beta continues</style>\nGamma"));
+}
+
 void WhatSonCppRegressionTests::noteBodyPersistence_recoversNativeEmptyLineInsertion()
 {
     const auto recoveredSourceAfterNativeEmptyLine =
@@ -2011,7 +2068,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_preservesStyleBoundari
         WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
-        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled</style> Omega"));
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled </style>Omega"));
 
     const QString titleNoteId = QStringLiteral("style-plain-whitespace-title-note");
     const QString titleSource = QStringLiteral("<style style=\"Title\">Title</style>");

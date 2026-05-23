@@ -78,8 +78,9 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   editor/gutter rows while still saving as empty source lines.
 - `EditorInputCommandFilter` owns the native editor item event filter for command-style keys. It consumes only handled
   semantic boundary and paste commands, delegating RAW semantic-boundary decisions to `NoteEditorDocumentSession` and
-  clipboard package creation to `ClipboardEditorPaste`. Return/Enter is not intercepted by this filter; line breaking
-  stays on the native `TextEdit` path.
+  clipboard package creation to `ClipboardEditorPaste`. Style Return/Enter is intercepted only when it exits a style
+  wrapper; ordinary typing at the style end remains styled, and generated empty lines keep their native `TextEdit`
+  Return behavior.
 - `NoteEditorDocumentSession` is the active note document session object. It asks the note package layer to parse the
   selected `.wsnbody` into editor-facing RAW source, projects that source into an editor HTML cache/session file for
   LVRS `TextEditor.filePath`, exposes parsed source line count as session metadata, builds imported-resource command
@@ -102,10 +103,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   later user typing supplies a newer validated modified-count RAW payload, note departure persists that active canonical
   source. `<style>` wrappers are invisible to the session's source-visible text mapper, so a later LVRS-normalized
   rich-text save that has the same visible characters but lacks style markers is not allowed to overwrite the active
-  styled RAW source with a plain paragraph. Plain Space/Enter raw pushes that only add whitespace at a pre-existing
-  style boundary are merged into the active RAW source outside that wrapper, so style marker positions do not drift
-  unless a style selector or font selector command explicitly changes them. Because Return/Enter is not intercepted by
-  the editor input filter, generated empty lines keep extending through native `TextEdit`.
+  styled RAW source with a plain paragraph. Plain editor raw pushes that insert text at a pre-existing style boundary
+  are merged into the active RAW source according to the active wrapper boundary, so style marker positions do not drift
+  unless a style selector or font selector command explicitly changes them. Text typed after a font/style selector stays
+  inside the wrapper; Enter is the only style exit key.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -163,10 +164,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   유효한 style mutation은 active editor session file에 즉시 stage되고 실제 `.wsnbody` RAW body에도 바로 persist되어
   LVRS idle sync가 이전 paragraph snapshot으로 되돌리는 레이스를 막는다. source-visible text 계산에서도
   `<style>` wrapper를 invisible tag로 취급하여, LVRS가 marker 없는 동등 가시 텍스트를 내보내도 active styled
-  RAW source가 plain paragraph로 평탄화되지 않는다. 기존 style boundary에서 Space/Enter가 만든 순수 공백
-  RAW push는 active RAW source를 기준으로 wrapper 밖에 병합하므로, style selector나 font selector 명령이 아닌
-  일반 입력만으로 `<style>` 위치가 밀리지 않는다. live Enter는 native `TextEdit` 입력으로 남겨 빈 줄 줄갈이가
-  별도 semantic boundary filter에 의해 소비되지 않게 한다.
+  RAW source가 plain paragraph로 평탄화되지 않는다. 기존 style boundary에서 만들어진 plain RAW push는 active RAW
+  source의 wrapper 경계를 기준으로 병합하므로, style selector나 font selector 명령이 아닌 일반 입력만으로
+  `<style>` 위치가 밀리지 않는다. font/style selector 직후 이어 입력한 텍스트는 wrapper 안에 남고, Enter만 wrapper
+  밖으로 나가는 semantic boundary key다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
@@ -189,8 +190,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: callout frame chrome 바로 왼쪽에서 Enter를 누르면 `component/Callout`이 `<callout>` 앞 source 위치의 빈
   줄 삽입을 계획한다. 이 빈 줄은 persistence projection에서 invisible placeholder로 렌더되어 거터 row를 실제로
   하나 늘리고, 저장 시에는 다시 빈 source line으로 복원된다.
-  경계 Backspace는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은 `ClipboardEditorPaste`로
-  위임하며, 처리된 경우에만 native editor event를 consume한다. Return/Enter는 native editor event로 유지한다.
+  경계 Backspace와 style boundary Enter는 `NoteEditorDocumentSession`으로, 이미지 resource paste shortcut은
+  `ClipboardEditorPaste`로 위임하며, 처리된 경우에만 native editor event를 consume한다.
 - 현재: `NoteEditorDocumentSession`은 `.wsnbody` XML 원문이 아니라 RAW source에서 투영한 editor HTML session
   file을 `LV.TextEditor`에 연결하고, parsed source line metadata, imported-resource source insertion, static
   format-tag insertion을 제공하며, 저장 시 다시 canonical source를 거쳐 `.wsnbody`로 serialize한다. imported

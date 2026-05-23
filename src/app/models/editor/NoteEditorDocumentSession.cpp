@@ -75,6 +75,18 @@ namespace
         return std::clamp(position, 0, textSize);
     }
 
+    bool sourceHasNonNewlineAfter(const QString& sourceText, const int position)
+    {
+        for (int index = clampedPosition(position, sourceText.size()); index < sourceText.size(); ++index)
+        {
+            if (sourceText.at(index) != QLatin1Char('\n'))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     struct SourceVisibleCharacter final
     {
         int sourceStart = 0;
@@ -638,30 +650,27 @@ namespace
         return ranges;
     }
 
-    bool isNonEmptyWhitespaceText(const QString& text)
+    bool textContainsLineBreak(const QString& text)
     {
-        if (text.isEmpty())
-        {
-            return false;
-        }
-
         for (const QChar ch : text)
         {
-            if (!ch.isSpace())
+            if (ch == QLatin1Char('\n'))
             {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
-    bool styleBoundarySourcePositionForWhitespaceInsertion(
+    bool styleBoundarySourcePositionForInsertion(
         const QString& bodySourceText,
         const int editorInsertionPosition,
+        const QString& insertedVisibleText,
         int* outSourcePosition)
     {
         bool matched = false;
         int sourcePosition = -1;
+        const bool exitsStyle = textContainsLineBreak(insertedVisibleText);
         const QVector<StyleSourceRange> ranges = styleSourceRanges(bodySourceText);
         for (const StyleSourceRange& range : ranges)
         {
@@ -676,13 +685,15 @@ namespace
                 editorCursorPositionForSourcePosition(bodySourceText, range.contentEnd);
             if (editorInsertionPosition == contentEditorEnd)
             {
-                sourcePosition = matched ? std::max(sourcePosition, range.closingEnd) : range.closingEnd;
+                const int candidateSourcePosition = exitsStyle ? range.closingEnd : range.contentEnd;
+                sourcePosition = matched ? std::max(sourcePosition, candidateSourcePosition) : candidateSourcePosition;
                 matched = true;
                 continue;
             }
             if (editorInsertionPosition == contentEditorStart)
             {
-                sourcePosition = matched ? std::min(sourcePosition, range.openingStart) : range.openingStart;
+                const int candidateSourcePosition = exitsStyle ? range.openingStart : range.contentStart;
+                sourcePosition = matched ? std::min(sourcePosition, candidateSourcePosition) : candidateSourcePosition;
                 matched = true;
             }
         }
@@ -698,7 +709,7 @@ namespace
         return true;
     }
 
-    bool mergeWhitespaceInsertionWithActiveStyleBoundaries(
+    bool mergeInsertionWithActiveStyleBoundaries(
         const QString& activeSourceText,
         const QString& editorSourceText,
         QString* outSourceText)
@@ -751,15 +762,16 @@ namespace
         const QString insertedVisibleText = editorVisibleText.mid(
             commonPrefixLength,
             editorVisibleText.size() - commonPrefixLength - commonSuffixLength);
-        if (!isNonEmptyWhitespaceText(insertedVisibleText))
+        if (insertedVisibleText.isEmpty())
         {
             return false;
         }
 
         int insertionSourcePosition = -1;
-        if (!styleBoundarySourcePositionForWhitespaceInsertion(
+        if (!styleBoundarySourcePositionForInsertion(
                 normalizedActiveSourceText,
                 commonPrefixLength,
+                insertedVisibleText,
                 &insertionSourcePosition))
         {
             insertionSourcePosition =
@@ -2784,6 +2796,15 @@ QVariantMap NoteEditorDocumentSession::handleStyleBoundaryKeyInSource(
     if (sourceCursorPosition < mutatedSourceText.size()
         && mutatedSourceText.at(sourceCursorPosition) == QLatin1Char('\n'))
     {
+        if (!sourceHasNonNewlineAfter(mutatedSourceText, sourceCursorPosition + 1))
+        {
+            return buildResult(
+                false,
+                false,
+                sourceText,
+                sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition),
+                boundedDecoratedCursorPosition);
+        }
         ++sourceCursorPosition;
     }
     else
@@ -3240,7 +3261,7 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
             return activeSourceText;
         }
         QString styleBoundaryPreservedSourceText;
-        if (mergeWhitespaceInsertionWithActiveStyleBoundaries(
+        if (mergeInsertionWithActiveStyleBoundaries(
                 activeSourceText,
                 editorSourceText,
                 &styleBoundaryPreservedSourceText))

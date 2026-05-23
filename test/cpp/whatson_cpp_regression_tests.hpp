@@ -1317,6 +1317,7 @@ private slots:
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_boundaryEnterUsesCurrentEditorSnapshotAfterBackspace();
+    void noteEditorDocumentSession_styleFontTypingContinuesInsideStyle();
     void noteBodyPersistence_recoversNativeEmptyLineInsertion();
     void noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout();
     void noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush();
