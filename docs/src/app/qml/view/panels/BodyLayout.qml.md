@@ -40,6 +40,8 @@ right detail panel.
   falls back to `sidebarHierarchyController.activeNoteListModel` when the global state object is not supplied.
 - The center editor surface now mounts only the LVRS `TextEditor` path and connects it to the selected note's editor
   HTML session file.
+- The desktop shell forwards `editorFontFamilyProvider` to `ContentViewLayout.qml` as menu data for the editor toolbar
+  font selector.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
 - Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 - Desktop default/min right-panel widths and sidebar horizontal inset now come from named `LV.Theme` width/gap/stroke
@@ -62,3 +64,5 @@ right detail panel.
     same active note-list model that the editor surface uses.
   - Desktop content routing passes `noteEditorSession` into the editor host so the selected note's editor HTML
     session file can be bound to LVRS `TextEditor.filePath`, but it must not expose the raw `.wsnbody` XML container.
+  - Desktop content routing may pass `editorFontFamilyProvider` through to the toolbar, but the shell must not query
+    system fonts directly.

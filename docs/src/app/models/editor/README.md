@@ -9,6 +9,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - Child files:
   - `GetProperty.h`
   - `GetProperty.cpp`
+  - `EditorFontFamilyProvider.hpp`
+  - `EditorFontFamilyProvider.cpp`
   - `component/Break.h`
   - `component/Break.cpp`
   - `component/Callout.h`
@@ -46,6 +48,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   the tag under the requested cursor position.
 - `GetProperty` is the read-side `.wsnbody` tag-attribute capture object. It stores the current tag's dynamic
   attributes as in-app key/value state and exposes inferred value kinds beside the stored values.
+- `EditorFontFamilyProvider` reads Qt system font families for the editor toolbar font selector, normalizes them into a
+  stable sorted list, and returns LVRS context-menu item descriptors. It does not apply font attributes to note source.
 - `component/Break` owns the standalone editor source token `</break>`. It recognizes `</break>`, `<break/>`, and
   legacy `<hr/>` aliases as a single logical break source line, renders that line as editor line-break space instead of
   literal tag text, and keeps `.wsnbody` storage normalized to `<break/>`.
@@ -155,6 +159,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.
+- 현재: `EditorFontFamilyProvider`는 Qt system font family 목록을 읽어 editor toolbar font selector의
+  `LV.ContextMenu` 항목으로 제공한다. 선택한 family를 source에 적용하는 mutation은 아직 이 객체의 책임이 아니다.
 - 현재: `component/Break`는 standalone editor source token `</break>`를 소유한다. `</break>`, `<break/>`, legacy
   `<hr/>`는 같은 논리 break line으로 판정되며, 노트 에디터에는 literal tag text가 아니라 그 위치의 논리 빈 줄로
   투영된다.

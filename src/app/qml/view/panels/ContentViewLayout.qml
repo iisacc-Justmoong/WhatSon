@@ -120,6 +120,7 @@ Item {
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
     property var editorInputCommandFilter: null
+    property var editorFontFamilyProvider: null
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -442,6 +443,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
                 editorReadOnly: contentViewLayout.editorReadOnly
+                fontFamilyProvider: contentViewLayout.editorFontFamilyProvider
                 visible: contentViewLayout.noteEditorSurfaceVisible
 
                 onFormatTagRequested: function(tagName) {
@@ -449,6 +451,9 @@ Item {
                 }
                 onStyleTagStyleRequested: function(styleValue) {
                     contentViewLayout.applyEditorStyleTagStyle(styleValue);
+                }
+                onFontFamilyRequested: function(fontFamily) {
+                    contentViewLayout.requestViewHook("editor.toolbar.font." + String(fontFamily));
                 }
                 onToolbarActionRequested: function(actionName) {
                     contentViewLayout.requestViewHook(actionName);

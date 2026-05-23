@@ -43,6 +43,7 @@ Item {
     property var inAppClipboard: null
     property var clipboardEditorPaste: null
     property var editorInputCommandFilter: null
+    property var editorFontFamilyProvider: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
         if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
@@ -269,6 +270,7 @@ Item {
                 inAppClipboard: hStack.inAppClipboard
                 clipboardEditorPaste: hStack.clipboardEditorPaste
                 editorInputCommandFilter: hStack.editorInputCommandFilter
+                editorFontFamilyProvider: hStack.editorFontFamilyProvider
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarController: hStack.dayCalendarController

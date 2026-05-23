@@ -57,6 +57,9 @@
 - `main.cpp` instantiates `EditorViewModeController` again and publishes it through the workspace context binder for
   the navigation bar view-mode combo. This is chrome state only; editor file mounting still flows through
   `NoteEditorDocumentSession`.
+- `main.cpp` instantiates `EditorFontFamilyProvider` and publishes it through the workspace context binder for the
+  editor toolbar font selector. This provider only supplies system font menu data; editor source mutation remains
+  outside the toolbar.
 - Internal QML bridge type registration now flows through `WhatSonQmlInternalTypeRegistrar` and LVRS
   `QmlTypeRegistrar`; startup fails early if the internal type manifest cannot be registered.
 - Foreground scheduler and permission startup now run through LVRS `ForegroundServiceGate`; `main.cpp` builds a

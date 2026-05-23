@@ -49,6 +49,10 @@ namespace
             plan,
             QStringLiteral("editorInputCommandFilter"),
             objects.editorInputCommandFilter);
+        appendContextObjectBinding(
+            plan,
+            QStringLiteral("editorFontFamilyProvider"),
+            objects.editorFontFamilyProvider);
         appendContextObjectBinding(plan, QStringLiteral("asyncScheduler"), objects.asyncScheduler);
         appendContextObjectBinding(plan, QStringLiteral("calendarBoardStore"), objects.calendarBoardStore);
         appendContextObjectBinding(plan, QStringLiteral("systemCalendarStore"), objects.systemCalendarStore);

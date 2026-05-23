@@ -55,6 +55,7 @@
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
 #include "app/models/editor/GetProperty.h"
+#include "app/models/editor/EditorFontFamilyProvider.hpp"
 #include "app/models/editor/component/Break.h"
 #include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
@@ -1242,6 +1243,7 @@ private slots:
     void editorSetProperty_setsDynamicAttributesWithInferredValueTypes();
     void editorSetProperty_updatesExistingAttributeAndRejectsInvalidNames();
     void editorSetProperty_serializesResourceAttributeIntoWsnbodyDocument();
+    void editorFontFamilyProvider_buildsMenuItemsFromSystemFamilies();
     void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
     void editorSetTag_rejectsUnsupportedStaticNames();
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
@@ -1303,6 +1305,7 @@ private slots:
     void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
     void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
+    void noteEditorDocumentSession_buildsStyleFontSourceInsertion();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();

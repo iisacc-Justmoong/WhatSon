@@ -54,6 +54,7 @@ LV.ApplicationWindow {
     readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
     readonly property var rootClipboardEditorPaste: typeof clipboardEditorPaste !== "undefined" ? clipboardEditorPaste : null
     readonly property var rootEditorInputCommandFilter: typeof editorInputCommandFilter !== "undefined" ? editorInputCommandFilter : null
+    readonly property var rootEditorFontFamilyProvider: typeof editorFontFamilyProvider !== "undefined" ? editorFontFamilyProvider : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
     readonly property var rootWeekCalendarController: typeof weekCalendarController !== "undefined" ? weekCalendarController : null
@@ -661,6 +662,7 @@ LV.ApplicationWindow {
                     inAppClipboard: applicationWindow.rootInAppClipboard
                     clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
                     editorInputCommandFilter: applicationWindow.rootEditorInputCommandFilter
+                    editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
@@ -722,6 +724,7 @@ LV.ApplicationWindow {
             inAppClipboard: applicationWindow.rootInAppClipboard
             clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
             editorInputCommandFilter: applicationWindow.rootEditorInputCommandFilter
+            editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames

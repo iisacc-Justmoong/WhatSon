@@ -11,6 +11,8 @@ HTML session file into the LVRS text editor surface.
   note lists, detail panels, and calendar overlay state.
 - The root resolves `editorViewModeController` and forwards it to navigation chrome so the
   Plain/Page/Print/Web/Presentation view-mode combo is visible again.
+- The root resolves `editorFontFamilyProvider` and forwards it through desktop/mobile workspace shells so the editor
+  toolbar font selector can open a system-font menu.
 - The desktop and mobile workspace branches are both retained.
 
 ## Kept Root Responsibilities
@@ -34,3 +36,4 @@ HTML session file into the LVRS text editor surface.
   editor HTML session file을 LVRS TextEditor에 연결한다.
 - `editorViewModeController` 및 `NavigationEditorViewBar.qml` 기반 보기 모드 선택 계약은 네비게이션바
   콤보박스 표시를 위해 복원되어 있다.
+- `editorFontFamilyProvider`는 desktop/mobile workspace shell을 거쳐 editor toolbar font selector에 전달된다.

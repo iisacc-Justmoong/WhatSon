@@ -25,7 +25,9 @@ surface. The editor document binding is the editor HTML session file path that r
 right-click format context menu live in `ContentViewLayout.qml` only as command dispatch and call the C++
 `NoteEditorDocumentSession` format API. Gutter row count follows `NoteEditorDocumentSession.parsedLineCount`; the QML
 `TextEditor` wrapper only provides rendered start positions for those logical source lines so wrapped continuation rows
-remain unnumbered. The adaptive/mobile editor route keeps the same surface but disables the gutter and minimap rails.
+remain unnumbered. The editor toolbar receives `EditorFontFamilyProvider` only as a menu-data source for the font
+selector; QML does not query system fonts directly. The adaptive/mobile editor route keeps the same surface but
+disables the gutter and minimap rails.
 
 ## Why This Directory Is Important
 If a runtime object exists in C++ but behaves incorrectly in the UI, this directory is usually where the mismatch becomes visible first.
@@ -42,6 +44,7 @@ If a runtime object exists in C++ but behaves incorrectly in the UI, this direct
   메뉴는 이 layout의 얇은 command dispatch로만 존재하고 실제 source/projection 처리는 C++ 세션에 맡긴다.
   거터 row 개수는 `NoteEditorDocumentSession.parsedLineCount`만 따르고, QML `TextEditor` wrapper는 해당
   logical source line의 렌더 시작 위치만 제공해 wrap continuation row에는 번호를 만들지 않는다. adaptive/mobile
-  editor route는 같은 surface를 쓰되 거터와 미니맵 rail을 끈다.
+  editor route는 같은 surface를 쓰되 거터와 미니맵 rail을 끈다. 에디터 toolbar font selector는
+  `EditorFontFamilyProvider`가 제공하는 menu data만 소비하며 QML이 시스템 font API를 직접 조회하지 않는다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
 - 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.

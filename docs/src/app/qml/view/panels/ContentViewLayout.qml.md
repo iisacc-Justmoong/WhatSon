@@ -25,6 +25,9 @@ parser, projection, source mutation, or persistence behavior.
 The toolbar `style` selector forwards the chosen `<style ...>` tag `style` attribute string to
 `NoteEditorDocumentSession.insertStyleTagIntoSource(...)`, then reports `editor.toolbar.style.<value>` through the
 existing view-hook surface after the LVRS document replacement succeeds. Parser and mutation policy remain outside QML.
+The toolbar `font` selector receives `EditorFontFamilyProvider` from the shell, lets the toolbar open the system-font
+context menu, and reports `editor.toolbar.font.<family>` as a view hook when a family is chosen. It does not apply
+font attributes to source yet.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -135,6 +138,8 @@ classified as a local modified-count push.
   scroll hook.
 - Keep editor toolbar wiring limited to LVRS controls, Figma metadata, view hooks, and the existing format command
   dispatch.
+- Keep system-font reading behind `EditorFontFamilyProvider`; this layout may pass the provider through but must not
+  query platform fonts directly.
 - Keep editor native key interception limited to `EditorInputCommandFilter`; resource import, source insertion, and
   resource reload stay in C++.
 - Keep format shortcut and selected-text context-menu handling limited to command dispatch; static tag allow-lists,
@@ -186,6 +191,9 @@ classified as a local modified-count push.
   같은 dispatch로 보낸다. 같은 포맷 wrapper가 정확히 감싼 selection은 QML이 아니라 `SetTag`에서 unwrap toggle로
   처리한다. 콜아웃 단축키는 selection이 있으면 해당 텍스트를 콜아웃 내부 콘텐츠로 쓰고, selection이 없으면 빈
   콜아웃 시각 프레임을 즉시 만든다.
+- 에디터 toolbar의 font selector는 shell에서 전달된 `EditorFontFamilyProvider`를 `ContentEditorToolbar`에 넘겨
+  시스템 font family 목록을 `LV.ContextMenu`로 표시하게 한다. 현재 단계에서는 선택한 font family를 view hook으로
+  보고할 뿐, `.wsnbody` source mutation은 수행하지 않는다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, generic resource editor,
   editor view mode 백엔드는 mount하지 않는다. Calendar overlay는 이미 노출된 calendar controller와
   `LibraryHierarchyController.activateNoteById(...)` bridge만 사용한다.

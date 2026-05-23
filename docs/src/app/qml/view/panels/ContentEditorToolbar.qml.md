@@ -23,6 +23,7 @@ while staying a view-only command surface.
 ## Behavior
 The toolbar exposes only view-level signals:
 - `formatTagRequested(tagName)` for the existing editor format dispatch in `ContentViewLayout.qml`.
+- `fontFamilyRequested(fontFamily)` when the font selector chooses a system font family from the provider-backed menu.
 - `styleTagStyleRequested(styleValue)` when the left `style` selector chooses a `<style ...>` tag `style`
   attribute value.
 - `toolbarActionRequested(actionName)` for view-local hooks such as selector/menu button clicks.
@@ -42,6 +43,11 @@ preview intentionally carries no per-style color metadata, leaving item text col
 state. Style selector menu entries disable the LVRS `MenuItem` left icon slot through `showIconSlot: false`, so the
 preview text starts without the default menu icon placeholder.
 
+The second `font` selector still displays `Pretendard` by default because that is the editor body font. Clicking it now
+refreshes `EditorFontFamilyProvider`, reads its `fontFamilyMenuItems()`, and opens an LVRS `ContextMenu` whose rows are
+previewed with each returned `fontFamily`. Selecting a row updates only the toolbar display and emits
+`fontFamilyRequested(fontFamily)`; source mutation is intentionally left for a later editor-session contract.
+
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
 `fontWeight`, `formatBar`, `colorBar`, then `lineHeight`; the right mode group remains the anchored minimum surface.
@@ -56,8 +62,11 @@ It does not read files, own note/session state, parse editor text, or persist fo
   context menu item previews.
 - Keep the style selector popup's `showIconSlot: false` binding in place; do not fake this by painting over the icon
   area or shrinking unrelated menu metrics.
+- Keep the font selector popup backed by `EditorFontFamilyProvider`; QML must not call `QFontDatabase` or invent a
+  JavaScript-side system font list.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 
 ## Tests
 - `test/cpp/suites/qml_contents_view_tests.cpp`
+- `test/cpp/suites/editor_font_family_provider_tests.cpp`

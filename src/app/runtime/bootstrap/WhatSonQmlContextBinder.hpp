@@ -18,6 +18,7 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* inAppClipboard = nullptr;
         QObject* clipboardEditorPaste = nullptr;
         QObject* editorInputCommandFilter = nullptr;
+        QObject* editorFontFamilyProvider = nullptr;
         QObject* progressHierarchyController = nullptr;
         QObject* eventHierarchyController = nullptr;
         QObject* presetHierarchyController = nullptr;

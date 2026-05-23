@@ -8,6 +8,8 @@
 - The editor body uses `ContentViewLayout.qml` as the TextEditor surface and forwards `noteEditorSession` so the
   selected note's editor HTML session file can be edited.
 - The editor body disables `ContentViewLayout.qml`'s gutter and minimap rails for the mobile route.
+- The editor body forwards `editorFontFamilyProvider` so the same toolbar font menu is available on the mobile editor
+  route.
 - `MobileEventSurface.qml` has been removed from the editor body; touch and scroll handling stays on the native LVRS
   `TextEditor` path.
 - It owns and forwards `editorViewModeController` only to mobile navigation chrome so the editor route can show the
@@ -31,6 +33,8 @@ rendering, resource editor, calendar page, or editor view-mode backend objects. 
 - 현재 앱 workspace에서는 adaptive/mobile layout에서 이 mobile shell을 mount한다.
 - editor route는 `ContentViewLayout.qml`을 사용하고 active note의 editor HTML session file을
   `LV.TextEditor`에 연결하며, 모바일 route에서는 거터와 미니맵 rail을 끈다.
+- editor route는 `editorFontFamilyProvider`도 함께 전달해 toolbar font selector가 desktop과 같은 system-font
+  menu data를 사용할 수 있게 한다.
 - `MobileEventSurface.qml`은 삭제되었으며 touch/scroll 처리는 native LVRS `TextEditor` 경로에 맡긴다.
 - hierarchy, note-list, detail, calendar, sidebar, import shell 연결을 유지하면서 editor route의 navigation chrome에
   view-mode 콤보박스를 다시 표시한다.

@@ -46,8 +46,11 @@ LV.HStack {
         "Footnote"
     ]
     property bool editorReadOnly: false
+    property var fontFamilyProvider: null
+    property string selectedFontFamily: "Pretendard"
     property string selectedStyleTagStyleValue: "Title"
 
+    signal fontFamilyRequested(string fontFamily)
     signal formatTagRequested(string tagName)
     signal styleTagStyleRequested(string styleValue)
     signal toolbarActionRequested(string actionName)
@@ -255,6 +258,44 @@ LV.HStack {
         return result;
     }
 
+    function fontFamilyMenuItems() {
+        if (!editorToolbar.fontFamilyProvider
+                || editorToolbar.fontFamilyProvider.fontFamilyMenuItems === undefined)
+            return [];
+        const providerItems = editorToolbar.fontFamilyProvider.fontFamilyMenuItems();
+        return providerItems ? providerItems : [];
+    }
+
+    function fontFamilyMenuPreferredWidth(items) {
+        const menuItems = items ? items : editorToolbar.fontFamilyMenuItems();
+        let maxPreviewWidth = editorToolbar.figmaComboLargeWidth;
+        for (let itemIndex = 0; itemIndex < menuItems.length; ++itemIndex) {
+            const item = menuItems[itemIndex];
+            const label = item && item.label !== undefined && item.label !== null
+                    ? String(item.label)
+                    : "";
+            maxPreviewWidth = Math.max(
+                        maxPreviewWidth,
+                        Math.ceil(label.length * editorToolbar.figmaBodyTextSize * 0.62)
+                        + LV.Theme.gap16);
+        }
+        return Math.min(LV.Theme.scaleMetric(280), maxPreviewWidth);
+    }
+
+    function fontFamilyMenuSelectedIndex(items) {
+        const menuItems = items ? items : editorToolbar.fontFamilyMenuItems();
+        const selectedFamily = String(editorToolbar.selectedFontFamily).trim();
+        for (let itemIndex = 0; itemIndex < menuItems.length; ++itemIndex) {
+            const item = menuItems[itemIndex];
+            const fontFamily = item && item.fontFamily !== undefined && item.fontFamily !== null
+                    ? String(item.fontFamily).trim()
+                    : "";
+            if (fontFamily === selectedFamily)
+                return itemIndex;
+        }
+        return -1;
+    }
+
     function openStyleTagStyleContextMenu(anchorItem) {
         if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
             return false;
@@ -267,6 +308,29 @@ LV.HStack {
         return true;
     }
 
+    function openFontFamilyContextMenu(anchorItem) {
+        if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
+            return false;
+
+        if (editorToolbar.fontFamilyProvider
+                && editorToolbar.fontFamilyProvider.refreshFontFamilies !== undefined)
+            editorToolbar.fontFamilyProvider.refreshFontFamilies();
+
+        const menuItems = editorToolbar.fontFamilyMenuItems();
+        if (menuItems.length <= 0)
+            return false;
+
+        fontFamilyContextMenu.items = menuItems;
+        fontFamilyContextMenu.itemWidth = editorToolbar.fontFamilyMenuPreferredWidth(menuItems);
+        fontFamilyContextMenu.selectedIndex = editorToolbar.fontFamilyMenuSelectedIndex(menuItems);
+        fontFamilyContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
+        if (editorToolbar.fontFamilyProvider
+                && editorToolbar.fontFamilyProvider.requestProviderHook !== undefined)
+            editorToolbar.fontFamilyProvider.requestProviderHook("font-menu");
+        editorToolbar.toolbarActionRequested("editor.toolbar.font");
+        return true;
+    }
+
     component ToolbarComboBox: LV.ComboBox {
         id: toolbarComboBox
 
@@ -276,6 +340,7 @@ LV.HStack {
         property string figmaNodeId: ""
         property string figmaStepperNodeId: ""
         property int preferredToolbarWidth: LV.Theme.gapNone
+        property bool opensFontFamilyMenu: false
         property bool opensStyleTagStyleMenu: false
 
         arrow: LV.Stepper.Down
@@ -289,6 +354,10 @@ LV.HStack {
         onClicked: {
             if (toolbarComboBox.opensStyleTagStyleMenu) {
                 editorToolbar.openStyleTagStyleContextMenu(toolbarComboBox);
+                return;
+            }
+            if (toolbarComboBox.opensFontFamilyMenu) {
+                editorToolbar.openFontFamilyContextMenu(toolbarComboBox);
                 return;
             }
             if (toolbarComboBox.actionName.length > 0)
@@ -463,6 +532,59 @@ LV.HStack {
         }
     }
 
+    Component {
+        id: fontFamilyMenuItemDelegate
+
+        LV.MenuItem {
+            id: fontMenuItem
+
+            property var modelData: ({})
+            property int index: modelData.index === undefined ? -1 : modelData.index
+            property var entry: modelData.entry
+            property string fontFamily: fontMenuItem.entry
+                    && fontMenuItem.entry.fontFamily !== undefined
+                    && fontMenuItem.entry.fontFamily !== null
+                    ? String(fontMenuItem.entry.fontFamily)
+                    : fontMenuItem.label
+
+            enabled: fontMenuItem.modelData.enabled !== false
+            itemHeight: LV.Theme.gap20
+            itemWidth: fontFamilyContextMenu.minimumItemWidth
+            label: fontMenuItem.entry && fontMenuItem.entry.label !== undefined
+                    ? String(fontMenuItem.entry.label)
+                    : ""
+            showIconSlot: false
+            state: fontMenuItem.modelData.state === undefined
+                    ? fontMenuItem.defaultState
+                    : fontMenuItem.modelData.state
+            width: parent ? parent.width : fontFamilyContextMenu.resolvedItemWidth
+
+            contentItem: Item {
+                implicitHeight: fontPreviewLabel.implicitHeight
+                implicitWidth: fontPreviewLabel.implicitWidth
+
+                LV.Label {
+                    id: fontPreviewLabel
+
+                    elide: Text.ElideRight
+                    font.family: fontMenuItem.fontFamily
+                    font.pixelSize: editorToolbar.figmaBodyTextSize
+                    font.weight: editorToolbar.figmaBodyWeight
+                    height: implicitHeight
+                    lineHeight: editorToolbar.figmaBodyLineHeight
+                    lineHeightMode: Text.FixedHeight
+                    style: body
+                    text: fontMenuItem.label
+                    verticalAlignment: Text.AlignVCenter
+                    width: parent.width
+                    y: Math.round((parent.height - height) * 0.5)
+                }
+            }
+
+            onClicked: fontFamilyContextMenu.triggerEntry(fontMenuItem.index)
+        }
+    }
+
     Item {
         id: editorToolbarContentFrame
 
@@ -504,12 +626,14 @@ LV.HStack {
 
                 ToolbarComboBox {
                     actionName: "editor.toolbar.font"
+                    enabled: editorToolbar.formatButtonsEnabled
                     figmaLabelNodeId: "I399:8668;254:868"
                     figmaNodeId: "399:8668"
                     figmaStepperNodeId: "I399:8668;254:869"
                     objectName: "font"
+                    opensFontFamilyMenu: true
                     preferredToolbarWidth: editorToolbar.figmaComboLargeWidth
-                    text: "Pretendard"
+                    text: editorToolbar.selectedFontFamily
                     visible: editorToolbar.toolbarResponsiveItemVisible(1)
                 }
 
@@ -707,6 +831,30 @@ LV.HStack {
 
             editorToolbar.selectedStyleTagStyleValue = styleValue;
             editorToolbar.styleTagStyleRequested(styleValue);
+        }
+    }
+
+    LV.ContextMenu {
+        id: fontFamilyContextMenu
+
+        autoCloseOnTrigger: true
+        itemDelegate: fontFamilyMenuItemDelegate
+        itemWidth: editorToolbar.fontFamilyMenuPreferredWidth()
+        items: editorToolbar.fontFamilyMenuItems()
+        modal: false
+        objectName: "fontFamilyContextMenu"
+        parent: editorToolbar.Window.window ? editorToolbar.Window.window.contentItem : null
+        selectedIndex: editorToolbar.fontFamilyMenuSelectedIndex(fontFamilyContextMenu.items)
+
+        onItemTriggered: function(index, item) {
+            const fontFamily = item && item.fontFamily !== undefined && item.fontFamily !== null
+                    ? String(item.fontFamily)
+                    : "";
+            if (fontFamily.length === 0)
+                return;
+
+            editorToolbar.selectedFontFamily = fontFamily;
+            editorToolbar.fontFamilyRequested(fontFamily);
         }
     }
 }
