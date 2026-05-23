@@ -48,9 +48,10 @@ Implements the active note editor document session.
    RAW body persist immediately, so neither LVRS file sync nor a later filesystem pull can restore the pre-style
    paragraph snapshot during the idle RAW-push window. Source-visible text mapping treats `<style>` tags as invisible
    wrappers, matching bold/link/tag behavior, so a later LVRS-normalized rich-text payload with the same visible text
-   cannot flatten the active styled RAW source back into a plain paragraph. If a later plain editor push inserts text
-   at an existing `<style>` source boundary, the session merges ordinary characters into the wrapper and treats newline
-   as the explicit wrapper exit instead of accepting renderer-shifted style marker positions.
+   cannot flatten the active styled RAW source back into a plain paragraph. If a later plain editor push edits visible
+   text inside an existing `<style>` wrapper or at its content boundary, the session applies that single visible edit to
+   the active RAW wrapper instead of accepting renderer-shifted or missing style marker positions. Ordinary characters
+   remain inside the wrapper, while newline remains the explicit wrapper exit.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -141,10 +142,11 @@ Implements the active note editor document session.
   selector mutations are staged into the active editor session file and persisted into the note body before QML replaces
   the live LVRS text, matching the resource insertion race guard while making `.wsnbody` authoritative immediately.
   The same source-visible mapper hides `<style>` wrappers when validating later raw pushes, preserving the active style
-  source if LVRS returns equivalent visible text without the original style markers. Plain editor raw pushes that add
-  text at an existing style boundary are merged against the active RAW source so the pre-existing `<style>` wrapper does
-  not drift unless a style command explicitly mutates it. Ordinary typed text at the style end is preserved inside the
-  wrapper; Return/Enter is the explicit style exit and is placed outside the wrapper.
+  source if LVRS returns equivalent visible text without the original style markers. Plain editor raw pushes that add,
+  delete, or replace visible text inside an existing style wrapper are merged against the active RAW source so the
+  pre-existing `<style>` wrapper does not disappear unless a style command explicitly mutates it. Ordinary typed text at
+  the style end is preserved inside the wrapper; Return/Enter is the explicit style exit and is placed outside the
+  wrapper.
 - Callout Backspace boundary keys are also source mutations owned by this class. Backspace at the callout content start
   removes only the `<callout>` wrapper when content exists, or removes the whole empty callout source line when it does
   not. Because the visual callout frame uses one generated chrome object for the leading bar, this class converts
@@ -192,8 +194,10 @@ Implements the active note editor document session.
   style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체로 확장하며, 빈 줄에서는
   즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다. 유효한 style selector mutation은 active editor
   session file에 즉시 stage되고 `.wsnbody` RAW body에도 바로 persist되어 LVRS idle sync가 이전 paragraph snapshot으로
-  되돌리지 못하게 한다. styled rendered text 끝에서 이어 입력한 일반 텍스트는 wrapper 안에 유지하고,
-  plain Enter/Return만 wrapper 밖 다음 source line으로 나가는 boundary edit로 처리한다.
+  되돌리지 못하게 한다. 이후 marker 없는 plain editor payload가 들어와도 style wrapper 안쪽의 단일 visible edit는
+  active RAW wrapper에 반영하므로, 이어 입력이나 Backspace만으로 `<style>` tag가 사라지지 않는다. styled rendered
+  text 끝에서 이어 입력한 일반 텍스트는 wrapper 안에 유지하고, plain Enter/Return만 wrapper 밖 다음 source line으로
+  나가는 boundary edit로 처리한다.
   같은 태그가 정확히 감싼 selection이면 `SetTag`가 wrapper를 제거하는 toggle 결과를 반환한다.
 - 콜아웃 Backspace 경계 키도 이 세션에서 처리한다. content 시작점의 Backspace는 내용이 있으면 `<callout>` wrapper만
   제거하고, 내용이 없으면 빈 콜아웃 줄 전체를 삭제한다. leading bar frame chrome의 object replacement는 source

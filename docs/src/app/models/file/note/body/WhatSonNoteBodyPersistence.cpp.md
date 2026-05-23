@@ -126,7 +126,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   matching start-anchor plus styled-span fallback that survives `QTextDocument::toHtml()` around generated style spans.
   The marker stores the canonical opening `<style ...>` token as renderer metadata, never as visible/plain text, so
   edited rich-text content can be converted back to source and wrapped with the original style attributes before
-  `.wsnbody` persistence.
+  `.wsnbody` persistence. Generated style spans quote `font-family` values so `QTextDocument` retains the selected
+  toolbar font family during render and round-trip.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
   style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized

@@ -662,14 +662,33 @@ namespace
         return false;
     }
 
-    bool styleBoundarySourcePositionForInsertion(
+    bool styleBoundarySourceRangeForVisibleEdit(
         const QString& bodySourceText,
-        const int editorInsertionPosition,
+        const int editorEditStartPosition,
+        const int editorEditEndPosition,
         const QString& insertedVisibleText,
-        int* outSourcePosition)
+        int* outSourceStartPosition,
+        int* outSourceEndPosition)
     {
+        if (outSourceStartPosition != nullptr)
+        {
+            *outSourceStartPosition = -1;
+        }
+        if (outSourceEndPosition != nullptr)
+        {
+            *outSourceEndPosition = -1;
+        }
+
+        const bool removesVisibleText = editorEditEndPosition > editorEditStartPosition;
+        const bool insertsVisibleText = !insertedVisibleText.isEmpty();
+        if (!removesVisibleText && !insertsVisibleText)
+        {
+            return false;
+        }
+
         bool matched = false;
-        int sourcePosition = -1;
+        int sourceStartPosition = -1;
+        int sourceEndPosition = -1;
         const bool exitsStyle = textContainsLineBreak(insertedVisibleText);
         const QVector<StyleSourceRange> ranges = styleSourceRanges(bodySourceText);
         for (const StyleSourceRange& range : ranges)
@@ -683,18 +702,73 @@ namespace
                 editorCursorPositionForSourcePosition(bodySourceText, range.contentStart);
             const int contentEditorEnd =
                 editorCursorPositionForSourcePosition(bodySourceText, range.contentEnd);
-            if (editorInsertionPosition == contentEditorEnd)
+
+            const bool removesInsideStyle =
+                removesVisibleText
+                && editorEditStartPosition >= contentEditorStart
+                && editorEditEndPosition <= contentEditorEnd
+                && editorEditStartPosition < contentEditorEnd
+                && editorEditEndPosition > contentEditorStart;
+            const bool insertsInsideStyle =
+                insertsVisibleText
+                && editorEditStartPosition >= contentEditorStart
+                && editorEditStartPosition <= contentEditorEnd;
+            if (!removesInsideStyle && !insertsInsideStyle)
             {
-                const int candidateSourcePosition = exitsStyle ? range.closingEnd : range.contentEnd;
-                sourcePosition = matched ? std::max(sourcePosition, candidateSourcePosition) : candidateSourcePosition;
+                continue;
+            }
+
+            int candidateSourceStart = -1;
+            int candidateSourceEnd = -1;
+            if (removesVisibleText)
+            {
+                candidateSourceStart =
+                    sourcePositionForEditorSelectionStart(bodySourceText, editorEditStartPosition);
+                candidateSourceEnd =
+                    sourcePositionForEditorSelectionEnd(bodySourceText, editorEditEndPosition);
+            }
+            else if (editorEditStartPosition == contentEditorEnd)
+            {
+                candidateSourceStart = exitsStyle ? range.closingEnd : range.contentEnd;
+                candidateSourceEnd = candidateSourceStart;
+            }
+            else if (editorEditStartPosition == contentEditorStart)
+            {
+                candidateSourceStart = exitsStyle ? range.openingStart : range.contentStart;
+                candidateSourceEnd = candidateSourceStart;
+            }
+            else
+            {
+                candidateSourceStart =
+                    sourcePositionForEditorSelectionEnd(bodySourceText, editorEditStartPosition);
+                candidateSourceEnd = candidateSourceStart;
+            }
+
+            if (candidateSourceStart < 0
+                || candidateSourceEnd < candidateSourceStart)
+            {
+                continue;
+            }
+
+            if (!matched)
+            {
+                sourceStartPosition = candidateSourceStart;
+                sourceEndPosition = candidateSourceEnd;
                 matched = true;
                 continue;
             }
-            if (editorInsertionPosition == contentEditorStart)
+
+            if (!removesVisibleText
+                && editorEditStartPosition == contentEditorEnd)
             {
-                const int candidateSourcePosition = exitsStyle ? range.openingStart : range.contentStart;
-                sourcePosition = matched ? std::min(sourcePosition, candidateSourcePosition) : candidateSourcePosition;
-                matched = true;
+                sourceStartPosition = std::max(sourceStartPosition, candidateSourceStart);
+                sourceEndPosition = sourceStartPosition;
+            }
+            else if (!removesVisibleText
+                     && editorEditStartPosition == contentEditorStart)
+            {
+                sourceStartPosition = std::min(sourceStartPosition, candidateSourceStart);
+                sourceEndPosition = sourceStartPosition;
             }
         }
 
@@ -702,14 +776,18 @@ namespace
         {
             return false;
         }
-        if (outSourcePosition != nullptr)
+        if (outSourceStartPosition != nullptr)
         {
-            *outSourcePosition = sourcePosition;
+            *outSourceStartPosition = sourceStartPosition;
+        }
+        if (outSourceEndPosition != nullptr)
+        {
+            *outSourceEndPosition = sourceEndPosition;
         }
         return true;
     }
 
-    bool mergeInsertionWithActiveStyleBoundaries(
+    bool mergeVisibleEditWithActiveStyleBoundaries(
         const QString& activeSourceText,
         const QString& editorSourceText,
         QString* outSourceText)
@@ -730,7 +808,7 @@ namespace
 
         const QString activeVisibleText = visibleTextForSourceText(normalizedActiveSourceText);
         const QString editorVisibleText = visibleTextForSourceText(normalizedEditorSourceText);
-        if (editorVisibleText.size() <= activeVisibleText.size())
+        if (editorVisibleText == activeVisibleText)
         {
             return false;
         }
@@ -752,37 +830,35 @@ namespace
             ++commonSuffixLength;
         }
 
-        const int removedVisibleLength =
-            activeVisibleText.size() - commonPrefixLength - commonSuffixLength;
-        if (removedVisibleLength != 0)
-        {
-            return false;
-        }
-
         const QString insertedVisibleText = editorVisibleText.mid(
             commonPrefixLength,
             editorVisibleText.size() - commonPrefixLength - commonSuffixLength);
-        if (insertedVisibleText.isEmpty())
+        const int removedVisibleStart = commonPrefixLength;
+        const int removedVisibleEnd = activeVisibleText.size() - commonSuffixLength;
+        if (insertedVisibleText.isEmpty()
+            && removedVisibleEnd <= removedVisibleStart)
         {
             return false;
         }
 
-        int insertionSourcePosition = -1;
-        if (!styleBoundarySourcePositionForInsertion(
+        int editSourceStartPosition = -1;
+        int editSourceEndPosition = -1;
+        if (!styleBoundarySourceRangeForVisibleEdit(
                 normalizedActiveSourceText,
                 commonPrefixLength,
+                removedVisibleEnd,
                 insertedVisibleText,
-                &insertionSourcePosition))
+                &editSourceStartPosition,
+                &editSourceEndPosition))
         {
-            insertionSourcePosition =
-                sourcePositionForEditorSelectionEnd(normalizedActiveSourceText, commonPrefixLength);
+            return false;
         }
 
         if (outSourceText != nullptr)
         {
-            *outSourceText = normalizedActiveSourceText.left(insertionSourcePosition)
+            *outSourceText = normalizedActiveSourceText.left(editSourceStartPosition)
                 + insertedVisibleText
-                + normalizedActiveSourceText.mid(insertionSourcePosition);
+                + normalizedActiveSourceText.mid(editSourceEndPosition);
         }
         return true;
     }
@@ -3261,7 +3337,7 @@ QString NoteEditorDocumentSession::bodySourceTextForEditorDocument(
             return activeSourceText;
         }
         QString styleBoundaryPreservedSourceText;
-        if (mergeInsertionWithActiveStyleBoundaries(
+        if (mergeVisibleEditWithActiveStyleBoundaries(
                 activeSourceText,
                 editorSourceText,
                 &styleBoundaryPreservedSourceText))

@@ -55,8 +55,8 @@ Declares the active note editor document session object.
   `<next />`/`<br>` as one logical newline. QML also passes `selectedText` so the session can repair a drifted RichText
   selection offset before mutating RAW source. Collapsed style selector commands expand to the current non-empty
   visible source line; an empty current line is rejected so the editor does not create and immediately lose a zero-width
-  `<style>` wrapper. Later plain editor raw pushes preserve existing style wrapper boundaries for text inserted at those
-  boundaries. Ordinary typing at the style content end remains inside the wrapper, while
+  `<style>` wrapper. Later plain editor raw pushes preserve existing style wrapper boundaries for inserted, deleted, or
+  replaced visible text inside the wrapper. Ordinary typing at the style content end remains inside the wrapper, while
   `handleStyleBoundaryKeyInSource(...)` handles Return/Enter as the explicit exit to the following source line.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
@@ -132,8 +132,9 @@ Declares the active note editor document session object.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW
   visible 범위를 다시 찾는다. style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체를
-  대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다. style 끝에서 이어 입력한 일반 문자는
-  wrapper 안에 보존하고, Return/Enter만 wrapper 밖 다음 source line으로 이동한다.
+  대상으로 하며, 빈 줄에서는 zero-width `<style>` wrapper를 만들지 않는다. 이후 marker 없는 plain editor payload가
+  들어와도 wrapper 내부의 삽입, 삭제, 치환은 active RAW의 `<style>` 안쪽 edit로 병합한다. style 끝에서 이어
+  입력한 일반 문자는 wrapper 안에 보존하고, Return/Enter만 wrapper 밖 다음 source line으로 이동한다.
 - `handleCalloutBoundaryKeyInSource(...)`는 콜아웃 Backspace key boundary를 처리한다. 콜아웃 content 시작점의
   Backspace는 콜아웃 wrapper를 제거하고 내용은 일반 source로 남기며, 빈 콜아웃 frame은 줄째 삭제한다.
   Return/Enter는 editor input filter가 이 세션으로 넘기지 않는다.

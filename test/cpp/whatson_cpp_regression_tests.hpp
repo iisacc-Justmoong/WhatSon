@@ -1318,6 +1318,7 @@ private slots:
     void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
     void noteEditorDocumentSession_boundaryEnterUsesCurrentEditorSnapshotAfterBackspace();
     void noteEditorDocumentSession_styleFontTypingContinuesInsideStyle();
+    void noteEditorDocumentSession_styleFontEditsPreserveWrapperFromPlainEditorPayload();
     void noteBodyPersistence_recoversNativeEmptyLineInsertion();
     void noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout();
     void noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush();

@@ -1,6 +1,8 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include <QTextBlock>
 #include <QTextDocument>
+#include <QTextFragment>
 #include <QVector>
 
 void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks()
@@ -135,12 +137,12 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
             QStringLiteral("note"),
             tokenSourceText);
 
-        QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+        QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-family:'Pretendard';")));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-size:%1px;").arg(expectation.pixelSize)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("font-weight:%1;").arg(expectation.weight)));
         QVERIFY(tokenEditorHtml.contains(QStringLiteral("line-height:%1px;").arg(expectation.lineHeight)));
         QVERIFY(tokenEditorHtml.contains(
-            QStringLiteral("<span style=\"font-family:Pretendard;font-size:%1px;font-weight:%2;line-height:%3px;\">")
+            QStringLiteral("<span style=\"font-family:'Pretendard';font-size:%1px;font-weight:%2;line-height:%3px;\">")
                 .arg(expectation.pixelSize)
                 .arg(expectation.weight)
                 .arg(expectation.lineHeight)));
@@ -163,7 +165,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     const QString bodyFallbackEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("note"),
         bodyFallbackSourceText);
-    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-family:'Pretendard';")));
     QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-size:12px;")));
     QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("font-weight:500;")));
     QVERIFY(bodyFallbackEditorHtml.contains(QStringLiteral("line-height:12px;")));
@@ -188,7 +190,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
         QStringLiteral("note"),
         sourceText);
     QVERIFY(editorHtml.contains(QStringLiteral("<!--whatson-style-source:")));
-    QVERIFY(editorHtml.contains(QStringLiteral("font-family:Pretendard;")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-family:'Pretendard';")));
     QVERIFY(editorHtml.contains(QStringLiteral("font-weight:600;")));
     QVERIFY(editorHtml.contains(QStringLiteral("font-size:14px;")));
     QVERIFY(editorHtml.contains(QStringLiteral("color:#F3F5F8;")));
@@ -200,9 +202,78 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
         sourceText);
 
+    const QString fontTypingSourceText =
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled</style>");
+    QTextDocument fontTypingDocument;
+    fontTypingDocument.setHtml(WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        fontTypingSourceText));
+    QTextCursor fontTypingCursor(&fontTypingDocument);
+    fontTypingCursor.setPosition(QStringLiteral("Alpha Styled").size());
+    fontTypingCursor.insertText(QStringLiteral("!"));
+
+    QString typedFamily;
+    for (QTextBlock block = fontTypingDocument.begin(); block.isValid(); block = block.next())
+    {
+        for (QTextBlock::iterator fragmentIt = block.begin(); !fragmentIt.atEnd(); ++fragmentIt)
+        {
+            const QTextFragment fragment = fragmentIt.fragment();
+            if (!fragment.isValid() || !fragment.text().contains(QStringLiteral("!")))
+            {
+                continue;
+            }
+            const QVariant typedFamilies = fragment.charFormat().fontFamilies();
+            const QStringList typedFamilyList = typedFamilies.toStringList();
+            typedFamily = typedFamilyList.isEmpty()
+                ? typedFamilies.toString()
+                : typedFamilyList.constFirst();
+            if (typedFamily.isEmpty())
+            {
+                typedFamily = fragment.charFormat().font().family();
+            }
+        }
+    }
+    QVERIFY2(
+        typedFamily == QStringLiteral("American Typewriter"),
+        qPrintable(fontTypingDocument.toHtml()));
+
     QTextDocument editorDocument;
     editorDocument.setHtml(editorHtml);
     QVERIFY(!editorDocument.toPlainText().contains(QChar(0x200B)));
+
+    const QString fontSourceText =
+        QStringLiteral("Alpha <style font=\"American Typewriter\">Styled text</style>");
+    const QString fontEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        fontSourceText);
+    QVERIFY(fontEditorHtml.contains(QStringLiteral("font-family:'American Typewriter';")));
+
+    QTextDocument fontEditorDocument;
+    fontEditorDocument.setHtml(fontEditorHtml);
+    QString renderedFamily;
+    for (QTextBlock block = fontEditorDocument.begin(); block.isValid(); block = block.next())
+    {
+        for (QTextBlock::iterator fragmentIt = block.begin(); !fragmentIt.atEnd(); ++fragmentIt)
+        {
+            const QTextFragment fragment = fragmentIt.fragment();
+            if (!fragment.isValid() || !fragment.text().contains(QStringLiteral("tyled text")))
+            {
+                continue;
+            }
+            const QVariant renderedFamilies = fragment.charFormat().fontFamilies();
+            const QStringList renderedFamilyList = renderedFamilies.toStringList();
+            renderedFamily = renderedFamilyList.isEmpty()
+                ? renderedFamilies.toString()
+                : renderedFamilyList.constFirst();
+            if (renderedFamily.isEmpty())
+            {
+                renderedFamily = fragment.charFormat().font().family();
+            }
+        }
+    }
+    QVERIFY2(
+        renderedFamily == QStringLiteral("American Typewriter"),
+        qPrintable(fontEditorDocument.toHtml()));
     QVERIFY(editorDocument.toPlainText().contains(QStringLiteral("Styled text")));
 
     QTextDocument roundTrippedEditorDocument;
@@ -230,6 +301,20 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversQtTextEditSerialized
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), qtTextEditHtml),
         QStringLiteral("<style style=\"Title\">Alpha Beta</style>"));
+
+    const QString fontQtTextEditHtml = QStringLiteral(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">"
+        "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /></head>"
+        "<body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\">"
+        "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px;"
+        " -qt-block-indent:0; text-indent:0px;\">"
+        "<a name=\"whatson-style-source:3c7374796c6520666f6e743d22416d65726963616e2054797065777269746572223e\"></a>"
+        "<span style=\" font-family:'American Typewriter'; font-size:12px; font-weight:500;\">Styled</span>"
+        "<span style=\" font-family:'American Typewriter'; font-size:12px; font-weight:500;\"> font</span>"
+        "</p></body></html>");
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), fontQtTextEditHtml),
+        QStringLiteral("<style font=\"American Typewriter\">Styled font</style>"));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping()

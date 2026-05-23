@@ -28,7 +28,6 @@ namespace
         value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
         value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
         value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
-        value.replace(QStringLiteral("'"), QStringLiteral("&#39;"));
         return value;
     }
 
@@ -46,6 +45,18 @@ namespace
         value.remove(QLatin1Char('{'));
         value.remove(QLatin1Char('}'));
         return value.simplified();
+    }
+
+    QString quotedCssStringValue(QString value)
+    {
+        value = sanitizedCssValue(value);
+        if (value.isEmpty())
+        {
+            return {};
+        }
+        value.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+        value.replace(QLatin1Char('\''), QStringLiteral("\\'"));
+        return QLatin1Char('\'') + value + QLatin1Char('\'');
     }
 
     QString integerCssValue(const QString& value)
@@ -380,7 +391,7 @@ namespace WhatSon::EditorComponent
             lvrsTextStyleTokenFromName(attributeValueFromRawToken(rawTagText, QStringLiteral("style")));
         if (styleToken.valid)
         {
-            declarations.push_back(QStringLiteral("font-family:%1;").arg(defaultEditorFontFamily()));
+            declarations.push_back(QStringLiteral("font-family:%1;").arg(quotedCssStringValue(defaultEditorFontFamily())));
             declarations.push_back(QStringLiteral("font-size:%1px;").arg(styleToken.pixelSize));
             declarations.push_back(QStringLiteral("font-weight:%1;").arg(styleToken.weight));
             declarations.push_back(QStringLiteral("line-height:%1px;").arg(styleToken.lineHeight));
@@ -396,7 +407,12 @@ namespace WhatSon::EditorComponent
             }
         };
 
-        appendStringDeclaration(QStringLiteral("font"), QStringLiteral("font-family"));
+        const QString fontFamily = quotedCssStringValue(
+            attributeValueFromRawToken(rawTagText, QStringLiteral("font")));
+        if (!fontFamily.isEmpty())
+        {
+            declarations.push_back(QStringLiteral("font-family:%1;").arg(fontFamily));
+        }
         appendStringDeclaration(QStringLiteral("weight"), QStringLiteral("font-weight"));
 
         const QString size = integerCssValue(attributeValueFromRawToken(rawTagText, QStringLiteral("size")));

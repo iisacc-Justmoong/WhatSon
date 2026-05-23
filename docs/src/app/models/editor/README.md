@@ -103,10 +103,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   later user typing supplies a newer validated modified-count RAW payload, note departure persists that active canonical
   source. `<style>` wrappers are invisible to the session's source-visible text mapper, so a later LVRS-normalized
   rich-text save that has the same visible characters but lacks style markers is not allowed to overwrite the active
-  styled RAW source with a plain paragraph. Plain editor raw pushes that insert text at a pre-existing style boundary
-  are merged into the active RAW source according to the active wrapper boundary, so style marker positions do not drift
-  unless a style selector or font selector command explicitly changes them. Text typed after a font/style selector stays
-  inside the wrapper; Enter is the only style exit key.
+  styled RAW source with a plain paragraph. Plain editor raw pushes that insert, delete, or replace visible text inside a
+  pre-existing style wrapper are merged into the active RAW source according to the active wrapper boundary, so style
+  marker positions do not drift or disappear unless a style selector or font selector command explicitly changes them.
+  Text typed after a font/style selector stays inside the wrapper; Enter is the only style exit key.
   The gutter uses the session's parsed
   source line count as
   its delegate count; the QML `TextEditor` wrapper may only provide rendered placement for those source lines and must
@@ -131,8 +131,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   `Description`, `Caption`, `Footnote`) to the same LVRS token-aligned Pretendard typography recipe used by the toolbar
   style-menu previews, treats an empty `style` attribute as Body, projects explicit attributes such as `font`, `weight`,
   `size`, `color`, `background`, `align`, and existing `height` into editor CSS, and emits/recovers the marker-backed
-  `<span>` used by the LVRS text editor path. Token-derived projection does not add per-style colors; styled spans
-  inherit the editor body color unless a source `color` attribute is present.
+  `<span>` used by the LVRS text editor path. Font-family CSS values are quoted in that span so selected system fonts,
+  including multi-word families, render as the requested family in Qt RichText instead of falling through to the editor
+  default. Token-derived projection does not add per-style colors; styled spans inherit the editor body color unless a
+  source `color` attribute is present.
 - `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)` uses the same style-source selection mapping as the
   style selector, then inserts `<style font="...">...</style>` through `SetTag`. Active notes stage the projected editor
   HTML into the mounted `.wsnsource` file and persist the canonical `.wsnbody` body immediately.
@@ -164,10 +166,10 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   유효한 style mutation은 active editor session file에 즉시 stage되고 실제 `.wsnbody` RAW body에도 바로 persist되어
   LVRS idle sync가 이전 paragraph snapshot으로 되돌리는 레이스를 막는다. source-visible text 계산에서도
   `<style>` wrapper를 invisible tag로 취급하여, LVRS가 marker 없는 동등 가시 텍스트를 내보내도 active styled
-  RAW source가 plain paragraph로 평탄화되지 않는다. 기존 style boundary에서 만들어진 plain RAW push는 active RAW
-  source의 wrapper 경계를 기준으로 병합하므로, style selector나 font selector 명령이 아닌 일반 입력만으로
-  `<style>` 위치가 밀리지 않는다. font/style selector 직후 이어 입력한 텍스트는 wrapper 안에 남고, Enter만 wrapper
-  밖으로 나가는 semantic boundary key다.
+  RAW source가 plain paragraph로 평탄화되지 않는다. 기존 style wrapper 안쪽에서 만들어진 marker 없는 plain RAW
+  push는 삽입, 삭제, 치환 모두 active RAW source의 wrapper 경계를 기준으로 병합하므로, style selector나 font selector
+  명령이 아닌 일반 입력이나 Backspace만으로 `<style>` 위치가 밀리거나 사라지지 않는다. font/style selector 직후
+  이어 입력한 텍스트는 wrapper 안에 남고, Enter만 wrapper 밖으로 나가는 semantic boundary key다.
 - 현재: `TagInsertionWriter`는 `SetTag` 결과를 실제 로컬 `.wsnbody`에 저장하는 태그 삽입 command 객체다.
 - 현재: `SetProperty`는 문자열 기반 동적 속성명과 자동 추론된 값 타입으로 태그 속성을 설정한다.
 - 현재: `GetProperty`는 태그 속성을 조회해 인앱 키/값 상태로 저장한다.

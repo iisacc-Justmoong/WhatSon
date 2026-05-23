@@ -15,7 +15,8 @@ Implements the editor-domain projection and recovery helpers for the proprietary
   `Description`, `Caption`, and `Footnote`. Empty or missing `style` attributes normalize to `Body`; inserting `Body`
   therefore uses the bare `<style>` opening token.
 - Explicit attributes (`font`, `weight`, `size`, `color`, `background`, `align`, and existing `height`) override or
-  extend the token projection when editor HTML is generated.
+  extend the token projection when editor HTML is generated. `font` values are emitted as quoted CSS `font-family`
+  strings so Qt RichText keeps the selected family instead of falling back to the editor default.
 - Toolbar font-family values are normalized and escaped here before `SetTag` creates `<style font="...">` source
   wrappers.
 - Editor projection emits `<!--whatson-style-source:...-->` metadata plus a styled `<span>` so the original opening

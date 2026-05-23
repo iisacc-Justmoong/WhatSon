@@ -711,7 +711,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceI
         selectedFontResult.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("Alpha <style font=\"Menlo\">Beta</style>\nGamma"));
     QVERIFY(selectedFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
-        QStringLiteral("font-family:Menlo;")));
+        QStringLiteral("font-family:'Menlo';")));
     QCOMPARE(selectedFontResult.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Menlo"));
 
     const QVariantMap currentLineFontResult = session.insertStyleFontTagIntoSource(
@@ -724,7 +724,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceI
         currentLineFontResult.value(QStringLiteral("bodySourceText")).toString(),
         QStringLiteral("<style font=\"Noto Sans CJK KR\">Alpha Beta</style>\nGamma"));
     QVERIFY(currentLineFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
-        QStringLiteral("font-family:Noto Sans CJK KR;")));
+        QStringLiteral("font-family:'Noto Sans CJK KR';")));
     QCOMPARE(currentLineFontResult.value(QStringLiteral("editorSelectionStart")).toInt(), 0);
     QCOMPARE(currentLineFontResult.value(QStringLiteral("editorSelectionLength")).toInt(), QStringLiteral("Alpha Beta").size());
 
@@ -737,7 +737,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceI
     QVERIFY(escapedFontResult.value(QStringLiteral("bodySourceText")).toString().contains(
         QStringLiteral("<style font=\"A&amp;B &quot;Serif&quot;\">Beta</style>")));
     QVERIFY(escapedFontResult.value(QStringLiteral("editorDocumentText")).toString().contains(
-        QStringLiteral("font-family:A&amp;B &quot;Serif&quot;;")));
+        QStringLiteral("font-family:'A&amp;B &quot;Serif&quot;';")));
 
     const QVariantMap invalidFontResult = session.insertStyleFontTagIntoSource(
         QStringLiteral(""),
@@ -1955,6 +1955,87 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_styleFontTypingContinu
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
         QStringLiteral("Alpha <style font=\"Menlo\">Beta continues</style>\nGamma"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_styleFontEditsPreserveWrapperFromPlainEditorPayload()
+{
+    QTemporaryDir workspaceDirectory;
+    QVERIFY(workspaceDirectory.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("style-font-plain-payload-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDirectory.path(),
+        noteId,
+        QStringLiteral("Alpha Beta\nGamma"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    QSignalSpy fontPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    const QVariantMap fontInsertion = session.insertStyleFontTagIntoSource(
+        QStringLiteral("Menlo"),
+        readUtf8FileForNoteEditorSessionTest(session.editorFilePath()),
+        QStringLiteral("Alpha ").size(),
+        QStringLiteral("Beta").size(),
+        QStringLiteral("Beta"));
+    QVERIFY(fontInsertion.value(QStringLiteral("valid")).toBool());
+    QTRY_COMPARE_WITH_TIMEOUT(fontPersistedSpy.count(), 1, 3000);
+    QCOMPARE(fontPersistedSpy.takeFirst().at(1).toBool(), true);
+    QCOMPARE(
+        fontInsertion.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style font=\"Menlo\">Beta</style>\nGamma"));
+
+    const QString plainInitialBackspaceEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha Bet\nGamma"));
+    QSignalSpy initialBackspacePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 2, plainInitialBackspaceEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(initialBackspacePersistedSpy.count(), 1, 3000);
+    QCOMPARE(initialBackspacePersistedSpy.takeFirst().at(1).toBool(), true);
+
+    QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha <style font=\"Menlo\">Bet</style>\nGamma"));
+
+    const QString plainTypedEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha Bet continues\nGamma"));
+    QSignalSpy typedPersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 3, plainTypedEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(typedPersistedSpy.count(), 1, 3000);
+    QCOMPARE(typedPersistedSpy.takeFirst().at(1).toBool(), true);
+
+    persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha <style font=\"Menlo\">Bet continues</style>\nGamma"));
+
+    const QString plainBackspaceEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        noteId,
+        QStringLiteral("Alpha Bet continue\nGamma"));
+    QSignalSpy backspacePersistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(session.editorFilePath(), 4, plainBackspaceEditorHtml);
+    QTRY_COMPARE_WITH_TIMEOUT(backspacePersistedSpy.count(), 1, 3000);
+    QCOMPARE(backspacePersistedSpy.takeFirst().at(1).toBool(), true);
+
+    persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("Alpha <style font=\"Menlo\">Bet continue</style>\nGamma"));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_recoversNativeEmptyLineInsertion()
