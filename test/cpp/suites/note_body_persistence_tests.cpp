@@ -309,8 +309,8 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversQtTextEditSerialized
         "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px;"
         " -qt-block-indent:0; text-indent:0px;\">"
         "<a name=\"whatson-style-source:3c7374796c6520666f6e743d22416d65726963616e2054797065777269746572223e\"></a>"
-        "<span style=\" font-family:'American Typewriter'; font-size:12px; font-weight:500;\">Styled</span>"
-        "<span style=\" font-family:'American Typewriter'; font-size:12px; font-weight:500;\"> font</span>"
+        "<span style=\" font-family:'American Typewriter';\">Styled</span>"
+        "<span style=\" font-family:'American Typewriter';\"> font</span>"
         "</p></body></html>");
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), fontQtTextEditHtml),

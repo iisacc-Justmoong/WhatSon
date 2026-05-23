@@ -75,9 +75,9 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
         "color=\"#F3F5F8\" background=\"#262728\" align=\"center\" height=1.25>");
     const QString cssDeclaration = Style::cssDeclarationFromRawToken(rawOpening);
     QVERIFY(cssDeclaration.contains(QStringLiteral("font-family:'Pretendard';")));
-    QVERIFY(Style::cssDeclarationFromRawToken(
-        QStringLiteral("<style font=\"American Typewriter\">"))
-        .contains(QStringLiteral("font-family:'American Typewriter';")));
+    QCOMPARE(
+        Style::cssDeclarationFromRawToken(QStringLiteral("<style font=\"American Typewriter\">")),
+        QStringLiteral("font-family:'American Typewriter';"));
     QVERIFY(cssDeclaration.contains(QStringLiteral("font-size:14px;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("font-weight:600;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("color:#F3F5F8;")));
@@ -93,6 +93,9 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
     QVERIFY(Style::spanMatchesOpeningToken(
         QStringLiteral("<span style=\"font-family:'Pretendard';font-size:14px;font-weight:600;line-height:1.25;color:#F3F5F8;background-color:#262728;text-align:center;\">"),
         rawOpening));
+    QVERIFY(Style::spanMatchesOpeningToken(
+        QStringLiteral("<span style=\"font-family:'American Typewriter';\">"),
+        QStringLiteral("<style font=\"American Typewriter\">")));
 
     const WhatSon::EditorComponent::StyleSourceBaseline baseline =
         Style::sourceBaselineFromOpeningToken(rawOpening);

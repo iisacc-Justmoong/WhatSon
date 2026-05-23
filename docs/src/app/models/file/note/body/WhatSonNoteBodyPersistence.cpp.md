@@ -127,7 +127,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   The marker stores the canonical opening `<style ...>` token as renderer metadata, never as visible/plain text, so
   edited rich-text content can be converted back to source and wrapped with the original style attributes before
   `.wsnbody` persistence. Generated style spans quote `font-family` values so `QTextDocument` retains the selected
-  toolbar font family during render and round-trip.
+  toolbar font family during render and round-trip. Font-only style tokens recover from family-only Qt spans without
+  requiring implicit Body token metrics such as font size or weight.
 - If Qt/LVRS serializes the editor document after those comment and data markers have been stripped, the inverse
   boundary still recognizes a block background or text fragments carrying the callout's distinctive `#262728` frame
   style and persists that content as `<callout>...</callout>` instead of degrading it into plain paragraphs. Serialized
@@ -211,6 +212,8 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   save/load or parse/re-render round-trip; the projection must not collapse the stored spaces back into one HTML gap.
 - A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
+- A font-only style wrapper such as `<style font="American Typewriter">...</style>` must survive marker-anchor fallback
+  recovery even when Qt serializes that run with only a `font-family` declaration.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
   `<break/>`, and rich-text projection must show a logical editor break line instead of literal tag text.
 - A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and

@@ -13,7 +13,8 @@ Declares the editor-domain component contract for the proprietary `.wsnbody` `<s
 - `Style::normalizedFontFamilyAttributeValue(...)` and `Style::openingTokenForFontFamily(...)` own toolbar font
   selector value normalization and `<style font="...">` source token generation. CSS projection quotes that family
   value in the generated `font-family` declaration so multi-word system fonts render as the selected family in
-  `QTextDocument`.
+  `QTextDocument`. A font-only source token is treated as family-only for projection and recovery; LVRS text-token
+  metrics are required only when a `style` attribute is present or the bare `<style>` Body fallback is used.
 - `StyleToken` captures the LVRS text token metrics used by editor projection.
 - `StyleSourceBaseline` captures the formatting baseline used when rich editor spans are converted back to canonical
   source tags.

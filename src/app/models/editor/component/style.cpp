@@ -156,6 +156,15 @@ namespace
         return resolvedValue;
     }
 
+    bool rawTokenHasAttribute(const QString& rawTagText, const QString& attributeName)
+    {
+        const QRegularExpression attributePattern(
+            QStringLiteral("\\b%1\\s*=")
+                .arg(QRegularExpression::escape(attributeName)),
+            QRegularExpression::CaseInsensitiveOption);
+        return attributePattern.match(rawTagText).hasMatch();
+    }
+
     double cssNumericValue(QString value, bool* ok)
     {
         value = value.trimmed().toCaseFolded();
@@ -387,9 +396,11 @@ namespace WhatSon::EditorComponent
     QString Style::cssDeclarationFromRawToken(const QString& rawTagText)
     {
         QStringList declarations;
+        const bool hasStyleAttribute = rawTokenHasAttribute(rawTagText, QStringLiteral("style"));
+        const bool hasFontAttribute = rawTokenHasAttribute(rawTagText, QStringLiteral("font"));
         const StyleToken styleToken =
             lvrsTextStyleTokenFromName(attributeValueFromRawToken(rawTagText, QStringLiteral("style")));
-        if (styleToken.valid)
+        if (styleToken.valid && (hasStyleAttribute || !hasFontAttribute))
         {
             declarations.push_back(QStringLiteral("font-family:%1;").arg(quotedCssStringValue(defaultEditorFontFamily())));
             declarations.push_back(QStringLiteral("font-size:%1px;").arg(styleToken.pixelSize));
@@ -589,9 +600,14 @@ namespace WhatSon::EditorComponent
             return weightValue(actualWeight) >= weightValue(expected);
         };
 
-        return matchIdentifier(QStringLiteral("font-family"), true)
-            && matchNumber(QStringLiteral("font-size"), true)
-            && matchWeight(true)
+        const bool hasStyleAttribute = rawTokenHasAttribute(openingToken, QStringLiteral("style"));
+        const bool hasFontAttribute = rawTokenHasAttribute(openingToken, QStringLiteral("font"));
+        const bool tokenMetricsRequired = hasStyleAttribute || !hasFontAttribute;
+        const bool fontFamilyRequired = hasFontAttribute || tokenMetricsRequired;
+
+        return matchIdentifier(QStringLiteral("font-family"), fontFamilyRequired)
+            && matchNumber(QStringLiteral("font-size"), tokenMetricsRequired)
+            && matchWeight(tokenMetricsRequired)
             && matchColor(QStringLiteral("color"), true)
             && matchColor(QStringLiteral("background-color"), true)
             && matchIdentifier(QStringLiteral("text-align"), false)
@@ -602,7 +618,11 @@ namespace WhatSon::EditorComponent
     StyleSourceBaseline Style::sourceBaselineFromOpeningToken(const QString& openingToken)
     {
         const QString styleValue = attributeValueFromRawToken(openingToken, QStringLiteral("style"));
-        const StyleToken styleToken = lvrsTextStyleTokenFromName(styleValue);
+        const bool hasStyleAttribute = rawTokenHasAttribute(openingToken, QStringLiteral("style"));
+        const bool hasFontAttribute = rawTokenHasAttribute(openingToken, QStringLiteral("font"));
+        const StyleToken styleToken = (hasStyleAttribute || !hasFontAttribute)
+            ? lvrsTextStyleTokenFromName(styleValue)
+            : StyleToken{};
         const QString explicitWeight = attributeValueFromRawToken(openingToken, QStringLiteral("weight"));
         return {
             false,
