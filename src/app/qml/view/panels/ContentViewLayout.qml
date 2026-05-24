@@ -126,6 +126,9 @@ Item {
     property var weekCalendarController: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarController: null
+    readonly property int editorToolbarStyleContextRefreshInterval: 48
+    property bool editorToolbarStyleContextRefreshQueued: false
+    property bool editorToolbarStyleContextRefreshArmQueued: false
 
     signal dayCalendarOverlayCloseRequested
     signal monthCalendarOverlayCloseRequested
@@ -265,6 +268,7 @@ Item {
                     Number(formatResult.cursorPosition) || 0);
         if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
         }
         return replaced;
     }
@@ -294,7 +298,7 @@ Item {
                     Number(styleResult.cursorPosition) || 0);
         if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
-            contentViewLayout.refreshEditorToolbarStyleContext();
+            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
             contentViewLayout.requestViewHook("editor.toolbar.style." + String(styleValue));
         }
         return replaced;
@@ -325,12 +329,46 @@ Item {
                     Number(styleResult.cursorPosition) || 0);
         if (replaced) {
             contentViewLayout.clearEditorFormatSelectionSnapshot();
-            contentViewLayout.refreshEditorToolbarStyleContext();
+            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
             contentViewLayout.requestViewHook("editor.toolbar.font." + String(fontFamily));
         }
         return replaced;
     }
+    function applyEditorStyleTagFontSize(fontSize, allowSelectionSnapshot) {
+        if (!contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.noteEditorSession.insertStyleFontSizeTagIntoSource === undefined)
+            return false;
+
+        const selectionState = contentViewLayout.editorFormatSelectionForCommand(
+                    Boolean(allowSelectionSnapshot));
+        const styleResult = contentViewLayout.noteEditorSession.insertStyleFontSizeTagIntoSource(
+                    fontSize,
+                    selectionState.documentText,
+                    selectionState.selectionStart,
+                    selectionState.selectionLength,
+                    selectionState.selectedText);
+        if (!styleResult || !Boolean(styleResult.valid))
+            return false;
+
+        const editorDocumentText = styleResult.editorDocumentText !== undefined
+                && styleResult.editorDocumentText !== null
+                ? String(styleResult.editorDocumentText)
+                : String(styleResult.bodySourceText);
+        const replaced = contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText,
+                    Number(styleResult.cursorPosition) || 0);
+        if (replaced) {
+            contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
+            contentViewLayout.requestViewHook("editor.toolbar.font-size." + String(fontSize));
+        }
+        return replaced;
+    }
     function refreshEditorToolbarStyleContext() {
+        contentViewLayout.editorToolbarStyleContextRefreshQueued = false;
+        contentViewLayout.editorToolbarStyleContextRefreshArmQueued = false;
+        editorToolbarStyleContextRefreshTimer.stop();
         if (!contentEditorToolbar || contentEditorToolbar.applyStyleContext === undefined)
             return false;
 
@@ -352,6 +390,28 @@ Item {
         }
 
         contentEditorToolbar.applyStyleContext(styleContext);
+        return true;
+    }
+    function requestEditorToolbarStyleContextRefresh(immediate) {
+        if (Boolean(immediate))
+            return contentViewLayout.refreshEditorToolbarStyleContext();
+
+        if (contentViewLayout.editorToolbarStyleContextRefreshQueued)
+            return true;
+
+        contentViewLayout.editorToolbarStyleContextRefreshQueued = true;
+        if (!contentViewLayout.editorToolbarStyleContextRefreshArmQueued) {
+            contentViewLayout.editorToolbarStyleContextRefreshArmQueued = true;
+            Qt.callLater(contentViewLayout.armEditorToolbarStyleContextRefresh);
+        }
+        return true;
+    }
+    function armEditorToolbarStyleContextRefresh() {
+        contentViewLayout.editorToolbarStyleContextRefreshArmQueued = false;
+        if (!contentViewLayout.editorToolbarStyleContextRefreshQueued)
+            return false;
+
+        editorToolbarStyleContextRefreshTimer.restart();
         return true;
     }
     function rememberEditorFormatSelectionSnapshot() {
@@ -481,6 +541,15 @@ Item {
     Layout.fillHeight: true
     Layout.fillWidth: true
 
+    Timer {
+        id: editorToolbarStyleContextRefreshTimer
+
+        interval: contentViewLayout.editorToolbarStyleContextRefreshInterval
+        repeat: false
+
+        onTriggered: contentViewLayout.refreshEditorToolbarStyleContext()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: contentViewLayout.displayColor
@@ -510,6 +579,9 @@ Item {
                 }
                 onFontFamilyRequested: function(fontFamily) {
                     contentViewLayout.applyEditorStyleTagFont(fontFamily);
+                }
+                onFontSizeRequested: function(fontSize) {
+                    contentViewLayout.applyEditorStyleTagFontSize(fontSize);
                 }
                 onToolbarActionRequested: function(actionName) {
                     contentViewLayout.requestViewHook(actionName);
@@ -569,11 +641,11 @@ Item {
 
                         onReadFinished: function(path) {
                             contentViewLayout.markEditorSessionFileReadyForRawPush(path);
-                            contentViewLayout.refreshEditorToolbarStyleContext();
+                            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
                         }
                         onTextEdited: function() {
                             contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
-                            contentViewLayout.refreshEditorToolbarStyleContext();
+                            contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
                         }
                         onSyncFinished: function(path) {
                             const syncedPath = path === undefined || path === null ? "" : String(path).trim();
@@ -594,13 +666,13 @@ Item {
                         }
                         onEditorPlainTextRevisionChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
-                            contentViewLayout.refreshEditorToolbarStyleContext();
+                            contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
                         }
                         onEditorDocumentTextChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
-                            contentViewLayout.refreshEditorToolbarStyleContext();
+                            contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
                         }
-                        onCursorPositionChanged: contentViewLayout.refreshEditorToolbarStyleContext()
+                        onCursorPositionChanged: contentViewLayout.requestEditorToolbarStyleContextRefresh(false)
                         onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                         onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()
                         onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()

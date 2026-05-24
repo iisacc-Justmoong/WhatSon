@@ -25,6 +25,15 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
     QCOMPARE(Style::openingTokenForStyleAttributeValue(QStringLiteral("Title")), QStringLiteral("<style style=\"Title\">"));
     QCOMPARE(Style::openingTokenForStyleAttributeValue(QStringLiteral("Body")), QStringLiteral("<style>"));
     QCOMPARE(Style::openingTokenForStyleAttributeValue(QStringLiteral("Footnote")), QStringLiteral("<style style=\"Footnote\">"));
+    QCOMPARE(Style::normalizedFontSizeAttributeValue(QStringLiteral(" 018 ")), QStringLiteral("18"));
+    QCOMPARE(Style::normalizedFontSizeAttributeValue(QStringLiteral("0")), QString());
+    QCOMPARE(Style::normalizedFontSizeAttributeValue(QStringLiteral("18px")), QString());
+    QCOMPARE(Style::openingTokenForFontSize(QStringLiteral("18")), QStringLiteral("<style size=\"18\">"));
+    QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral("bold")), QStringLiteral("900"));
+    QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral("regular")), QStringLiteral("400"));
+    QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral(" 700 ")), QStringLiteral("700"));
+    QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral("heavy")), QString());
+    QCOMPARE(Style::openingTokenForFontWeight(QStringLiteral("bold")), QStringLiteral("<style weight=\"900\">"));
 
     struct StyleTokenExpectation final
     {
@@ -80,6 +89,7 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
         QStringLiteral("font-family:'American Typewriter';"));
     QVERIFY(cssDeclaration.contains(QStringLiteral("font-size:14px;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("font-weight:600;")));
+    QVERIFY(!cssDeclaration.contains(QStringLiteral("font-weight:700;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("color:#F3F5F8;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("background-color:#262728;")));
     QVERIFY(cssDeclaration.contains(QStringLiteral("text-align:center;")));
@@ -96,6 +106,12 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
     QVERIFY(Style::spanMatchesOpeningToken(
         QStringLiteral("<span style=\"font-family:'American Typewriter';\">"),
         QStringLiteral("<style font=\"American Typewriter\">")));
+
+    const QString boldWeightCss = Style::cssDeclarationFromRawToken(QStringLiteral("<style weight=\"900\">"));
+    QVERIFY(boldWeightCss.contains(QStringLiteral("font-family:'Pretendard';")));
+    QVERIFY(boldWeightCss.contains(QStringLiteral("font-size:12px;")));
+    QVERIFY(!boldWeightCss.contains(QStringLiteral("font-weight:500;")));
+    QVERIFY(boldWeightCss.contains(QStringLiteral("font-weight:900;")));
 
     const WhatSon::EditorComponent::StyleSourceBaseline baseline =
         Style::sourceBaselineFromOpeningToken(rawOpening);

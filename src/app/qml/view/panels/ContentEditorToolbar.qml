@@ -48,6 +48,31 @@ LV.HStack {
         "Caption",
         "Footnote"
     ]
+    readonly property var fontSizeValues: [
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "20",
+        "22",
+        "24",
+        "26",
+        "28",
+        "32",
+        "36",
+        "40",
+        "48",
+        "56",
+        "64",
+        "72"
+    ]
     property bool editorReadOnly: false
     property var fontFamilyProvider: null
     property string selectedFontFamily: "Pretendard"
@@ -55,8 +80,14 @@ LV.HStack {
     property string selectedFontWeightValue: "Medium"
     property string selectedLineHeightValue: "12"
     property string selectedStyleTagStyleValue: "Title"
+    property bool boldActive: false
+    property bool italicActive: false
+    property bool underlineActive: false
+    property bool strikethroughActive: false
+    property bool highlightActive: false
 
     signal fontFamilyRequested(string fontFamily)
+    signal fontSizeRequested(string fontSize)
     signal formatTagRequested(string tagName)
     signal styleTagStyleRequested(string styleValue)
     signal toolbarActionRequested(string actionName)
@@ -128,6 +159,27 @@ LV.HStack {
         return value.length > 0 ? value : fallbackValue;
     }
 
+    function styleContextBool(styleContext, key) {
+        return !!(styleContext && styleContext[key] === true);
+    }
+
+    function formatTagActive(tagName) {
+        const normalizedTagName = tagName === undefined || tagName === null
+                ? ""
+                : String(tagName).trim().toLowerCase();
+        if (normalizedTagName === "bold")
+            return editorToolbar.boldActive;
+        if (normalizedTagName === "italic")
+            return editorToolbar.italicActive;
+        if (normalizedTagName === "underline")
+            return editorToolbar.underlineActive;
+        if (normalizedTagName === "strikethrough")
+            return editorToolbar.strikethroughActive;
+        if (normalizedTagName === "highlight")
+            return editorToolbar.highlightActive;
+        return false;
+    }
+
     function applyStyleContext(styleContext) {
         editorToolbar.selectedStyleTagStyleValue = editorToolbar.styleContextString(
                     styleContext,
@@ -149,6 +201,84 @@ LV.HStack {
                     styleContext,
                     "lineHeight",
                     "12");
+        editorToolbar.boldActive = editorToolbar.styleContextBool(styleContext, "boldActive");
+        editorToolbar.italicActive = editorToolbar.styleContextBool(styleContext, "italicActive");
+        editorToolbar.underlineActive = editorToolbar.styleContextBool(styleContext, "underlineActive");
+        editorToolbar.strikethroughActive = editorToolbar.styleContextBool(styleContext, "strikethroughActive");
+        editorToolbar.highlightActive = editorToolbar.styleContextBool(styleContext, "highlightActive");
+    }
+
+    function normalizedFontSizeValue(value) {
+        const rawValue = value === undefined || value === null
+                ? ""
+                : String(value).trim();
+        if (rawValue.length === 0 || !/^[0-9]+$/.test(rawValue))
+            return "";
+        const numericValue = Math.round(Number(rawValue) || 0);
+        if (numericValue <= 0 || numericValue > 400)
+            return "";
+        return String(numericValue);
+    }
+
+    function fontSizeMenuItems() {
+        const result = [];
+        for (let valueIndex = 0; valueIndex < editorToolbar.fontSizeValues.length; ++valueIndex) {
+            const fontSize = String(editorToolbar.fontSizeValues[valueIndex]);
+            result.push({
+                id: "style-font-size-" + fontSize,
+                label: fontSize,
+                fontSize: fontSize,
+                showIconSlot: false,
+                eventName: "editor.toolbar.font-size",
+                eventPayload: ({
+                    size: fontSize
+                })
+            });
+        }
+        return result;
+    }
+
+    function fontSizeMenuSelectedIndex() {
+        const selectedFontSize = editorToolbar.normalizedFontSizeValue(editorToolbar.selectedFontSizeValue);
+        for (let valueIndex = 0; valueIndex < editorToolbar.fontSizeValues.length; ++valueIndex) {
+            if (String(editorToolbar.fontSizeValues[valueIndex]) === selectedFontSize)
+                return valueIndex;
+        }
+        return -1;
+    }
+
+    function fontSizeMenuPreferredWidth() {
+        return Math.max(editorToolbar.figmaComboSmallWidth, LV.Theme.scaleMetric(56));
+    }
+
+    function openFontSizeContextMenu(anchorItem) {
+        if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
+            return false;
+
+        fontSizeContextMenu.items = editorToolbar.fontSizeMenuItems();
+        fontSizeContextMenu.itemWidth = editorToolbar.fontSizeMenuPreferredWidth();
+        fontSizeContextMenu.selectedIndex = editorToolbar.fontSizeMenuSelectedIndex();
+        fontSizeContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
+        editorToolbar.toolbarActionRequested("editor.toolbar.font-size");
+        return true;
+    }
+
+    function beginFontSizeInput(anchorItem) {
+        if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
+            return false;
+        if (anchorItem.beginFontSizeInput === undefined)
+            return false;
+        editorToolbar.toolbarActionRequested("editor.toolbar.font-size.input");
+        return anchorItem.beginFontSizeInput();
+    }
+
+    function commitFontSizeInputValue(value) {
+        const fontSize = editorToolbar.normalizedFontSizeValue(value);
+        if (fontSize.length === 0)
+            return false;
+        editorToolbar.selectedFontSizeValue = fontSize;
+        editorToolbar.fontSizeRequested(fontSize);
+        return true;
     }
 
     function styleTagStylePreviewDescriptor(styleValue) {
@@ -433,7 +563,10 @@ LV.HStack {
         property string figmaStepperNodeId: ""
         property int preferredToolbarWidth: LV.Theme.gapNone
         property bool opensFontFamilyMenu: false
+        property bool opensFontSizeMenu: false
         property bool opensStyleTagStyleMenu: false
+        property bool editsFontSizeText: false
+        property bool fontSizeInputActive: false
 
         arrow: LV.Stepper.Down
         Layout.minimumWidth: LV.Theme.gapNone
@@ -442,6 +575,33 @@ LV.HStack {
         height: editorToolbar.figmaComboHeight
         tone: LV.ComboBox.Tone.Primary
         width: toolbarComboBox.preferredToolbarWidth
+
+        function beginFontSizeInput() {
+            if (!toolbarComboBox.editsFontSizeText || editorToolbar.editorReadOnly)
+                return false;
+
+            fontSizeInput.text = editorToolbar.normalizedFontSizeValue(editorToolbar.selectedFontSizeValue);
+            if (fontSizeInput.text.length === 0)
+                fontSizeInput.text = "12";
+            toolbarComboBox.fontSizeInputActive = true;
+            Qt.callLater(function () {
+                if (!toolbarComboBox.fontSizeInputActive)
+                    return;
+                fontSizeInput.forceInputFocus();
+                fontSizeInput.selectAll();
+            });
+            return true;
+        }
+
+        function cancelFontSizeInput() {
+            toolbarComboBox.fontSizeInputActive = false;
+        }
+
+        function commitFontSizeInput() {
+            const committed = editorToolbar.commitFontSizeInputValue(fontSizeInput.text);
+            toolbarComboBox.fontSizeInputActive = false;
+            return committed;
+        }
 
         onClicked: {
             if (toolbarComboBox.opensStyleTagStyleMenu) {
@@ -452,8 +612,99 @@ LV.HStack {
                 editorToolbar.openFontFamilyContextMenu(toolbarComboBox);
                 return;
             }
+            if (toolbarComboBox.opensFontSizeMenu) {
+                editorToolbar.openFontSizeContextMenu(toolbarComboBox);
+                return;
+            }
             if (toolbarComboBox.actionName.length > 0)
                 editorToolbar.toolbarActionRequested(toolbarComboBox.actionName);
+        }
+
+        MouseArea {
+            id: fontSizeBodyClickArea
+
+            acceptedButtons: Qt.LeftButton
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            enabled: toolbarComboBox.editsFontSizeText && !toolbarComboBox.fontSizeInputActive
+            hoverEnabled: enabled
+            preventStealing: true
+            visible: toolbarComboBox.editsFontSizeText
+            width: Math.max(0, toolbarComboBox.indicatorX)
+
+            onClicked: {
+                editorToolbar.beginFontSizeInput(toolbarComboBox);
+            }
+        }
+
+        MouseArea {
+            id: fontSizeArrowClickArea
+
+            acceptedButtons: Qt.LeftButton
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            enabled: toolbarComboBox.opensFontSizeMenu && !toolbarComboBox.fontSizeInputActive
+            hoverEnabled: enabled
+            preventStealing: true
+            visible: toolbarComboBox.opensFontSizeMenu
+            width: Math.max(
+                       toolbarComboBox.figmaIndicatorSize + toolbarComboBox.figmaComboRightPadding,
+                       toolbarComboBox.width - toolbarComboBox.indicatorX)
+
+            onClicked: editorToolbar.openFontSizeContextMenu(toolbarComboBox)
+        }
+
+        LV.InputField {
+            id: fontSizeInput
+
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            backgroundColor: LV.Theme.panelBackground12
+            backgroundColorDisabled: LV.Theme.panelBackground12
+            backgroundColorFocused: LV.Theme.panelBackground12
+            backgroundColorHover: LV.Theme.panelBackground12
+            backgroundColorPressed: LV.Theme.panelBackground12
+            clearButtonVisible: false
+            fieldMinHeight: editorToolbar.figmaComboHeight
+            inputMethodHints: Qt.ImhDigitsOnly
+            insetHorizontal: LV.Theme.gap6
+            insetVertical: LV.Theme.gapNone
+            maximumLength: 3
+            objectName: "fontSizeInput"
+            selectByMouse: true
+            sideSpacing: LV.Theme.gapNone
+            style: inlineStyle
+            textColor: LV.Theme.accentWhite
+            validator: IntValidator {
+                bottom: 1
+                top: 400
+            }
+            visible: toolbarComboBox.editsFontSizeText && toolbarComboBox.fontSizeInputActive
+            width: Math.max(0, toolbarComboBox.indicatorX)
+
+            Keys.onEscapePressed: function(event) {
+                event.accepted = true;
+                toolbarComboBox.cancelFontSizeInput();
+            }
+
+            onAccepted: function(text) {
+                fontSizeInput.text = typeof text === "string" ? text : fontSizeInput.text;
+                toolbarComboBox.commitFontSizeInput();
+            }
+
+            onActiveFocusChanged: {
+                if (fontSizeInput.activeFocus)
+                    return;
+                Qt.callLater(function () {
+                    if (toolbarComboBox.fontSizeInputActive
+                            && !fontSizeInput.activeFocus
+                            && !fontSizeInput.inputItem.activeFocus)
+                        toolbarComboBox.cancelFontSizeInput();
+                });
+            }
         }
     }
 
@@ -465,6 +716,7 @@ LV.HStack {
         property string figmaIconNodeId: ""
         property string figmaNodeId: ""
         property string formatTag: ""
+        property bool formatTagActive: editorToolbar.formatTagActive(glyphButton.formatTag)
         property string glyph: ""
         property bool glyphBold: false
         property bool glyphItalic: false
@@ -473,6 +725,9 @@ LV.HStack {
 
         Layout.preferredHeight: editorToolbar.figmaHeight
         Layout.preferredWidth: editorToolbar.figmaIconButtonWidth
+        backgroundColor: glyphButton.formatTagActive
+                         ? glyphButton.backgroundColorHover
+                         : glyphButton.toneBackgroundColor
         enabled: editorToolbar.formatButtonsEnabled
         height: editorToolbar.figmaHeight
         iconSize: LV.Theme.iconSm
@@ -511,11 +766,15 @@ LV.HStack {
         property string figmaIconNodeId: ""
         property string figmaNodeId: ""
         property string formatTag: ""
+        property bool formatTagActive: editorToolbar.formatTagActive(swatchButton.formatTag)
         property string swatchGlyph: "\u25CF"
         property color swatchColor: editorToolbar.figmaHighlight
 
         Layout.preferredHeight: editorToolbar.figmaHeight
         Layout.preferredWidth: editorToolbar.figmaIconMenuButtonWidth
+        backgroundColor: swatchButton.formatTagActive
+                         ? swatchButton.backgroundColorHover
+                         : swatchButton.toneBackgroundColor
         backgroundColorPressed: swatchButton.formatTag === "highlight"
                                 ? editorToolbar.figmaHighlightOverlay
                                 : LV.Theme.accentBlueMuted
@@ -731,10 +990,13 @@ LV.HStack {
 
                 ToolbarComboBox {
                     actionName: "editor.toolbar.font-size"
+                    editsFontSizeText: true
+                    enabled: editorToolbar.formatButtonsEnabled
                     figmaLabelNodeId: "I399:8663;254:868"
                     figmaNodeId: "399:8663"
                     figmaStepperNodeId: "I399:8663;254:869"
                     objectName: "fontSize"
+                    opensFontSizeMenu: true
                     preferredToolbarWidth: editorToolbar.figmaComboSmallWidth
                     text: editorToolbar.selectedFontSizeValue
                     visible: editorToolbar.toolbarResponsiveItemVisible(2)
@@ -923,6 +1185,30 @@ LV.HStack {
 
             editorToolbar.selectedStyleTagStyleValue = styleValue;
             editorToolbar.styleTagStyleRequested(styleValue);
+        }
+    }
+
+    LV.ContextMenu {
+        id: fontSizeContextMenu
+
+        autoCloseOnTrigger: true
+        itemWidth: editorToolbar.fontSizeMenuPreferredWidth()
+        items: editorToolbar.fontSizeMenuItems()
+        modal: false
+        objectName: "fontSizeContextMenu"
+        parent: editorToolbar.Window.window ? editorToolbar.Window.window.contentItem : null
+        selectedIndex: editorToolbar.fontSizeMenuSelectedIndex()
+        showIconSlot: false
+
+        onItemTriggered: function(index, item) {
+            const fontSize = item && item.fontSize !== undefined && item.fontSize !== null
+                    ? editorToolbar.normalizedFontSizeValue(item.fontSize)
+                    : "";
+            if (fontSize.length === 0)
+                return;
+
+            editorToolbar.selectedFontSizeValue = fontSize;
+            editorToolbar.fontSizeRequested(fontSize);
         }
     }
 

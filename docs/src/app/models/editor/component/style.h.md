@@ -15,6 +15,12 @@ Declares the editor-domain component contract for the proprietary `.wsnbody` `<s
   value in the generated `font-family` declaration so multi-word system fonts render as the selected family in
   `QTextDocument`. A font-only source token is treated as family-only for projection and recovery; LVRS text-token
   metrics are required only when a `style` attribute is present or the bare `<style>` Body fallback is used.
+- `Style::normalizedFontSizeAttributeValue(...)` and `Style::openingTokenForFontSize(...)` own toolbar font-size
+  normalization and `<style size="...">` source token generation. The authored value must be a positive integer, and
+  projection emits it as `font-size:<value>px`.
+- `Style::normalizedFontWeightAttributeValue(...)` and `Style::openingTokenForFontWeight(...)` own toolbar font-weight
+  normalization and `<style weight="...">` source token generation. `bold` normalizes to the explicit `900` value used
+  by the editor bold command, while `regular`/`normal` normalize to `400`.
 - `StyleToken` captures the LVRS text token metrics used by editor projection.
 - `StyleSourceBaseline` captures the formatting baseline used when rich editor spans are converted back to canonical
   source tags.

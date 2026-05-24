@@ -43,7 +43,8 @@ Implements the active note editor document session.
    `.wsnbody` RAW source, maps the rendered selection to RAW visible-character positions, applies `SetTag`, returns a
    fresh editor HTML projection, and maps the source cursor back to the rendered editor cursor position. A collapsed
    style-selector command expands to the current non-empty visible source line instead of inserting an empty
-   `<style></style>` wrapper that would be lost on the next editor round-trip. For an active note, the style command
+   `<style></style>` wrapper that would be lost on the next editor round-trip. The font-size toolbar command follows
+   the same path with a validated `<style size="...">` wrapper. For an active note, the style command
    also writes that fresh projection to the mounted `.wsnsource` session file and enqueues the canonical `<style ...>`
    RAW body persist immediately, so neither LVRS file sync nor a later filesystem pull can restore the pre-style
    paragraph snapshot during the idle RAW-push window. Source-visible text mapping treats `<style>` tags as invisible
@@ -52,9 +53,14 @@ Implements the active note editor document session.
    text inside an existing `<style>` wrapper or at its content boundary, the session applies that single visible edit to
    the active RAW wrapper instead of accepting renderer-shifted or missing style marker positions. Ordinary characters
    remain inside the wrapper, while newline remains the explicit wrapper exit.
+   The `bold` format command is represented as `<style weight="900">...</style>` instead of a new `<bold>` wrapper, so
+   the command binds to the same style `weight` axis used by the toolbar and does not create `<bold>`/`<style>` overlap.
    The toolbar also asks `toolbarStyleContextAtCursor(...)` for the current cursor context; this maps the LVRS editor
    cursor back to the active RAW source and reports the innermost `<style ...>` wrapper's `style`, `font`, `size`,
-   `weight`, and `height` values for display. Outside a style wrapper it returns the Body/Pretendard defaults.
+   `weight`, and `height` values for display. The same query reports whether the cursor is inside active inline format
+   wrappers for legacy `bold`, `italic`, `underline`, `strikethrough`, and `highlight`, and it treats an explicit style
+   `weight` of `700+` as the active bold binding. This allows toolbar buttons to mirror the current RAW context without
+   parsing source in QML. Outside a style wrapper it returns the Body/Pretendard defaults.
 9. Clipboard resource paste calls `insertImportedResourcesIntoSource(...)` only after `InAppClipboardManager` has persisted
    the resource package. The session inserts RAW resource tags and returns an editor HTML projection that renders each
    standalone resource source line as a resource frame. For an active note, that command result is also written to the
@@ -141,7 +147,8 @@ Implements the active note editor document session.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`. Style selector commands with no selection expand to the
-  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers. Valid style
+  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers. Font-size
+  toolbar commands use the same expansion path and author a validated `size` attribute. Valid style
   selector mutations are staged into the active editor session file and persisted into the note body before QML replaces
   the live LVRS text, matching the resource insertion race guard while making `.wsnbody` authoritative immediately.
   The same source-visible mapper hides `<style>` wrappers when validating later raw pushes, preserving the active style
@@ -198,7 +205,8 @@ Implements the active note editor document session.
   1글자로 센다. 좌표가 selected text와 맞지 않으면 실제 visible source에서 selected text 위치를 다시 찾아 paragraph
   밖으로 wrapper가 새는 것을 막는다.
   style selector 명령은 selection이 없을 때 현재 non-empty visible source line 전체로 확장하며, 빈 줄에서는
-  즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다. 유효한 style selector mutation은 active editor
+  즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다. font-size toolbar 명령도 같은 경로로 양의 정수
+  `size` attribute를 작성한다. 유효한 style selector mutation은 active editor
   session file에 즉시 stage되고 `.wsnbody` RAW body에도 바로 persist되어 LVRS idle sync가 이전 paragraph snapshot으로
   되돌리지 못하게 한다. 이후 marker 없는 plain editor payload가 들어와도 style wrapper 안쪽의 단일 visible edit는
   active RAW wrapper에 반영하므로, 이어 입력이나 Backspace만으로 `<style>` tag가 사라지지 않는다. styled rendered

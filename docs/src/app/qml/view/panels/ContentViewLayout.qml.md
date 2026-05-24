@@ -30,9 +30,17 @@ context menu, and forwards the chosen family to `NoteEditorDocumentSession.inser
 session wraps the selected text or current non-empty line in `<style font="...">...</style>`, stages the editor HTML
 session file, persists the canonical `.wsnbody` source for active notes, and reports
 `editor.toolbar.font.<family>` through the existing view-hook surface after replacement succeeds.
+The toolbar `fontSize` selector forwards menu selections and direct integer input to
+`NoteEditorDocumentSession.insertStyleFontSizeTagIntoSource(...)`. The C++ session validates the size, authors
+`<style size="...">...</style>`, and reports `editor.toolbar.font-size.<size>` after the LVRS document replacement
+succeeds.
 The layout also refreshes toolbar display state from `NoteEditorDocumentSession.toolbarStyleContextAtCursor(...)` when
 the editor cursor, document text, or mounted session changes. QML only copies the returned display strings into
 `ContentEditorToolbar`; parsing the active `<style ...>` wrapper remains a C++ session responsibility.
+Cursor and document-change notifications only mark a pending refresh in the native editor event path. A `Qt.callLater`
+step arms a short `Timer`, and only that later timer tick runs the C++ query. This keeps caret movement and viewport
+updates ahead of toolbar binding work even if the toolbar display catches up slightly later. Explicit toolbar commands
+and initial session reads may still request an immediate refresh.
 
 The text editor view is rooted in LVRS `TextEditor` and receives an editor HTML session file path from
 `NoteEditorDocumentSession.editorFilePath`.
@@ -70,19 +78,27 @@ window. When the C++ filter handles a supported image resource it consumes the u
 `TextEdit` paste cannot run after the resource paste. Unsupported clipboard content remains unconsumed and continues
 through the LVRS native paste path.
 
-Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts for `bold`, `italic`,
+Editor formatting is handled through the same narrow command shape. Focus-gated shortcuts and toolbar format buttons for
+`bold`, `italic`, `underline`, `strikethrough`, and `highlight` call
 `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` with the sibling editor's document, cursor, selection
 metadata, and selected visible text, then replace the LVRS document with the C++-projected editor HTML result. Keyboard
-shortcuts read the sibling editor's live selection at command time, while the selected-text context menu explicitly opts
-into the remembered right-click snapshot. The session maps LVRS RichText plain selection offsets back to visible RAW
-source positions before inserting tags, so
+shortcuts and toolbar buttons read the sibling editor's live selection at command time, while the selected-text context
+menu explicitly opts into the remembered right-click snapshot. The session maps LVRS RichText plain selection offsets
+back to visible RAW source positions before inserting tags, so
 existing inline tags before the selection do not shift the selected range. The selected text is read from the live
 editor surface with `getText(selectionStart, selectionEnd)` and passed as a repair anchor when a RichText interaction
 reports a drifted offset. The C++ session uses the loaded `.wsnbody` RAW source as the format mutation basis, so a
 lossy editor RichText projection cannot remove blank source rows before selection is mapped. Applying the same paired
 format to the exact text already enclosed by that format toggles it off in `SetTag`; QML does not special-case this.
-The same editor cursor/document notifications also refresh the toolbar selectors so the style/font/size/weight/line-height
-controls reflect the current `<style ...>` wrapper under the caret rather than the last command the user clicked.
+Bold is the exception to the legacy inline-tag shape: the command now emits `<style weight="900">...</style>` so it
+uses the same `weight` axis as the toolbar/style system instead of overlapping `<bold>` with `<style>`.
+The same editor cursor/document notifications also refresh the toolbar selectors and format button active states so the
+style/font/size/weight/line-height controls reflect the current `<style ...>` wrapper, and the format buttons reflect
+the current inline wrapper under the caret rather than the last command the user clicked. A successful format command
+requests an immediate toolbar refresh so shortcut and button toggles converge through the same display binding. The
+cursor refresh is intentionally scheduled rather than synchronous for high-frequency cursor movement. The cursor event
+only sets a pending flag; arming the timer is deferred with `Qt.callLater`, keeping native caret navigation responsive
+while the toolbar catches up from the latest cursor position.
 Highlight is bound to `Meta+Shift+E` /
 `Ctrl+Shift+E`, break is bound to `Meta+Shift+B` / `Ctrl+Shift+B`, callout is bound to `Meta+Shift+C` /
 format shortcuts: a selection becomes the rendered callout contents, while an empty selection inserts an empty visual

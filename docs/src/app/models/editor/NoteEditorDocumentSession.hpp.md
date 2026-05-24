@@ -45,12 +45,13 @@ Declares the active note editor document session object.
   frames preserve each frame's initial `data-frame-display-height`, while callout leading bars are regenerated from the
   current edited content height. QML calls this through a short debounce after text changes so typing inside a wrapped
   callout does not wait for idle persistence but also does not replace the native document on every keystroke.
-- Provides `insertFormatTagIntoSource(...)`, which applies a static editor format tag such as `bold`, `italic`,
+- Provides `insertFormatTagIntoSource(...)`, which applies an editor format command such as `bold`, `italic`,
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. `insertStyleTagIntoSource(...)` uses the same selection mapping
   and projection path for the toolbar's `<style>` tag `style` attribute choices. `insertStyleFontTagIntoSource(...)`
-  uses the same style-source selection expansion for the toolbar's `<style>` tag `font` attribute choices. Valid style
-  selector and font selector mutations are staged into the mounted editor session file and persisted into `.wsnbody`
+  uses the same style-source selection expansion for the toolbar's `<style>` tag `font` attribute choices, and
+  `insertStyleFontSizeTagIntoSource(...)` applies the toolbar font-size control as a validated `size` attribute. Valid style
+  selector, font selector, and font-size selector mutations are staged into the mounted editor session file and persisted into `.wsnbody`
   for the active note before QML updates the live LVRS text. The session keeps the loaded `.wsnbody` RAW source as the format mutation basis and maps rendered break tags such as
   `<next />`/`<br>` as one logical newline. QML also passes `selectedText` so the session can repair a drifted RichText
   selection offset before mutating RAW source. Collapsed style selector commands expand to the current non-empty
@@ -61,7 +62,10 @@ Declares the active note editor document session object.
 - Provides `toolbarStyleContextAtCursor(...)`, a read-only toolbar binding query that maps the current LVRS editor
   cursor back to RAW source and returns display values from the innermost active `<style ...>` wrapper. QML consumes
   the returned `styleValue`, `fontFamily`, `fontSize`, `fontWeight`, and `lineHeight` strings; outside a wrapper the
-  query returns the editor Body defaults.
+  query returns the editor Body defaults. The `bold` command is authored as `<style weight="900">...</style>` instead
+  of a new `<bold>` wrapper, while legacy `<bold>` is still recognized when reading existing source. The same result
+  carries boolean active flags for `bold`, `italic`, `underline`, `strikethrough`, and `highlight`, derived from RAW
+  inline wrapper ranges and explicit style weight at the cursor position.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. Return/Enter is not wired through the editor input filter.
@@ -130,8 +134,9 @@ Declares the active note editor document session object.
   `insertFormatTagIntoSource(...)`가 `SetTag`를 통해 RAW source와 editor HTML projection을 함께 계산한다.
   toolbar style selector의 `<style>` tag `style` attribute 선택은 `insertStyleTagIntoSource(...)`가 같은 selection
   mapping과 projection 경로로 처리한다. toolbar font selector의 `<style>` tag `font` attribute 선택은
-  `insertStyleFontTagIntoSource(...)`가 같은 selection mapping과 projection 경로로 처리한다.
-  유효한 style/font selector mutation은 QML이 live LVRS text를 교체하기 전에 active note의 mounted editor session file에
+  `insertStyleFontTagIntoSource(...)`가 같은 selection mapping과 projection 경로로 처리한다. toolbar font-size control은
+  `insertStyleFontSizeTagIntoSource(...)`가 양의 정수 `size` attribute로 처리한다.
+  유효한 style/font/font-size selector mutation은 QML이 live LVRS text를 교체하기 전에 active note의 mounted editor session file에
   먼저 stage되고 `.wsnbody` RAW body에도 persist된다.
   로드된 `.wsnbody` RAW source가 mutation 기준이다. `<next />`/`<br>` 같은 source-level break는 selection 논리
   좌표에서 newline 1글자로 취급한다. LVRS RichText selection 좌표가 밀리면 함께 전달된 selected text로 실제 RAW

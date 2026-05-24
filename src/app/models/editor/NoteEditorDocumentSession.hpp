@@ -89,6 +89,12 @@ public:
         int cursorPosition,
         int selectionLength,
         const QString& selectedText = QString());
+    Q_INVOKABLE QVariantMap insertStyleFontSizeTagIntoSource(
+        const QString& fontSize,
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength,
+        const QString& selectedText = QString());
     Q_INVOKABLE QVariantMap toolbarStyleContextAtCursor(
         const QString& editorDocumentText,
         int cursorPosition,

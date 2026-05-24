@@ -66,6 +66,17 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsSourceToEditorHtmlWi
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), roundTrippedEditorHtml),
         QStringLiteral("First line\nSecond line"));
+
+    const QString boldEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("note"),
+        QStringLiteral("Alpha <bold>Beta</bold> Gamma"));
+    QTextDocument boldEditorDocument;
+    boldEditorDocument.setHtml(boldEditorHtml);
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(
+            QStringLiteral("note"),
+            boldEditorDocument.toHtml()),
+        QStringLiteral("Alpha <style weight=\"900\">Beta</style> Gamma"));
 }
 
 void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines()
@@ -103,7 +114,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversEditorFormattingTags
             QStringLiteral("note"),
             editorHtml),
         QStringLiteral(
-            "Alpha <bold>Beta</bold> <italic>Gamma</italic> <underline>Delta</underline> "
+            "Alpha <style weight=\"900\">Beta</style> <italic>Gamma</italic> <underline>Delta</underline> "
             "<strikethrough>Epsilon</strikethrough> <highlight>Zeta</highlight>\nTail"));
 }
 
@@ -176,14 +187,14 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     const QString sourceText = QStringLiteral(
         "<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14 "
         "color=\"#F3F5F8\" background=\"#262728\" align=\"center\" height=1.25>"
-        "Styled <bold>text</bold></style>");
+        "Styled text</style>");
 
     const QString bodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), sourceText);
 
     QVERIFY(bodyDocument.contains(QStringLiteral("<style style=\"Title\" font=\"Pretendard\" weight=\"600\" size=14")));
     QVERIFY(bodyDocument.contains(QStringLiteral("color=\"#F3F5F8\" background=\"#262728\" align=\"center\" height=1.25")));
-    QVERIFY(bodyDocument.contains(QStringLiteral("Styled <bold>text</bold></style>")));
+    QVERIFY(bodyDocument.contains(QStringLiteral("Styled text</style>")));
     QCOMPARE(WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocument), sourceText);
 
     const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
@@ -197,7 +208,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_roundTripsCanonicalStyleTagA
     QVERIFY(editorHtml.contains(QStringLiteral("background-color:#262728;")));
     QVERIFY(editorHtml.contains(QStringLiteral("text-align:center;")));
     QVERIFY(editorHtml.contains(QStringLiteral("line-height:1.25;")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">text</strong>")));
+    QVERIFY(!editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">text</strong>")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(QStringLiteral("note"), editorHtml),
         sourceText);
@@ -335,7 +346,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
 {
     const QString sourceText =
         QStringLiteral(
-            "<callout>Alpha <bold>Beta</bold> and <italic>Gamma</italic> wraps into the callout body</callout>");
+            "<callout>Alpha <style weight=\"900\">Beta</style> and <italic>Gamma</italic> wraps into the callout body</callout>");
 
     const QString editorHtml =
         WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);
@@ -366,7 +377,8 @@ void WhatSonCppRegressionTests::noteBodyPersistence_projectsCalloutAsFigmaBlockA
     QVERIFY(editorHtml.contains(QStringLiteral("class=\"whatson-callout-leading-bar\"")));
     QVERIFY(!editorHtml.contains(QStringLiteral("class=\"whatson-callout-content-gap\"")));
     QVERIFY(editorHtml.contains(QStringLiteral("data-callout-frame-chrome=\"true\"")));
-    QVERIFY(editorHtml.contains(QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>")));
+    QVERIFY(editorHtml.contains(QStringLiteral("font-weight:900;")));
+    QVERIFY(editorHtml.contains(QStringLiteral(">Beta</span>")));
     QVERIFY(editorHtml.contains(QStringLiteral("<span style=\"font-style:italic;\">Gamma</span>")));
     QVERIFY(!editorHtml.contains(QStringLiteral("<callout>")));
 
@@ -419,7 +431,7 @@ void WhatSonCppRegressionTests::noteBodyPersistence_doesNotReplicateParagraphsAr
 {
     const QString sourceText =
         QStringLiteral("Before\n"
-                       "<callout>Inside <bold>callout</bold></callout>\n"
+                       "<callout>Inside <style weight=\"900\">callout</style></callout>\n"
                        "After");
     QString editorHtml =
         WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(QStringLiteral("note"), sourceText);

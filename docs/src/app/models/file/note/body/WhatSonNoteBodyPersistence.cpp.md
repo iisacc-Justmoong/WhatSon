@@ -102,6 +102,13 @@ The current contract preserves editor-authored RAW source across save/load turns
 - `editorHtmlFromBodySource(...)` is the note-editor mount projection used before writing a session file for LVRS
   `TextEditor`. It is intentionally derived from canonical source through the `.wsnbody` serializer/projection path so
   line breaks, inline style rendering, and escaped resource text stay aligned with the persisted note body contract.
+  Rich-text fallback recovery maps bold-weight editor spans back to `<style weight="900">...</style>` so newly typed or
+  serialized bold uses the same style weight axis as toolbar bold instead of recreating overlapping `<bold>` wrappers.
+  Style markers can be nested inside rendered callout tokens, so rich-text recovery restores style source tokens again
+  after callout token expansion. This prevents `__WHATSON_STYLE_SOURCE_TOKEN_*__` placeholders from leaking into
+  canonical RAW and keeps `<style weight="900">` usable inside callout content.
+  Style marker recovery also restores a leading plain space from the marker HTML when Qt's rich-text parser collapses the
+  first fragment boundary, preserving source such as `<style weight="900"> text</style>`.
   The generated editor document carries the LVRS Body token default (`Pretendard`, `12px`, medium weight, `12px`
   line height, and `#CCFFFFFF`) so the note editor does not fall back to the platform/system rich-text font before
   token-specific typography or explicit style overrides are applied.
@@ -184,7 +191,8 @@ The current contract preserves editor-authored RAW source across save/load turns
   whitespace that belongs to actual paragraph/block content.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
-  - newline-normalized editor RAW source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
+  - newline-normalized editor RAW source text for editor binding (`<style weight="900">` for new bold, plus
+    `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
 - The no-op comparison and returned `bodySourceText` now treat the editor-provided RAW text as authoritative instead of
   round-tripping it back through `sourceTextFromBodyDocument(...)` first.
 - When `persistBodyPlainText(...)` performs a changed-body filesystem write, it now opts in to `modifiedCount`
@@ -214,6 +222,11 @@ rewriting `bodySourceText` RAW just because the body document was read and repar
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
 - A font-only style wrapper such as `<style font="American Typewriter">...</style>` must survive marker-anchor fallback
   recovery even when Qt serializes that run with only a `font-family` declaration.
+- A weight-only style wrapper such as `<style weight="900">...</style>` is the canonical editor bold source after new
+  formatting commands. It must recover from direct rich-text projection, Qt-serialized projection, and rendered callout
+  content without falling back to `<bold>` or leaking source-token placeholders.
+- A style wrapper that begins with an authored plain space, including `<style weight="900"> text</style>`, must preserve
+  that space after a rich-text save/load turn.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
   `<break/>`, and rich-text projection must show a logical editor break line instead of literal tag text.
 - A typed or pasted web URL that canonicalizes into `<weblink href="...">label</weblink>` must survive save/load and

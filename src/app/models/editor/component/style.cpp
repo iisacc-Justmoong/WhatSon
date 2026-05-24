@@ -359,6 +359,79 @@ namespace WhatSon::EditorComponent
         return QStringLiteral("<style font=\"%1\">").arg(escapeHtmlAttribute(normalizedValue));
     }
 
+    QString Style::normalizedFontSizeAttributeValue(QString value)
+    {
+        value = decodeXmlEntities(value).trimmed();
+        if (value.isEmpty())
+        {
+            return {};
+        }
+
+        for (const QChar ch : value)
+        {
+            if (!ch.isDigit())
+            {
+                return {};
+            }
+        }
+
+        bool ok = false;
+        const int fontSize = value.toInt(&ok);
+        if (!ok || fontSize <= 0 || fontSize > 400)
+        {
+            return {};
+        }
+        return QString::number(fontSize);
+    }
+
+    QString Style::openingTokenForFontSize(QString value)
+    {
+        const QString normalizedValue = normalizedFontSizeAttributeValue(value);
+        if (normalizedValue.isEmpty())
+        {
+            return {};
+        }
+        return QStringLiteral("<style size=\"%1\">").arg(normalizedValue);
+    }
+
+    QString Style::normalizedFontWeightAttributeValue(QString value)
+    {
+        const QString rawValue = value.trimmed();
+        if (rawValue.isEmpty())
+        {
+            return {};
+        }
+
+        const QString normalized = rawValue.toCaseFolded();
+        if (normalized == QStringLiteral("bold"))
+        {
+            return QString::number(QFont::Black);
+        }
+        if (normalized == QStringLiteral("normal")
+            || normalized == QStringLiteral("regular"))
+        {
+            return QString::number(QFont::Normal);
+        }
+
+        bool ok = false;
+        const int fontWeight = rawValue.toInt(&ok);
+        if (!ok || fontWeight <= 0 || fontWeight > 1000)
+        {
+            return {};
+        }
+        return QString::number(fontWeight);
+    }
+
+    QString Style::openingTokenForFontWeight(QString value)
+    {
+        const QString normalizedValue = normalizedFontWeightAttributeValue(value);
+        if (normalizedValue.isEmpty())
+        {
+            return {};
+        }
+        return QStringLiteral("<style weight=\"%1\">").arg(normalizedValue);
+    }
+
     QString Style::bodyEditorCssDeclaration()
     {
         const StyleToken bodyToken = lvrsTextStyleTokenFromName(QStringLiteral("body"));
@@ -398,13 +471,17 @@ namespace WhatSon::EditorComponent
         QStringList declarations;
         const bool hasStyleAttribute = rawTokenHasAttribute(rawTagText, QStringLiteral("style"));
         const bool hasFontAttribute = rawTokenHasAttribute(rawTagText, QStringLiteral("font"));
+        const bool hasWeightAttribute = rawTokenHasAttribute(rawTagText, QStringLiteral("weight"));
         const StyleToken styleToken =
             lvrsTextStyleTokenFromName(attributeValueFromRawToken(rawTagText, QStringLiteral("style")));
         if (styleToken.valid && (hasStyleAttribute || !hasFontAttribute))
         {
             declarations.push_back(QStringLiteral("font-family:%1;").arg(quotedCssStringValue(defaultEditorFontFamily())));
             declarations.push_back(QStringLiteral("font-size:%1px;").arg(styleToken.pixelSize));
-            declarations.push_back(QStringLiteral("font-weight:%1;").arg(styleToken.weight));
+            if (!hasWeightAttribute)
+            {
+                declarations.push_back(QStringLiteral("font-weight:%1;").arg(styleToken.weight));
+            }
             declarations.push_back(QStringLiteral("line-height:%1px;").arg(styleToken.lineHeight));
         }
 

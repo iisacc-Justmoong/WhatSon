@@ -119,8 +119,8 @@ void WhatSonCppRegressionTests::editorSetTag_togglesSameInlineFormatWhenSelectio
 
     const QVariantMap boldResult = input.insertNamedTagIntoSource(
         QStringLiteral("bold"),
-        QStringLiteral("Alpha <bold>Beta</bold> Gamma"),
-        QStringLiteral("Alpha <bold>").size(),
+        QStringLiteral("Alpha <style weight=\"900\">Beta</style> Gamma"),
+        QStringLiteral("Alpha <style weight=\"900\">").size(),
         QStringLiteral("Beta").size());
     QVERIFY(boldResult.value(QStringLiteral("valid")).toBool());
     QCOMPARE(
@@ -134,14 +134,26 @@ void WhatSonCppRegressionTests::editorSetTag_togglesSameInlineFormatWhenSelectio
 
     const QVariantMap partialResult = input.insertNamedTagIntoSource(
         QStringLiteral("bold"),
-        QStringLiteral("Alpha <bold>Beta</bold> Gamma"),
-        QStringLiteral("Alpha <bold>B").size(),
+        QStringLiteral("Alpha <style weight=\"900\">Beta</style> Gamma"),
+        QStringLiteral("Alpha <style weight=\"900\">B").size(),
         QStringLiteral("et").size());
     QVERIFY(partialResult.value(QStringLiteral("valid")).toBool());
     QCOMPARE(
         partialResult.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral("Alpha <bold>B<bold>et</bold>a</bold> Gamma"));
+        QStringLiteral("Alpha <style weight=\"900\">B<style weight=\"900\">et</style>a</style> Gamma"));
     QCOMPARE(partialResult.value(QStringLiteral("toggledOff")).toBool(), false);
+
+    const QVariantMap insertedBoldResult = input.insertNamedTagIntoSource(
+        QStringLiteral("bold"),
+        QStringLiteral("Alpha Beta Gamma"),
+        QStringLiteral("Alpha ").size(),
+        QStringLiteral("Beta").size());
+    QVERIFY(insertedBoldResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        insertedBoldResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style weight=\"900\">Beta</style> Gamma"));
+    QCOMPARE(insertedBoldResult.value(QStringLiteral("openingToken")).toString(), QStringLiteral("<style weight=\"900\">"));
+    QCOMPARE(insertedBoldResult.value(QStringLiteral("closingToken")).toString(), QStringLiteral("</style>"));
 }
 
 void WhatSonCppRegressionTests::editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument()

@@ -17,6 +17,13 @@ Implements the editor-domain projection and recovery helpers for the proprietary
 - Explicit attributes (`font`, `weight`, `size`, `color`, `background`, `align`, and existing `height`) override or
   extend the token projection when editor HTML is generated. `font` values are emitted as quoted CSS `font-family`
   strings so Qt RichText keeps the selected family instead of falling back to the editor default.
+- When a `weight` attribute is present, token-derived `font-weight` is suppressed before the explicit weight is emitted.
+  This keeps a generated bold style such as `<style weight="900">` from carrying both Body `500` and bold `900` in the
+  same projected span.
+- Toolbar font-size values are normalized here before `SetTag` creates `<style size="...">` source wrappers. Only
+  positive integer values are accepted for authored size attributes.
+- Toolbar font-weight values are normalized here before `SetTag` creates `<style weight="...">` source wrappers.
+  `bold` normalizes to `900`, `regular`/`normal` normalize to `400`, and numeric values are preserved when valid.
 - A font-only source token such as `<style font="American Typewriter">` projects and matches as a family-only span.
   It must not require the implicit Body token size, weight, or line-height when recovering Qt/LVRS rich-text HTML,
   because those serializers may preserve only the selected `font-family` declaration for that run.

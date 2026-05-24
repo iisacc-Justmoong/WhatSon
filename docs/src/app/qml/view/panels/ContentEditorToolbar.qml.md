@@ -51,9 +51,16 @@ previewed with each returned `fontFamily`. Selecting a row updates only the tool
 system font lists can be much taller than the window, the font popup replaces the menu content surface with a bounded
 LVRS `Flickable` and routes wheel input through `LV.WheelScrollGuard` while preserving the same `LV.ContextMenu`
 trigger and `LV.MenuItem` delegate contract. It intentionally does not draw a visible scrollbar.
+The `fontSize` selector has a split interaction. Clicking the arrow opens a predefined LVRS `ContextMenu` of integer
+font sizes; clicking the body overlays an `LV.InputField` over the label region for direct integer entry. Both paths
+emit `fontSizeRequested(fontSize)`, while `ContentViewLayout.qml` owns the source mutation through
+`NoteEditorDocumentSession.insertStyleFontSizeTagIntoSource(...)`.
 `ContentViewLayout.qml` may call `applyStyleContext(...)` with the C++ session's cursor-derived toolbar context. The
-toolbar then updates its displayed style, font family, font size, font weight, and line-height strings without mutating
-editor source. Menu selections still emit commands; cursor context updates are display-only.
+toolbar then updates its displayed style, font family, font size, font weight, line-height, and inline-format active
+states without mutating editor source. Menu selections and format buttons still emit commands; cursor context updates
+are display-only. Format buttons display the same background as their hover state when the session reports that the
+cursor is inside the matching format source. Bold is bound to the style `weight` axis, so new bold commands author
+`<style weight="900">` and legacy `<bold>` only remains a read-compatible active source.
 
 When the available width drops below the full Figma content width, the left-side controls are hidden as discrete
 on/off items from left to right instead of clipping the right edge. The collapse order is `style`, `font`, `fontSize`,
@@ -73,8 +80,11 @@ It does not read files, own note/session state, parse editor text, or persist fo
   JavaScript-side system font list.
 - Keep the font selector popup vertically bounded and wheel-scrollable without drawing a visible scrollbar, because
   system font lists can exceed the available window height.
+- Keep the font-size selector split: arrow opens the predefined size menu, body opens a temporary `LV.InputField`, and
+  both emit the same `fontSizeRequested` view signal. QML may validate the direct input shape, but C++ remains the
+  source-of-truth for accepted `size` attributes.
 - Keep cursor-derived toolbar values as display state only. The toolbar may apply the context map returned by the C++
-  session, but it must not parse `<style ...>` source or infer editor formatting itself.
+  session, but it must not parse `<style ...>` or inline-format source or infer editor formatting itself.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
 - Do not introduce `QtQuick.Controls`, `TextEdit`, parser/projection logic, or note session wiring here.
 

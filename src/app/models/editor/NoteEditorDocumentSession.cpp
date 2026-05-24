@@ -541,6 +541,28 @@ namespace
         }
     };
 
+    struct InlineFormatSourceRange final
+    {
+        QString tagName;
+        int openingStart = -1;
+        int openingEnd = -1;
+        int contentStart = -1;
+        int contentEnd = -1;
+        int closingStart = -1;
+        int closingEnd = -1;
+
+        bool isValid() const noexcept
+        {
+            return !tagName.isEmpty()
+                && openingStart >= 0
+                && openingEnd >= openingStart
+                && contentStart == openingEnd
+                && contentEnd >= contentStart
+                && closingStart == contentEnd
+                && closingEnd >= closingStart;
+        }
+    };
+
     QVector<CalloutSourceRange> calloutSourceRanges(const QString& bodySourceText)
     {
         struct OpeningCalloutTag final
@@ -651,6 +673,116 @@ namespace
         return ranges;
     }
 
+    QVector<InlineFormatSourceRange> inlineFormatSourceRanges(const QString& bodySourceText)
+    {
+        namespace SemanticTags = WhatSon::NoteBodySemanticTagSupport;
+
+        struct OpeningInlineFormatTag final
+        {
+            int start = -1;
+            int end = -1;
+        };
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*(/?)\s*[A-Za-z][A-Za-z0-9_.:-]*\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QHash<QString, QVector<OpeningInlineFormatTag>> openingStacks;
+        QVector<InlineFormatSourceRange> ranges;
+        QRegularExpressionMatchIterator matchIterator = tagPattern.globalMatch(bodySourceText);
+        while (matchIterator.hasNext())
+        {
+            const QRegularExpressionMatch match = matchIterator.next();
+            const QString token = match.captured(0).trimmed();
+            const QString canonicalTagName =
+                SemanticTags::canonicalInlineStyleTagName(sourceTagName(token));
+            if (canonicalTagName.isEmpty())
+            {
+                continue;
+            }
+
+            const bool closingTag = !match.captured(1).isEmpty();
+            const bool selfClosingTag = token.endsWith(QStringLiteral("/>"));
+            if (!closingTag && !selfClosingTag)
+            {
+                openingStacks[canonicalTagName].push_back({
+                    static_cast<int>(match.capturedStart(0)),
+                    static_cast<int>(match.capturedEnd(0))
+                });
+                continue;
+            }
+            if (!closingTag || openingStacks.value(canonicalTagName).isEmpty())
+            {
+                continue;
+            }
+
+            QVector<OpeningInlineFormatTag>& openingStack = openingStacks[canonicalTagName];
+            const OpeningInlineFormatTag opening = openingStack.takeLast();
+            ranges.push_back({
+                canonicalTagName,
+                opening.start,
+                opening.end,
+                opening.end,
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedStart(0)),
+                static_cast<int>(match.capturedEnd(0))
+            });
+        }
+
+        std::sort(
+            ranges.begin(),
+            ranges.end(),
+            [](const InlineFormatSourceRange& left, const InlineFormatSourceRange& right)
+            {
+                return left.openingStart < right.openingStart;
+            });
+        return ranges;
+    }
+
+    bool sourceCursorIntersectsContentRange(
+        const int sourceCursorStart,
+        const int sourceCursorEnd,
+        const int contentStart,
+        const int contentEnd)
+    {
+        const bool startsInside =
+            sourceCursorStart >= contentStart
+            && sourceCursorStart < contentEnd;
+        const bool endsInside =
+            sourceCursorEnd > contentStart
+            && sourceCursorEnd <= contentEnd;
+        return startsInside || endsInside;
+    }
+
+    QStringList activeInlineFormatTagsAtSourceCursor(
+        const QString& sourceText,
+        const int sourceCursorStart,
+        const int sourceCursorEnd)
+    {
+        QStringList activeTags;
+        const QVector<InlineFormatSourceRange> ranges = inlineFormatSourceRanges(sourceText);
+        for (const InlineFormatSourceRange& range : ranges)
+        {
+            if (!range.isValid() || range.contentEnd <= range.contentStart)
+            {
+                continue;
+            }
+            if (!sourceCursorIntersectsContentRange(
+                    sourceCursorStart,
+                    sourceCursorEnd,
+                    range.contentStart,
+                    range.contentEnd))
+            {
+                continue;
+            }
+            if (!activeTags.contains(range.tagName))
+            {
+                activeTags.push_back(range.tagName);
+            }
+        }
+        return activeTags;
+    }
+
     QString toolbarFontWeightDisplayValue(const WhatSon::EditorComponent::StyleToken& styleToken)
     {
         return styleToken.valid && !styleToken.styleName.trimmed().isEmpty()
@@ -660,7 +792,8 @@ namespace
 
     QVariantMap toolbarStyleContextResult(
         const QString& openingToken = QString(),
-        const bool hasStyleWrapper = false)
+        const bool hasStyleWrapper = false,
+        const QStringList& activeFormatTags = {})
     {
         using WhatSon::EditorComponent::Style;
 
@@ -687,6 +820,9 @@ namespace
         const QString rawFontWeight = hasStyleWrapper
             ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("weight")).trimmed()
             : QString();
+        const bool styleWeightBoldActive =
+            !rawFontWeight.isEmpty()
+            && Style::weightValue(rawFontWeight) >= QFont::Bold;
         const QString rawLineHeight = hasStyleWrapper
             ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("height")).trimmed()
             : QString();
@@ -728,6 +864,21 @@ namespace
             hasStyleWrapper
                 ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("align")).trimmed()
                 : QString());
+        result.insert(
+            QStringLiteral("boldActive"),
+            styleWeightBoldActive || activeFormatTags.contains(QStringLiteral("bold")));
+        result.insert(
+            QStringLiteral("italicActive"),
+            activeFormatTags.contains(QStringLiteral("italic")));
+        result.insert(
+            QStringLiteral("underlineActive"),
+            activeFormatTags.contains(QStringLiteral("underline")));
+        result.insert(
+            QStringLiteral("strikethroughActive"),
+            activeFormatTags.contains(QStringLiteral("strikethrough")));
+        result.insert(
+            QStringLiteral("highlightActive"),
+            activeFormatTags.contains(QStringLiteral("highlight")));
         return result;
     }
 
@@ -2687,6 +2838,111 @@ QVariantMap NoteEditorDocumentSession::insertStyleFontTagIntoSource(
     return result;
 }
 
+QVariantMap NoteEditorDocumentSession::insertStyleFontSizeTagIntoSource(
+    const QString& fontSize,
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const QString& selectedText)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
+        sourceText,
+        cursorPosition,
+        selectionLength,
+        selectedText);
+    const SourceSelectionRange sourceSelectionRange =
+        styleSourceRangeForEditorSelection(sourceText, editorSelectionRange);
+    if (sourceSelectionRange.sourceEnd <= sourceSelectionRange.sourceStart)
+    {
+        const QString errorMessage =
+            QStringLiteral("Style font size insertion requires selected text or a non-empty current line.");
+        QVariantMap emptyResult;
+        emptyResult.insert(QStringLiteral("valid"), false);
+        emptyResult.insert(QStringLiteral("changed"), false);
+        emptyResult.insert(QStringLiteral("tagName"), QStringLiteral("style"));
+        emptyResult.insert(QStringLiteral("bodySourceText"), sourceText);
+        emptyResult.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
+        emptyResult.insert(QStringLiteral("cursorPosition"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("sourceCursorPosition"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionStart"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionLength"), 0);
+        emptyResult.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("editorSelectionLength"), 0);
+        emptyResult.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return emptyResult;
+    }
+
+    SetTag tagInput;
+    QVariantMap result = tagInput.insertStyleFontSizeTagIntoSource(
+        fontSize,
+        sourceText,
+        sourceSelectionRange.sourceStart,
+        sourceSelectionRange.sourceEnd - sourceSelectionRange.sourceStart);
+
+    const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        resultSourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+    result.insert(QStringLiteral("editorSelectionStart"), sourceSelectionRange.editorStart);
+    result.insert(
+        QStringLiteral("editorSelectionLength"),
+        sourceSelectionRange.editorEnd - sourceSelectionRange.editorStart);
+
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        setLastError(result.value(QStringLiteral("errorMessage")).toString());
+        return result;
+    }
+
+    QString stageError;
+    if (!stageActiveSourceMutationForCurrentEditorFile(resultSourceText, editorHtml, &stageError))
+    {
+        const QString errorMessage = stageError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to stage style font size in the editor session file.")
+            : stageError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    if (hasActiveNote()
+        && !persistBodySourceTextForEditorFile(m_editorFilePath, resultSourceText))
+    {
+        const QString errorMessage = m_lastError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to persist style font size in the note body.")
+            : m_lastError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        editorCursorPositionForSourcePosition(
+            resultSourceText,
+            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+    setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    setLastError(QString());
+    return result;
+}
+
 QVariantMap NoteEditorDocumentSession::toolbarStyleContextAtCursor(
     const QString& editorDocumentText,
     const int cursorPosition,
@@ -2716,6 +2972,10 @@ QVariantMap NoteEditorDocumentSession::toolbarStyleContextAtCursor(
         sourcePositionForEditorSelectionStart(sourceText, boundedCursorPosition);
     const int sourceCursorEnd =
         sourcePositionForEditorSelectionEnd(sourceText, boundedCursorPosition);
+    const QStringList activeFormatTags = activeInlineFormatTagsAtSourceCursor(
+        sourceText,
+        sourceCursorStart,
+        sourceCursorEnd);
 
     const QVector<StyleSourceRange> ranges = styleSourceRanges(sourceText);
     const StyleSourceRange* bestRange = nullptr;
@@ -2726,13 +2986,11 @@ QVariantMap NoteEditorDocumentSession::toolbarStyleContextAtCursor(
             continue;
         }
 
-        const bool startsInside =
-            sourceCursorStart >= range.contentStart
-            && sourceCursorStart < range.contentEnd;
-        const bool endsInside =
-            sourceCursorEnd > range.contentStart
-            && sourceCursorEnd <= range.contentEnd;
-        if (!startsInside && !endsInside)
+        if (!sourceCursorIntersectsContentRange(
+                sourceCursorStart,
+                sourceCursorEnd,
+                range.contentStart,
+                range.contentEnd))
         {
             continue;
         }
@@ -2747,12 +3005,12 @@ QVariantMap NoteEditorDocumentSession::toolbarStyleContextAtCursor(
 
     if (bestRange == nullptr)
     {
-        return toolbarStyleContextResult();
+        return toolbarStyleContextResult(QString(), false, activeFormatTags);
     }
 
     const QString openingToken =
         sourceText.mid(bestRange->openingStart, bestRange->openingEnd - bestRange->openingStart);
-    return toolbarStyleContextResult(openingToken, true);
+    return toolbarStyleContextResult(openingToken, true, activeFormatTags);
 }
 
 QVariantMap NoteEditorDocumentSession::handleCalloutBoundaryKeyInSource(

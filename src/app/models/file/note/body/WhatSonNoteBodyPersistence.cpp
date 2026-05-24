@@ -792,7 +792,7 @@ namespace
         QStringList tags;
         if (format.fontWeight() >= QFont::Black && baseline.weight < QFont::Black)
         {
-            tags.push_back(QStringLiteral("bold"));
+            tags.push_back(QStringLiteral("style weight=\"900\""));
         }
         if (format.fontItalic() && !baseline.italic)
         {
@@ -818,6 +818,40 @@ namespace
             }
         }
         return tags;
+    }
+
+    bool styledContentHtmlStartsWithPlainSpace(const QString& contentHtml)
+    {
+        bool skippedOpeningTag = false;
+        int cursor = 0;
+        while (cursor < contentHtml.size())
+        {
+            const QChar ch = contentHtml.at(cursor);
+            if (ch == QLatin1Char('<'))
+            {
+                const int tagEnd = contentHtml.indexOf(QLatin1Char('>'), cursor + 1);
+                if (tagEnd < 0)
+                {
+                    return false;
+                }
+                skippedOpeningTag = true;
+                cursor = tagEnd + 1;
+                continue;
+            }
+
+            if (contentHtml.mid(cursor, 6).compare(QStringLiteral("&nbsp;"), Qt::CaseInsensitive) == 0
+                || contentHtml.mid(cursor, 6).compare(QStringLiteral("&#160;"), Qt::CaseInsensitive) == 0)
+            {
+                return true;
+            }
+
+            if (ch.isSpace())
+            {
+                return skippedOpeningTag;
+            }
+            return false;
+        }
+        return false;
     }
 
     QString sourceTextFromStyleMarkerHtml(const QString& markerBody, const QString& openingToken)
@@ -860,13 +894,25 @@ namespace
             sourceLines.push_back(sourceLine);
         }
 
+        const bool shouldRestoreLeadingSpace =
+            styledContentHtmlStartsWithPlainSpace(contentHtml);
         if (sourceLines.isEmpty())
         {
             QString plainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.toPlainText());
             plainText.remove(QChar(0x200B));
+            if (shouldRestoreLeadingSpace && !plainText.startsWith(QLatin1Char(' ')))
+            {
+                plainText.prepend(QLatin1Char(' '));
+            }
             return plainText;
         }
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceLines.join(QLatin1Char('\n')));
+        QString sourceText =
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceLines.join(QLatin1Char('\n')));
+        if (shouldRestoreLeadingSpace && !sourceText.startsWith(QLatin1Char(' ')))
+        {
+            sourceText.prepend(QLatin1Char(' '));
+        }
+        return sourceText;
     }
 
     void replaceStyleMarkersWithSourceTokens(
@@ -1453,7 +1499,7 @@ namespace
         QStringList tags;
         if (format.fontWeight() >= QFont::Black)
         {
-            tags.push_back(QStringLiteral("bold"));
+            tags.push_back(QStringLiteral("style weight=\"900\""));
         }
         if (format.fontItalic())
         {
@@ -1519,7 +1565,10 @@ namespace
         wrapped += text;
         for (auto tagIt = tags.crbegin(); tagIt != tags.crend(); ++tagIt)
         {
-            wrapped += QStringLiteral("</") + *tagIt + QLatin1Char('>');
+            const QString tag = tagIt->trimmed();
+            const int nameEnd = tag.indexOf(QLatin1Char(' '));
+            const QString closingTagName = nameEnd > 0 ? tag.left(nameEnd) : tag;
+            wrapped += QStringLiteral("</") + closingTagName + QLatin1Char('>');
         }
         return wrapped;
     }
@@ -1583,12 +1632,14 @@ namespace
                     continue;
                 }
 
+                const QString styleRestoredFragmentText = restoreRenderedStyleSourceTokens(
+                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
+                    renderedStyleTokens);
+                const QString calloutRestoredFragmentText = restoreRenderedCalloutSourceTokens(
+                    styleRestoredFragmentText,
+                    renderedCalloutTokens);
                 const QString fragmentText = restoreRenderedResourceSourceTokens(
-                    restoreRenderedCalloutSourceTokens(
-                        restoreRenderedStyleSourceTokens(
-                            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragment.text()),
-                            renderedStyleTokens),
-                        renderedCalloutTokens),
+                    restoreRenderedStyleSourceTokens(calloutRestoredFragmentText, renderedStyleTokens),
                     renderedResourceTokens);
                 const QString sourceFragmentText = serializedCalloutBlock
                     ? removeSerializedCalloutFrameChrome(fragmentText)

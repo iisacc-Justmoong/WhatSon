@@ -20,6 +20,10 @@ methods for inserting those templates into editor source text or into a serializ
   Body.
 - `insertStyleFontTagIntoSource(...)` inserts the custom style wrapper with an explicit `font` attribute value, for
   example `<style font="Menlo">...</style>`.
+- `insertStyleFontSizeTagIntoSource(...)` inserts the custom style wrapper with an explicit `size` attribute value, for
+  example `<style size="18">...</style>`.
+- `insertStyleFontWeightTagIntoSource(...)` inserts the custom style wrapper with an explicit `weight` attribute value.
+  The editor `bold` command uses this shape and emits `<style weight="900">...</style>` instead of new `<bold>` source.
 - Paired inline/static wrappers are toggle-aware: when the selected source text is exactly enclosed by the same tag,
   mutation removes that wrapper and returns `toggledOff: true`.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to

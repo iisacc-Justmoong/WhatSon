@@ -235,10 +235,10 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesQtSerializedCall
     const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
         WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
     QVERIFY(persistedBodyDocument.contains(
-        QStringLiteral("<paragraph><callout>After idle <bold>callout</bold></callout></paragraph>")));
+        QStringLiteral("<paragraph><callout>After idle <style weight=\"900\">callout</style></callout></paragraph>")));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
-        QStringLiteral("<callout>After idle <bold>callout</bold></callout>"));
+        QStringLiteral("<callout>After idle <style weight=\"900\">callout</style></callout>"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease()
@@ -542,8 +542,8 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
 
     verifyInlineInsertion(
         QStringLiteral("bold"),
-        QStringLiteral("Alpha <bold>Beta</bold>\nGamma"),
-        QStringLiteral("<strong style=\"font-weight:900;\">Beta</strong>"));
+        QStringLiteral("Alpha <style weight=\"900\">Beta</style>\nGamma"),
+        QStringLiteral("font-weight:900;\">Beta</span>"));
     verifyInlineInsertion(
         QStringLiteral("italic"),
         QStringLiteral("Alpha <italic>Beta</italic>\nGamma"),
@@ -596,7 +596,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
 
     const QString formattedEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("format-note"),
-        QStringLiteral("<bold>Alpha</bold> Beta Gamma"));
+        QStringLiteral("<style weight=\"900\">Alpha</style> Beta Gamma"));
     const QVariantMap offsetMappedResult = session.insertFormatTagIntoSource(
         QStringLiteral("italic"),
         formattedEditorHtml,
@@ -605,7 +605,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(offsetMappedResult.value(QStringLiteral("valid")).toBool());
     QCOMPARE(
         offsetMappedResult.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral("<bold>Alpha</bold> <italic>Beta</italic> Gamma"));
+        QStringLiteral("<style weight=\"900\">Alpha</style> <italic>Beta</italic> Gamma"));
     QCOMPARE(offsetMappedResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha Beta").size());
 
     const QVariantMap nestedFormatResult = session.insertFormatTagIntoSource(
@@ -616,7 +616,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsInlineFormatSour
     QVERIFY(nestedFormatResult.value(QStringLiteral("valid")).toBool());
     QCOMPARE(
         nestedFormatResult.value(QStringLiteral("bodySourceText")).toString(),
-        QStringLiteral("<bold><italic>Alpha</italic></bold> Beta Gamma"));
+        QStringLiteral("<style weight=\"900\"><italic>Alpha</italic></style> Beta Gamma"));
     QCOMPARE(nestedFormatResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha").size());
 
     const QVariantMap toggledFormatResult = session.insertFormatTagIntoSource(
@@ -750,6 +750,56 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSourceI
         QStringLiteral("Alpha Beta\nGamma"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSizeSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("font-size-note"),
+        QStringLiteral("Alpha Beta\nGamma"));
+
+    const QVariantMap selectedSizeResult = session.insertStyleFontSizeTagIntoSource(
+        QStringLiteral("18"),
+        editorHtml,
+        QStringLiteral("Alpha ").size(),
+        QStringLiteral("Beta").size(),
+        QStringLiteral("Beta"));
+    QVERIFY(selectedSizeResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        selectedSizeResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style size=\"18\">Beta</style>\nGamma"));
+    QCOMPARE(selectedSizeResult.value(QStringLiteral("fontSize")).toString(), QStringLiteral("18"));
+    QVERIFY(selectedSizeResult.value(QStringLiteral("editorDocumentText")).toString().contains(QStringLiteral("font-size:18px;")));
+    QCOMPARE(
+        selectedSizeResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("Alpha <style size=\"18\">Beta</style>").size());
+    QCOMPARE(selectedSizeResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap currentLineSizeResult = session.insertStyleFontSizeTagIntoSource(
+        QStringLiteral("024"),
+        editorHtml,
+        QStringLiteral("Alpha Be").size(),
+        0,
+        QString());
+    QVERIFY(currentLineSizeResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        currentLineSizeResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style size=\"24\">Alpha Beta</style>\nGamma"));
+    QCOMPARE(currentLineSizeResult.value(QStringLiteral("fontSize")).toString(), QStringLiteral("24"));
+    QCOMPARE(currentLineSizeResult.value(QStringLiteral("editorSelectionStart")).toInt(), 0);
+    QCOMPARE(currentLineSizeResult.value(QStringLiteral("editorSelectionLength")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap invalidSizeResult = session.insertStyleFontSizeTagIntoSource(
+        QStringLiteral("18px"),
+        editorHtml,
+        0,
+        QStringLiteral("Alpha").size(),
+        QStringLiteral("Alpha"));
+    QVERIFY(!invalidSizeResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        invalidSizeResult.value(QStringLiteral("errorMessage")).toString(),
+        QStringLiteral("Unsupported style tag font size value: 18px"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleContextAtCursor()
 {
     NoteEditorDocumentSession session;
@@ -767,6 +817,11 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleCon
     QCOMPARE(outsideContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
     QCOMPARE(outsideContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Pretendard"));
     QCOMPARE(outsideContext.value(QStringLiteral("fontSize")).toString(), QStringLiteral("12"));
+    QVERIFY(!outsideContext.value(QStringLiteral("boldActive")).toBool());
+    QVERIFY(!outsideContext.value(QStringLiteral("italicActive")).toBool());
+    QVERIFY(!outsideContext.value(QStringLiteral("underlineActive")).toBool());
+    QVERIFY(!outsideContext.value(QStringLiteral("strikethroughActive")).toBool());
+    QVERIFY(!outsideContext.value(QStringLiteral("highlightActive")).toBool());
 
     const QVariantMap fontContext = session.toolbarStyleContextAtCursor(
         editorHtml,
@@ -777,6 +832,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleCon
     QCOMPARE(fontContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
     QCOMPARE(fontContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("menslo"));
     QCOMPARE(fontContext.value(QStringLiteral("fontSize")).toString(), QStringLiteral("12"));
+    QVERIFY(!fontContext.value(QStringLiteral("boldActive")).toBool());
 
     const QVariantMap fontBoundaryContext = session.toolbarStyleContextAtCursor(
         editorHtml,
@@ -805,6 +861,50 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleCon
     QVERIFY(!afterContext.value(QStringLiteral("hasStyleWrapper")).toBool());
     QCOMPARE(afterContext.value(QStringLiteral("styleValue")).toString(), QStringLiteral("Body"));
     QCOMPARE(afterContext.value(QStringLiteral("fontFamily")).toString(), QStringLiteral("Pretendard"));
+
+    const QString formatSourceText =
+        QStringLiteral("Alpha <bold>Beta</bold> "
+                       "<italic><underline>Gamma</underline></italic> "
+                       "<style weight=\"900\">Styled</style> "
+                       "<highlight>Mark</highlight> "
+                       "<strikethrough>Gone</strikethrough> Delta");
+    const QString formatEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("format-context-note"),
+        formatSourceText);
+
+    const QVariantMap boldContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Be").size(),
+        0);
+    QVERIFY(boldContext.value(QStringLiteral("boldActive")).toBool());
+    QVERIFY(!boldContext.value(QStringLiteral("italicActive")).toBool());
+
+    const QVariantMap nestedFormatContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Beta Ga").size(),
+        0);
+    QVERIFY(nestedFormatContext.value(QStringLiteral("italicActive")).toBool());
+    QVERIFY(nestedFormatContext.value(QStringLiteral("underlineActive")).toBool());
+    QVERIFY(!nestedFormatContext.value(QStringLiteral("boldActive")).toBool());
+
+    const QVariantMap highlightContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Beta Gamma Styled Ma").size(),
+        0);
+    QVERIFY(highlightContext.value(QStringLiteral("highlightActive")).toBool());
+
+    const QVariantMap strikethroughContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Beta Gamma Styled Mark Go").size(),
+        0);
+    QVERIFY(strikethroughContext.value(QStringLiteral("strikethroughActive")).toBool());
+
+    const QVariantMap styleWeightBoldContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Beta Gamma St").size(),
+        0);
+    QVERIFY(styleWeightBoldContext.value(QStringLiteral("boldActive")).toBool());
+    QCOMPARE(styleWeightBoldContext.value(QStringLiteral("fontWeight")).toString(), QStringLiteral("900"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper()
@@ -2131,16 +2231,15 @@ void WhatSonCppRegressionTests::noteBodyPersistence_recoversNativeEmptyLineInser
                        "세 번째 줄에 이미지를 놓을 것이다.\n"
                        "무슨 여기에 텍스트를 입력하면, 아 되는구\n"
                        "<resource type=\"image\" format=\".png\" path=\"untitled.wsresources/capture.wsresource\" id=\"capture\" />\n"
-                       "그 밑에<bold> 다시 텍스트를 두었다 </bold>\n"
+                       "그 밑에<style weight=\"900\"> 다시 텍스트를 두었다 </style>\n"
                        "<style style=\"Title\">\n"
                        "타이틀</style>\n"
                        "텍스트 입력 <style font=\"American Typewriter\">이 부분의 폰트는 바뀌었다</style> \n"
                        "아래로 줄 이동 <style font=\"Apple Color Emoji\">여기도 폰트가 다르다</style>\n");
-    QCOMPARE(
-        recoveredSourceAfterNativeEmptyLine(
-            QStringLiteral("mixed-native-empty-line-note"),
-            mixedSourceText),
-        mixedSourceText + QLatin1Char('\n'));
+    const QString recoveredMixedSourceText = recoveredSourceAfterNativeEmptyLine(
+        QStringLiteral("mixed-native-empty-line-note"),
+        mixedSourceText);
+    QCOMPARE(recoveredMixedSourceText, mixedSourceText + QLatin1Char('\n'));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout()

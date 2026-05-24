@@ -114,8 +114,8 @@ namespace
         {
             return {
                 QStringLiteral("bold"),
-                QStringLiteral("<bold>"),
-                QStringLiteral("</bold>")
+                WhatSon::EditorComponent::Style::openingTokenForFontWeight(QStringLiteral("900")),
+                WhatSon::EditorComponent::Style::closingToken()
             };
         }
         if (normalized == QStringLiteral("italic")
@@ -496,6 +496,82 @@ QVariantMap SetTag::insertStyleFontTagIntoSource(
     result.insert(
         QStringLiteral("fontFamily"),
         WhatSon::EditorComponent::Style::normalizedFontFamilyAttributeValue(fontFamily));
+    emit tagInserted(result);
+    return result;
+}
+
+QVariantMap SetTag::insertStyleFontSizeTagIntoSource(
+    const QString& fontSize,
+    const QString& bodySourceText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    const QString openingToken =
+        WhatSon::EditorComponent::Style::openingTokenForFontSize(fontSize);
+    if (openingToken.isEmpty())
+    {
+        const QString errorMessage =
+            QStringLiteral("Unsupported style tag font size value: %1").arg(fontSize.trimmed());
+        updateLastError(errorMessage);
+        return buildInvalidResult(
+            WhatSon::EditorComponent::Style::canonicalName(),
+            bodySourceText,
+            cursorPosition,
+            selectionLength,
+            errorMessage);
+    }
+
+    clearLastError();
+    QVariantMap result = buildSourceInsertionResult(
+        {
+            WhatSon::EditorComponent::Style::canonicalName(),
+            openingToken,
+            WhatSon::EditorComponent::Style::closingToken()
+        },
+        bodySourceText,
+        cursorPosition,
+        selectionLength);
+    result.insert(
+        QStringLiteral("fontSize"),
+        WhatSon::EditorComponent::Style::normalizedFontSizeAttributeValue(fontSize));
+    emit tagInserted(result);
+    return result;
+}
+
+QVariantMap SetTag::insertStyleFontWeightTagIntoSource(
+    const QString& fontWeight,
+    const QString& bodySourceText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    const QString openingToken =
+        WhatSon::EditorComponent::Style::openingTokenForFontWeight(fontWeight);
+    if (openingToken.isEmpty())
+    {
+        const QString errorMessage =
+            QStringLiteral("Unsupported style tag font weight value: %1").arg(fontWeight.trimmed());
+        updateLastError(errorMessage);
+        return buildInvalidResult(
+            WhatSon::EditorComponent::Style::canonicalName(),
+            bodySourceText,
+            cursorPosition,
+            selectionLength,
+            errorMessage);
+    }
+
+    clearLastError();
+    QVariantMap result = buildSourceInsertionResult(
+        {
+            WhatSon::EditorComponent::Style::canonicalName(),
+            openingToken,
+            WhatSon::EditorComponent::Style::closingToken()
+        },
+        bodySourceText,
+        cursorPosition,
+        selectionLength);
+    result.insert(
+        QStringLiteral("fontWeight"),
+        WhatSon::EditorComponent::Style::normalizedFontWeightAttributeValue(fontWeight));
     emit tagInserted(result);
     return result;
 }
