@@ -100,6 +100,43 @@ void WhatSonCppRegressionTests::editorRawPushController_keepsPendingModifiedCoun
     QCOMPARE(pushedTexts.constLast(), QStringLiteral("after first backspace"));
 }
 
+void WhatSonCppRegressionTests::editorRawPushController_refreshesPendingModifiedPayloadForSameRevision()
+{
+    ensureCoreApplication();
+
+    WhatSonEditorRawPushController controller;
+    controller.setIdleIntervalMs(25);
+
+    QStringList pushedReasons;
+    QStringList pushedTexts;
+    controller.setRawPushCallback(
+        [&pushedReasons, &pushedTexts](
+            const QString&,
+            const QString& editorDocumentText,
+            const bool hasEditorDocumentText,
+            const QString& reason,
+            QString*) -> bool
+        {
+            pushedReasons.push_back(reason);
+            pushedTexts.push_back(hasEditorDocumentText ? editorDocumentText : QStringLiteral("<file>"));
+            return true;
+        });
+
+    QSignalSpy finishedSpy(&controller, &WhatSonEditorRawPushController::rawPushFinished);
+    controller.requestModifiedCountPush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        5,
+        QStringLiteral("면접 대"));
+    controller.requestModifiedCountPush(
+        QStringLiteral("/tmp/surface.wsnsource"),
+        5,
+        QStringLiteral("면접 대본"));
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
+    QCOMPARE(pushedReasons.constLast(), QStringLiteral("modified-count"));
+    QCOMPARE(pushedTexts.constLast(), QStringLiteral("면접 대본"));
+}
+
 void WhatSonCppRegressionTests::editorRawPushController_discardsPendingPushForAuthoritativeWrite()
 {
     ensureCoreApplication();

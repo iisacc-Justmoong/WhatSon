@@ -78,6 +78,8 @@ LV.TextEditor {
     readonly property string editorResourceObjectReplacementText: "\uFFFC"
     readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForLogicalCursor()
 
+    signal editorDocumentEdited(string documentText, int documentRevision)
+
     function numberOrFallback(value, fallbackValue) {
         const numericValue = Number(value);
         return Number.isFinite(numericValue) ? numericValue : fallbackValue;
@@ -826,6 +828,15 @@ LV.TextEditor {
         value: Math.round(textEditor.editorViewportWidth)
         when: textEditor.noteEditorSession
               && textEditor.noteEditorSession.editorViewportWidth !== undefined
+    }
+
+    Connections {
+        target: textEditor
+        ignoreUnknownSignals: true
+
+        function onDocumentEdited(documentText, documentRevision) {
+            textEditor.editorDocumentEdited(documentText, documentRevision);
+        }
     }
 
     Connections {

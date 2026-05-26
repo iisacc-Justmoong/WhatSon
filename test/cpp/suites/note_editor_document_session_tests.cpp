@@ -279,6 +279,61 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
         QStringLiteral("After modified count push"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_promotesLatestKoreanCompositionPayloadToBodyAndPreview()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("korean-composition-tail-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Before Korean composition"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        5,
+        QStringLiteral("면접 대"));
+    session.requestEditorModifiedCountRawPush(
+        session.editorFilePath(),
+        5,
+        QStringLiteral("면접 대본"));
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        QStringLiteral("면접 대본"));
+
+    WhatSonLocalNoteFileStore fileStore;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = noteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+    WhatSonLocalNoteDocument persistedDocument;
+    QString readError;
+    QVERIFY2(fileStore.readNote(readRequest, &persistedDocument, &readError), qPrintable(readError));
+    const LibraryNoteRecord persistedRecord = persistedDocument.toLibraryNoteRecord();
+    QCOMPARE(persistedRecord.bodyFirstLine, QStringLiteral("면접 대본"));
+    QCOMPARE(persistedRecord.bodyPlainText.trimmed(), QStringLiteral("면접 대본"));
+    QCOMPARE(persistedRecord.bodySourceText.trimmed(), QStringLiteral("면접 대본"));
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture()
 {
     QTemporaryDir workspaceDir;

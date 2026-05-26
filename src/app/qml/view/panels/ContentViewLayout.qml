@@ -98,6 +98,9 @@ Item {
         })
     property bool editorFormatContextMenuPointerActive: false
     property bool editorApplyingPulledDocumentText: false
+    property bool editorRawPushDeferredForInputComposition: false
+    property string editorRawPushDeferredReason: ""
+    property string editorRawPushDeferredSourceFilePath: ""
     property var noteListModel: null
     readonly property var currentResourceEntry: contentViewLayout.resourceListActive
             && contentViewLayout.noteListModel.currentResourceEntry !== undefined
@@ -461,7 +464,54 @@ Item {
         return contentViewLayout.noteEditorSession.markEditorSessionFileReadyForRawPush(
                     readPath);
     }
-    function requestEditorModifiedRawPush(editorDocumentText) {
+    function editorInputCompositionActive() {
+        return !!(contentsTextEditor
+                  && contentsTextEditor.inputMethodComposing !== undefined
+                  && Boolean(contentsTextEditor.inputMethodComposing));
+    }
+    function deferEditorRawPushForInputComposition(reason, editorFilePath) {
+        const normalizedPath = editorFilePath === undefined || editorFilePath === null
+                ? contentViewLayout.editorSourceFilePath
+                : String(editorFilePath).trim();
+        if (normalizedPath.length === 0)
+            return false;
+
+        contentViewLayout.editorRawPushDeferredForInputComposition = true;
+        contentViewLayout.editorRawPushDeferredSourceFilePath = normalizedPath;
+        const normalizedReason = reason === undefined || reason === null
+                ? ""
+                : String(reason).trim();
+        if (normalizedReason === "modified-count"
+                || contentViewLayout.editorRawPushDeferredReason.length === 0)
+            contentViewLayout.editorRawPushDeferredReason = normalizedReason.length > 0
+                    ? normalizedReason
+                    : "idle";
+        return true;
+    }
+    function flushDeferredEditorRawPushAfterInputComposition() {
+        if (!contentViewLayout.editorRawPushDeferredForInputComposition
+                || contentViewLayout.editorInputCompositionActive())
+            return false;
+
+        const deferredPath = contentViewLayout.editorRawPushDeferredSourceFilePath;
+        const deferredReason = contentViewLayout.editorRawPushDeferredReason;
+        contentViewLayout.editorRawPushDeferredForInputComposition = false;
+        contentViewLayout.editorRawPushDeferredReason = "";
+        contentViewLayout.editorRawPushDeferredSourceFilePath = "";
+
+        if (deferredPath.length === 0
+                || deferredPath !== contentViewLayout.editorSourceFilePath)
+            return false;
+        if (deferredReason === "modified-count")
+            return contentViewLayout.requestEditorModifiedRawPush(
+                        contentsTextEditor.editorDocumentText,
+                        contentsTextEditor.editorPlainTextRevision + 1);
+        return contentViewLayout.requestEditorIdleRawPush(deferredPath);
+    }
+    function requestEditorModifiedRawPush(editorDocumentText, editorDocumentRevision) {
+        const modifiedRevision = Math.max(0, Math.floor(Number(editorDocumentRevision) || 0));
+        if (contentViewLayout.editorInputCompositionActive())
+            return contentViewLayout.deferEditorRawPushForInputComposition("modified-count", contentViewLayout.editorSourceFilePath);
         if (contentViewLayout.noteEditorSurfaceVisible
                 && !contentViewLayout.editorApplyingPulledDocumentText
                 && !contentsTextEditor.editorProgrammaticDocumentApplying
@@ -471,11 +521,35 @@ Item {
                 && contentViewLayout.editorSourceFilePath.length > 0) {
             contentViewLayout.noteEditorSession.requestEditorModifiedCountRawPush(
                         contentViewLayout.editorSourceFilePath,
-                        contentsTextEditor.editorPlainTextRevision + 1,
+                        modifiedRevision > 0 ? modifiedRevision : contentsTextEditor.editorPlainTextRevision + 1,
                         editorDocumentText === undefined || editorDocumentText === null
                         ? contentsTextEditor.editorDocumentText
                         : String(editorDocumentText));
+            return true;
         }
+        return false;
+    }
+    function requestEditorIdleRawPush(editorFilePath) {
+        const syncedPath = editorFilePath === undefined || editorFilePath === null
+                ? ""
+                : String(editorFilePath).trim();
+        if (syncedPath.length === 0
+                || syncedPath !== contentViewLayout.editorSourceFilePath)
+            return false;
+        if (contentViewLayout.editorInputCompositionActive())
+            return contentViewLayout.deferEditorRawPushForInputComposition("idle", syncedPath);
+        if (contentViewLayout.noteEditorSurfaceVisible
+                && !contentViewLayout.editorApplyingPulledDocumentText
+                && !contentsTextEditor.editorProgrammaticDocumentApplying
+                && !contentsTextEditor.editorFrameViewportRefreshApplying
+                && contentViewLayout.noteEditorSession
+                && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
+            contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
+                        syncedPath,
+                        contentsTextEditor.editorDocumentText);
+            return true;
+        }
+        return false;
     }
     function editorFormatSelectionForCommand(allowSelectionSnapshot) {
         if (Boolean(allowSelectionSnapshot)
@@ -644,25 +718,14 @@ Item {
                             contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
                         }
                         onTextEdited: function() {
-                            contentViewLayout.requestEditorModifiedRawPush(contentsTextEditor.editorDocumentText);
+                            contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
+                        }
+                        onEditorDocumentEdited: function(documentText, documentRevision) {
+                            contentViewLayout.requestEditorModifiedRawPush(documentText, documentRevision);
                             contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
                         }
                         onSyncFinished: function(path) {
-                            const syncedPath = path === undefined || path === null ? "" : String(path).trim();
-                            if (syncedPath.length === 0
-                                    || syncedPath !== contentViewLayout.editorSourceFilePath) {
-                                return;
-                            }
-                            if (contentViewLayout.noteEditorSurfaceVisible
-                                    && !contentViewLayout.editorApplyingPulledDocumentText
-                                    && !contentsTextEditor.editorProgrammaticDocumentApplying
-                                    && !contentsTextEditor.editorFrameViewportRefreshApplying
-                                    && contentViewLayout.noteEditorSession
-                                    && contentViewLayout.noteEditorSession.requestEditorIdleRawPush !== undefined) {
-                                contentViewLayout.noteEditorSession.requestEditorIdleRawPush(
-                                            syncedPath,
-                                            contentsTextEditor.editorDocumentText);
-                            }
+                            contentViewLayout.requestEditorIdleRawPush(path);
                         }
                         onEditorPlainTextRevisionChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
@@ -671,6 +734,13 @@ Item {
                         onEditorDocumentTextChanged: {
                             contentViewLayout.clearEditorFormatSelectionSnapshot();
                             contentViewLayout.requestEditorToolbarStyleContextRefresh(false);
+                            if (contentViewLayout.editorRawPushDeferredForInputComposition
+                                    && !contentsTextEditor.inputMethodComposing)
+                                Qt.callLater(contentViewLayout.flushDeferredEditorRawPushAfterInputComposition);
+                        }
+                        onInputMethodComposingChanged: {
+                            if (!contentsTextEditor.inputMethodComposing)
+                                Qt.callLater(contentViewLayout.flushDeferredEditorRawPushAfterInputComposition);
                         }
                         onCursorPositionChanged: contentViewLayout.requestEditorToolbarStyleContextRefresh(false)
                         onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()

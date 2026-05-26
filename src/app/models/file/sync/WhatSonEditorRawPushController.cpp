@@ -79,6 +79,14 @@ void WhatSonEditorRawPushController::requestModifiedCountPush(
     resetModifiedCountTrackingIfNeeded(path);
     if (modifiedCount <= m_lastModifiedCount)
     {
+        if (modifiedCount == m_lastModifiedCount
+            && m_hasPendingPush
+            && m_pendingPush.editorFilePath == path
+            && m_pendingPush.reason == QString::fromLatin1(kModifiedCountReason))
+        {
+            m_pendingPush.bodySourceText = bodySourceText;
+            m_pendingPush.hasBodySourceText = true;
+        }
         return;
     }
 

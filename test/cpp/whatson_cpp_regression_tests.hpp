@@ -1379,6 +1379,7 @@ private slots:
     void editorRawPullController_pullsActiveNoteEveryIdleInterval();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
     void editorRawPushController_keepsPendingModifiedCountWhenIdleSyncArrives();
+    void editorRawPushController_refreshesPendingModifiedPayloadForSameRevision();
     void editorRawPushController_discardsPendingPushForAuthoritativeWrite();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
@@ -1413,6 +1414,7 @@ private slots:
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
+    void noteEditorDocumentSession_promotesLatestKoreanCompositionPayloadToBodyAndPreview();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
     void noteEditorDocumentSession_routesOpenPullThroughSyncController();
