@@ -1,5 +1,7 @@
 #include "app/models/editor/component/style.h"
 
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
+
 #include <QColor>
 #include <QFont>
 #include <QRegularExpression>
@@ -430,6 +432,32 @@ namespace WhatSon::EditorComponent
             return {};
         }
         return QStringLiteral("<style weight=\"%1\">").arg(normalizedValue);
+    }
+
+    QString Style::normalizedBackgroundAttributeValue(QString value)
+    {
+        value = decodeXmlEntities(value).trimmed();
+        if (value.isEmpty())
+        {
+            return {};
+        }
+
+        if (WhatSon::Bookmarks::isHexColor(value))
+        {
+            return WhatSon::Bookmarks::normalizeHexColor(value);
+        }
+
+        return WhatSon::Bookmarks::bookmarkColorHexForName(value);
+    }
+
+    QString Style::openingTokenForBackground(QString value)
+    {
+        const QString normalizedValue = normalizedBackgroundAttributeValue(value);
+        if (normalizedValue.isEmpty())
+        {
+            return {};
+        }
+        return QStringLiteral("<style background=\"%1\">").arg(normalizedValue);
     }
 
     QString Style::bodyEditorCssDeclaration()

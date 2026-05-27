@@ -9,6 +9,7 @@
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
 #include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/support/WhatSonIiXmlDocumentSupport.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -826,6 +827,9 @@ namespace
         const QString rawLineHeight = hasStyleWrapper
             ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("height")).trimmed()
             : QString();
+        const QString rawBackground = hasStyleWrapper
+            ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("background")).trimmed()
+            : QString();
 
         QVariantMap result;
         result.insert(QStringLiteral("valid"), true);
@@ -856,9 +860,7 @@ namespace
                 : QString());
         result.insert(
             QStringLiteral("background"),
-            hasStyleWrapper
-                ? Style::attributeValueFromRawToken(openingToken, QStringLiteral("background")).trimmed()
-                : QString());
+            rawBackground);
         result.insert(
             QStringLiteral("align"),
             hasStyleWrapper
@@ -878,7 +880,7 @@ namespace
             activeFormatTags.contains(QStringLiteral("strikethrough")));
         result.insert(
             QStringLiteral("highlightActive"),
-            activeFormatTags.contains(QStringLiteral("highlight")));
+            activeFormatTags.contains(QStringLiteral("highlight")) || !rawBackground.isEmpty());
         return result;
     }
 
@@ -2940,6 +2942,129 @@ QVariantMap NoteEditorDocumentSession::insertStyleFontSizeTagIntoSource(
             result.value(QStringLiteral("sourceCursorPosition")).toInt()));
     setParsedLineCount(lineCountForEditorSource(resultSourceText));
     setLastError(QString());
+    return result;
+}
+
+QVariantMap NoteEditorDocumentSession::insertStyleBackgroundTagIntoSource(
+    const QString& backgroundColor,
+    const QString& editorDocumentText,
+    const int cursorPosition,
+    const int selectionLength,
+    const QString& selectedText)
+{
+    const QString noteId = m_activeNoteId.trimmed().isEmpty()
+        ? QStringLiteral("note")
+        : m_activeNoteId.trimmed();
+    const QString activeSourceText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(m_activeBodySourceText);
+    const QString sourceText = hasActiveNote() && !activeSourceText.isEmpty()
+        ? activeSourceText
+        : bodySourceTextForEditorDocument(noteId, editorDocumentText);
+    const EditorSelectionRange editorSelectionRange = resolvedEditorSelectionRange(
+        sourceText,
+        cursorPosition,
+        selectionLength,
+        selectedText);
+    const SourceSelectionRange sourceSelectionRange =
+        styleSourceRangeForEditorSelection(sourceText, editorSelectionRange);
+    if (sourceSelectionRange.sourceEnd <= sourceSelectionRange.sourceStart)
+    {
+        const QString errorMessage =
+            QStringLiteral("Style background insertion requires selected text or a non-empty current line.");
+        QVariantMap emptyResult;
+        emptyResult.insert(QStringLiteral("valid"), false);
+        emptyResult.insert(QStringLiteral("changed"), false);
+        emptyResult.insert(QStringLiteral("tagName"), QStringLiteral("style"));
+        emptyResult.insert(QStringLiteral("bodySourceText"), sourceText);
+        emptyResult.insert(QStringLiteral("editorDocumentText"), editorDocumentText);
+        emptyResult.insert(QStringLiteral("cursorPosition"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("sourceCursorPosition"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionStart"), sourceSelectionRange.sourceStart);
+        emptyResult.insert(QStringLiteral("selectionLength"), 0);
+        emptyResult.insert(QStringLiteral("editorSelectionStart"), editorSelectionRange.editorStart);
+        emptyResult.insert(QStringLiteral("editorSelectionLength"), 0);
+        emptyResult.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return emptyResult;
+    }
+
+    SetTag tagInput;
+    QVariantMap result = tagInput.insertStyleBackgroundTagIntoSource(
+        backgroundColor,
+        sourceText,
+        sourceSelectionRange.sourceStart,
+        sourceSelectionRange.sourceEnd - sourceSelectionRange.sourceStart);
+
+    const QString resultSourceText = result.value(QStringLiteral("bodySourceText")).toString();
+    const QString editorHtml = editorHtmlFromBodySourceForNoteContext(
+        noteId,
+        resultSourceText,
+        m_activeNoteDirectoryPath,
+        m_editorViewportWidth);
+    result.insert(QStringLiteral("editorDocumentText"), editorHtml);
+    result.insert(QStringLiteral("sourceCursorPosition"), result.value(QStringLiteral("cursorPosition")).toInt());
+    result.insert(QStringLiteral("editorSelectionStart"), sourceSelectionRange.editorStart);
+    result.insert(
+        QStringLiteral("editorSelectionLength"),
+        sourceSelectionRange.editorEnd - sourceSelectionRange.editorStart);
+
+    if (!result.value(QStringLiteral("valid")).toBool())
+    {
+        setLastError(result.value(QStringLiteral("errorMessage")).toString());
+        return result;
+    }
+
+    QString stageError;
+    if (!stageActiveSourceMutationForCurrentEditorFile(resultSourceText, editorHtml, &stageError))
+    {
+        const QString errorMessage = stageError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to stage style background in the editor session file.")
+            : stageError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    if (hasActiveNote()
+        && !persistBodySourceTextForEditorFile(m_editorFilePath, resultSourceText))
+    {
+        const QString errorMessage = m_lastError.trimmed().isEmpty()
+            ? QStringLiteral("Failed to persist style background in the note body.")
+            : m_lastError.trimmed();
+        result.insert(QStringLiteral("valid"), false);
+        result.insert(QStringLiteral("changed"), false);
+        result.insert(QStringLiteral("errorMessage"), errorMessage);
+        setLastError(errorMessage);
+        return result;
+    }
+
+    result.insert(
+        QStringLiteral("cursorPosition"),
+        editorCursorPositionForSourcePosition(
+            resultSourceText,
+            result.value(QStringLiteral("sourceCursorPosition")).toInt()));
+    setParsedLineCount(lineCountForEditorSource(resultSourceText));
+    setLastError(QString());
+    return result;
+}
+
+QVariantList NoteEditorDocumentSession::highlightColorMenuItems() const
+{
+    QVariantList result;
+    result.reserve(static_cast<int>(WhatSon::Bookmarks::kBookmarkColorDefinitions.size()));
+
+    for (const WhatSon::Bookmarks::BookmarkColorDefinition& definition :
+         WhatSon::Bookmarks::kBookmarkColorDefinitions)
+    {
+        QVariantMap item;
+        item.insert(QStringLiteral("name"), QString::fromLatin1(definition.name));
+        item.insert(QStringLiteral("label"), QString::fromLatin1(definition.displayName));
+        item.insert(QStringLiteral("colorHex"), QString::fromLatin1(definition.hex));
+        result.push_back(std::move(item));
+    }
+
     return result;
 }
 

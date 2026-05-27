@@ -38,6 +38,8 @@ namespace WhatSon::EditorComponent
         static QString openingTokenForFontSize(QString value);
         static QString normalizedFontWeightAttributeValue(QString value);
         static QString openingTokenForFontWeight(QString value);
+        static QString normalizedBackgroundAttributeValue(QString value);
+        static QString openingTokenForBackground(QString value);
         static StyleToken lvrsTextStyleTokenFromName(QString tokenName);
         static QString bodyEditorCssDeclaration();
         static QString attributeValueFromRawToken(const QString& rawTagText, const QString& attributeName);

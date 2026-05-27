@@ -24,6 +24,9 @@ Implements the editor-domain projection and recovery helpers for the proprietary
   positive integer values are accepted for authored size attributes.
 - Toolbar font-weight values are normalized here before `SetTag` creates `<style weight="...">` source wrappers.
   `bold` normalizes to `900`, `regular`/`normal` normalize to `400`, and numeric values are preserved when valid.
+- Toolbar highlight background values are normalized here before `SetTag` creates `<style background="...">` source
+  wrappers. The accepted named values come from `WhatSonBookmarkColorPalette`, and shorthand hex is expanded to canonical
+  uppercase six-digit form.
 - A font-only source token such as `<style font="American Typewriter">` projects and matches as a family-only span.
   It must not require the implicit Body token size, weight, or line-height when recovering Qt/LVRS rich-text HTML,
   because those serializers may preserve only the selected `font-family` declaration for that run.

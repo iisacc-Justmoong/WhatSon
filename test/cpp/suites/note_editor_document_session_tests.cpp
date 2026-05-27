@@ -851,8 +851,63 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleFontSizeSou
         QStringLiteral("Alpha"));
     QVERIFY(!invalidSizeResult.value(QStringLiteral("valid")).toBool());
     QCOMPARE(
-        invalidSizeResult.value(QStringLiteral("errorMessage")).toString(),
-        QStringLiteral("Unsupported style tag font size value: 18px"));
+             invalidSizeResult.value(QStringLiteral("errorMessage")).toString(),
+             QStringLiteral("Unsupported style tag font size value: 18px"));
+}
+
+void WhatSonCppRegressionTests::noteEditorDocumentSession_buildsStyleBackgroundSourceInsertion()
+{
+    NoteEditorDocumentSession session;
+    const QString editorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
+        QStringLiteral("style-background-note"),
+        QStringLiteral("Alpha Beta\nGamma"));
+    const QVariantList highlightColorMenuItems = session.highlightColorMenuItems();
+    QCOMPARE(highlightColorMenuItems.size(), 10);
+    QCOMPARE(highlightColorMenuItems.first().toMap().value(QStringLiteral("name")).toString(), QStringLiteral("red"));
+    QCOMPARE(highlightColorMenuItems.first().toMap().value(QStringLiteral("colorHex")).toString(), QStringLiteral("#EF4444"));
+
+    const QVariantMap selectedBackgroundResult = session.insertStyleBackgroundTagIntoSource(
+        QStringLiteral("red"),
+        editorHtml,
+        QStringLiteral("Alpha ").size(),
+        QStringLiteral("Beta").size(),
+        QStringLiteral("Beta"));
+    QVERIFY(selectedBackgroundResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        selectedBackgroundResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("Alpha <style background=\"#EF4444\">Beta</style>\nGamma"));
+    QCOMPARE(selectedBackgroundResult.value(QStringLiteral("backgroundColor")).toString(), QStringLiteral("#EF4444"));
+    QVERIFY(selectedBackgroundResult.value(QStringLiteral("editorDocumentText")).toString().contains(
+        QStringLiteral("background-color:#EF4444;")));
+    QCOMPARE(
+        selectedBackgroundResult.value(QStringLiteral("sourceCursorPosition")).toInt(),
+        QStringLiteral("Alpha <style background=\"#EF4444\">Beta</style>").size());
+    QCOMPARE(selectedBackgroundResult.value(QStringLiteral("cursorPosition")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap currentLineBackgroundResult = session.insertStyleBackgroundTagIntoSource(
+        QStringLiteral("#14b8a6"),
+        editorHtml,
+        QStringLiteral("Alpha Be").size(),
+        0,
+        QString());
+    QVERIFY(currentLineBackgroundResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        currentLineBackgroundResult.value(QStringLiteral("bodySourceText")).toString(),
+        QStringLiteral("<style background=\"#14B8A6\">Alpha Beta</style>\nGamma"));
+    QCOMPARE(currentLineBackgroundResult.value(QStringLiteral("backgroundColor")).toString(), QStringLiteral("#14B8A6"));
+    QCOMPARE(currentLineBackgroundResult.value(QStringLiteral("editorSelectionStart")).toInt(), 0);
+    QCOMPARE(currentLineBackgroundResult.value(QStringLiteral("editorSelectionLength")).toInt(), QStringLiteral("Alpha Beta").size());
+
+    const QVariantMap invalidBackgroundResult = session.insertStyleBackgroundTagIntoSource(
+        QStringLiteral("not-a-bookmark-color"),
+        editorHtml,
+        0,
+        QStringLiteral("Alpha").size(),
+        QStringLiteral("Alpha"));
+    QVERIFY(!invalidBackgroundResult.value(QStringLiteral("valid")).toBool());
+    QCOMPARE(
+        invalidBackgroundResult.value(QStringLiteral("errorMessage")).toString(),
+        QStringLiteral("Unsupported style tag background value: not-a-bookmark-color"));
 }
 
 void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleContextAtCursor()
@@ -922,6 +977,7 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleCon
                        "<italic><underline>Gamma</underline></italic> "
                        "<style weight=\"900\">Styled</style> "
                        "<highlight>Mark</highlight> "
+                       "<style background=\"#EF4444\">Tinted</style> "
                        "<strikethrough>Gone</strikethrough> Delta");
     const QString formatEditorHtml = WhatSon::NoteBodyPersistence::editorHtmlFromBodySource(
         QStringLiteral("format-context-note"),
@@ -948,9 +1004,16 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_reportsToolbarStyleCon
         0);
     QVERIFY(highlightContext.value(QStringLiteral("highlightActive")).toBool());
 
+    const QVariantMap backgroundHighlightContext = session.toolbarStyleContextAtCursor(
+        formatEditorHtml,
+        QStringLiteral("Alpha Beta Gamma Styled Mark Ti").size(),
+        0);
+    QCOMPARE(backgroundHighlightContext.value(QStringLiteral("background")).toString(), QStringLiteral("#EF4444"));
+    QVERIFY(backgroundHighlightContext.value(QStringLiteral("highlightActive")).toBool());
+
     const QVariantMap strikethroughContext = session.toolbarStyleContextAtCursor(
         formatEditorHtml,
-        QStringLiteral("Alpha Beta Gamma Styled Mark Go").size(),
+        QStringLiteral("Alpha Beta Gamma Styled Mark Tinted Go").size(),
         0);
     QVERIFY(strikethroughContext.value(QStringLiteral("strikethroughActive")).toBool());
 

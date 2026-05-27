@@ -34,6 +34,12 @@ The toolbar `fontSize` selector forwards menu selections and direct integer inpu
 `NoteEditorDocumentSession.insertStyleFontSizeTagIntoSource(...)`. The C++ session validates the size, authors
 `<style size="...">...</style>`, and reports `editor.toolbar.font-size.<size>` after the LVRS document replacement
 succeeds.
+The layout passes `NoteEditorDocumentSession` into the toolbar as `highlightColorProvider`, so the highlight menu rows
+come from the same C++ bookmark color palette definition used by bookmark hierarchy coloring. The toolbar highlight chevron forwards bookmark-palette color choices to
+`NoteEditorDocumentSession.insertStyleBackgroundTagIntoSource(...)`. The C++ session validates the color against the same
+palette/hex contract, authors `<style background="...">...</style>`, and reports
+`editor.toolbar.highlight-color.<hex>` after the LVRS document replacement succeeds. The main highlight icon remains the
+existing yellow inline `highlight` format command.
 The layout also refreshes toolbar display state from `NoteEditorDocumentSession.toolbarStyleContextAtCursor(...)` when
 the editor cursor, document text, or mounted session changes. QML only copies the returned display strings into
 `ContentEditorToolbar`; parsing the active `<style ...>` wrapper remains a C++ session responsibility.
@@ -224,6 +230,10 @@ classified as a local modified-count push.
   `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`로 전달되어 선택 영역 또는 현재 non-empty line을
   `<style font="...">...</style>`로 감싸고, active note에서는 mounted editor session file과 `.wsnbody` source에
   즉시 반영된다.
+- 에디터 toolbar의 highlight chevron은 북마크 색상 팔레트를 `LV.ContextMenu`로 표시하고, 선택한 색상 hex를
+  `NoteEditorDocumentSession.insertStyleBackgroundTagIntoSource(...)`로 전달한다. 기본 highlight 아이콘 클릭은 기존
+  노란 inline `highlight` 명령으로 남는다. 메뉴 항목은 `NoteEditorDocumentSession.highlightColorMenuItems()`를 통해
+  C++ 북마크 팔레트 정의에서 공급된다.
 - `.wsnbody` parse/serialize는 C++ `NoteEditorDocumentSession`에 맡기며 프로젝션, 렌더링, generic resource editor,
   editor view mode 백엔드는 mount하지 않는다. Calendar overlay는 이미 노출된 calendar controller와
   `LibraryHierarchyController.activateNoteById(...)` bridge만 사용한다.

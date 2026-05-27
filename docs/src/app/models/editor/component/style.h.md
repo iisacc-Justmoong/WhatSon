@@ -21,6 +21,9 @@ Declares the editor-domain component contract for the proprietary `.wsnbody` `<s
 - `Style::normalizedFontWeightAttributeValue(...)` and `Style::openingTokenForFontWeight(...)` own toolbar font-weight
   normalization and `<style weight="...">` source token generation. `bold` normalizes to the explicit `900` value used
   by the editor bold command, while `regular`/`normal` normalize to `400`.
+- `Style::normalizedBackgroundAttributeValue(...)` and `Style::openingTokenForBackground(...)` own toolbar highlight
+  color normalization and `<style background="...">` source token generation. Accepted named colors are the bookmark
+  palette entries; accepted hex values are normalized to uppercase six-digit `#RRGGBB`.
 - `StyleToken` captures the LVRS text token metrics used by editor projection.
 - `StyleSourceBaseline` captures the formatting baseline used when rich editor spans are converted back to canonical
   source tags.

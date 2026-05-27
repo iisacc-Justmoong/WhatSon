@@ -368,6 +368,37 @@ Item {
         }
         return replaced;
     }
+    function applyEditorStyleTagBackground(backgroundColor, allowSelectionSnapshot) {
+        if (!contentViewLayout.noteEditorSession
+                || contentViewLayout.editorReadOnly
+                || contentViewLayout.noteEditorSession.insertStyleBackgroundTagIntoSource === undefined)
+            return false;
+
+        const selectionState = contentViewLayout.editorFormatSelectionForCommand(
+                    Boolean(allowSelectionSnapshot));
+        const styleResult = contentViewLayout.noteEditorSession.insertStyleBackgroundTagIntoSource(
+                    backgroundColor,
+                    selectionState.documentText,
+                    selectionState.selectionStart,
+                    selectionState.selectionLength,
+                    selectionState.selectedText);
+        if (!styleResult || !Boolean(styleResult.valid))
+            return false;
+
+        const editorDocumentText = styleResult.editorDocumentText !== undefined
+                && styleResult.editorDocumentText !== null
+                ? String(styleResult.editorDocumentText)
+                : String(styleResult.bodySourceText);
+        const replaced = contentsTextEditor.replaceEditorDocumentText(
+                    editorDocumentText,
+                    Number(styleResult.cursorPosition) || 0);
+        if (replaced) {
+            contentViewLayout.clearEditorFormatSelectionSnapshot();
+            contentViewLayout.requestEditorToolbarStyleContextRefresh(true);
+            contentViewLayout.requestViewHook("editor.toolbar.highlight-color." + String(backgroundColor));
+        }
+        return replaced;
+    }
     function refreshEditorToolbarStyleContext() {
         contentViewLayout.editorToolbarStyleContextRefreshQueued = false;
         contentViewLayout.editorToolbarStyleContextRefreshArmQueued = false;
@@ -643,6 +674,7 @@ Item {
                 Layout.preferredHeight: visible ? implicitHeight : 0
                 editorReadOnly: contentViewLayout.editorReadOnly
                 fontFamilyProvider: contentViewLayout.editorFontFamilyProvider
+                highlightColorProvider: contentViewLayout.noteEditorSession
                 visible: contentViewLayout.noteEditorSurfaceVisible
 
                 onFormatTagRequested: function(tagName) {
@@ -656,6 +688,9 @@ Item {
                 }
                 onFontSizeRequested: function(fontSize) {
                     contentViewLayout.applyEditorStyleTagFontSize(fontSize);
+                }
+                onHighlightColorRequested: function(colorName, colorHex) {
+                    contentViewLayout.applyEditorStyleTagBackground(colorHex);
                 }
                 onToolbarActionRequested: function(actionName) {
                     contentViewLayout.requestViewHook(actionName);

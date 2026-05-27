@@ -300,6 +300,11 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleFontTagIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorStyleTagFontSize(fontSize, allowSelectionSnapshot)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleFontSizeTagIntoSource")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onHighlightColorRequested: function(colorName, colorHex)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("highlightColorProvider: contentViewLayout.noteEditorSession")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.applyEditorStyleTagBackground(colorHex);")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorStyleTagBackground(backgroundColor, allowSelectionSnapshot)")));
+    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession.insertStyleBackgroundTagIntoSource")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function refreshEditorToolbarStyleContext()")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function requestEditorToolbarStyleContextRefresh(immediate)")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function armEditorToolbarStyleContextRefresh()")));
@@ -511,6 +516,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property var styleTagStyleValues: [")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedStyleTagStyleValue: \"Title\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property var fontFamilyProvider: null")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property var highlightColorProvider: null")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontFamily: \"Pretendard\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontSizeValue: \"12\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property string selectedFontWeightValue: \"Medium\"")));
@@ -521,9 +527,21 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property bool strikethroughActive: false")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("property bool highlightActive: false")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property var fontSizeValues: [")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property var highlightColorValues: [")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"red\", label: \"Red\", colorHex: \"#EF4444\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"orange\", label: \"Orange\", colorHex: \"#F97316\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"amber\", label: \"Amber\", colorHex: \"#F59E0B\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"yellow\", label: \"Yellow\", colorHex: \"#EAB308\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"green\", label: \"Green\", colorHex: \"#22C55E\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"teal\", label: \"Teal\", colorHex: \"#14B8A6\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"blue\", label: \"Blue\", colorHex: \"#3B82F6\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"indigo\", label: \"Indigo\", colorHex: \"#B589EC\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"purple\", label: \"Purple\", colorHex: \"#8B5CF6\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("name: \"pink\", label: \"Pink\", colorHex: \"#EC4899\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal styleTagStyleRequested(string styleValue)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal fontFamilyRequested(string fontFamily)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal fontSizeRequested(string fontSize)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("signal highlightColorRequested(string colorName, string colorHex)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function applyStyleContext(styleContext)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function styleContextBool(styleContext, key)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function formatTagActive(tagName)")));
@@ -537,7 +555,10 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuPreferredWidth(items)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuSelectedIndex(items)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontSizeMenuItems()")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function highlightColorMenuItems()")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.highlightColorProvider.highlightColorMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function openFontSizeContextMenu(anchorItem)")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function openHighlightColorContextMenu(anchorItem)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function beginFontSizeInput(anchorItem)")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("readonly property int fontFamilyMenuMaximumVisibleRows")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("function fontFamilyMenuViewportHeight(itemCount)")));
@@ -548,6 +569,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("Component {")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: styleTagStyleMenuItemDelegate")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: fontFamilyMenuItemDelegate")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: highlightColorMenuItemDelegate")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: styleTagStyleContextMenu")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"styleTagStyleContextMenu\"")));
@@ -555,6 +577,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"fontFamilyContextMenu\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: fontSizeContextMenu")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"fontSizeContextMenu\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("id: highlightColorContextMenu")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("objectName: \"highlightColorContextMenu\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("itemDelegate: fontFamilyMenuItemDelegate")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("items: editorToolbar.fontFamilyMenuItems()")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("selectedIndex: editorToolbar.fontFamilyMenuSelectedIndex(")));
@@ -623,6 +647,7 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.openStyleTagStyleContextMenu(toolbarComboBox);")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.openFontFamilyContextMenu(toolbarComboBox);")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.openFontSizeContextMenu(toolbarComboBox);")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.openHighlightColorContextMenu(swatchButton);")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.beginFontSizeInput(toolbarComboBox);")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("text: editorToolbar.selectedFontFamily")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.fontFamilyRequested(fontFamily);")));
@@ -649,6 +674,8 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"underline\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"strikethrough\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"highlight\"")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("opensHighlightColorMenu: true")));
+    QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("editorToolbar.highlightColorRequested(colorName, colorHex);")));
     const QRegularExpression textColorButtonIconContract(QStringLiteral(
         R"(figmaIconComponentName: "color"[\s\S]*figmaNodeId: "399:8683"[\s\S]*iconName: "color"[\s\S]*swatchGlyph: "")"));
     QVERIFY2(textColorButtonIconContract.match(contentEditorToolbarSource).hasMatch(),

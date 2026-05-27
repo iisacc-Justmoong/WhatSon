@@ -140,15 +140,16 @@ Implements the active note editor document session.
   mutation signal so `main.cpp` can wire that signal into `WhatSonHubSyncController`.
 - Static format tags are inserted by `SetTag` through `insertFormatTagIntoSource(...)`, style selector values are
   inserted through `insertStyleTagIntoSource(...)`, and font selector values are inserted through
-  `insertStyleFontTagIntoSource(...)`. QML supplies only the tag/style/font name, current editor document text,
+  `insertStyleFontTagIntoSource(...)`. Highlight color choices are inserted through
+  `insertStyleBackgroundTagIntoSource(...)` as `<style background="...">...</style>` wrappers. QML supplies only the tag/style/font/color value, current editor document text,
   cursor, selection length, and selected visible text; source mutation, same-tag toggle removal, projection, and
   line-count refresh stay here. The session treats the loaded `.wsnbody` RAW source as the format mutation basis so a
   lossy RichText projection cannot drop blank source rows before selection mapping.
   Source-level rendered break tags such as `<next />` and `<br>` count as one logical newline while selection is
   mapped. If the RichText selection offset has drifted, the session compares that selected text with the visible source
   span and repairs the source range before calling `SetTag`. Style selector commands with no selection expand to the
-  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers. Font-size
-  toolbar commands use the same expansion path and author a validated `size` attribute. Valid style
+  current non-empty visible source line; empty lines are rejected instead of producing zero-width wrappers. Font-size and
+  highlight-color toolbar commands use the same expansion path and author validated `size`/`background` attributes. Valid style
   selector mutations are staged into the active editor session file and persisted into the note body before QML replaces
   the live LVRS text, matching the resource insertion race guard while making `.wsnbody` authoritative immediately.
   The same source-visible mapper hides `<style>` wrappers when validating later raw pushes, preserving the active style
@@ -157,6 +158,11 @@ Implements the active note editor document session.
   pre-existing `<style>` wrapper does not disappear unless a style command explicitly mutates it. Ordinary typed text at
   the style end is preserved inside the wrapper; Return/Enter is the explicit style exit and is placed outside the
   wrapper.
+- Toolbar context reporting treats an active `<style background="...">` wrapper as highlight-active so colored highlight
+  selections keep the highlight toolbar state visible even though their source shape is a style wrapper, not legacy
+  `<highlight>`.
+- `highlightColorMenuItems()` converts `WhatSonBookmarkColorPalette` definitions into QML menu maps with `name`, `label`,
+  and `colorHex`, keeping the editor highlight menu aligned with the bookmark hierarchy color list.
 - Cursor-driven toolbar display values are queried through `toolbarStyleContextAtCursor(...)`. This method is read-only:
   it parses only the active editor RAW source around the mapped cursor position and never mutates the session file,
   `.wsnbody`, or pending push state.

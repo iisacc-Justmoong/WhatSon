@@ -1,5 +1,7 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+#include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
+
 void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
 {
     using WhatSon::EditorComponent::Style;
@@ -34,6 +36,16 @@ void WhatSonCppRegressionTests::styleComponent_ownsStyleRawTokenProjection()
     QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral(" 700 ")), QStringLiteral("700"));
     QCOMPARE(Style::normalizedFontWeightAttributeValue(QStringLiteral("heavy")), QString());
     QCOMPARE(Style::openingTokenForFontWeight(QStringLiteral("bold")), QStringLiteral("<style weight=\"900\">"));
+    QCOMPARE(
+        Style::normalizedBackgroundAttributeValue(QStringLiteral("red")),
+        WhatSon::Bookmarks::bookmarkColorHexForName(QStringLiteral("red")));
+    QCOMPARE(
+        Style::openingTokenForBackground(QStringLiteral("red")),
+        QStringLiteral("<style background=\"#EF4444\">"));
+    QCOMPARE(
+        Style::openingTokenForBackground(QStringLiteral("#abc")),
+        QStringLiteral("<style background=\"#AABBCC\">"));
+    QCOMPARE(Style::openingTokenForBackground(QStringLiteral("unknown")), QString());
 
     struct StyleTokenExpectation final
     {

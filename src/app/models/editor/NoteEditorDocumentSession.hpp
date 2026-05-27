@@ -95,6 +95,13 @@ public:
         int cursorPosition,
         int selectionLength,
         const QString& selectedText = QString());
+    Q_INVOKABLE QVariantMap insertStyleBackgroundTagIntoSource(
+        const QString& backgroundColor,
+        const QString& editorDocumentText,
+        int cursorPosition,
+        int selectionLength,
+        const QString& selectedText = QString());
+    Q_INVOKABLE QVariantList highlightColorMenuItems() const;
     Q_INVOKABLE QVariantMap toolbarStyleContextAtCursor(
         const QString& editorDocumentText,
         int cursorPosition,

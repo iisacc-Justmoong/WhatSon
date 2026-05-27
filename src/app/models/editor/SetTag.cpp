@@ -576,6 +576,44 @@ QVariantMap SetTag::insertStyleFontWeightTagIntoSource(
     return result;
 }
 
+QVariantMap SetTag::insertStyleBackgroundTagIntoSource(
+    const QString& backgroundColor,
+    const QString& bodySourceText,
+    const int cursorPosition,
+    const int selectionLength)
+{
+    const QString openingToken =
+        WhatSon::EditorComponent::Style::openingTokenForBackground(backgroundColor);
+    if (openingToken.isEmpty())
+    {
+        const QString errorMessage =
+            QStringLiteral("Unsupported style tag background value: %1").arg(backgroundColor.trimmed());
+        updateLastError(errorMessage);
+        return buildInvalidResult(
+            WhatSon::EditorComponent::Style::canonicalName(),
+            bodySourceText,
+            cursorPosition,
+            selectionLength,
+            errorMessage);
+    }
+
+    clearLastError();
+    QVariantMap result = buildSourceInsertionResult(
+        {
+            WhatSon::EditorComponent::Style::canonicalName(),
+            openingToken,
+            WhatSon::EditorComponent::Style::closingToken()
+        },
+        bodySourceText,
+        cursorPosition,
+        selectionLength);
+    result.insert(
+        QStringLiteral("backgroundColor"),
+        WhatSon::EditorComponent::Style::normalizedBackgroundAttributeValue(backgroundColor));
+    emit tagInserted(result);
+    return result;
+}
+
 QVariantMap SetTag::insertIntoBodyDocument(
     const QString& noteId,
     const QString& bodyDocumentText,

@@ -1314,6 +1314,7 @@ private slots:
     void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
     void noteEditorDocumentSession_buildsStyleFontSourceInsertion();
     void noteEditorDocumentSession_buildsStyleFontSizeSourceInsertion();
+    void noteEditorDocumentSession_buildsStyleBackgroundSourceInsertion();
     void noteEditorDocumentSession_reportsToolbarStyleContextAtCursor();
     void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
     void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();

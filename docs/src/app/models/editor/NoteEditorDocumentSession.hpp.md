@@ -49,9 +49,10 @@ Declares the active note editor document session object.
   `underline`, `strikethrough`, `highlight`, or `break` through `SetTag`, then returns both canonical RAW source and
   an editor HTML projection for the live LVRS surface. `insertStyleTagIntoSource(...)` uses the same selection mapping
   and projection path for the toolbar's `<style>` tag `style` attribute choices. `insertStyleFontTagIntoSource(...)`
-  uses the same style-source selection expansion for the toolbar's `<style>` tag `font` attribute choices, and
-  `insertStyleFontSizeTagIntoSource(...)` applies the toolbar font-size control as a validated `size` attribute. Valid style
-  selector, font selector, and font-size selector mutations are staged into the mounted editor session file and persisted into `.wsnbody`
+  uses the same style-source selection expansion for the toolbar's `<style>` tag `font` attribute choices,
+  `insertStyleFontSizeTagIntoSource(...)` applies the toolbar font-size control as a validated `size` attribute, and
+  `insertStyleBackgroundTagIntoSource(...)` applies highlight color choices as validated `background` attributes. Valid style
+  selector, font selector, font-size selector, and background selector mutations are staged into the mounted editor session file and persisted into `.wsnbody`
   for the active note before QML updates the live LVRS text. The session keeps the loaded `.wsnbody` RAW source as the format mutation basis and maps rendered break tags such as
   `<next />`/`<br>` as one logical newline. QML also passes `selectedText` so the session can repair a drifted RichText
   selection offset before mutating RAW source. Collapsed style selector commands expand to the current non-empty
@@ -59,13 +60,15 @@ Declares the active note editor document session object.
   `<style>` wrapper. Later plain editor raw pushes preserve existing style wrapper boundaries for inserted, deleted, or
   replaced visible text inside the wrapper. Ordinary typing at the style content end remains inside the wrapper, while
   `handleStyleBoundaryKeyInSource(...)` handles Return/Enter as the explicit exit to the following source line.
+- Provides `highlightColorMenuItems()`, the toolbar-facing bookmark color palette menu model. It exposes the same
+  `name`/`label`/`colorHex` entries as `WhatSonBookmarkColorPalette` so QML does not hard-code the active source of truth.
 - Provides `toolbarStyleContextAtCursor(...)`, a read-only toolbar binding query that maps the current LVRS editor
   cursor back to RAW source and returns display values from the innermost active `<style ...>` wrapper. QML consumes
   the returned `styleValue`, `fontFamily`, `fontSize`, `fontWeight`, and `lineHeight` strings; outside a wrapper the
   query returns the editor Body defaults. The `bold` command is authored as `<style weight="900">...</style>` instead
   of a new `<bold>` wrapper, while legacy `<bold>` is still recognized when reading existing source. The same result
   carries boolean active flags for `bold`, `italic`, `underline`, `strikethrough`, and `highlight`, derived from RAW
-  inline wrapper ranges and explicit style weight at the cursor position.
+  inline wrapper ranges, explicit style weight, and explicit style background at the cursor position.
 - Provides `handleCalloutBoundaryKeyInSource(...)` for native editor key filters. Backspace at the rendered callout
   content start removes the visual callout wrapper, preserving existing content as plain source and deleting an empty
   callout frame entirely. Return/Enter is not wired through the editor input filter.

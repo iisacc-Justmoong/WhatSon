@@ -73,8 +73,21 @@ LV.HStack {
         "64",
         "72"
     ]
+    readonly property var highlightColorValues: [
+        { name: "red", label: "Red", colorHex: "#EF4444" },
+        { name: "orange", label: "Orange", colorHex: "#F97316" },
+        { name: "amber", label: "Amber", colorHex: "#F59E0B" },
+        { name: "yellow", label: "Yellow", colorHex: "#EAB308" },
+        { name: "green", label: "Green", colorHex: "#22C55E" },
+        { name: "teal", label: "Teal", colorHex: "#14B8A6" },
+        { name: "blue", label: "Blue", colorHex: "#3B82F6" },
+        { name: "indigo", label: "Indigo", colorHex: "#B589EC" },
+        { name: "purple", label: "Purple", colorHex: "#8B5CF6" },
+        { name: "pink", label: "Pink", colorHex: "#EC4899" }
+    ]
     property bool editorReadOnly: false
     property var fontFamilyProvider: null
+    property var highlightColorProvider: null
     property string selectedFontFamily: "Pretendard"
     property string selectedFontSizeValue: "12"
     property string selectedFontWeightValue: "Medium"
@@ -89,6 +102,7 @@ LV.HStack {
     signal fontFamilyRequested(string fontFamily)
     signal fontSizeRequested(string fontSize)
     signal formatTagRequested(string tagName)
+    signal highlightColorRequested(string colorName, string colorHex)
     signal styleTagStyleRequested(string styleValue)
     signal toolbarActionRequested(string actionName)
 
@@ -238,6 +252,44 @@ LV.HStack {
         return result;
     }
 
+    function highlightColorMenuItems() {
+        if (editorToolbar.highlightColorProvider
+                && editorToolbar.highlightColorProvider.highlightColorMenuItems !== undefined) {
+            const providerItems = editorToolbar.highlightColorProvider.highlightColorMenuItems();
+            if (providerItems && providerItems.length > 0)
+                return providerItems;
+        }
+
+        const result = [];
+        for (let valueIndex = 0; valueIndex < editorToolbar.highlightColorValues.length; ++valueIndex) {
+            const colorValue = editorToolbar.highlightColorValues[valueIndex];
+            const colorName = colorValue && colorValue.name !== undefined
+                    ? String(colorValue.name)
+                    : "";
+            const colorLabel = colorValue && colorValue.label !== undefined
+                    ? String(colorValue.label)
+                    : colorName;
+            const colorHex = colorValue && colorValue.colorHex !== undefined
+                    ? String(colorValue.colorHex)
+                    : "";
+            if (colorName.length === 0 || colorHex.length === 0)
+                continue;
+            result.push({
+                id: "highlight-color-" + colorName,
+                label: colorLabel,
+                colorName: colorName,
+                colorHex: colorHex,
+                showIconSlot: false,
+                eventName: "editor.toolbar.highlight-color",
+                eventPayload: ({
+                    color: colorName,
+                    hex: colorHex
+                })
+            });
+        }
+        return result;
+    }
+
     function fontSizeMenuSelectedIndex() {
         const selectedFontSize = editorToolbar.normalizedFontSizeValue(editorToolbar.selectedFontSizeValue);
         for (let valueIndex = 0; valueIndex < editorToolbar.fontSizeValues.length; ++valueIndex) {
@@ -260,6 +312,17 @@ LV.HStack {
         fontSizeContextMenu.selectedIndex = editorToolbar.fontSizeMenuSelectedIndex();
         fontSizeContextMenu.openFor(anchorItem, LV.Theme.gapNone, anchorItem.height);
         editorToolbar.toolbarActionRequested("editor.toolbar.font-size");
+        return true;
+    }
+
+    function openHighlightColorContextMenu(anchorItem) {
+        if (!anchorItem || editorToolbar.editorReadOnly || !anchorItem.visible)
+            return false;
+
+        highlightColorContextMenu.items = editorToolbar.highlightColorMenuItems();
+        highlightColorContextMenu.itemWidth = Math.max(editorToolbar.figmaComboSmallWidth, LV.Theme.scaleMetric(96));
+        highlightColorContextMenu.openFor(anchorItem, editorToolbar.figmaIconButtonWidth, anchorItem.height);
+        editorToolbar.toolbarActionRequested("editor.toolbar.highlight-menu");
         return true;
     }
 
@@ -767,6 +830,7 @@ LV.HStack {
         property string figmaNodeId: ""
         property string formatTag: ""
         property bool formatTagActive: editorToolbar.formatTagActive(swatchButton.formatTag)
+        property bool opensHighlightColorMenu: false
         property string swatchGlyph: "\u25CF"
         property color swatchColor: editorToolbar.figmaHighlight
 
@@ -792,6 +856,33 @@ LV.HStack {
                 return;
             }
             editorToolbar.toolbarActionRequested(swatchButton.actionName);
+        }
+
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.top: parent.top
+            acceptedButtons: Qt.LeftButton
+            enabled: swatchButton.opensHighlightColorMenu && swatchButton.enabled
+            visible: swatchButton.opensHighlightColorMenu
+            width: Math.min(parent.width, editorToolbar.figmaIconButtonWidth)
+
+            onClicked: {
+                if (swatchButton.formatTag.length > 0)
+                    editorToolbar.formatTagRequested(swatchButton.formatTag);
+            }
+        }
+
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.top: parent.top
+            acceptedButtons: Qt.LeftButton
+            enabled: swatchButton.opensHighlightColorMenu && swatchButton.enabled
+            visible: swatchButton.opensHighlightColorMenu
+            width: Math.max(LV.Theme.gapNone, parent.width - editorToolbar.figmaIconButtonWidth)
+
+            onClicked: editorToolbar.openHighlightColorContextMenu(swatchButton);
         }
     }
 
@@ -936,6 +1027,74 @@ LV.HStack {
         }
     }
 
+    Component {
+        id: highlightColorMenuItemDelegate
+
+        LV.MenuItem {
+            id: highlightColorMenuItem
+
+            property var modelData: ({})
+            property int index: modelData.index === undefined ? -1 : modelData.index
+            property var entry: modelData.entry
+            property string colorHex: highlightColorMenuItem.entry
+                    && highlightColorMenuItem.entry.colorHex !== undefined
+                    && highlightColorMenuItem.entry.colorHex !== null
+                    ? String(highlightColorMenuItem.entry.colorHex)
+                    : ""
+
+            enabled: highlightColorMenuItem.modelData.enabled !== false
+            itemHeight: LV.Theme.gap20
+            itemWidth: highlightColorContextMenu.minimumItemWidth
+            label: highlightColorMenuItem.entry && highlightColorMenuItem.entry.label !== undefined
+                    ? String(highlightColorMenuItem.entry.label)
+                    : ""
+            showIconSlot: false
+            state: highlightColorMenuItem.modelData.state === undefined
+                    ? highlightColorMenuItem.defaultState
+                    : highlightColorMenuItem.modelData.state
+            width: parent ? parent.width : highlightColorContextMenu.resolvedItemWidth
+
+            contentItem: Item {
+                implicitHeight: Math.max(highlightColorSwatch.implicitHeight, highlightColorLabel.implicitHeight)
+                implicitWidth: highlightColorSwatch.implicitWidth + LV.Theme.gap8 + highlightColorLabel.implicitWidth
+
+                Rectangle {
+                    id: highlightColorSwatch
+
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    border.color: LV.Theme.strokeSoft
+                    border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+                    color: highlightColorMenuItem.colorHex
+                    height: LV.Theme.gap12
+                    implicitHeight: LV.Theme.gap12
+                    implicitWidth: LV.Theme.gap12
+                    radius: LV.Theme.radiusSm
+                    width: LV.Theme.gap12
+                }
+
+                LV.Label {
+                    id: highlightColorLabel
+
+                    anchors.left: highlightColorSwatch.right
+                    anchors.leftMargin: LV.Theme.gap8
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                    font.pixelSize: editorToolbar.figmaBodyTextSize
+                    font.weight: editorToolbar.figmaBodyWeight
+                    lineHeight: editorToolbar.figmaBodyLineHeight
+                    lineHeightMode: Text.FixedHeight
+                    style: body
+                    text: highlightColorMenuItem.label
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+
+            onClicked: highlightColorContextMenu.triggerEntry(highlightColorMenuItem.index)
+        }
+    }
+
     Item {
         id: editorToolbarContentFrame
 
@@ -1072,6 +1231,7 @@ LV.HStack {
                         figmaNodeId: "398:8629"
                         formatTag: "highlight"
                         objectName: "Button"
+                        opensHighlightColorMenu: true
                         swatchColor: editorToolbar.figmaHighlight
                         swatchGlyph: "\u25CF"
                     }
@@ -1185,6 +1345,32 @@ LV.HStack {
 
             editorToolbar.selectedStyleTagStyleValue = styleValue;
             editorToolbar.styleTagStyleRequested(styleValue);
+        }
+    }
+
+    LV.ContextMenu {
+        id: highlightColorContextMenu
+
+        autoCloseOnTrigger: true
+        itemDelegate: highlightColorMenuItemDelegate
+        itemWidth: Math.max(editorToolbar.figmaComboSmallWidth, LV.Theme.scaleMetric(96))
+        items: editorToolbar.highlightColorMenuItems()
+        modal: false
+        objectName: "highlightColorContextMenu"
+        parent: editorToolbar.Window.window ? editorToolbar.Window.window.contentItem : null
+        showIconSlot: false
+
+        onItemTriggered: function(index, item) {
+            const colorName = item && item.colorName !== undefined && item.colorName !== null
+                    ? String(item.colorName)
+                    : "";
+            const colorHex = item && item.colorHex !== undefined && item.colorHex !== null
+                    ? String(item.colorHex)
+                    : "";
+            if (colorName.length === 0 || colorHex.length === 0)
+                return;
+
+            editorToolbar.highlightColorRequested(colorName, colorHex);
         }
     }
 

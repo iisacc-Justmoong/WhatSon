@@ -146,6 +146,11 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - `NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)` uses the same style-source selection mapping as the
   style selector, then inserts `<style font="...">...</style>` through `SetTag`. Active notes stage the projected editor
   HTML into the mounted `.wsnsource` file and persist the canonical `.wsnbody` body immediately.
+- `NoteEditorDocumentSession.insertStyleBackgroundTagIntoSource(...)` uses the same style-source selection mapping for
+  highlight color commands, validates names/hex through the bookmark color palette contract, then inserts
+  `<style background="...">...</style>` through `SetTag`.
+- `NoteEditorDocumentSession.highlightColorMenuItems()` exposes that bookmark palette as QML menu data for the editor
+  toolbar highlight chevron.
 - Minimap display backends, projection/rendering pipelines, and legacy editor view-mode controllers remain outside
   this shard unless a new documented contract explicitly reintroduces them.
 
@@ -166,8 +171,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
 - 위치: `docs/src/app/models/editor`
 - 역할: 이 파일은 editor model shard의 구조, 책임, CMake 등록 계약, 검증 기준을 설명한다.
 - 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 현재: `component/style`은 toolbar style selector의 canonical 값, size/weight 중심의 LVRS token-aligned
-  typography metric, Body fallback token을 소유한다.
+- 현재: `component/style`은 toolbar style selector의 canonical 값, size/weight/background 중심의 LVRS token-aligned
+  typography metric, bookmark color palette 기반 background 값, Body fallback token을 소유한다.
   소유하고, `SetTag`는 공통 source mutation과 결과 map 생성을 맡는다.
 - 현재: `NoteEditorDocumentSession.insertStyleTagIntoSource(...)`는 selection이 접혀 있으면 현재 non-empty visible
   source line 전체를 스타일 대상으로 확장하고, 빈 줄에서는 즉시 사라지는 zero-width `<style>` wrapper를 만들지 않는다.

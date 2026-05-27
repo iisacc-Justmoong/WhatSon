@@ -26,6 +26,9 @@ Implements the `SetTag` editor-domain input object.
   result map.
 - `insertStyleFontWeightTagIntoSource(...)` is the matching weight entrypoint. The `bold` command reuses this style
   weight token shape with the normalized `900` value.
+- `insertStyleBackgroundTagIntoSource(...)` is the matching background-color entrypoint for highlight color choices. It
+  validates through `component/style`, preserves the shared insertion flow, and returns `backgroundColor` in the result
+  map.
 - Selection mutation wraps selected source text between the opening and closing tokens.
 - If a non-empty selection is already exactly enclosed by the same paired static tag, applying that tag toggles the
   format off by removing the surrounding tokens instead of nesting a duplicate wrapper. The result reports this through

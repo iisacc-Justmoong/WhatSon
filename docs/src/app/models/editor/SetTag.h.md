@@ -24,6 +24,8 @@ methods for inserting those templates into editor source text or into a serializ
   example `<style size="18">...</style>`.
 - `insertStyleFontWeightTagIntoSource(...)` inserts the custom style wrapper with an explicit `weight` attribute value.
   The editor `bold` command uses this shape and emits `<style weight="900">...</style>` instead of new `<bold>` source.
+- `insertStyleBackgroundTagIntoSource(...)` inserts the custom style wrapper with an explicit `background` attribute
+  value, validated by the style component against the bookmark color palette/hex contract.
 - Paired inline/static wrappers are toggle-aware: when the selected source text is exactly enclosed by the same tag,
   mutation removes that wrapper and returns `toggledOff: true`.
 - `insertIntoBodyDocument(...)` and `insertNamedTagIntoBodyDocument(...)` project a `.wsnbody` document back to
@@ -32,8 +34,9 @@ methods for inserting those templates into editor source text or into a serializ
 - `resource` is a static placeholder block (`<resource />`) and is line-isolated during source mutation so persistence
   stores it as a direct body child rather than escaped paragraph prose.
 - `style` is a paired static wrapper (`<style>...</style>`) whose wrapper tokens, canonical `style` attribute values,
-  and projection helpers live in `component/style`. Attribute values such as `font`, `size`, `color`, and existing
-  `height` are set by the normal tag-attribute path and interpreted by the style component during HTML projection.
+  and projection helpers live in `component/style`. Attribute values such as `font`, `size`, `color`, `background`, and
+  existing `height` are set by the normal tag-attribute path and interpreted by the style component during HTML
+  projection.
 - Unsupported tag names return an invalid result and leave source/document text unchanged.
 
 ## Signals And Slots

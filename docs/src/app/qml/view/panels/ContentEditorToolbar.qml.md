@@ -12,7 +12,8 @@ while staying a view-only command surface.
 - Selector instances: `style` (`397:8570`), `font` (`399:8668`), `fontSize` (`399:8663`), `fontWeight`
   (`399:8673`), and `lineHeight` (`399:8678`) are LVRS `ComboBox` controls with `Arrow=Down` and `Tone=primary`.
 - Format group: `formatBar`, node `398:8627`, uses LVRS icon buttons for `bold`, `italic`, `underline`,
-  `strikethrough`, and `highlight`.
+  `strikethrough`, and `highlight`. The `highlight` instance keeps its main button action but uses the right chevron as
+  the color-menu trigger.
 - Color group: `colorBar`, node `399:9827`, uses LVRS `IconMenuButton` controls with the Figma-matched `color` and
   `background` icon names from the LVRS icon set.
 - Right group: `Frame 1000000891`, node `400:8662`, contains `generaladd` (`399:9835`) and active `rendererKit`
@@ -24,6 +25,8 @@ while staying a view-only command surface.
 ## Behavior
 The toolbar exposes only view-level signals:
 - `formatTagRequested(tagName)` for the existing editor format dispatch in `ContentViewLayout.qml`.
+- `highlightColorRequested(colorName, colorHex)` when the highlight chevron chooses one of the bookmark color palette
+  entries.
 - `fontFamilyRequested(fontFamily)` when the font selector chooses a system font family from the provider-backed menu.
 - `styleTagStyleRequested(styleValue)` when the left `style` selector chooses a `<style ...>` tag `style`
   attribute value.
@@ -56,6 +59,11 @@ The `fontSize` selector has a split interaction. Clicking the arrow opens a pred
 font sizes; clicking the body overlays an `LV.InputField` over the label region for direct integer entry. Both paths
 emit `fontSizeRequested(fontSize)`, while `ContentViewLayout.qml` owns the source mutation through
 `NoteEditorDocumentSession.insertStyleFontSizeTagIntoSource(...)`.
+The highlight `IconMenuButton` is also split. Clicking the icon body keeps the existing yellow inline `highlight`
+format command. Clicking only the right chevron opens `highlightColorContextMenu`, whose rows are supplied by the
+optional `highlightColorProvider.highlightColorMenuItems()` hook and fall back to the same bookmark color palette
+(`red`, `orange`, `amber`, `yellow`, `green`, `teal`, `blue`, `indigo`, `purple`, `pink`). Each row shows a color swatch
+beside its label. Selecting a color emits `highlightColorRequested(...)`; QML does not author source directly.
 `ContentViewLayout.qml` may call `applyStyleContext(...)` with the C++ session's cursor-derived toolbar context. The
 toolbar then updates its displayed style, font family, font size, font weight, line-height, and inline-format active
 states without mutating editor source. Menu selections and format buttons still emit commands; cursor context updates
@@ -84,6 +92,8 @@ It does not read files, own note/session state, parse editor text, or persist fo
 - Keep the font-size selector split: arrow opens the predefined size menu, body opens a temporary `LV.InputField`, and
   both emit the same `fontSizeRequested` view signal. QML may validate the direct input shape, but C++ remains the
   source-of-truth for accepted `size` attributes.
+- Keep the highlight button split: the icon body emits the existing inline `highlight` command, while the chevron opens
+  the bookmark-palette color menu from `highlightColorProvider` and emits `highlightColorRequested(...)`.
 - Keep cursor-derived toolbar values as display state only. The toolbar may apply the context map returned by the C++
   session, but it must not parse `<style ...>` or inline-format source or infer editor formatting itself.
 - Preserve Figma node ids as QML metadata properties when adding toolbar controls.
