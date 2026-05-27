@@ -649,6 +649,14 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"underline\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"strikethrough\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("formatTag: \"highlight\"")));
+    const QRegularExpression textColorButtonIconContract(QStringLiteral(
+        R"(figmaIconComponentName: "color"[\s\S]*figmaNodeId: "399:8683"[\s\S]*iconName: "color"[\s\S]*swatchGlyph: "")"));
+    QVERIFY2(textColorButtonIconContract.match(contentEditorToolbarSource).hasMatch(),
+             "EditorToolbar color button must use the LVRS color icon instead of a text glyph.");
+    const QRegularExpression backgroundButtonIconContract(QStringLiteral(
+        R"(figmaIconComponentName: "background"[\s\S]*figmaNodeId: "399:8690"[\s\S]*iconName: "background"[\s\S]*swatchGlyph: "")"));
+    QVERIFY2(backgroundButtonIconContract.match(contentEditorToolbarSource).hasMatch(),
+             "EditorToolbar background button must use the LVRS background icon instead of a text glyph.");
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("iconName: \"generaladd\"")));
     QVERIFY(contentEditorToolbarSource.contains(QStringLiteral("iconName: \"rendererKit\"")));
     QVERIFY(!contentEditorToolbarSource.contains(QStringLiteral("QtQuick.Controls")));

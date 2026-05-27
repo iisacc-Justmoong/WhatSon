@@ -13,7 +13,8 @@ while staying a view-only command surface.
   (`399:8673`), and `lineHeight` (`399:8678`) are LVRS `ComboBox` controls with `Arrow=Down` and `Tone=primary`.
 - Format group: `formatBar`, node `398:8627`, uses LVRS icon buttons for `bold`, `italic`, `underline`,
   `strikethrough`, and `highlight`.
-- Color group: `colorBar`, node `399:9827`, uses LVRS menu buttons for text color and background swatches.
+- Color group: `colorBar`, node `399:9827`, uses LVRS `IconMenuButton` controls with the Figma-matched `color` and
+  `background` icon names from the LVRS icon set.
 - Right group: `Frame 1000000891`, node `400:8662`, contains `generaladd` (`399:9835`) and active `rendererKit`
   (`400:8656`) toggle buttons.
 - Token values are preserved through LVRS theme tokens where they already exist: `panelBackground10`, `panelBackground12`,

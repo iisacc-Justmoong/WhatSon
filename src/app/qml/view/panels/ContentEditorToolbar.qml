@@ -1094,9 +1094,9 @@ LV.HStack {
                         figmaIconComponentName: "color"
                         figmaIconNodeId: "I399:8683;203:4994"
                         figmaNodeId: "399:8683"
+                        iconName: "color"
                         objectName: "Button"
-                        swatchColor: editorToolbar.figmaHighlight
-                        swatchGlyph: "\u25CF"
+                        swatchGlyph: ""
                     }
 
                     ToolbarSwatchMenuButton {
@@ -1104,9 +1104,9 @@ LV.HStack {
                         figmaIconComponentName: "background"
                         figmaIconNodeId: "I399:8690;203:4994"
                         figmaNodeId: "399:8690"
+                        iconName: "background"
                         objectName: "Button"
-                        swatchColor: editorToolbar.figmaTitleHeader
-                        swatchGlyph: "\u25A0"
+                        swatchGlyph: ""
                     }
                 }
 
