@@ -27,7 +27,8 @@ Implements the active note editor document session.
    document; when the editor surface modified count increases, QML asks `requestEditorModifiedCountRawPush(...)` to do
    the same. The session first verifies that `readFinished(path)` marked the freshly mounted `.wsnsource` file ready,
    converts the editor document into canonical RAW source, rejects transient empty editor payloads over a non-empty
-   active RAW source, and only then queues `WhatSonEditorRawPushController`. Empty Qt rich-text shells such as an empty
+   active RAW source, writes the validated RAW source back to the mounted `.wsnsource` as canonical editor HTML, and
+   only then queues `WhatSonEditorRawPushController`. Empty Qt rich-text shells such as an empty
    paragraph HTML document are treated as transient for idle sync because they can be emitted while LVRS is still
    settling a remounted session file. The push controller stores that verified RAW source, not the editor
    HTML/session-file snapshot. Persistence then writes the queued RAW source through
@@ -93,8 +94,8 @@ Implements the active note editor document session.
   `editorDocumentTextPulled(...)`, and updates the stored filesystem base source/timestamp.
 - Idle, modified-count, and note-departure RAW pushes are routed through
   `file/sync/WhatSonEditorRawPushController` only after this session has converted the live editor document into
-  validated RAW source. The controller orders RAW payloads; it does not own editor HTML or reread the mounted session
-  file as sync truth.
+  validated RAW source and refreshed the mounted `.wsnsource` session file from that same source. The controller orders
+  RAW payloads; it does not own editor HTML or reread the mounted session file as sync truth.
 - Re-selecting the same note keeps the existing session file intact, so unsaved editor state is not overwritten
   by a redundant body reload.
 - The open-count update is a selected-note bind side effect owned by `ContentsNoteManagementCoordinator`; editor QML must

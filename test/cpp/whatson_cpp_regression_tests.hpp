@@ -1415,6 +1415,7 @@ private slots:
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
+    void noteEditorDocumentSession_reprojectsMountedSessionFileAfterPlainSurfaceSync();
     void noteEditorDocumentSession_promotesLatestKoreanCompositionPayloadToBodyAndPreview();
     void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
     void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();

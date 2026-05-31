@@ -279,6 +279,54 @@ void WhatSonCppRegressionTests::noteEditorDocumentSession_pushesSurfaceTextToRaw
         QStringLiteral("After modified count push"));
 }
 
+void WhatSonCppRegressionTests::noteEditorDocumentSession_reprojectsMountedSessionFileAfterPlainSurfaceSync()
+{
+    QTemporaryDir workspaceDir;
+    QVERIFY(workspaceDir.isValid());
+    QTemporaryDir sessionRootDir;
+    QVERIFY(sessionRootDir.isValid());
+
+    QString createError;
+    const QString noteId = QStringLiteral("plain-surface-session-note");
+    const QString noteDirectoryPath = createLocalNoteForRegression(
+        workspaceDir.path(),
+        noteId,
+        QStringLiteral("Before first edit"),
+        &createError);
+    QVERIFY2(!noteDirectoryPath.isEmpty(), qPrintable(createError));
+
+    NoteEditorDocumentSession session;
+    session.setSessionRootPathForTests(sessionRootDir.path());
+
+    QSignalSpy loadedSpy(&session, &NoteEditorDocumentSession::editorSourceLoaded);
+    QVERIFY(session.openNoteForEditing(noteId, noteDirectoryPath));
+    QTRY_COMPARE_WITH_TIMEOUT(loadedSpy.count(), 1, 3000);
+    QVERIFY(session.markEditorSessionFileReadyForRawPush(session.editorFilePath()));
+
+    const QString firstSurfacePayload = QStringLiteral("첫 입력과 실제 출력이 같아야 한다.");
+    QVERIFY(writeUtf8FileForNoteEditorSessionTest(session.editorFilePath(), firstSurfacePayload));
+
+    QSignalSpy persistedSpy(&session, &NoteEditorDocumentSession::editorSourcePersistFinished);
+    session.requestEditorIdleRawPush(session.editorFilePath(), firstSurfacePayload);
+    QTRY_COMPARE_WITH_TIMEOUT(persistedSpy.count(), 1, 3000);
+    QCOMPARE(persistedSpy.takeFirst().at(1).toBool(), true);
+
+    const QString mountedEditorSource = readUtf8FileForNoteEditorSessionTest(session.editorFilePath());
+    QVERIFY2(
+        mountedEditorSource.contains(QStringLiteral("<meta name=\"qrichtext\" content=\"1\"")),
+        qPrintable(mountedEditorSource));
+    QVERIFY2(mountedEditorSource.contains(firstSurfacePayload), qPrintable(mountedEditorSource));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromEditorDocument(noteId, mountedEditorSource),
+        firstSurfacePayload);
+
+    const QString persistedBodyDocument = readUtf8FileForNoteEditorSessionTest(
+        WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(persistedBodyDocument),
+        firstSurfacePayload);
+}
+
 void WhatSonCppRegressionTests::noteEditorDocumentSession_promotesLatestKoreanCompositionPayloadToBodyAndPreview()
 {
     QTemporaryDir workspaceDir;

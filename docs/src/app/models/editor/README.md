@@ -94,14 +94,16 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   and modified-count RAW push requests are accepted only after LVRS
   `readFinished(path)` has marked the fresh current mounted session file ready; remounting a note resets that readiness
   even when the same `.wsnsource` path was ready during an earlier visit. The session then converts the current editor
-  document into RAW source, rejects transient empty editor payloads over a non-empty active RAW source, and queues only
-  that validated RAW source in `WhatSonEditorRawPushController`. If the same modified-count revision is already pending,
+  document into RAW source, rejects transient empty editor payloads over a non-empty active RAW source, reprojects the
+  mounted `.wsnsource` file from that validated RAW source, and queues only that validated RAW source in
+  `WhatSonEditorRawPushController`. If the same modified-count revision is already pending,
   a later validated modified-count payload for the same mounted session file refreshes that pending RAW source instead
   of being discarded; this covers Korean composition settlement where the visible text advances from a partial syllable
   boundary to the committed word before the debounce flush reaches `.wsnbody` and NoteList preview state. Empty rich-text HTML shells are rejected for idle RAW
   push so a still-blank LVRS document snapshot cannot clear a non-empty note while the mounted file is settling. The
   controller no longer stores editor HTML or rereads
-  the `.wsnsource` file as sync truth. The active RAW source becomes the save/sync truth for the active note; idle
+  the `.wsnsource` file as sync truth, but the session file is kept as the current editor HTML projection so LVRS file
+  sync cannot leave a plain first-input payload as the mounted document. The active RAW source becomes the save/sync truth for the active note; idle
   filesystem pulls apply the filesystem diff onto that active RAW source, and editor pushes apply the editor diff onto
   the current filesystem RAW body. Neither direction may fall back to replacing the whole body when the current text has
   diverged from the loaded base. Note-departure flushes persist active/pending RAW instead of falling back to stale
@@ -215,7 +217,8 @@ Owns C++ editor-domain model objects that are intentionally outside QML view com
   오래된 pending push는 폐기한다. 이후 더 최신 validated modified-count RAW payload가 들어오기 전까지
   note-departure flush는 이 active canonical source를 저장한다. `readFinished(path)` 이후 contents editor wrapper의
   `editorDocumentEdited(documentText, documentRevision)`가 도착하면 QML은 forwarded LVRS payload와 revision을
-  modified-count RAW push의 최신 editor document 기준으로 전달하고, 세션은 이를 canonical RAW로 변환·검증한 뒤 RAW source payload만 sync controller에 넘긴다. 새 note mount는 이전
+  modified-count RAW push의 최신 editor document 기준으로 전달하고, 세션은 이를 canonical RAW로 변환·검증한 뒤 같은
+  source에서 mounted `.wsnsource` editor HTML을 다시 투영하고 RAW source payload만 sync controller에 넘긴다. 새 note mount는 이전
   `readFinished(path)` 준비 상태를 재사용하지 않으며, 빈 editor 문자열이나 내용 없는 rich-text HTML shell이
   non-empty active source를 덮는 transient idle payload이면 저장하지 않는다. push/pull은 loaded RAW base와 현재 RAW의 diff를
   적용하는 방식으로만 본문을 갱신하며, diverged current body 위에 editor payload 전체를 대체 쓰기하지 않는다.

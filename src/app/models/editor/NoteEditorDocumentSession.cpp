@@ -2301,6 +2301,21 @@ bool NoteEditorDocumentSession::prepareBodySourceTextForRawPush(
         return false;
     }
 
+    const QHash<QString, int> lockedFrameDisplayHeights =
+        resourceFrameDisplayHeightsBySourceTag(editorDocumentText);
+    const QString projectedEditorDocumentText = editorHtmlFromBodySourceForNoteContext(
+        contextIterator->noteId,
+        sourceText,
+        contextIterator->noteDirectoryPath,
+        m_editorViewportWidth,
+        &lockedFrameDisplayHeights);
+    QString writeError;
+    if (!writeEditorSourceFile(normalizedEditorFilePath, projectedEditorDocumentText, &writeError))
+    {
+        setLastError(writeError);
+        return false;
+    }
+
     if (activeContext)
     {
         m_activeBodySourceText = sourceText;
