@@ -566,31 +566,8 @@ namespace
 
     QString noteDirectoryPathForNoteIdInHub(const QString& noteId, const QString& hubRootPath)
     {
-        if (noteId.trimmed().isEmpty() || hubRootPath.trimmed().isEmpty())
-        {
-            return {};
-        }
-
-        QDirIterator iterator(
-            hubRootPath,
-            QStringList{QStringLiteral("*.wsnote")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDirIterator::Subdirectories);
-        while (iterator.hasNext())
-        {
-            const QString noteDirectoryPath = iterator.next();
-            if (isHiddenHubPath(noteDirectoryPath, hubRootPath))
-            {
-                continue;
-            }
-
-            const QString noteStem = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
-            if (noteStem == noteId.trimmed())
-            {
-                return QDir::cleanPath(noteDirectoryPath);
-            }
-        }
-
+        Q_UNUSED(noteId)
+        Q_UNUSED(hubRootPath)
         return {};
     }
 } // namespace

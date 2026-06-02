@@ -24,7 +24,7 @@ RAW note headers carry the persisted last-open timestamp independently from `las
 ## Scaffold Path Policy
 
 - `requiredRelativePaths()` is intentionally empty.
-- Header creation no longer requires or emits `.meta` subdirectories inside `.wsnote` packages.
+- Header creation no longer requires or emits package-local `.meta` subdirectories.
 
 ## Progress Serialization Rules
 

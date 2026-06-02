@@ -7,7 +7,6 @@
 #include "app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 
 #include <QByteArray>
 #include <QBrush>
@@ -1995,80 +1994,26 @@ namespace WhatSon::NoteBodyPersistence
         QString* outLastModifiedAt,
         QString* errorMessage)
     {
-        WhatSonLocalNoteFileStore localNoteFileStore;
-        WhatSonLocalNoteFileStore::ReadRequest readRequest;
-        readRequest.noteId = noteId;
-        readRequest.noteDirectoryPath = noteDirectoryPath;
-        readRequest.noteHeaderPath = noteHeaderPath;
-
-        WhatSonLocalNoteDocument document;
-        QString readError;
-        if (!localNoteFileStore.readNote(std::move(readRequest), &document, &readError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = readError;
-            }
-            return false;
-        }
-
-        const QString serializedBodyDocument = serializeBodyDocument(noteId, bodyPlainText);
-        const QString normalizedBodyText = plainTextFromBodyDocument(serializedBodyDocument);
-        QString normalizedBodySourceText = normalizeBodyPlainText(bodyPlainText);
-        if (normalizedBodySourceText.isEmpty())
-        {
-            normalizedBodySourceText = normalizedBodyText;
-        }
-        if (normalizedBodyText == document.bodyPlainText
-            && normalizedBodySourceText == document.bodySourceText)
-        {
-            if (outNormalizedBodyText != nullptr)
-            {
-                *outNormalizedBodyText = normalizedBodyText;
-            }
-            if (outNormalizedBodySourceText != nullptr)
-            {
-                *outNormalizedBodySourceText = normalizedBodySourceText;
-            }
-            if (outLastModifiedAt != nullptr)
-            {
-                *outLastModifiedAt = document.headerStore.lastModifiedAt();
-            }
-            return true;
-        }
-
-        document.bodyPlainText = normalizedBodyText;
-        document.bodySourceText = normalizedBodySourceText;
-
-        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-        updateRequest.document = document;
-        updateRequest.persistHeader = true;
-        updateRequest.persistBody = true;
-        updateRequest.touchLastModified = true;
-        updateRequest.incrementModifiedCount = true;
-
-        QString updateError;
-        if (!localNoteFileStore.updateNote(std::move(updateRequest), &document, &updateError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = updateError;
-            }
-            return false;
-        }
-
+        Q_UNUSED(noteId)
+        Q_UNUSED(noteDirectoryPath)
+        Q_UNUSED(noteHeaderPath)
+        Q_UNUSED(bodyPlainText)
         if (outNormalizedBodyText != nullptr)
         {
-            *outNormalizedBodyText = document.bodyPlainText;
+            outNormalizedBodyText->clear();
         }
         if (outNormalizedBodySourceText != nullptr)
         {
-            *outNormalizedBodySourceText = document.bodySourceText;
+            outNormalizedBodySourceText->clear();
         }
         if (outLastModifiedAt != nullptr)
         {
-            *outLastModifiedAt = document.headerStore.lastModifiedAt();
+            outLastModifiedAt->clear();
         }
-        return true;
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Note package body persistence is disabled.");
+        }
+        return false;
     }
 } // namespace WhatSon::NoteBodyPersistence

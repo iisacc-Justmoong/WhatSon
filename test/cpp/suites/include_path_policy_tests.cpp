@@ -292,8 +292,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("src/app/models/editor/component/Callout.h"),
         QStringLiteral("src/app/models/editor/component/style.cpp"),
         QStringLiteral("src/app/models/editor/component/style.h"),
-        QStringLiteral("src/app/models/editor/TagInsertionWriter.cpp"),
-        QStringLiteral("src/app/models/editor/TagInsertionWriter.hpp"),
         QStringLiteral("src/app/models/editor/SetProperty.cpp"),
         QStringLiteral("src/app/models/editor/SetProperty.h"),
         QStringLiteral("src/app/models/editor/SetTag.cpp"),
@@ -305,8 +303,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("docs/src/app/models/editor/component/Callout.h.md"),
         QStringLiteral("docs/src/app/models/editor/component/style.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/component/style.h.md"),
-        QStringLiteral("docs/src/app/models/editor/TagInsertionWriter.cpp.md"),
-        QStringLiteral("docs/src/app/models/editor/TagInsertionWriter.hpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetProperty.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetProperty.h.md"),
         QStringLiteral("docs/src/app/models/editor/SetTag.cpp.md"),
@@ -327,8 +323,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/Callout.h")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.cpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.h")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/TagInsertionWriter.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/TagInsertionWriter.hpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.cpp")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.h")));
     QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
@@ -691,7 +685,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/Callout.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/style.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/TagInsertionWriter.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
@@ -708,10 +701,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         noteRoot + QStringLiteral("/body"),
         noteRoot + QStringLiteral("/folder"),
         noteRoot + QStringLiteral("/header"),
-        noteRoot + QStringLiteral("/hub"),
-        noteRoot + QStringLiteral("/local"),
         noteRoot + QStringLiteral("/package"),
-        noteRoot + QStringLiteral("/session"),
         noteRoot + QStringLiteral("/support")
     };
     for (const QString& relativePath : requiredSourceDirectories)
@@ -725,10 +715,7 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         docsNoteRoot + QStringLiteral("/body"),
         docsNoteRoot + QStringLiteral("/folder"),
         docsNoteRoot + QStringLiteral("/header"),
-        docsNoteRoot + QStringLiteral("/hub"),
-        docsNoteRoot + QStringLiteral("/local"),
         docsNoteRoot + QStringLiteral("/package"),
-        docsNoteRoot + QStringLiteral("/session"),
         docsNoteRoot + QStringLiteral("/support")
     };
     for (const QString& relativePath : requiredDocsDirectories)
@@ -749,10 +736,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.hpp"),
         noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.cpp"),
         noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.hpp"),
-        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingRepository.cpp"),
-        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingRepository.hpp"),
-        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingService.cpp"),
-        noteRoot + QStringLiteral("/folder/WhatSonNoteFolderBindingService.hpp"),
         noteRoot + QStringLiteral("/folder/WhatSonNoteFolderSemantics.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonBookmarkColorPalette.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderCreator.cpp"),
@@ -761,23 +744,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderParser.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.cpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.hpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteCreationService.cpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteCreationService.hpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteDeletionService.cpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteDeletionService.hpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteFolderClearService.cpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteFolderClearService.hpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteMutationSupport.cpp"),
-        noteRoot + QStringLiteral("/hub/WhatSonHubNoteMutationSupport.hpp"),
-        noteRoot + QStringLiteral("/local/WhatSonLocalNoteDocument.hpp"),
-        noteRoot + QStringLiteral("/local/WhatSonLocalNoteFileStore.cpp"),
-        noteRoot + QStringLiteral("/local/WhatSonLocalNoteFileStore.hpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.cpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.hpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteCreator.cpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteCreator.hpp"),
-        noteRoot + QStringLiteral("/session/ContentsNoteManagementCoordinator.cpp"),
-        noteRoot + QStringLiteral("/session/ContentsNoteManagementCoordinator.hpp"),
         noteRoot + QStringLiteral("/support/WhatSonIiXmlDocumentSupport.cpp"),
         noteRoot + QStringLiteral("/support/WhatSonIiXmlDocumentSupport.hpp")
     };
@@ -800,7 +770,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/session/ContentsNoteManagementCoordinator.cpp")));
     const QString flatNoteBodyPersistenceSource =
         QStringLiteral("src/app/models/file/note/") + QStringLiteral("WhatSonNoteBodyPersistence.cpp");
     QVERIFY(!testCMakeSource.contains(flatNoteBodyPersistenceSource));

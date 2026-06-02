@@ -12,14 +12,14 @@
 ## Runtime Role
 - Implements the Android SAF bridge used by onboarding and startup mount resolution.
 - Maintains mount metadata so a local app-data working copy can always be traced back to the original source URI.
-- Provides the write-back path that mirrors successful local note mutations back into the real SAF package.
+- Provides the write-back path that can mirror mounted local changes back into the real SAF tree.
 
 ## Main Data Flow
 1. `mountHub(...)` validates a SAF directory-backed `.wshub`.
 2. The backend allocates a deterministic app-data mount path derived from the source URI hash.
 3. `syncSourceDirectoryToLocal(...)` copies the source SAF subtree into that local mount.
 4. Metadata is written beside the mount so later code can recover the source URI.
-5. After editor persistence succeeds, higher layers call `syncLocalPathToSource(...)`.
+5. After a higher-level persistence flow succeeds, callers may invoke `syncLocalPathToSource(...)`.
 6. The backend walks from the changed local file/directory back to the mounted hub root, resolves the relative
    subtree, creates missing SAF child entries when needed, and writes the local bytes back into the original source
    tree.
@@ -35,7 +35,7 @@
   Recursively mirrors a local subtree into a SAF directory subtree.
 - `mountedHubRootForLocalPath(...)`
   Climbs from an arbitrary local path to the nearest mounted `.wshub` root so callers can pass either a single file or
-  a whole note-package directory.
+  a whole directory.
 
 ## Failure Semantics
 - Local paths outside mounted hubs return success without side effects.
@@ -52,4 +52,3 @@
 ## Primary Callers
 - `src/app/models/onboarding/OnboardingHubController.cpp`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.cpp`
-- `src/app/models/file/note/session/ContentsNoteManagementCoordinator.cpp`

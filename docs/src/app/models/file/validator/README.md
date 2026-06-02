@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/models/file/validator`
 - Child directories: 0
-- Child files: 6
+- Child files: 2
 
 ## Child Directories
 - No child directories.
@@ -15,10 +15,6 @@
 ## Child Files
 - `WhatSonHubStructureValidator.cpp`
 - `WhatSonHubStructureValidator.hpp`
-- `WhatSonLibraryIndexIntegrityValidator.cpp`
-- `WhatSonLibraryIndexIntegrityValidator.hpp`
-- `WhatSonNoteStorageValidator.cpp`
-- `WhatSonNoteStorageValidator.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
@@ -29,7 +25,7 @@
 - Known hotspots and refactor priorities
 
 ## Current Domain Notes
-- This directory owns filesystem and package validators only.
+- This directory owns hub structure filesystem validation only.
 - `.wsnbody` body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`.
 
 ## 한국어

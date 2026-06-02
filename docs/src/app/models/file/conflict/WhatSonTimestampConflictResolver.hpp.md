@@ -15,4 +15,4 @@ Declares the timestamp-based note body conflict resolver.
 ## Boundary
 
 - The resolver does not parse `.wsnbody`, mutate `.wsnhead`, or persist files.
-- File IO and version diff capture remain in `WhatSonLocalNoteFileStore`.
+- File IO and version capture are outside this module.

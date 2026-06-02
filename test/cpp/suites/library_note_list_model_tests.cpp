@@ -34,14 +34,14 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
     model.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-1"),
-            QStringLiteral("/tmp/note-1.wsnote"),
+            QStringLiteral("/tmp/note-1.note"),
             QStringLiteral("First note"),
             QStringLiteral("Body 1"))
     });
 
     QCOMPARE(model.currentIndex(), 0);
     QCOMPARE(model.currentNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(model.currentNoteDirectoryPath(), QStringLiteral("/tmp/note-1.wsnote"));
+    QCOMPARE(model.currentNoteDirectoryPath(), QStringLiteral("/tmp/note-1.note"));
     QCOMPARE(currentIndexChangedSpy.count(), 1);
     QCOMPARE(currentNoteIdChangedSpy.count(), 1);
     QCOMPARE(currentNoteDirectoryPathChangedSpy.count(), 1);
@@ -51,7 +51,7 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
     QCOMPARE(currentNoteEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-1"));
     QCOMPARE(
         currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString(),
-        QStringLiteral("/tmp/note-1.wsnote"));
+        QStringLiteral("/tmp/note-1.note"));
     QCOMPARE(currentNoteEntry.value(QStringLiteral("primaryText")).toString(), QStringLiteral("First note"));
     QCOMPARE(currentNoteEntry.value(QStringLiteral("bodyText")).toString(), QStringLiteral("Body 1"));
 }
@@ -64,7 +64,7 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
     model.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-1"),
-            QStringLiteral("/tmp/note-1.wsnote"),
+            QStringLiteral("/tmp/note-1.note"),
             QStringLiteral("First note"),
             QStringLiteral("Body 1"))
     });
@@ -76,14 +76,14 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
     model.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-2"),
-            QStringLiteral("/tmp/note-2.wsnote"),
+            QStringLiteral("/tmp/note-2.note"),
             QStringLiteral("Second note"),
             QStringLiteral("Body 2"))
     });
 
     QCOMPARE(model.currentIndex(), 0);
     QCOMPARE(model.currentNoteId(), QStringLiteral("note-2"));
-    QCOMPARE(model.currentNoteDirectoryPath(), QStringLiteral("/tmp/note-2.wsnote"));
+    QCOMPARE(model.currentNoteDirectoryPath(), QStringLiteral("/tmp/note-2.note"));
     QCOMPARE(currentNoteIdChangedSpy.count(), 1);
     QCOMPARE(currentNoteDirectoryPathChangedSpy.count(), 1);
     QCOMPARE(currentNoteEntryChangedSpy.count(), 1);
@@ -92,7 +92,7 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
     QCOMPARE(currentNoteEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-2"));
     QCOMPARE(
         currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString(),
-        QStringLiteral("/tmp/note-2.wsnote"));
+        QStringLiteral("/tmp/note-2.note"));
     QCOMPARE(currentNoteEntry.value(QStringLiteral("primaryText")).toString(), QStringLiteral("Second note"));
     QCOMPARE(currentNoteEntry.value(QStringLiteral("bodyText")).toString(), QStringLiteral("Body 2"));
 }
@@ -119,7 +119,7 @@ void WhatSonCppRegressionTests::libraryNoteListModel_hidesRawInlineTagsFromPrevi
 
     LibraryNoteListItem item;
     item.id = record.noteId;
-    item.noteDirectoryPath = QStringLiteral("/tmp/inline-preview-note.wsnote");
+    item.noteDirectoryPath = QStringLiteral("/tmp/inline-preview-note.note");
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(record);
     item.bodyText = record.bodySourceText;
     item.lastModifiedAt = QStringLiteral("2026-05-07-09-00-00");

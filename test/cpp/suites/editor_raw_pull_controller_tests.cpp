@@ -27,22 +27,22 @@ void WhatSonCppRegressionTests::editorRawPullController_requestsNoteEntryAndOpen
     QCOMPARE(
         controller.requestNoteEntryPull(
             QStringLiteral("  entry-note  "),
-            QStringLiteral("/tmp/../tmp/entry-note.wsnote")),
+            QStringLiteral("/tmp/../tmp/entry-note.note")),
         quint64(41));
     QCOMPARE(finishedSpy.count(), 1);
     QCOMPARE(pulledNotes.constLast(), QStringLiteral("entry-note"));
-    QCOMPARE(pulledPaths.constLast(), QStringLiteral("/tmp/entry-note.wsnote"));
+    QCOMPARE(pulledPaths.constLast(), QStringLiteral("/tmp/entry-note.note"));
     QCOMPARE(pulledReasons.constLast(), QStringLiteral("note-entry"));
 
     QCOMPARE(
         controller.requestNoteOpenPull(
             QStringLiteral("open-note"),
-            QStringLiteral("/tmp/open-note.wsnote")),
+            QStringLiteral("/tmp/open-note.note")),
         quint64(42));
     QCOMPARE(finishedSpy.count(), 2);
     QCOMPARE(pulledReasons.constLast(), QStringLiteral("note-open"));
 
-    QCOMPARE(controller.requestNoteOpenPull(QString(), QStringLiteral("/tmp/missing.wsnote")), quint64(0));
+    QCOMPARE(controller.requestNoteOpenPull(QString(), QStringLiteral("/tmp/missing.note")), quint64(0));
     QCOMPARE(finishedSpy.count(), 2);
 }
 
@@ -73,12 +73,12 @@ void WhatSonCppRegressionTests::editorRawPullController_pullsActiveNoteEveryIdle
     QSignalSpy finishedSpy(&controller, &WhatSonEditorRawPullController::rawPullFinished);
     controller.setActiveNoteForIdlePull(
         QStringLiteral("  idle-note  "),
-        QStringLiteral("/tmp/../tmp/idle-note.wsnote"));
+        QStringLiteral("/tmp/../tmp/idle-note.note"));
 
     QTRY_VERIFY_WITH_TIMEOUT(finishedSpy.count() >= 2, 300);
     QCOMPARE(pulledReasons.at(0), QStringLiteral("idle"));
     QCOMPARE(pulledReasons.at(1), QStringLiteral("idle"));
-    QCOMPARE(pulledPaths.at(0), QStringLiteral("/tmp/idle-note.wsnote"));
+    QCOMPARE(pulledPaths.at(0), QStringLiteral("/tmp/idle-note.note"));
 
     controller.recordUserActivity();
     const int countAfterActivity = finishedSpy.count();

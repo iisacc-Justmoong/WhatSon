@@ -7,8 +7,6 @@
 #include "app/models/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "app/models/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "app/models/file/note/header/WhatSonBookmarkColorPalette.hpp"
-#include "app/models/file/statistic/WhatSonNoteFileStatSupport.hpp"
-#include "app/models/file/note/folder/WhatSonNoteFolderBindingRepository.hpp"
 #include "app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp"
 #include "app/models/hierarchy/projects/ProjectsHierarchyControllerSupport.hpp"
 #include "app/models/sidebar/SidebarHierarchyLvrsSupport.hpp"
@@ -393,182 +391,6 @@ namespace
         return noteCount;
     }
 
-    void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
-    {
-        if (note == nullptr)
-        {
-            return;
-        }
-
-        const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
-        if (!updatedRecord.noteId.trimmed().isEmpty())
-        {
-            note->noteId = updatedRecord.noteId;
-        }
-        note->storageKind = updatedRecord.storageKind;
-        note->bodyPlainText = updatedRecord.bodyPlainText;
-        note->bodySourceText = updatedRecord.bodySourceText;
-        note->bodyFirstLine = updatedRecord.bodyFirstLine;
-        note->bodyHasResource = updatedRecord.bodyHasResource;
-        note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
-        note->createdAt = updatedRecord.createdAt;
-        note->lastModifiedAt = updatedRecord.lastModifiedAt;
-        note->author = updatedRecord.author;
-        note->modifiedBy = updatedRecord.modifiedBy;
-        note->project = updatedRecord.project;
-        note->folders = updatedRecord.folders;
-        note->folderUuids = updatedRecord.folderUuids;
-        note->bookmarkColors = updatedRecord.bookmarkColors;
-        note->tags = updatedRecord.tags;
-        note->progress = updatedRecord.progress;
-        note->bookmarked = updatedRecord.bookmarked;
-        note->preset = updatedRecord.preset;
-        if (!updatedRecord.noteDirectoryPath.isEmpty())
-        {
-            note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
-        }
-        note->noteHeaderPath = updatedRecord.noteHeaderPath;
-    }
-
-    QString resolveCanonicalHeaderPathForProjects(const LibraryNoteRecord& note)
-    {
-        QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
-        const QString normalizedHeaderPath = QDir::cleanPath(note.noteHeaderPath.trimmed());
-        if (normalizedDirectoryPath.isEmpty() && !normalizedHeaderPath.isEmpty())
-        {
-            normalizedDirectoryPath = QFileInfo(normalizedHeaderPath).absolutePath();
-        }
-        if (normalizedDirectoryPath.isEmpty())
-        {
-            return normalizedHeaderPath;
-        }
-
-        const QDir noteDirectory(normalizedDirectoryPath);
-        if (!noteDirectory.exists())
-        {
-            return normalizedHeaderPath;
-        }
-
-        const QString noteStem = QFileInfo(normalizedDirectoryPath).completeBaseName().trimmed();
-        if (!noteStem.isEmpty())
-        {
-            const QString stemHeaderPath = noteDirectory.filePath(noteStem + QStringLiteral(".wsnhead"));
-            if (QFileInfo(stemHeaderPath).isFile())
-            {
-                return QDir::cleanPath(stemHeaderPath);
-            }
-        }
-
-        const QString canonicalHeaderPath = noteDirectory.filePath(QStringLiteral("note.wsnhead"));
-        if (QFileInfo(canonicalHeaderPath).isFile())
-        {
-            return QDir::cleanPath(canonicalHeaderPath);
-        }
-
-        const QFileInfoList headerCandidates = noteDirectory.entryInfoList(
-            QStringList{QStringLiteral("*.wsnhead")},
-            QDir::Files,
-            QDir::Name);
-        QString draftHeaderPath;
-        for (const QFileInfo& fileInfo : headerCandidates)
-        {
-            const QString loweredName = fileInfo.fileName().toCaseFolded();
-            if (loweredName.contains(QStringLiteral(".draft.")))
-            {
-                if (draftHeaderPath.isEmpty())
-                {
-                    draftHeaderPath = fileInfo.absoluteFilePath();
-                }
-                continue;
-            }
-
-            return QDir::cleanPath(fileInfo.absoluteFilePath());
-        }
-
-        if (!draftHeaderPath.isEmpty())
-        {
-            return QDir::cleanPath(draftHeaderPath);
-        }
-
-        return normalizedHeaderPath;
-    }
-
-    QString resolveCanonicalNoteDirectoryPathForProjects(const LibraryNoteRecord& note)
-    {
-        const QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
-        if (!normalizedDirectoryPath.isEmpty())
-        {
-            return normalizedDirectoryPath;
-        }
-
-        const QString canonicalHeaderPath = resolveCanonicalHeaderPathForProjects(note);
-        if (!canonicalHeaderPath.isEmpty())
-        {
-            const QString headerDirectoryPath = QFileInfo(canonicalHeaderPath).absolutePath().trimmed();
-            if (!headerDirectoryPath.isEmpty())
-            {
-                return QDir::cleanPath(headerDirectoryPath);
-            }
-        }
-
-        const QString indexedHeaderPath = QDir::cleanPath(note.noteHeaderPath.trimmed());
-        if (!indexedHeaderPath.isEmpty())
-        {
-            const QString indexedHeaderDirectoryPath = QFileInfo(indexedHeaderPath).absolutePath().trimmed();
-            if (!indexedHeaderDirectoryPath.isEmpty())
-            {
-                return QDir::cleanPath(indexedHeaderDirectoryPath);
-            }
-        }
-
-        return {};
-    }
-
-    void synchronizeIndexedProjectLabelsFromHeaders(QVector<LibraryNoteRecord>* notes)
-    {
-        if (notes == nullptr)
-        {
-            return;
-        }
-
-        WhatSonNoteFolderBindingRepository noteRepository;
-        for (int index = 0; index < notes->size(); ++index)
-        {
-            LibraryNoteRecord& note = (*notes)[index];
-            WhatSonLocalNoteDocument noteDocument;
-            QString ioError;
-            const QString normalizedNoteId = note.noteId.trimmed();
-            const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(note);
-            const QString normalizedDirectoryPath = resolveCanonicalNoteDirectoryPathForProjects(note);
-
-            bool loaded = false;
-            if (!normalizedNoteId.isEmpty() && !preferredHeaderPath.isEmpty())
-            {
-                loaded = noteRepository.readDocument(
-                    normalizedNoteId,
-                    normalizedDirectoryPath,
-                    preferredHeaderPath,
-                    &noteDocument,
-                    &ioError);
-            }
-
-            if (!loaded)
-            {
-                loaded = noteRepository.readDocument(note, &noteDocument, &ioError);
-            }
-
-            if (loaded)
-            {
-                syncNoteRecordFromDocument(&note, noteDocument);
-                continue;
-            }
-
-            // Projects membership is header-authoritative.
-            // If we cannot load a header for this index-only row, exclude it from Projects projection.
-            note.project.clear();
-        }
-    }
-
     QString resolveWshubPathFromProjectsFile(const QString& projectsFilePath)
     {
         QFileInfo info(projectsFilePath.trimmed());
@@ -871,79 +693,11 @@ bool ProjectsHierarchyController::reloadNoteMetadataForNoteId(const QString& not
         return false;
     }
 
-    const int noteIndex = WhatSon::Hierarchy::NoteRecordSupport::indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
-    {
-        return false;
-    }
-
-    const LibraryNoteRecord indexedNote = m_allNotes.at(noteIndex);
-    const QString previousProjectLabel = indexedNote.project.trimmed();
-    const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(indexedNote);
-    const QString resolvedDirectoryPath = resolveCanonicalNoteDirectoryPathForProjects(indexedNote);
-
-    WhatSonNoteFolderBindingRepository noteRepository;
-    WhatSonLocalNoteDocument noteDocument;
-    QString ioError;
-    bool loaded = false;
-    if (!normalizedNoteId.isEmpty() && !preferredHeaderPath.isEmpty())
-    {
-        loaded = noteRepository.readDocument(
-            normalizedNoteId,
-            resolvedDirectoryPath,
-            preferredHeaderPath,
-            &noteDocument,
-            &ioError);
-    }
-    if (!loaded)
-    {
-        loaded = noteRepository.readDocument(indexedNote, &noteDocument, &ioError);
-    }
-    if (!loaded)
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("reloadNoteMetadataForNoteId.failed"),
-                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
-        // Drop stale projection membership immediately when note metadata can no longer be read.
-        m_allNotes[noteIndex].project.clear();
-        const bool projectMembershipChanged =
-            previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
-        refreshNoteListForSelection(false);
-        emit hierarchyModelChanged();
-        if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
-        {
-            QString refreshError;
-            if (!refreshIndexedNotesFromProjectsFilePath(&refreshError))
-            {
-                WhatSon::Debug::traceSelf(
-                    this,
-                    QString::fromLatin1(kScope),
-                    QStringLiteral("reloadNoteMetadataForNoteId.projectionRefreshFailed"),
-                    QStringLiteral("noteId=%1 reason=%2").arg(normalizedNoteId, refreshError));
-            }
-        }
-        return false;
-    }
-
-    syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
-    const bool projectMembershipChanged =
-        previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
-    refreshNoteListForSelection(false);
-    emit hierarchyModelChanged();
-    if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
-    {
-        QString refreshError;
-        if (!refreshIndexedNotesFromProjectsFilePath(&refreshError))
-        {
-            WhatSon::Debug::traceSelf(
-                this,
-                QString::fromLatin1(kScope),
-                QStringLiteral("reloadNoteMetadataForNoteId.projectionRefreshFailed"),
-                QStringLiteral("noteId=%1 reason=%2").arg(normalizedNoteId, refreshError));
-        }
-    }
-    return true;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
+                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
+    return false;
 }
 
 bool ProjectsHierarchyController::requestTrackedStatisticsRefreshForNote(
@@ -956,27 +710,12 @@ bool ProjectsHierarchyController::requestTrackedStatisticsRefreshForNote(
         return false;
     }
 
-    const QString noteDirectoryPath = noteDirectoryPathForNoteId(normalizedNoteId);
-    if (noteDirectoryPath.isEmpty())
-    {
-        return false;
-    }
-
-    QString statRefreshError;
-    if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
-            normalizedNoteId,
-            noteDirectoryPath,
-            incrementOpenCount,
-            &statRefreshError))
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("requestTrackedStatisticsRefreshForNote.failed"),
-                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statRefreshError));
-        return false;
-    }
-
-    return reloadNoteMetadataForNoteId(normalizedNoteId);
+    Q_UNUSED(incrementOpenCount)
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
+                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
+    return false;
 }
 
 bool ProjectsHierarchyController::applyPersistedBodyStateForNote(
@@ -1014,13 +753,7 @@ QString ProjectsHierarchyController::noteDirectoryPathForNoteId(const QString& n
         return {};
     }
 
-    const int noteIndex = WhatSon::Hierarchy::NoteRecordSupport::indexOfNoteRecordById(m_allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
-    {
-        return {};
-    }
-
-    return resolveCanonicalNoteDirectoryPathForProjects(m_allNotes.at(noteIndex));
+    return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_allNotes, normalizedNoteId);
 }
 
 QString ProjectsHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
@@ -1815,13 +1548,7 @@ LibraryNoteListItem ProjectsHierarchyController::buildNoteListItem(const Library
 
 void ProjectsHierarchyController::refreshNoteListForSelection(const bool synchronizeProjectHeaders)
 {
-    // Keep project projection strictly aligned with live `.wsnhead` values when the caller is
-    // explicitly refreshing project membership. Body-only note updates reuse the current in-memory
-    // labels so the list path does not re-read every note header on each editor mutation.
-    if (synchronizeProjectHeaders)
-    {
-        synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
-    }
+    Q_UNUSED(synchronizeProjectHeaders)
 
     QSet<QString> availableProjectKeys;
     availableProjectKeys.reserve(m_items.size() * 2);
@@ -1884,7 +1611,6 @@ bool ProjectsHierarchyController::refreshIndexedNotesFromWshub(const QString& ws
     }
 
     m_allNotes = libraryAll.notes();
-    synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
     refreshNoteListForSelection();
     emit hierarchyModelChanged();
     return true;

@@ -30,11 +30,11 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_exposesCurrentNoteEn
     model.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-1"),
-            QStringLiteral("/tmp/note-1.wsnote"),
+            QStringLiteral("/tmp/note-1.note"),
             QStringLiteral("First note")),
         makeLibraryNoteListItem(
             QStringLiteral("note-2"),
-            QStringLiteral("/tmp/note-2.wsnote"),
+            QStringLiteral("/tmp/note-2.note"),
             QStringLiteral("Second note"))
     });
 
@@ -44,7 +44,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_exposesCurrentNoteEn
     QCOMPARE(currentNoteEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-1"));
     QCOMPARE(
         currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString(),
-        QStringLiteral("/tmp/note-1.wsnote"));
+        QStringLiteral("/tmp/note-1.note"));
     QCOMPARE(bridge.readCurrentNoteEntry(), currentNoteEntry);
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-1"));
 
@@ -54,7 +54,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_exposesCurrentNoteEn
     QCOMPARE(currentNoteEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-2"));
     QCOMPARE(
         currentNoteEntry.value(QStringLiteral("noteDirectoryPath")).toString(),
-        QStringLiteral("/tmp/note-2.wsnote"));
+        QStringLiteral("/tmp/note-2.note"));
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-2"));
     QVERIFY(currentNoteEntryChangedSpy.count() >= 2);
     QVERIFY(currentNoteIdChangedSpy.count() >= 2);
@@ -75,16 +75,16 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
 
     noteDirectorySourceController.setNoteDirectoryPath(
         QStringLiteral("note-2"),
-        QStringLiteral("/tmp/legacy-note-2.wsnote"));
+        QStringLiteral("/tmp/legacy-note-2.note"));
 
     libraryNoteListModel.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-1"),
-            QStringLiteral("/tmp/library-note-1.wsnote"),
+            QStringLiteral("/tmp/library-note-1.note"),
             QStringLiteral("First note")),
         makeLibraryNoteListItem(
             QStringLiteral("note-2"),
-            QStringLiteral("/tmp/library-note-2.wsnote"),
+            QStringLiteral("/tmp/library-note-2.note"),
             QStringLiteral("Second note"))
     });
     libraryNoteListModel.setCurrentIndex(1);
@@ -93,12 +93,12 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_prefersCurrentNot
     bridge.setNoteListModel(&libraryNoteListModel);
 
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-2"));
-    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-2.wsnote"));
+    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-2.note"));
 
     libraryNoteListModel.setCurrentIndex(0);
 
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-1"));
-    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-1.wsnote"));
+    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-1.note"));
 
     ResourcesListItem resourceItem;
     resourceItem.id = QStringLiteral("resource-1");
@@ -133,11 +133,11 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_clearsReadableEmp
     libraryNoteListModel.setItems({
         makeLibraryNoteListItem(
             QStringLiteral("note-1"),
-            QStringLiteral("/tmp/library-note-1.wsnote"),
+            QStringLiteral("/tmp/library-note-1.note"),
             QStringLiteral("First note")),
         makeLibraryNoteListItem(
             QStringLiteral("note-2"),
-            QStringLiteral("/tmp/library-note-2.wsnote"),
+            QStringLiteral("/tmp/library-note-2.note"),
             QStringLiteral("Second note"))
     });
     libraryNoteListModel.setCurrentIndex(1);
@@ -145,7 +145,7 @@ void WhatSonCppRegressionTests::detailCurrentNoteContextBridge_clearsReadableEmp
     bridge.setNoteListModel(&libraryNoteListModel);
 
     QCOMPARE(bridge.currentNoteId(), QStringLiteral("note-2"));
-    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-2.wsnote"));
+    QCOMPARE(bridge.currentNoteDirectoryPath(), QStringLiteral("/tmp/library-note-2.note"));
 
     bridge.setNoteListModel(&emptySelectionModel);
 

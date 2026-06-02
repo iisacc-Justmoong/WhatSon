@@ -154,8 +154,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
 - Note-list search uses `LV.InputField` in `searchMode` and forwards the active query into the bound
   domain-specific note-list model (`LibraryNoteListModel` for Library, `BookmarksNoteListModel` for Bookmarks).
-  Filtering is performed against runtime-parsed note body text assembled from `.wsnbody` `<body>` content instead of
-  reparsing `.wsnote` files on every keystroke.
+  Filtering is performed against note-list model body text instead of reopening note package directories on every
+  keystroke.
 - The note-list search header also recenters the underlying LVRS `inputItem` from its live `contentHeight`, so
   whitespace-only edits (`Space`, `Backspace`) no longer flip the inline text/caret between two fixed vertical
   positions on macOS.
@@ -221,10 +221,9 @@ WhatSon is an LVRS-based Qt Quick application.
   controller files do not leave unresolved `controller.*` runtime references.
 - Sidebar drag-reorder is now reintroduced through a dedicated system-level `HierarchyDragDropBridge` wired into
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
-  instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
-  `whatson.library.note` drops directly over hierarchy rows and routes accepted note-to-folder assignments back through
-  the bridge, appending the dropped target hierarchy path into the note's `.wsnote` header `<folders>` list while
-  preserving every existing folder assignment already known in the runtime note record or persisted header.
+  instead of reviving the old local interaction controller. The same mounted sidebar may still preview
+  `whatson.library.note` drops directly over hierarchy rows, but persisted note-folder reassignment is disabled with
+  the removed note package persistence layer.
 - `HierarchySidebarLayout.qml` and `SidebarHierarchyView.qml` no longer carry unused `frameName` / `frameNodeId`
   passthrough metadata, so the shared hierarchy surfaces expose only state that participates in runtime rendering or
   routing.
@@ -321,20 +320,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - The same `ListBarLayout.qml` now composes a narrow `FocusedNoteDeletionBridge`, so `Backspace` / `Delete` resolve
   the visually focused note id directly from the list view before falling back to the active note-list model. The
   bridge still forwards deletion into the injected `LibraryNoteMutationViewModel::deleteNoteById(...)` contract, while
-  the note-mutation view-model stays separate from the hierarchy read model and delegates destructive writes into
-  `WhatSonHubNoteDeletionService`. File-system integrity repair now lives
-  under `src/app/models/file/validator/`: `WhatSonHubStructureValidator` resolves hub/library/stat paths,
-  `WhatSonNoteStorageValidator` resolves materialized `.wsnote` / `.wsnhead` storage, and
-  `WhatSonLibraryIndexIntegrityValidator` owns orphan pruning plus `index.wsnindex` rewrites. When a stale
-  `index.wsnindex` entry no longer has a materialized `.wsnote`, load-time indexing now prunes the orphan from both
-  the visible note set and the rewritten index, and the delete service also treats such entries as index-only cleanup
-  instead of failing for a missing directory.
+  the note-mutation view-model stays separate from the hierarchy read model. Destructive note filesystem writes and
+  note-storage repair services are currently deleted, so deletion requests fail closed at the controller boundary.
   `BookmarksHierarchyViewModel` only mirrors the deletion into its bookmarked subset.
 - `ListBarLayout.qml` now also mounts an LVRS note-card context menu for desktop right-click. It targets the hovered
   note id without forcing a selection change first, and currently exposes `Delete note` plus `Clear all folders`.
-  The latter forwards into `LibraryNoteMutationViewModel::clearNoteFoldersById(...)`, which delegates the
-  non-destructive header rewrite to `WhatSonHubNoteFolderClearService` and refreshes the visible note metadata
-  without deleting the note itself.
+  The latter forwards into `LibraryNoteMutationViewModel::clearNoteFoldersById(...)`, which now fails closed because
+  persisted folder binding mutation has been removed.
 - The note-card delegate now uses explicit required note roles (`noteId`, `primaryText`, `image`, `imageSource`,
   `displayDate`, `folders`, `tags`, `bookmarked`, `bookmarkColor`) instead of depending on a nullable runtime
   `model` object, which removes delegate startup `TypeError` churn during note-list refresh and keeps note drags
@@ -349,18 +341,10 @@ WhatSon is an LVRS-based Qt Quick application.
   `ContentsLogicalTextBridge` for logical-line parsing,
   and `ContentsEditorSession.qml` for idle-sync session state plus selection-to-editor text synchronization. The visual surface keeps
   only editor-geometry sampling and render placement.
-- The live editor surface now treats markdown as part of the canonical `.wsnbody` source format instead of a separate
-  preview grammar. `ContentsTextFormatRenderer` splits the cheap source-editing HTML surface from the optional
-  markdown-aware preview HTML, and hidden preview paths no longer regenerate on every edit.
-- `ContentsEditorSelectionBridge` now forwards editor persistence into
-  `src/app/models/file/sync/ContentsEditorIdleSyncController.*`.
-  QML/editor code now requests immediate `{noteId, bodyText}` flushes for live user mutations, and the sync
-  controller keeps the buffered `1000ms` fetch clock only as the retry/drain path for already accepted dirty note
-  snapshots. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
-  through `WhatSonLocalNoteFileStore`, mirrors normalized body state back into the active editable hierarchy
-  viewmodel, mirrors mounted-Android note writes back into the original source package before reporting success, and
-  defers hub-wide `.wsnbody` backlink/open-count scans to a later
-  `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
+- The live editor surface no longer owns a document persistence path. Existing source-format helper code is kept only
+  as isolated parser/serializer support until a replacement document model is defined.
+- Editor persistence forwarding and the background note-management lane have been removed. QML/editor code must not
+  recreate body flush, header rewrite, or tracked-stat refresh behavior through a compatibility wrapper.
 - Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
   `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
   rewrite path, so selecting another note stays decoupled from backlink recalculation.
@@ -664,22 +648,9 @@ count needed by active editor surfaces; stale incremental synchronization and pe
 removed. Inline `<resource ... />` blocks share the same single-logical-line contract across the bridge, structured
 block parser, and fallback RichText projection, so minimap and source-offset helpers no longer disagree about resource
 block height.
-Editor/QML code now stages save intent through `src/app/models/file/sync/ContentsEditorIdleSyncController.*`, which owns the
-worker-thread idle detector and note-exit flush promotion.
-Non-editing note-management work still sits behind `src/app/models/file/note/ContentsNoteManagementCoordinator.*`; direct
-`.wsnote` persistence, header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are
-serialized there outside the editor hot path.
-Local note-file CRUD is now centralized under `src/app/models/file/note/WhatSonLocalNoteFileStore.*`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
-operations plus per-note `.wsnhistory` append-only diff logging and `.wsnversion` manifest initialization for library
-note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note deletion, so the local
-filesystem remains the first writer of record before runtime projections or external sync react.
-- `src/app/models/file/note/WhatSonLocalNoteVersionStore.*` adds git-like note version primitives on top of that local file
-  boundary: it captures full working-tree snapshots into `.wsnversion`, tracks `currentSnapshotId` vs
-  `headSnapshotId`, computes compact header/body diffs between any two snapshots, supports detached checkout of an
-  existing snapshot, and appends a fresh rollback snapshot when the user restores an older state.
-App-owned note filesystem mutations no longer route through a shared IO object layer. Note mutation support uses direct
-Qt file primitives for UTF-8 reads, atomic `QSaveFile` overwrites, directory creation, and cleanup so unrelated
-note/resource operations are not serialized by a global gateway.
+Editor/QML code no longer stages note save intent through an idle-sync persistence path. The non-editing
+note-management coordinator, local note-file CRUD layer, and note version snapshot layer have been deleted. App-owned
+note filesystem mutations therefore fail closed until a replacement document model is introduced.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -1126,23 +1097,15 @@ Folders hierarchy file behavior (Library sidebar):
 
 Library runtime classification behavior:
 
-- `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, created/modified
-  timestamps, and related fields)
-- `All`: reads each note's `.wsnbody`, keeps `bodySourceText` as the editor-facing RAW source, projects
-  `bodyPlainText` through the same body parser used by the editor, and uses only that visible text as note-list summary
-  text. Inline source tags such as `<bold>` and `<italic>` therefore stay hidden in note preview cards; blank bodies
-  stay visually blank instead of falling back to internal IDs or filesystem stems
+- `All`: keeps the library tree available but no longer materializes note package records from the filesystem.
+- `All`: does not read note bodies for editor-facing source or note-list summary projection while the document model is
+  deleted.
 - Notes whose resolved folder metadata is empty are still rendered with a user-facing `Draft` folder label in the note
   card, while the immutable `Draft` hierarchy bucket now uses the stricter raw `.wsnhead <folders>` contract described
   below.
-- `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
-  directory / hub root, and exposes that preview to the note-list card
+- `All`: no longer resolves note-body resource previews while note body package reads are disabled.
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
-- `All`: `LibraryNoteMutationViewModel::createEmptyNote()` routes note creation through
-  `WhatSonHubNoteCreationService`, which creates a blank note directly under the active `.wslibrary` with a
-  mixed-case alphanumeric `16-16` ID, persists the header/body, an empty `.wsnhistory`, an empty `.wsnversion`, a
-  single `links.wsnlink`, and attachment scaffold through the existing note creators, updates `index.wsnindex` plus
-  hub stat metadata, and keeps the new note selected in the current scope
+- `All`: `LibraryNoteMutationViewModel::createEmptyNote()` fails closed because note package creation has been removed.
 - `Draft`: filters notes only when the raw `.wsnhead` `<folders>...</folders>` block is present and contains no
   concrete folder text or `<folder>` entries, so stale `.wsnindex` folder values and literal `Draft` text do not
   qualify as draft membership

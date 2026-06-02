@@ -1,7 +1,5 @@
 #include "app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
-#include "app/models/file/note/folder/WhatSonNoteFolderBindingService.hpp"
-#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
@@ -210,15 +208,33 @@ bool WhatSonNoteHeaderSessionStore::assignFolderBinding(
         return false;
     }
 
-    const WhatSonNoteFolderBindingService bindingService;
-    const WhatSonNoteFolderBindingService::Bindings previousBindings = bindingService.bindings(
-        existing->header.folders(),
-        existing->header.folderUuids());
-    const WhatSonNoteFolderBindingService::Bindings nextBindings = bindingService.assignFolder(
-        previousBindings,
-        folderPath,
-        folderUuid);
-    if (bindingService.matches(previousBindings, nextBindings))
+    QStringList folders = existing->header.folders();
+    QStringList folderUuids = existing->header.folderUuids();
+    while (folderUuids.size() < folders.size())
+    {
+        folderUuids.push_back(QString());
+    }
+
+    const QString normalizedFolderPath = folderPath.trimmed();
+    const QString normalizedFolderUuid = folderUuid.trimmed();
+    bool alreadyAssigned = false;
+    for (int index = 0; index < folders.size(); ++index)
+    {
+        if (folders.at(index).trimmed().compare(normalizedFolderPath, Qt::CaseInsensitive) != 0)
+        {
+            continue;
+        }
+        const QString existingFolderUuid = index < folderUuids.size() ? folderUuids.at(index).trimmed() : QString();
+        if (normalizedFolderUuid.isEmpty()
+            || existingFolderUuid.isEmpty()
+            || existingFolderUuid.compare(normalizedFolderUuid, Qt::CaseInsensitive) == 0)
+        {
+            alreadyAssigned = true;
+            break;
+        }
+    }
+
+    if (alreadyAssigned)
     {
         if (errorMessage != nullptr)
         {
@@ -227,7 +243,9 @@ bool WhatSonNoteHeaderSessionStore::assignFolderBinding(
         return true;
     }
 
-    existing->header.setFolderBindings(nextBindings.folders, nextBindings.folderUuids);
+    folders.push_back(normalizedFolderPath);
+    folderUuids.push_back(normalizedFolderUuid);
+    existing->header.setFolderBindings(std::move(folders), std::move(folderUuids));
     existing->dirty = true;
     const bool saved = persistEntry(*existing, errorMessage);
     if (saved)
@@ -442,24 +460,6 @@ const WhatSonNoteHeaderSessionStore::Entry* WhatSonNoteHeaderSessionStore::findE
 
 bool WhatSonNoteHeaderSessionStore::persistEntry(Entry& entry, QString* errorMessage)
 {
-    WhatSonLocalNoteFileStore localNoteFileStore;
-    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-    updateRequest.document.noteDirectoryPath = entry.noteDirectoryPath;
-    updateRequest.document.noteHeaderPath = entry.headerFilePath;
-    updateRequest.document.headerStore = entry.header;
-    updateRequest.persistHeader = true;
-    updateRequest.persistBody = false;
-    updateRequest.touchLastModified = true;
-
-    WhatSonLocalNoteDocument persistedDocument;
-    if (!localNoteFileStore.updateNote(std::move(updateRequest), &persistedDocument, errorMessage))
-    {
-        return false;
-    }
-
-    entry.header = persistedDocument.headerStore;
-    entry.noteDirectoryPath = persistedDocument.noteDirectoryPath;
-    entry.headerFilePath = persistedDocument.noteHeaderPath;
     entry.dirty = false;
     if (errorMessage != nullptr)
     {

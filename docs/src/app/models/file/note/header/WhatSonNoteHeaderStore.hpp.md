@@ -87,5 +87,4 @@ The statistics block is serialized as:
 
 - `WhatSonNoteHeaderParser.cpp`: populates the store from XML.
 - `WhatSonNoteHeaderCreator.cpp`: serializes the store back to XML.
-- `WhatSonHubNoteCreationService.cpp`: creates initial folder bindings for new notes.
 - `WhatSonLibraryFolderHierarchyMutationService.cpp`: rewrites bindings when the folder tree changes.

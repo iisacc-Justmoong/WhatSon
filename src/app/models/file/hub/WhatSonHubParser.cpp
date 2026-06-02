@@ -457,24 +457,8 @@ int WhatSonHubParser::countFilesRecursive(const QString& rootPath, const QString
 
 int WhatSonHubParser::countNoteDirectories(const QString& libraryPath)
 {
-    if (libraryPath.trimmed().isEmpty() || !QFileInfo(libraryPath).isDir())
-    {
-        return 0;
-    }
-
-    QDirIterator iterator(
-        libraryPath,
-        QStringList{QStringLiteral("*.wsnote")},
-        QDir::Dirs | QDir::NoDotAndDotDot,
-        QDirIterator::Subdirectories);
-
-    int count = 0;
-    while (iterator.hasNext())
-    {
-        iterator.next();
-        ++count;
-    }
-    return count;
+    Q_UNUSED(libraryPath)
+    return 0;
 }
 
 int WhatSonHubParser::countWsnbodyCharacters(const QString& libraryPath)

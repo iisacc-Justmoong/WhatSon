@@ -32,7 +32,7 @@ namespace
 
     QString normalizeNoteDirectoryName(const QString& noteId)
     {
-        return normalizeNoteStem(noteId) + QStringLiteral(".wsnote");
+        return normalizeNoteStem(noteId);
     }
 } // namespace
 

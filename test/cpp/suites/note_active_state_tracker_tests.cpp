@@ -6,11 +6,11 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_tracksCurrentNoteAcrossAc
 
     FakeSelectionNoteListModel libraryModel;
     libraryModel.setCurrentNoteId(QStringLiteral("library-note"));
-    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.wsnote"));
+    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.note"));
 
     FakeSelectionNoteListModel tagsModel;
     tagsModel.setCurrentNoteId(QStringLiteral("tags-note"));
-    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.wsnote"));
+    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.note"));
 
     FakeHierarchyController libraryController(QStringLiteral("library"));
     FakeHierarchyController tagsController(QStringLiteral("tags"));
@@ -34,7 +34,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_tracksCurrentNoteAcrossAc
     QCOMPARE(tracker.hierarchyContextSource(), static_cast<QObject*>(&sidebarController));
     QCOMPARE(tracker.activeNoteListModel(), static_cast<QObject*>(&libraryModel));
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("library-note"));
-    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/library-note.wsnote"));
+    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/library-note.note"));
     QVERIFY(tracker.hasActiveNote());
     QCOMPARE(
         tracker.activeNoteEntry().value(QStringLiteral("noteId")).toString(),
@@ -47,7 +47,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_tracksCurrentNoteAcrossAc
     QCOMPARE(tracker.activeHierarchyController(), static_cast<QObject*>(&tagsController));
     QCOMPARE(tracker.activeNoteListModel(), static_cast<QObject*>(&tagsModel));
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("tags-note"));
-    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/tags-note.wsnote"));
+    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/tags-note.note"));
 
     libraryModel.setCurrentNoteId(QStringLiteral("library-note-2"));
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("tags-note"));
@@ -67,13 +67,13 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_clearsReadableEmptyAndNon
     FakeCurrentNoteEntryOnlyListModel libraryModel;
     libraryModel.setCurrentNoteEntry({
         {QStringLiteral("noteId"), QStringLiteral("entry-note")},
-        {QStringLiteral("noteDirectoryPath"), QStringLiteral("/tmp/entry-note.wsnote")},
+        {QStringLiteral("noteDirectoryPath"), QStringLiteral("/tmp/entry-note.note")},
         {QStringLiteral("bodyText"), QStringLiteral("Entry body")},
     });
 
     FakeSelectionNoteListModel resourcesModel;
     resourcesModel.setCurrentNoteId(QStringLiteral("resource-selection"));
-    resourcesModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/resource-selection.wsnote"));
+    resourcesModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/resource-selection.note"));
     resourcesModel.setNoteBacked(false);
 
     FakeHierarchyController libraryController(QStringLiteral("library"));
@@ -95,7 +95,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_clearsReadableEmptyAndNon
     tracker.setHierarchyContextSource(&sidebarController);
 
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("entry-note"));
-    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/entry-note.wsnote"));
+    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/entry-note.note"));
     QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Entry body"));
     QVERIFY(!tracker.activeNoteEntry().contains(QStringLiteral("bodyText")));
     QVERIFY(tracker.hasActiveNote());
@@ -116,7 +116,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_clearsReadableEmptyAndNon
 
     resourcesModel.setNoteBacked(true);
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("resource-selection"));
-    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/resource-selection.wsnote"));
+    QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/resource-selection.note"));
     QVERIFY(tracker.hasActiveNote());
     QVERIFY(hasActiveNoteChangedSpy.count() >= 4);
 
@@ -129,12 +129,12 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
 
     FakeSelectionNoteListModel libraryModel;
     libraryModel.setCurrentNoteId(QStringLiteral("library-note"));
-    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.wsnote"));
+    libraryModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/library-note.note"));
     libraryModel.setCurrentBodyText(QStringLiteral("Library body"));
 
     FakeSelectionNoteListModel tagsModel;
     tagsModel.setCurrentNoteId(QStringLiteral("tags-note"));
-    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.wsnote"));
+    tagsModel.setCurrentNoteDirectoryPath(QStringLiteral("/tmp/tags-note.note"));
     tagsModel.setCurrentBodyText(QStringLiteral("Tags body"));
 
     FakeHierarchyController libraryController(QStringLiteral("library"));
@@ -179,7 +179,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
     sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
 
     QCOMPARE(bodyTextDuringTagsNoteIdSignal, QStringLiteral("Tags body"));
-    QCOMPARE(noteDirectoryPathDuringTagsNoteIdSignal, QStringLiteral("/tmp/tags-note.wsnote"));
+    QCOMPARE(noteDirectoryPathDuringTagsNoteIdSignal, QStringLiteral("/tmp/tags-note.note"));
     QCOMPARE(
         noteEntryDuringTagsNoteIdSignal.value(QStringLiteral("noteId")).toString(),
         QStringLiteral("tags-note"));

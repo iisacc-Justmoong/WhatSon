@@ -10,7 +10,7 @@
 - Approximate line count: 70
 
 ## Declared Role
-- Defines the Android SAF storage façade used by onboarding, startup hub resolution, and mounted-hub persistence.
+- Defines the Android SAF storage façade used by onboarding, startup hub resolution, and mounted-hub write-back.
 - Keeps platform-specific document-tree IO behind the `Bridge` interface so JNI-backed production code and test doubles
   can share the same higher-level synchronization logic.
 
@@ -44,4 +44,3 @@
 ## Main Collaborators
 - `src/app/models/onboarding/OnboardingHubController.*`
 - `src/app/runtime/startup/WhatSonStartupHubResolver.*`
-- `src/app/models/file/note/session/ContentsNoteManagementCoordinator.*`

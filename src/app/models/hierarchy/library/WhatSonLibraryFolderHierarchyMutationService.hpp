@@ -2,7 +2,6 @@
 
 #include "app/models/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
-#include "app/models/file/note/folder/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QHash>
 #include <QString>
@@ -30,7 +29,4 @@ public:
     ~WhatSonLibraryFolderHierarchyMutationService();
 
     bool commitMutation(Request request, Result* outResult = nullptr, QString* errorMessage = nullptr) const;
-
-private:
-    WhatSonNoteFolderBindingRepository m_noteFolderBindingRepository;
 };

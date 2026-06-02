@@ -492,56 +492,6 @@ void WhatSonCppRegressionTests::noteBodyPersistence_persistsCalloutAsParagraphTa
     QVERIFY(!recoveredBodyDocument.contains(QStringLiteral("    <callout>Legacy</callout>\n")));
 }
 
-void WhatSonCppRegressionTests::noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount()
-{
-    QTemporaryDir workspaceDir;
-    QVERIFY(workspaceDir.isValid());
-
-    QString createError;
-    const QString noteId = QStringLiteral("body-persistence-count-note");
-    const QString noteDirectoryPath = createLocalNoteForRegression(
-        workspaceDir.path(),
-        noteId,
-        QStringLiteral("before"),
-        &createError);
-    QVERIFY2(
-        !noteDirectoryPath.isEmpty(),
-        qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
-
-    QString normalizedBodyText;
-    QString normalizedBodySourceText;
-    QString lastModifiedAt;
-    QString saveError;
-    QVERIFY2(
-        WhatSon::NoteBodyPersistence::persistBodyPlainText(
-            noteId,
-            noteDirectoryPath,
-            QString(),
-            QStringLiteral("after"),
-            &normalizedBodyText,
-            &normalizedBodySourceText,
-            &lastModifiedAt,
-            &saveError),
-        qPrintable(saveError));
-    QCOMPARE(normalizedBodyText, QStringLiteral("after"));
-    QCOMPARE(normalizedBodySourceText, QStringLiteral("after"));
-
-    WhatSonLocalNoteFileStore fileStore;
-    WhatSonLocalNoteDocument document;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = noteId;
-    readRequest.noteDirectoryPath = noteDirectoryPath;
-
-    QString readError;
-    QVERIFY2(
-        fileStore.readNote(readRequest, &document, &readError),
-        qPrintable(QStringLiteral("Failed to read saved note: %1").arg(readError)));
-    QCOMPARE(document.headerStore.modifiedCount(), 1);
-    QCOMPARE(
-        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(document.bodySourceText),
-        QStringLiteral("after"));
-}
-
 void WhatSonCppRegressionTests::noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection()
 {
     const QString bodyDocument = QStringLiteral(

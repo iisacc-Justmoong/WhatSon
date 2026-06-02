@@ -90,8 +90,7 @@ QString WhatSonCppRegressionTests::createLocalNoteForRegression(
 
     const QString normalizedParentDirectoryPath = QDir::cleanPath(parentDirectoryPath.trimmed());
     const QString normalizedNoteId = noteId.trimmed();
-    const QString noteDirectoryPath =
-        QDir(normalizedParentDirectoryPath).filePath(QStringLiteral("%1.wsnote").arg(normalizedNoteId));
+    const QString noteDirectoryPath = QDir(normalizedParentDirectoryPath).filePath(normalizedNoteId);
 
     WhatSonNoteHeaderStore headerStore;
     headerStore.setNoteId(normalizedNoteId);
@@ -100,17 +99,50 @@ QString WhatSonCppRegressionTests::createLocalNoteForRegression(
     headerStore.setLastModifiedAt(QStringLiteral("2026-04-18-00-00-00"));
     headerStore.setModifiedBy(QStringLiteral("WhatSonCppRegressionTests"));
 
-    WhatSonLocalNoteFileStore fileStore;
-    WhatSonLocalNoteFileStore::CreateRequest request;
-    request.noteId = normalizedNoteId;
-    request.noteDirectoryPath = noteDirectoryPath;
-    request.headerStore = headerStore;
-    request.bodyPlainText = bodySourceText;
+    if (!QDir().mkpath(noteDirectoryPath))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to create note fixture directory: %1").arg(noteDirectoryPath);
+        }
+        return {};
+    }
 
-    if (!fileStore.createNote(std::move(request), nullptr, errorMessage))
+    const auto writeTextFile = [errorMessage](const QString& filePath, const QString& text) -> bool
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to open note fixture file: %1").arg(filePath);
+            }
+            return false;
+        }
+        if (file.write(text.toUtf8()) < 0)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write note fixture file: %1").arg(filePath);
+            }
+            return false;
+        }
+        return true;
+    };
+
+    WhatSonNoteHeaderCreator headerCreator(normalizedParentDirectoryPath, QString());
+    const QString headerPath = QDir(noteDirectoryPath).filePath(normalizedNoteId + QStringLiteral(".wsnhead"));
+    if (!writeTextFile(headerPath, headerCreator.createHeaderText(headerStore)))
     {
         return {};
     }
+
+    const QString bodyPath = QDir(noteDirectoryPath).filePath(normalizedNoteId + QStringLiteral(".wsnbody"));
+    if (!writeTextFile(bodyPath, WhatSon::NoteBodyPersistence::serializeBodyDocument(normalizedNoteId, bodySourceText)))
+    {
+        return {};
+    }
+
     return noteDirectoryPath;
 }
 

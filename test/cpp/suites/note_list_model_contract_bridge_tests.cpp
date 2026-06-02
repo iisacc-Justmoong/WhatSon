@@ -73,7 +73,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsA
 
     LibraryNoteListItem libraryItem;
     libraryItem.id = QStringLiteral("library-note");
-    libraryItem.noteDirectoryPath = QStringLiteral("/tmp/library-note.wsnote");
+    libraryItem.noteDirectoryPath = QStringLiteral("/tmp/library-note.note");
     libraryItem.primaryText = QStringLiteral("Library note");
     libraryItem.displayDate = QStringLiteral("2026-04-18");
     libraryItem.folders = {QStringLiteral("Marketing")};
@@ -121,7 +121,7 @@ void WhatSonCppRegressionTests::noteListModelContractBridge_prefersExplicitRowsA
     QCOMPARE(libraryRow.value(QStringLiteral("noteId")).toString(), QStringLiteral("library-note"));
     QCOMPARE(
         libraryRow.value(QStringLiteral("noteDirectoryPath")).toString(),
-        QStringLiteral("/tmp/library-note.wsnote"));
+        QStringLiteral("/tmp/library-note.note"));
     QCOMPARE(libraryRow.value(QStringLiteral("folders")).toStringList(), QStringList{QStringLiteral("Marketing")});
     QCOMPARE(libraryRow.value(QStringLiteral("tags")).toStringList(), QStringList{QStringLiteral("launch")});
 }

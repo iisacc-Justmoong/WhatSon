@@ -1838,7 +1838,7 @@ bool LibraryHierarchyController::canAcceptNoteDrop(int index, const QString& not
     Q_UNUSED(noteId)
     WhatSon::Debug::traceSelf(const_cast<LibraryHierarchyController*>(this),
                               QStringLiteral("library.controller"),
-                              QStringLiteral("canAcceptNoteDrop.wsnoteDisabled"));
+                              QStringLiteral("canAcceptNoteDrop.notePackagesDisabled"));
     return false;
 }
 
@@ -1848,7 +1848,7 @@ bool LibraryHierarchyController::assignNoteToFolder(int index, const QString& no
     Q_UNUSED(noteId)
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("assignNoteToFolder.wsnoteDisabled"));
+                              QStringLiteral("assignNoteToFolder.notePackagesDisabled"));
     return false;
 }
 
@@ -2040,7 +2040,7 @@ bool LibraryHierarchyController::createEmptyNote()
 {
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("createEmptyNote.wsnoteDisabled"));
+                              QStringLiteral("createEmptyNote.notePackagesDisabled"));
     return false;
 }
 
@@ -2054,7 +2054,7 @@ bool LibraryHierarchyController::deleteNoteById(const QString& noteId)
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("deleteNoteById.wsnoteDisabled"),
+                              QStringLiteral("deleteNoteById.notePackagesDisabled"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
     return false;
 }
@@ -2068,7 +2068,7 @@ bool LibraryHierarchyController::clearNoteFoldersById(const QString& noteId)
     }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("clearNoteFoldersById.wsnoteDisabled"),
+                              QStringLiteral("clearNoteFoldersById.notePackagesDisabled"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
     return false;
 }
@@ -2083,7 +2083,7 @@ bool LibraryHierarchyController::saveBodyTextForNote(const QString& noteId, cons
     }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("saveBodyTextForNote.wsnoteDisabled"),
+                              QStringLiteral("saveBodyTextForNote.notePackagesDisabled"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
     return false;
 }
@@ -2138,7 +2138,7 @@ bool LibraryHierarchyController::requestTrackedStatisticsRefreshForNote(
     }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("requestTrackedStatisticsRefreshForNote.wsnoteDisabled"),
+                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
     return false;
 }
@@ -2184,7 +2184,7 @@ bool LibraryHierarchyController::reloadNoteMetadataForNoteId(const QString& note
     }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.controller"),
-                              QStringLiteral("reloadNoteMetadataForNoteId.wsnoteDisabled"),
+                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
     return false;
 }

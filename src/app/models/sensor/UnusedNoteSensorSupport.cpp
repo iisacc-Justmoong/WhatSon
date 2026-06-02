@@ -211,91 +211,10 @@ QVariantList WhatSon::UnusedNoteSensorSupport::collectUnusedNoteEntries(
         return {};
     }
 
-    QVariantList unusedNotes;
-    QDirIterator iterator(
-        normalizedHubPath,
-        QStringList{QStringLiteral("*.wsnote")},
-        QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden,
-        QDirIterator::Subdirectories);
-    while (iterator.hasNext())
-    {
-        const QString noteDirectoryPath = WhatSon::HubPath::normalizeAbsolutePath(iterator.next());
-        if (shouldIgnoreHubPath(noteDirectoryPath, normalizedHubPath))
-        {
-            continue;
-        }
-
-        const QString headerPath = WhatSon::NoteBodyPersistence::resolveHeaderPath(QString(), noteDirectoryPath);
-        const QFileInfo headerInfo(headerPath);
-        if (headerPath.isEmpty() || !headerInfo.isFile())
-        {
-            continue;
-        }
-
-        QString readError;
-        const QString headerText = readUtf8File(headerPath, &readError);
-        if (!readError.isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = readError;
-            }
-            return {};
-        }
-
-        WhatSonNoteHeaderStore headerStore;
-        WhatSonNoteHeaderParser parser;
-        QString parseError;
-        if (!parser.parse(headerText, &headerStore, &parseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = parseError;
-            }
-            return {};
-        }
-
-        const EffectiveActivity activity = resolveEffectiveActivity(headerStore);
-        if (!activity.timestampUtc.isValid() || activity.timestampUtc > cutoffUtc)
-        {
-            continue;
-        }
-
-        QString noteId = headerStore.noteId().trimmed();
-        if (noteId.isEmpty())
-        {
-            noteId = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
-        }
-        if (noteId.isEmpty())
-        {
-            continue;
-        }
-
-        unusedNotes.push_back(buildUnusedNoteEntry(
-            noteId,
-            noteDirectoryPath,
-            headerPath,
-            headerStore,
-            activity,
-            referenceUtc,
-            cutoffUtc));
-    }
-
-    std::sort(
-        unusedNotes.begin(),
-        unusedNotes.end(),
-        [](const QVariant& leftValue, const QVariant& rightValue)
-        {
-            const QString leftNoteId = leftValue.toMap().value(QStringLiteral("noteId")).toString();
-            const QString rightNoteId = rightValue.toMap().value(QStringLiteral("noteId")).toString();
-            return QString::compare(leftNoteId, rightNoteId, Qt::CaseInsensitive) < 0;
-        });
-
-    if (errorMessage != nullptr)
-    {
-        errorMessage->clear();
-    }
-    return unusedNotes;
+    Q_UNUSED(referenceUtc)
+    Q_UNUSED(cutoffUtc)
+    Q_UNUSED(errorMessage)
+    return {};
 }
 
 QStringList WhatSon::UnusedNoteSensorSupport::noteIdsFromEntries(const QVariantList& unusedNotes)

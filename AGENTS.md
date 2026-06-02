@@ -39,7 +39,6 @@
   `src/app/models/sidebar/HierarchyControllerProvider.*`,
   `src/app/models/sidebar/SidebarHierarchyController.*`
 - 전역 노트 active 상태 추적 객체: `src/app/models/panel/NoteActiveStateTracker.*`
-- 지속 태그 삽입 writer: `src/app/models/editor/TagInsertionWriter.*`
 - 아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`
 - 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.
 
@@ -165,11 +164,10 @@
 - 새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,
   직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge, editor document session을
   되살리지 않는다.
-- `.wsnote/.wsnbody` parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.
-  현재 노트 본문을 편집기에 연결하는 문서 session 경로는 삭제된 상태이며, QML은 이를 대체 구현하지 않는다.
-- 태그 삽입을 실제 파일에 반영할 때는 C++ `TagInsertionWriter`가 `SetTag`의 RAW source 변환 결과를 받아
-  `WhatSonLocalNoteFileStore`를 통해 `.wsnbody`에 저장한다. QML은 대상 노트와 cursor/selection만 전달한다.
-- live editor formatting command surface는 삭제되었다. `SetTag`/`TagInsertionWriter` 같은 남은 C++ helper를
+- note body parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.
+  현재 노트 본문을 편집기에 연결하는 문서 session 경로와 note package persistence 경로는 삭제된 상태이며,
+  QML은 이를 대체 구현하지 않는다.
+- live editor formatting command surface와 지속 태그 삽입 writer는 삭제되었다. `SetTag` 같은 남은 C++ helper를
   QML 단축키나 컨텍스트 메뉴로 직접 연결하지 않는다.
 
 ### 입력기 권한 (중요)

@@ -11,10 +11,6 @@
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#define private public
-#include "app/models/file/note/session/ContentsNoteManagementCoordinator.hpp"
-#undef private
-#include "app/models/file/note/local/WhatSonLocalNoteFileStore.hpp"
 #include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
@@ -58,7 +54,6 @@
 #include "app/models/editor/component/Callout.h"
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/component/style.h"
-#include "app/models/editor/TagInsertionWriter.hpp"
 #include "app/models/editor/SetProperty.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -1253,9 +1248,6 @@ private slots:
     void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
     void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
     void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
-    void editorTagInsertionWriter_writesHeaderTagIntoLocalWsnbody();
-    void editorTagInsertionWriter_writesStandaloneResourceAsBodyNode();
-    void editorTagInsertionWriter_rejectsUnsupportedTagWithoutChangingBody();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakePresets_exposeStableClionConfigureProfile();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
@@ -1316,7 +1308,6 @@ private slots:
     void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();
     void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
     void noteBodyPersistence_persistsCalloutAsParagraphTag();
-    void noteBodyPersistence_changedPlainTextSaveAdvancesModifiedCount();
     void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
     void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
     void noteBodyPersistence_dropsDeletedSingleResourceObjectMarker();
@@ -1325,18 +1316,10 @@ private slots:
     void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
-    void localNoteFileStore_usesIiXmlDocumentTreeForWsnBodyRead();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
-    void noteManagementCoordinator_reconcilePersistsEditorSnapshotWhenPreferred();
-    void noteManagementCoordinator_reconcileRejectsWholeEditorSnapshotReplacement();
-    void noteManagementCoordinator_reconcileRefreshesWithoutPersistingWhenEditorIsNotAuthoritative();
-    void noteManagementCoordinator_directBodyPersistAdvancesModifiedCount();
-    void noteManagementCoordinator_directBodyPersistAppliesEditorDiffToCurrentFilesystemBody();
     void timestampConflictResolver_prefersNewestBodyAfterBaseDivergence();
     void timestampConflictResolver_reportsStrictlyNewerTimestamp();
-    void localNoteFileStore_keepsFilesystemBodyWhenTimestampConflictIsNewer();
-    void localNoteFileStore_acceptsIncomingBodyWhenTimestampConflictIsNewer();
     void editorRawPullController_requestsNoteEntryAndOpenPulls();
     void editorRawPullController_pullsActiveNoteEveryIdleInterval();
     void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
@@ -1346,16 +1329,6 @@ private slots:
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
     void hubSyncWiring_includesNoteEditorSessionVersionDiffMutations();
-    void localNoteVersionStore_splitsVersionResponsibilitiesIntoDedicatedObjects();
-    void localNoteVersionStore_capturesCommitSnapshotWhenNoteUpdateAdvancesModifiedCount();
-    void localNoteVersionStore_reportsVersionDiffFilesystemPushForSync();
-    void localNoteVersionStore_skipsModifiedCountWhenNoVersionDiffIsWritten();
-    void localNoteVersionStore_prunesSnapshotsToLatestOneHundred();
-    void noteVersionDiffBuilder_appliesSegmentOntoCurrentDocument();
-    void noteVersionDiffBuilder_rejectsWholePayloadReplacementAgainstDivergedCurrent();
-    void noteManagementCoordinator_openCountReloadsPersistedMetadata();
-    void noteManagementCoordinator_loadNoteBodyText_preservesCanonicalSourceText();
-    void noteManagementCoordinator_loadNoteBodyText_prefersExplicitNoteDirectoryPath();
     void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
     void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
     void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
