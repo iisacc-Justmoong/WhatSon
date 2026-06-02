@@ -89,8 +89,6 @@ void WhatSonCppRegressionTests::hubSyncWiring_includesNoteEditorSessionVersionDi
 
     const int wiringIndex = mainSource.indexOf(QStringLiteral("wireHubSyncController"));
     QVERIFY(wiringIndex >= 0);
-
-    const int noteEditorSessionIndex =
-        mainSource.indexOf(QStringLiteral("&noteEditorSession"), wiringIndex);
-    QVERIFY(noteEditorSessionIndex > wiringIndex);
+    QVERIFY(!mainSource.mid(wiringIndex).contains(QStringLiteral("&noteEditorSession")));
+    QVERIFY(mainSource.mid(wiringIndex).contains(QStringLiteral("&progressHierarchyController")));
 }

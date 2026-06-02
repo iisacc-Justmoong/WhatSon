@@ -16,8 +16,6 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* tagsHierarchyController = nullptr;
         QObject* resourcesHierarchyController = nullptr;
         QObject* inAppClipboard = nullptr;
-        QObject* clipboardEditorPaste = nullptr;
-        QObject* editorInputCommandFilter = nullptr;
         QObject* editorFontFamilyProvider = nullptr;
         QObject* progressHierarchyController = nullptr;
         QObject* eventHierarchyController = nullptr;
@@ -29,7 +27,6 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* navigationModeController = nullptr;
         QObject* sidebarHierarchyController = nullptr;
         QObject* noteActiveState = nullptr;
-        QObject* noteEditorSession = nullptr;
         QObject* asyncScheduler = nullptr;
         QObject* calendarBoardStore = nullptr;
         QObject* systemCalendarStore = nullptr;

@@ -2,7 +2,6 @@
 
 #include "app/models/hierarchy/library/LibraryNoteRecord.hpp"
 #include "app/models/file/validator/WhatSonHubStructureValidator.hpp"
-#include "app/models/file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include <QString>
 #include <QVector>
@@ -28,5 +27,4 @@ private:
     QString m_sourceWshubPath;
     QVector<LibraryNoteRecord> m_notes;
     WhatSonHubStructureValidator m_hubStructureValidator;
-    WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;
 };

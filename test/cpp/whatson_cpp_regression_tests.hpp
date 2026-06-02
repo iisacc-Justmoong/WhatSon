@@ -5,8 +5,6 @@
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
 #include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
-#include "app/models/editor/EditorInputCommandFilter.hpp"
-#include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
 #include "app/models/clipboard/InAppClipboardStore.h"
@@ -61,7 +59,6 @@
 #include "app/models/editor/component/ResourceImageFrame.h"
 #include "app/models/editor/component/style.h"
 #include "app/models/editor/TagInsertionWriter.hpp"
-#include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/editor/SetProperty.h"
 #include "app/models/editor/SetTag.h"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -1308,42 +1305,6 @@ private slots:
     void calloutComponent_plansBoundaryEditsAgainstDecoratedCursor();
     void styleComponent_ownsStyleRawTokenProjection();
     void resourceFrame_rendersImageOnlyContainer();
-    void noteEditorDocumentSession_mountsEditorHtmlFileAndPersistsBodyDocument();
-    void noteEditorDocumentSession_keepsSessionSourceWhenSameNoteIsReselected();
-    void noteEditorDocumentSession_incrementsOpenCountAfterSuccessfulOpen();
-    void noteEditorDocumentSession_buildsInlineFormatSourceInsertion();
-    void noteEditorDocumentSession_buildsStyleFontSourceInsertion();
-    void noteEditorDocumentSession_buildsStyleFontSizeSourceInsertion();
-    void noteEditorDocumentSession_buildsStyleBackgroundSourceInsertion();
-    void noteEditorDocumentSession_reportsToolbarStyleContextAtCursor();
-    void noteEditorDocumentSession_backspaceAtCalloutInitRemovesCalloutWrapper();
-    void noteEditorDocumentSession_calloutFrameChromeDoesNotCreateExtraEditorLine();
-    void noteEditorDocumentSession_enterInsideCalloutMovesCursorOutside();
-    void noteEditorDocumentSession_boundaryEnterUsesCurrentEditorSnapshotAfterBackspace();
-    void noteEditorDocumentSession_styleFontTypingContinuesInsideStyle();
-    void noteEditorDocumentSession_styleFontEditsPreserveWrapperFromPlainEditorPayload();
-    void noteBodyPersistence_recoversNativeEmptyLineInsertion();
-    void noteEditorDocumentSession_reprojectPreservesNativeEmptyLineAfterCallout();
-    void noteEditorDocumentSession_preservesStyleBoundariesDuringPlainWhitespaceRawPush();
-    void noteEditorDocumentSession_projectsBreakSourceLineWithoutLiteralTagText();
-    void noteEditorDocumentSession_usesSelectedTextToRepairDriftedFormatSelection();
-    void noteEditorDocumentSession_mapsLogicalSelectionAgainstLoadedBodySourceBreaks();
-    void noteEditorDocumentSession_formatsSelectionAgainstBodySourceWhenEditorHtmlDropsBlankLines();
-    void noteEditorDocumentSession_formatsAgainstLoadedBodySourceWhenEditorProjectionDropsRawTags();
-    void noteEditorDocumentSession_buildsStandaloneResourceSourceInsertion();
-    void noteEditorDocumentSession_rendersImportedClipboardImageResourceFrame();
-    void noteEditorDocumentSession_keepsImportedResourceWhenLeavingNoteWithStaleSessionFile();
-    void noteEditorDocumentSession_discardsStalePendingPushWhenImportedResourceIsInserted();
-    void noteEditorDocumentSession_preservesTextTypedImmediatelyAfterResourceObjectOnRawPush();
-    void noteEditorDocumentSession_rejectsTransientEmptyEditorTextBeforeRawPush();
-    void noteEditorDocumentSession_rejectsEmptyRichTextSessionPayloadBeforeRawPush();
-    void noteEditorDocumentSession_stagesStyleInsertionInSessionFileBeforeRawPush();
-    void noteEditorDocumentSession_enterInsideStyleMovesCursorOutside();
-    void noteEditorDocumentSession_resetsRawPushReadinessWhenReopeningSessionFile();
-    void noteEditorDocumentSession_persistsStagedRawResourceAfterTransientEmptyPush();
-    void noteEditorDocumentSession_mergesIdlePullDiffIntoDirtySession();
-    void noteEditorDocumentSession_reprojectsCalloutFrameChromeOnTextChange();
-    void noteEditorDocumentSession_persistsBackspacedResourceFrameAsComponentDeletion();
     void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
     void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
     void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
@@ -1412,15 +1373,6 @@ private slots:
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
     void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
     void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
-    void noteEditorDocumentSession_pushesSurfaceTextToRawOnIdleRequest();
-    void noteEditorDocumentSession_pushesQtSerializedCalloutToRawOnIdleRequest();
-    void noteEditorDocumentSession_pushesSurfaceTextToRawOnModifiedCountIncrease();
-    void noteEditorDocumentSession_reprojectsMountedSessionFileAfterPlainSurfaceSync();
-    void noteEditorDocumentSession_promotesLatestKoreanCompositionPayloadToBodyAndPreview();
-    void noteEditorDocumentSession_pushesSurfaceTextToRawOnNoteDeparture();
-    void noteEditorDocumentSession_emitsHubFilesystemMutationForVersionDiffPush();
-    void noteEditorDocumentSession_routesOpenPullThroughSyncController();
-    void noteEditorDocumentSession_pullsOnlyNewerFilesystemBodyOnIdle();
     void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
     void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
     void qmlContentsTextEditor_keepsNativeSurfaceOnly();
@@ -1442,13 +1394,7 @@ private slots:
     void inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds();
     void inAppClipboard_randomizesClipboardResourceNameBeforeConflictPreflight();
     void inAppClipboard_importsNonImageClipboardPayloadThroughManager();
-    void clipboardEditorPaste_insertsImageResourceThroughPasteObject();
-    void clipboardEditorPaste_capturesSystemClipboardImageForEditorPaste();
-    void clipboardEditorPaste_importsPlatformImageMimePayloadForEditorPaste();
-    void clipboardEditorPaste_allowsImagePasteWithoutMountedSession();
-    void clipboardEditorPaste_rejectsStaleSnapshotWhenSystemClipboardCannotCapture();
     void inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage();
-    void clipboardEditorPaste_fallsBackForNonImageResource();
     void runtimeParallelLoader_usesLvrsBootstrapParallelForDomainLoads();
     void selectedHubStore_persistsNormalizedSelectionsWithinSandboxedSettings();
     void sidebarHierarchyController_forcesCppOwnershipAcrossHierarchySwitchBindings();

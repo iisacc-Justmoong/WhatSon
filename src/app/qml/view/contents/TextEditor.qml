@@ -8,23 +8,12 @@ LV.TextEditor {
 
     property bool editorReadOnly: false
     property string noteBodyFilePath: ""
-    property var inAppClipboard: null
-    property var clipboardEditorPaste: null
-    property var editorInputCommandFilter: null
-    property var noteEditorSession: null
     property var viewportFlickable: null
     property int editorPlainTextRevision: 0
     property int editorLineMetricsRevision: 0
     property real editorBottomViewportPaddingRatio: 0.75
     property bool cursorViewportSyncQueued: false
-    property bool editorFrameViewportRefreshPending: false
-    property bool editorFrameViewportRefreshApplying: false
-    property bool editorProgrammaticDocumentApplying: false
-    property int editorFrameViewportRefreshDelayMs: 120
     readonly property string editorDocumentText: textEditor.text !== undefined ? String(textEditor.text) : ""
-    readonly property string editorSelectedText: textEditor.editorSelectedTextForCurrentSelection()
-    readonly property int editorSelectionStart: textEditor.normalizedSelectionStart()
-    readonly property int editorSelectionLength: Math.max(0, textEditor.normalizedSelectionEnd() - textEditor.editorSelectionStart)
     readonly property real viewportContentY: textEditor.viewportFlickable
             && textEditor.viewportFlickable.contentY !== undefined
             ? Number(textEditor.viewportFlickable.contentY)
@@ -54,31 +43,11 @@ LV.TextEditor {
     readonly property real editorPaddedEditorItemHeight: Math.max(
             textEditor.editorViewportHeight,
             textEditor.editorTextContentBottomY + textEditor.editorBottomViewportPadding)
-    readonly property real editorBottomViewportPaddingAreaTop: textEditor.editorItem
-            ? textEditor.numberOrFallback(textEditor.editorItem.y, 0)
-              + textEditor.editorTextContentBottomY
-              - textEditor.viewportContentY
-            : textEditor.height
-    readonly property real editorBottomViewportPaddingAreaBottom: textEditor.editorItem
-            ? textEditor.numberOrFallback(textEditor.editorItem.y, 0)
-              + textEditor.editorPaddedEditorItemHeight
-              - textEditor.viewportContentY
-            : textEditor.height
-    readonly property real editorBottomViewportPaddingHitAreaY: Math.max(
-            0,
-            textEditor.editorBottomViewportPaddingAreaTop)
-    readonly property real editorBottomViewportPaddingHitAreaHeight: Math.max(
-            0,
-            Math.min(textEditor.height, textEditor.editorBottomViewportPaddingAreaBottom)
-            -textEditor.editorBottomViewportPaddingHitAreaY)
     readonly property string editorPlainText: {
         textEditor.editorPlainTextRevision;
         return textEditor.editorSurfacePlainText();
     }
-    readonly property string editorResourceObjectReplacementText: "\uFFFC"
     readonly property int editorCursorLineIndex: textEditor.cursorLineIndexForLogicalCursor()
-
-    signal editorDocumentEdited(string documentText, int documentRevision)
 
     function numberOrFallback(value, fallbackValue) {
         const numericValue = Number(value);
@@ -87,42 +56,6 @@ LV.TextEditor {
 
     function editorSurfaceObject() {
         return textEditor.editorItem !== undefined ? textEditor.editorItem : null;
-    }
-
-    function normalizedSelectionStart() {
-        if (textEditor.selectionStart !== undefined)
-            return Math.max(0, Math.floor(Number(textEditor.selectionStart) || 0));
-        if (textEditor.selectedText !== undefined) {
-            const selectedLength = String(textEditor.selectedText).length;
-            if (selectedLength > 0)
-                return Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0) - selectedLength);
-        }
-        return Math.max(0, Math.floor(Number(textEditor.cursorPosition) || 0));
-    }
-
-    function normalizedSelectionEnd() {
-        if (textEditor.selectionEnd !== undefined)
-            return Math.max(textEditor.normalizedSelectionStart(), Math.floor(Number(textEditor.selectionEnd) || 0));
-        if (textEditor.selectedText !== undefined) {
-            const selectedLength = String(textEditor.selectedText).length;
-            if (selectedLength > 0)
-                return textEditor.normalizedSelectionStart() + selectedLength;
-        }
-        return textEditor.normalizedSelectionStart();
-    }
-
-    function editorSelectedTextForCurrentSelection() {
-        const selectionStart = textEditor.normalizedSelectionStart();
-        const selectionEnd = textEditor.normalizedSelectionEnd();
-        const editorSurface = textEditor.editorSurfaceObject();
-        if (selectionEnd > selectionStart
-                && editorSurface
-                && editorSurface.getText !== undefined)
-            return textEditor.normalizedEditorPlainText(
-                        editorSurface.getText(selectionStart, selectionEnd));
-
-        return textEditor.normalizedEditorPlainText(
-                    textEditor.selectedText !== undefined ? String(textEditor.selectedText) : "");
     }
 
     function bumpEditorPlainTextRevision() {
@@ -139,16 +72,6 @@ LV.TextEditor {
                 .replace(/\r/g, "\n")
                 .replace(/\u2028/g, "\n")
                 .replace(/\u2029/g, "\n");
-    }
-
-    function cursorLineIndexFor(documentText, cursorPosition) {
-        const normalizedText = textEditor.normalizedEditorPlainText(documentText);
-        const safeCursorPosition = Math.max(
-                    0,
-                    Math.min(
-                        normalizedText.length,
-                        Math.floor(Number(cursorPosition) || 0)));
-        return normalizedText.slice(0, safeCursorPosition).split("\n").length - 1;
     }
 
     function editorSurfacePlainText() {
@@ -280,14 +203,6 @@ LV.TextEditor {
         return textEditor.sourceAlignedLineIndexForPosition(textEditor.cursorPosition);
     }
 
-    function logicalLineStartPositionFor(lineIndex) {
-        const normalizedIndex = Math.max(0, Math.floor(Number(lineIndex) || 0));
-        const lineStartPositions = textEditor.sourceAlignedLineStartPositions();
-        if (normalizedIndex < lineStartPositions.length)
-            return lineStartPositions[normalizedIndex];
-        return textEditor.editorPlainText.length;
-    }
-
     function editorLogicalLineMetricFor(lineIndex) {
         textEditor.editorLineMetricsRevision;
         const normalizedIndex = Math.max(0, Math.floor(Number(lineIndex) || 0));
@@ -308,9 +223,7 @@ LV.TextEditor {
                         fallbackMetric,
                         fallbackHeight);
 
-        const lineStartPosition = normalizedIndex < lineStartPositions.length
-                ? lineStartPositions[normalizedIndex]
-                : textEditor.editorPlainText.length;
+        const lineStartPosition = lineStartPositions[normalizedIndex];
         const nextLineStartPosition = normalizedIndex + 1 < lineStartPositions.length
                 ? lineStartPositions[normalizedIndex + 1]
                 : -1;
@@ -359,7 +272,7 @@ LV.TextEditor {
         if (!editorSurface || editorSurface.positionToRectangle === undefined)
             return null;
 
-        const rectangle = editorSurface.positionToRectangle(textEditor.boundedCursorPosition(textEditor.cursorPosition));
+        const rectangle = editorSurface.positionToRectangle(textEditor.cursorPosition);
         if (!rectangle)
             return null;
 
@@ -409,7 +322,6 @@ LV.TextEditor {
     }
 
     function requestEnsureCursorVisibleInViewport() {
-        textEditor.recordEditorUserActivity();
         if (textEditor.cursorViewportSyncQueued)
             return false;
 
@@ -419,38 +331,6 @@ LV.TextEditor {
             textEditor.ensureCursorVisibleInViewport();
         });
         return true;
-    }
-
-    function recordEditorUserActivity() {
-        if (textEditor.noteEditorSession
-                && textEditor.noteEditorSession.recordEditorUserActivity !== undefined)
-            textEditor.noteEditorSession.recordEditorUserActivity();
-    }
-
-    function boundedCursorPosition(value) {
-        const textLength = textEditor.length !== undefined
-                ? Math.max(0, Math.floor(Number(textEditor.length) || 0))
-                : textEditor.editorDocumentText.length;
-        return Math.max(
-                    0,
-                    Math.min(
-                        textLength,
-                        Math.floor(Number(value) || 0)));
-    }
-
-    function restoreEditorCursorPosition(nextCursorPosition) {
-        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
-        textEditor.forceEditorFocus();
-        textEditor.cursorPosition = targetCursorPosition;
-        textEditor.deselect();
-        textEditor.ensureCursorVisibleInViewport();
-        Qt.callLater(function () {
-            const deferredCursorPosition = textEditor.boundedCursorPosition(targetCursorPosition);
-            textEditor.forceEditorFocus();
-            textEditor.cursorPosition = deferredCursorPosition;
-            textEditor.deselect();
-            textEditor.ensureCursorVisibleInViewport();
-        });
     }
 
     function findDescendantByObjectName(root, objectName) {
@@ -480,244 +360,6 @@ LV.TextEditor {
         return null;
     }
 
-    function replaceEditorDocumentText(nextText, nextCursorPosition) {
-        textEditor.editorProgrammaticDocumentApplying = true;
-        try {
-            textEditor.text = nextText === undefined || nextText === null
-                    ? ""
-                    : String(nextText);
-            textEditor.restoreEditorCursorPosition(nextCursorPosition);
-        } finally {
-            Qt.callLater(function () {
-                textEditor.editorProgrammaticDocumentApplying = false;
-            });
-        }
-        return true;
-    }
-
-    function replaceEditorFrameDocumentText(nextText, nextCursorPosition) {
-        const editorSurface = textEditor.editorSurfaceObject();
-        const hadEditorFocus = Boolean(textEditor.activeFocus)
-                || Boolean(editorSurface && editorSurface.activeFocus);
-        const selectionStart = textEditor.normalizedSelectionStart();
-        const selectionEnd = textEditor.normalizedSelectionEnd();
-        const hasSelection = selectionEnd > selectionStart;
-        const targetCursorPosition = textEditor.boundedCursorPosition(nextCursorPosition);
-
-        textEditor.editorFrameViewportRefreshApplying = true;
-        textEditor.editorProgrammaticDocumentApplying = true;
-        try {
-            textEditor.text = nextText === undefined || nextText === null
-                    ? ""
-                    : String(nextText);
-
-            if (hasSelection)
-                textEditor.select(
-                            textEditor.boundedCursorPosition(selectionStart),
-                            textEditor.boundedCursorPosition(selectionEnd));
-            else
-                textEditor.cursorPosition = targetCursorPosition;
-        } finally {
-            textEditor.editorFrameViewportRefreshApplying = false;
-            Qt.callLater(function () {
-                textEditor.editorProgrammaticDocumentApplying = false;
-            });
-        }
-
-        if (hadEditorFocus) {
-            textEditor.forceEditorFocus();
-            textEditor.ensureCursorVisibleInViewport();
-        }
-        return true;
-    }
-
-    function refreshEditorResourceFrameViewportWidth() {
-        if (!textEditor.noteEditorSession
-                || textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth === undefined)
-            return false;
-        if (textEditor.editorFrameViewportRefreshApplying)
-            return false;
-        if (textEditor.inputMethodComposing) {
-            textEditor.scheduleEditorFrameViewportRefresh();
-            return false;
-        }
-
-        const editorWidth = Math.max(1, Math.round(textEditor.editorViewportWidth));
-        const result = textEditor.noteEditorSession.reprojectResourceFramesForEditorWidth(
-                    textEditor.editorDocumentText,
-                    editorWidth);
-        if (!result || !result.valid || !result.changed || result.editorDocumentText === undefined)
-            return false;
-
-        textEditor.replaceEditorFrameDocumentText(result.editorDocumentText, textEditor.cursorPosition);
-        return true;
-    }
-
-    function scheduleEditorFrameViewportRefresh() {
-        if (textEditor.editorFrameViewportRefreshApplying)
-            return false;
-
-        textEditor.editorFrameViewportRefreshPending = true;
-        editorFrameViewportRefreshTimer.restart();
-        return true;
-    }
-
-    function pasteNativeClipboardText() {
-        textEditor.forceEditorFocus();
-        textEditor.paste();
-        return true;
-    }
-
-    function refreshEditorInputCommandFilterOwner() {
-        if (!textEditor.editorInputCommandFilter
-                || textEditor.editorInputCommandFilter.attachEditorInputOwner === undefined
-                || !textEditor.editorItem
-                || !textEditor.clipboardEditorPaste
-                || !textEditor.inAppClipboard
-                || !textEditor.noteEditorSession)
-            return false;
-        return textEditor.editorInputCommandFilter.attachEditorInputOwner(
-                    textEditor.editorItem,
-                    textEditor,
-                    textEditor.clipboardEditorPaste,
-                    textEditor.inAppClipboard,
-                    textEditor.noteEditorSession);
-    }
-
-    function appendEditorGestureUiTokens(tokens, value) {
-        if (value === undefined || value === null)
-            return;
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-            tokens.push(String(value));
-            return;
-        }
-        if (Array.isArray(value)) {
-            for (let index = 0; index < value.length; index += 1)
-                textEditor.appendEditorGestureUiTokens(tokens, value[index]);
-            return;
-        }
-
-        const fields = [
-            "objectName",
-            "hitObjectName",
-            "path",
-            "hitPath",
-            "qmlId",
-            "hitQmlId",
-            "componentName",
-            "hitComponentName",
-            "hierarchy"
-        ];
-        for (let index = 0; index < fields.length; index += 1)
-            textEditor.appendEditorGestureUiTokens(tokens, value[fields[index]]);
-    }
-
-    function editorGestureUiText(ui) {
-        const tokens = [];
-        textEditor.appendEditorGestureUiTokens(tokens, ui);
-        return tokens.join(" ");
-    }
-
-    function editorGestureUiMatchesEditor(ui) {
-        const uiText = textEditor.editorGestureUiText(ui);
-        return uiText.indexOf("contentsTextEditor") >= 0
-                || uiText.indexOf("contentsDisplayTextEditor") >= 0
-                || uiText.indexOf("textEditorRichTextEdit") >= 0
-                || uiText.indexOf("editorViewportFlickable") >= 0;
-    }
-
-    function editorPointFromGlobal(item, x, y) {
-        const sceneX = Number(x);
-        const sceneY = Number(y);
-        if (!Number.isFinite(sceneX) || !Number.isFinite(sceneY) || !item)
-            return null;
-
-        if (item.mapFromGlobal !== undefined)
-            return item.mapFromGlobal(sceneX, sceneY);
-        if (item.mapFromItem !== undefined)
-            return item.mapFromItem(null, sceneX, sceneY);
-        return null;
-    }
-
-    function editorGesturePointWithinEditor(x, y) {
-        const localPoint = textEditor.editorPointFromGlobal(textEditor, x, y);
-        if (!localPoint)
-            return false;
-
-        return localPoint.x >= 0
-                && localPoint.y >= 0
-                && localPoint.x <= textEditor.width
-                && localPoint.y <= textEditor.height;
-    }
-
-    function editorGestureMatchesEditor(eventData) {
-        if (!eventData)
-            return false;
-        if (textEditor.editorGestureUiMatchesEditor(eventData.originUi)
-                || textEditor.editorGestureUiMatchesEditor(eventData.ui))
-            return true;
-        return textEditor.editorGesturePointWithinEditor(eventData.startX, eventData.startY)
-                || textEditor.editorGesturePointWithinEditor(eventData.x, eventData.y);
-    }
-
-    function editorPointFromGesture(eventData) {
-        const editorSurface = textEditor.editorSurfaceObject();
-        if (!eventData || !editorSurface || editorSurface.mapFromItem === undefined)
-            return null;
-
-        const globalX = eventData.globalX !== undefined ? Number(eventData.globalX) : Number(eventData.x);
-        const globalY = eventData.globalY !== undefined ? Number(eventData.globalY) : Number(eventData.y);
-        return textEditor.editorPointFromGlobal(editorSurface, globalX, globalY);
-    }
-
-    function focusEditorAtEditorPoint(editorPoint) {
-        if (textEditor.readOnly)
-            return false;
-
-        const editorSurface = textEditor.editorSurfaceObject();
-        if (editorSurface
-                && editorPoint
-                && editorSurface.positionAt !== undefined) {
-            textEditor.cursorPosition = textEditor.boundedCursorPosition(
-                        editorSurface.positionAt(editorPoint.x, editorPoint.y));
-            textEditor.deselect();
-        }
-
-        textEditor.forceEditorFocus();
-        return true;
-    }
-
-    function focusEditorFromGesture(eventData) {
-        if (!textEditor.editorGestureMatchesEditor(eventData))
-            return false;
-        return textEditor.focusEditorAtEditorPoint(textEditor.editorPointFromGesture(eventData));
-    }
-
-    function handleEditorPressEnded(eventData) {
-        if (!LV.Theme.mobileTarget || !eventData)
-            return false;
-
-        const finalInteractionKind = eventData.finalInteractionKind !== undefined
-                ? String(eventData.finalInteractionKind)
-                : String(eventData.interactionKind || "");
-        const maximumFingerCount = Math.max(0, Math.floor(Number(eventData.maximumFingerCount) || 0));
-        if (finalInteractionKind !== "tap" || maximumFingerCount > 1)
-            return false;
-
-        return textEditor.focusEditorFromGesture(eventData);
-    }
-
-    function handleEditorHoldStarted(eventData) {
-        if (!LV.Theme.mobileTarget || !eventData)
-            return false;
-
-        const maximumFingerCount = Math.max(0, Math.floor(Number(eventData.maximumFingerCount) || 0));
-        if (maximumFingerCount > 1 || eventData.scrollActive || eventData.dragActive)
-            return false;
-
-        return textEditor.focusEditorFromGesture(eventData);
-    }
-
     autoFocusOnPress: !LV.Theme.mobileTarget
     backgroundColor: "transparent"
     backgroundColorDisabled: "transparent"
@@ -742,70 +384,20 @@ LV.TextEditor {
     textColor: LV.Theme.bodyColor
     textColorDisabled: textColor
 
-    onInAppClipboardChanged: textEditor.refreshEditorInputCommandFilterOwner()
-    onClipboardEditorPasteChanged: textEditor.refreshEditorInputCommandFilterOwner()
-    onEditorInputCommandFilterChanged: textEditor.refreshEditorInputCommandFilterOwner()
-    onNoteEditorSessionChanged: {
-        textEditor.refreshEditorInputCommandFilterOwner();
-        textEditor.scheduleEditorFrameViewportRefresh();
-    }
-    onReadFinished: textEditor.refreshEditorResourceFrameViewportWidth()
-
     Component.onCompleted: {
         textEditor.viewportFlickable = textEditor.findDescendantByObjectName(
                     textEditor,
                     "editorViewportFlickable");
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        Qt.callLater(textEditor.refreshEditorInputCommandFilterOwner);
-    }
-    Component.onDestruction: {
-        if (textEditor.editorInputCommandFilter
-                && textEditor.editorInputCommandFilter.detachEditorInputOwner !== undefined
-                && textEditor.editorItem)
-            textEditor.editorInputCommandFilter.detachEditorInputOwner(textEditor.editorItem);
     }
 
     onTextChanged: {
-        textEditor.recordEditorUserActivity();
         textEditor.bumpEditorPlainTextRevision();
         textEditor.bumpEditorLineMetricsRevision();
-        if (!textEditor.editorFrameViewportRefreshApplying)
-            textEditor.scheduleEditorFrameViewportRefresh();
     }
     onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()
     onWidthChanged: textEditor.bumpEditorLineMetricsRevision()
-    onEditorViewportWidthChanged: textEditor.scheduleEditorFrameViewportRefresh()
-
-    LV.EventListener {
-        enabled: LV.Theme.mobileTarget && !textEditor.readOnly
-        includeUiHit: true
-        trigger: "pressEnded"
-        action: function(eventData) {
-            textEditor.handleEditorPressEnded(eventData);
-        }
-    }
-
-    LV.EventListener {
-        enabled: LV.Theme.mobileTarget && !textEditor.readOnly
-        includeUiHit: true
-        trigger: "holdStarted"
-        action: function(eventData) {
-            textEditor.handleEditorHoldStarted(eventData);
-        }
-    }
-
-    Timer {
-        id: editorFrameViewportRefreshTimer
-
-        interval: textEditor.editorFrameViewportRefreshDelayMs
-        repeat: false
-
-        onTriggered: {
-            textEditor.editorFrameViewportRefreshPending = false;
-            textEditor.refreshEditorResourceFrameViewportWidth();
-        }
-    }
 
     Binding {
         property: "bottomPadding"
@@ -819,39 +411,5 @@ LV.TextEditor {
         restoreMode: Binding.RestoreBindingOrValue
         target: textEditor.editorItem
         value: textEditor.editorPaddedEditorItemHeight
-    }
-
-    Binding {
-        property: "editorViewportWidth"
-        restoreMode: Binding.RestoreBindingOrValue
-        target: textEditor.noteEditorSession
-        value: Math.round(textEditor.editorViewportWidth)
-        when: textEditor.noteEditorSession
-              && textEditor.noteEditorSession.editorViewportWidth !== undefined
-    }
-
-    Connections {
-        target: textEditor
-        ignoreUnknownSignals: true
-
-        function onDocumentEdited(documentText, documentRevision) {
-            textEditor.editorDocumentEdited(documentText, documentRevision);
-        }
-    }
-
-    Connections {
-        target: textEditor.editorItem
-
-        function onContentHeightChanged() {
-            textEditor.bumpEditorLineMetricsRevision();
-        }
-
-        function onLineCountChanged() {
-            textEditor.bumpEditorLineMetricsRevision();
-        }
-
-        function onWidthChanged() {
-            textEditor.bumpEditorLineMetricsRevision();
-        }
     }
 }

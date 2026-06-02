@@ -1,15 +1,5 @@
 # `src/app/models/editor/EditorFontFamilyProvider.cpp`
 
-## Behavior
-The implementation uses `QFontDatabase::families()` as the single system font source, normalizes the family list for
-menu display, and builds LVRS menu item descriptors with:
+The implementation returns stable font-family entries for UI menus.
 
-- `label`
-- `fontFamily`
-- `showIconSlot: false`
-- `keyVisible: false`
-- `eventName: "editor.toolbar.font"`
-- `eventPayload.fontFamily`
-
-The provider deliberately stops at menu data. Applying the selected family to the editor selection is handled by
-`NoteEditorDocumentSession.insertStyleFontTagIntoSource(...)`, which writes the `<style font="...">` source wrapper.
+It has no active editor document dependency and performs no source mutation.

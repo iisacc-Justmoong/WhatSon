@@ -113,8 +113,8 @@
   오디오, 비디오, 3D 모델, 압축 파일 같은 비이미지 payload도 받을 수 있어야 한다.
   clipboard file type/MIME 확인은 `FiletypeCapture`에 두고 `ClipboardResourceImport`는 확인된 format으로
   import descriptor만 구성해야 한다.
-  editor paste orchestration은 `ClipboardEditorPaste`가 담당하며, 현재는 이미지 `.wsresource` 붙여넣기를
-  우선 지원하고 비이미지는 native paste fallback으로 넘긴다.
+  editor paste orchestration을 담당하던 `ClipboardEditorPaste` 경계는 삭제되었다. clipboard manager는
+  리소스 패키지 import까지만 담당하며, 본문 document/source 삽입 경로를 되살리지 않는다.
   `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.
 - resource taxonomy에서 음악 파일과 일반 오디오 파일은 canonical type/bucket을 `audio`/`Audio`로 합친다.
   과거 `music`/`Music` metadata는 legacy alias로만 읽고, 앱 내부 record와 resources hierarchy에는 `audio`만
@@ -137,47 +137,40 @@
 - 현재 LVRS 갱신 계약에서 본문 편집기 QML의 단일 표면은 `LV.TextEditor`다.
 - workspace route의 shell/layout은 기존 status bar, navigation bar, sidebar, note list, detail panel,
   mobile hierarchy scaffold 구조를 유지한다.
-- editor content surface는 LVRS `TextEditor` 중심으로 유지하되, active note의 `.wsnbody` 파일 경로를
-  직접 연결하지 않는다. `ContentViewLayout.qml`은 `NoteEditorDocumentSession`이 만든 parsed RAW source
-  session file 경로만 `LV.TextEditor.filePath`로 소비할 수 있다.
+- editor content surface는 LVRS `TextEditor` 중심으로 유지하되, 현재 문서 모델과 active note document
+  session은 삭제된 상태다. `ContentViewLayout.qml`은 노트 본문 parse/projection/persistence bridge를
+  mount하지 않고, 빈 read-only `LV.TextEditor` surface와 이미지 리소스 viewer만 조합한다.
 - contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
   네 뷰만 허용한다. `ImageEditor.qml`은 리소스 하이어라키 list model의 `currentResourceEntry`가 이미지 리소스일
   때 콘텐츠 영역에 표시하는 viewer 전용 QML이다.
-- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath`를 통해
-  `NoteEditorDocumentSession`이 만든 parsed RAW source session file을 가리킨다. 선택된 노트가 없으면
-  blank session file 또는 빈 문자열로 둔다.
+- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath` alias를 유지하되
+  현재는 문서 session file에 연결하지 않는다. 선택된 노트가 있어도 active note body를 직접 mount하지 않는다.
 - `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
   네 뷰만 mount한다. 노트 선택 시에는 gutter/TextEditor/minimap surface를 보이고, 이미지 리소스 선택 시에는
   `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에 전달해 이미지 viewer surface로 전환한다.
-- `Gutter.qml`은 선택 노트 id/path, parsed source session file 경로, C++ `NoteEditorDocumentSession`의
-  `parsedLineCount`, 그리고 `TextEditor.qml`이 전달하는 viewport offset/line height만 입력으로 받아 line
-  number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
-- clipboard image paste와 정적 포맷 태그 단축키는 예외적으로 `ContentViewLayout.qml`의 얇은 command wiring을
-  허용한다. 이 QML은 image resource paste의 경우 `ClipboardEditorPaste.pasteImageResourceIntoEditor(...)`
-  결과를 `TextEditor.qml`의 LVRS document 반영 hook에 적용하고, 정적 포맷 태그는
-  `NoteEditorDocumentSession.insertFormatTagIntoSource(...)` 결과만 적용해야 한다. paste command 도달성 보강은
-  LVRS `RuntimeEvents.keyPressed`를 같은 paste command로 합류시키는 수준까지 허용한다. MIME 판별, resource
-  import, editor document에서 RAW source로의 변환, RAW tag 생성, `.wsnbody` persistence 정책을 구현하면 안 된다.
-- clipboard image paste는 먼저 `InAppClipboardManager`가 이미지를 `.wsresources/<id>.wsresource` 패키지와
-  `Resources.wsresources` 목록에 등록한 뒤, 그 반환 metadata의 `resourcePath`만 본문 RAW `<resource ... />`
-  태그로 삽입해야 한다. 본문에는 이미지 payload나 asset file path를 직접 넣지 않는다.
+- `Gutter.qml`은 `TextEditor.qml`이 전달하는 viewport offset/line height와 view-local line count만 받아
+  line number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
+- clipboard image paste, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷 컨텍스트 메뉴, editor native key
+  filter는 현재 삭제된 문서 모델 경계다. `ClipboardEditorPaste`, `EditorInputCommandFilter`,
+  `NoteEditorDocumentSession`을 되살리거나 QML compatibility wrapper로 우회하지 않는다.
+- clipboard resource import는 `InAppClipboardManager`가 `.wsresources/<id>.wsresource` 패키지와
+  `Resources.wsresources` 목록에 등록하는 경로까지만 유지한다. 본문 RAW `<resource ... />` 태그 삽입 경로는
+  현재 삭제된 editor document model에 속하므로 연결하지 않는다.
 - `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
   generic resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
 - `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
   Plain/Page/Print/Web/Presentation 선택 계약은 navigation bar의 view-mode 콤보박스 계약으로 유지한다.
   단, 이 콤보박스는 현재 editor surface를 `LV.TextEditor`에서 다른 renderer로 전환하는 백엔드 계약이 아니며,
-  `ContentViewLayout.qml`은 계속 parsed RAW source session file만 `LV.TextEditor.filePath`로 소비해야 한다.
-- 새 편집 정책은 LVRS `TextEditor` 갱신 계약이 먼저 정의된 뒤 그 계약을 중심으로 추가한다. 기존 QML 호환 wrapper,
-  RichText overlay, 직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge를 되살리지 않는다.
+  `ContentViewLayout.qml`은 active note document session file을 소비하지 않는다.
+- 새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,
+  직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge, editor document session을
+  되살리지 않는다.
 - `.wsnote/.wsnbody` parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.
-  노트 본문을 편집기에 연결할 때는 C++ `NoteEditorDocumentSession`이 `.wsnbody`를 parsed RAW source로
-  mount하고, LVRS `TextEditor`의 session file sync 뒤 C++ persistence가 다시 `.wsnbody`로 serialize해야 한다.
+  현재 노트 본문을 편집기에 연결하는 문서 session 경로는 삭제된 상태이며, QML은 이를 대체 구현하지 않는다.
 - 태그 삽입을 실제 파일에 반영할 때는 C++ `TagInsertionWriter`가 `SetTag`의 RAW source 변환 결과를 받아
   `WhatSonLocalNoteFileStore`를 통해 `.wsnbody`에 저장한다. QML은 대상 노트와 cursor/selection만 전달한다.
-- live editor formatting은 C++ `NoteEditorDocumentSession.insertFormatTagIntoSource(...)`가 `SetTag`를 사용해
-  `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `break` 같은 정적 태그의 RAW source와 editor HTML projection을 함께 계산하고,
-  QML은 그 결과를 현재 `LV.TextEditor` surface에만 반영한다. 단축키와 선택 텍스트 우클릭 컨텍스트 메뉴는
-  `ContentViewLayout.qml`의 얇은 command dispatch로만 존재한다.
+- live editor formatting command surface는 삭제되었다. `SetTag`/`TagInsertionWriter` 같은 남은 C++ helper를
+  QML 단축키나 컨텍스트 메뉴로 직접 연결하지 않는다.
 
 ### 입력기 권한 (중요)
 
@@ -185,17 +178,14 @@
   note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 parsed RAW source session file 경로를
   따른다.
 - 현재 editor QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를
-  설치하지 않는다. 단 clipboard image paste의 `StandardKey.Paste` command wiring, `bold`/`italic`/`underline`/
-  `strikethrough`/`highlight`/`break` 정적 포맷 태그 단축키, 그리고 선택 텍스트 우클릭 포맷 컨텍스트 메뉴는 위
-  편집기 Source of Truth 섹션의 제한 안에서 `ContentViewLayout.qml`에만 둘 수 있다. 포맷 태그 allow-list,
-  source mutation, editor HTML projection, `.wsnbody` persistence 정책은 C++ `SetTag`/`NoteEditorDocumentSession`/
-  persistence 계층에 남긴다.
+  설치하지 않는다. clipboard image paste command wiring, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷
+  컨텍스트 메뉴, native editor item event filter는 삭제된 문서 모델 경계이며 다시 추가하지 않는다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
 - text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.
-  입력 표면의 파일 읽기/저장은 LVRS `TextEditor`의 `filePath` 기반 sync 계약에 맡기되, `.wsnbody`
-  parse/serialize는 C++ `NoteEditorDocumentSession`이 담당한다.
+  현재 입력 표면은 active note 파일 읽기/저장, `.wsnbody` parse/serialize, editor document projection을
+  수행하지 않는다.
 
 ## LVRS 통합의 단일 Source of Truth
 

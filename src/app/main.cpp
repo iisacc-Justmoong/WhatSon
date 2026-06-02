@@ -1,8 +1,6 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
-#include "app/models/clipboard/ClipboardEditorPaste.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
-#include "app/models/editor/EditorInputCommandFilter.hpp"
 #include "app/models/editor/EditorFontFamilyProvider.hpp"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyController.hpp"
@@ -13,7 +11,6 @@
 #include "app/models/hierarchy/projects/ProjectsHierarchyController.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
 #include "app/models/hierarchy/tags/TagsHierarchyController.hpp"
-#include "app/models/editor/NoteEditorDocumentSession.hpp"
 #include "app/models/navigationbar/EditorViewModeController.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
 #include "app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
@@ -265,8 +262,6 @@ int main(int argc, char* argv[])
     TagsHierarchyController tagsHierarchyController;
     ResourcesHierarchyController resourcesHierarchyController;
     InAppClipboardManager inAppClipboard;
-    ClipboardEditorPaste clipboardEditorPaste;
-    EditorInputCommandFilter editorInputCommandFilter;
     EditorFontFamilyProvider editorFontFamilyProvider;
     ProgressHierarchyController progressHierarchyController;
     EventHierarchyController eventHierarchyController;
@@ -276,7 +271,6 @@ int main(int argc, char* argv[])
     HierarchyControllerProvider hierarchyControllerProvider;
     SidebarHierarchyController sidebarHierarchyController;
     NoteActiveStateTracker noteActiveState;
-    NoteEditorDocumentSession noteEditorSession;
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
     NoteDetailPanelController noteDetailPanelController;
     ResourceDetailPanelController resourceDetailPanelController;
@@ -445,8 +439,7 @@ int main(int argc, char* argv[])
                 &projectsHierarchyController,
                 &bookmarksHierarchyController,
                 &resourcesHierarchyController,
-                &progressHierarchyController,
-                &noteEditorSession
+                &progressHierarchyController
             });
     QObject::connect(
         &hubSyncController,
@@ -569,7 +562,6 @@ int main(int argc, char* argv[])
     sidebarHierarchyController.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyController.setControllerProvider(&hierarchyControllerProvider);
     noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);
-    noteEditorSession.setNoteActiveState(&noteActiveState);
     detailPanelCurrentHierarchyBinder.setNoteDetailPanelController(&noteDetailPanelController);
     detailPanelCurrentHierarchyBinder.setResourceDetailPanelController(&resourceDetailPanelController);
     detailPanelCurrentHierarchyBinder.setHierarchyContextSource(&sidebarHierarchyController);
@@ -584,8 +576,6 @@ int main(int argc, char* argv[])
     workspaceContextObjects.tagsHierarchyController = &tagsHierarchyController;
     workspaceContextObjects.resourcesHierarchyController = &resourcesHierarchyController;
     workspaceContextObjects.inAppClipboard = &inAppClipboard;
-    workspaceContextObjects.clipboardEditorPaste = &clipboardEditorPaste;
-    workspaceContextObjects.editorInputCommandFilter = &editorInputCommandFilter;
     workspaceContextObjects.editorFontFamilyProvider = &editorFontFamilyProvider;
     workspaceContextObjects.progressHierarchyController = &progressHierarchyController;
     workspaceContextObjects.eventHierarchyController = &eventHierarchyController;
@@ -597,7 +587,6 @@ int main(int argc, char* argv[])
     workspaceContextObjects.navigationModeController = &navigationModeController;
     workspaceContextObjects.sidebarHierarchyController = &sidebarHierarchyController;
     workspaceContextObjects.noteActiveState = &noteActiveState;
-    workspaceContextObjects.noteEditorSession = &noteEditorSession;
     workspaceContextObjects.asyncScheduler = &asyncScheduler;
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;

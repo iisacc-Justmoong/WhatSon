@@ -60,8 +60,8 @@ void WhatSonCppRegressionTests::mobileChrome_keepsRestoredShellWithEditorViewMod
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("noteActiveState: mobileHierarchyPage.noteActiveState")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var inAppClipboard: null")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("inAppClipboard: mobileHierarchyPage.inAppClipboard")));
-    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var clipboardEditorPaste: null")));
-    QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("clipboardEditorPaste: mobileHierarchyPage.clipboardEditorPaste")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("clipboardEditorPaste")));
+    QVERIFY(!mobileHierarchyPageSource.contains(QStringLiteral("editorInputCommandFilter")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("property var editorFontFamilyProvider: null")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("editorFontFamilyProvider: mobileHierarchyPage.editorFontFamilyProvider")));
     QVERIFY(mobileHierarchyPageSource.contains(QStringLiteral("sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController")));

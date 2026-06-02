@@ -50,10 +50,7 @@ LV.ApplicationWindow {
     readonly property var rootPanelControllerRegistry: panelControllerRegistry
     readonly property var rootSidebarHierarchyController: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
     readonly property var rootNoteActiveState: typeof noteActiveState !== "undefined" ? noteActiveState : null
-    readonly property var rootNoteEditorSession: typeof noteEditorSession !== "undefined" ? noteEditorSession : null
     readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
-    readonly property var rootClipboardEditorPaste: typeof clipboardEditorPaste !== "undefined" ? clipboardEditorPaste : null
-    readonly property var rootEditorInputCommandFilter: typeof editorInputCommandFilter !== "undefined" ? editorInputCommandFilter : null
     readonly property var rootEditorFontFamilyProvider: typeof editorFontFamilyProvider !== "undefined" ? editorFontFamilyProvider : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
@@ -658,10 +655,7 @@ LV.ApplicationWindow {
                     minSidebarWidth: applicationWindow.minSidebarWidth
                     noteDeletionController: applicationWindow.rootLibraryNoteMutationController
                     noteActiveState: applicationWindow.rootNoteActiveState
-                    noteEditorSession: applicationWindow.rootNoteEditorSession
                     inAppClipboard: applicationWindow.rootInAppClipboard
-                    clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
-                    editorInputCommandFilter: applicationWindow.rootEditorInputCommandFilter
                     editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
@@ -720,10 +714,7 @@ LV.ApplicationWindow {
             editorViewModeController: applicationWindow.rootEditorViewModeController
             navigationModeController: applicationWindow.rootNavigationModeController
             noteActiveState: applicationWindow.rootNoteActiveState
-            noteEditorSession: applicationWindow.rootNoteEditorSession
             inAppClipboard: applicationWindow.rootInAppClipboard
-            clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste
-            editorInputCommandFilter: applicationWindow.rootEditorInputCommandFilter
             editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
             sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
             statusPlaceholderText: ""

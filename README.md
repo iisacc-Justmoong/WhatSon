@@ -84,15 +84,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `windowInteractions.sidebarHierarchy`) so shortcut mutations no longer bypass the LVRS ownership registry.
 - The desktop `BodyLayout.qml` now also paints a thin top border from the shared splitter token so the transparent
   content HStack still reads as a separate surface below `NavigationBarLayout.qml`.
-- Editor callout creation now uses the note editor format command path: `Cmd+Shift+C` inserts only the canonical
-  `<callout>...</callout>` RAW wrapper around the live selection, and the non-macOS companion `Ctrl+Shift+C` follows
-  the same path. When there is no selection, the shortcut inserts an empty `<callout></callout>` wrapper with the cursor
-  inside it; `component/Callout` is the visual projection owner. At the callout content start, plain Backspace removes
-  the callout wrapper, preserving existing contents as normal source and deleting an empty callout frame entirely.
-  Plain Enter/Return inside a callout moves the cursor to the next source line outside the wrapper. Enter on the
-  frame chrome immediately before the callout content inserts a new source line before `<callout>` so the gutter grows
-  like a normal line insertion. Native key interception for this behavior is owned by `EditorInputCommandFilter`, while RAW source decisions stay in
-  `NoteEditorDocumentSession`.
+- The previous active editor document session, native input command filter, and editor paste bridge were removed.
+  The contents route now keeps a blank LVRS `TextEditor` shell for layout continuity and no longer mounts active note
+  body source, callout boundary editing, shortcut formatting, or editor paste mutation paths.
 - Editor tag generation now lives in the shortcut-independent `ContentsEditorTagMutationBuilder`; shortcut handlers
   only resolve a canonical tag name before calling the shared RAW mutation builder, so future menu or toolbar commands
   can add the same tags without depending on key events.
@@ -397,25 +391,8 @@ WhatSon is an LVRS-based Qt Quick application.
   size, weight, line height, and text color before optional `font`, `weight`, `size`, `color`, `background`, `align`,
   and `height` overrides are applied. The canonical source keeps those key/value attributes through save/load
   round-trips.
-- Editor callout presentation now routes RAW `<callout>...</callout>` through `component/Callout` and projects it to the
-  Figma `Callout` block (`280:7897`): a `#262728` surface that fills the editor frame width, hugs rendered content
-  height through root `height:auto`, keeps `4px` top/bottom padding with `4px` left/right padding,
-  renders the Figma `3px x 14px` `#d9d9d9` leading bar as one generated left-aligned frame-chrome image whose height
-  follows wrapped content at the active editor viewport width, starts painting at the content origin so it aligns with
-  the first text line, keeps the `12px` content gap as that image's right margin, and uses Pretendard Medium `12/12`
-  white text. The callout owns the whole editor source row as a `whatson-callout` block frame
-  instead of an inline text-fit span, while `.wsnbody` still stores only the canonical source wrapper. `TextEditor.qml`
-  does not draw callout chrome; the component HTML itself is responsible for the full-width frame, so no QML overlay,
-  table cell, or extra gutter row is introduced. Text changes schedule a debounced shared frame reproject hook, so
-  edited callout content regenerates the leading-bar image shortly after the native editor goes quiet instead of
-  waiting for idle persistence or replacing the document on every keystroke.
-  Idle RAW push recognizes Qt-serialized callout block backgrounds and strips the frame-chrome object replacement before
-  writing canonical source, so callouts do not decay into plain paragraphs over time or clone empty paragraphs around
-  the callout during repeated saves. Backspace/Enter
-  boundary behavior is routed through `EditorInputCommandFilter` and handled by the C++ editor session from canonical
-  RAW source, with decorated TextEdit cursor offsets mapped around the frame chrome. Explicit empty source lines next
-  to a callout render through an invisible source-line placeholder so they count as real editor rows and round-trip back
-  to empty source lines.
+- Editor callout presentation remains in the component helpers for now, but it is no longer reachable from the active
+  contents editor because the document session and command-surface wiring were deleted.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
@@ -692,8 +669,7 @@ worker-thread idle detector and note-exit flush promotion.
 Non-editing note-management work still sits behind `src/app/models/file/note/ContentsNoteManagementCoordinator.*`; direct
 `.wsnote` persistence, header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are
 serialized there outside the editor hot path.
-Local note-file CRUD is now centralized under `src/app/models/file/note/WhatSonLocalNoteFileStore.*` and
-`src/app/models/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
+Local note-file CRUD is now centralized under `src/app/models/file/note/WhatSonLocalNoteFileStore.*`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
 operations plus per-note `.wsnhistory` append-only diff logging and `.wsnversion` manifest initialization for library
 note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note deletion, so the local
 filesystem remains the first writer of record before runtime projections or external sync react.

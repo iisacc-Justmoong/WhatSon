@@ -1,293 +1,67 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
-#include <QStringList>
-
-namespace
-{
-    QString textEditorQmlPath()
-    {
-        return QStringLiteral("src/app/qml/view/contents/TextEditor.qml");
-    }
-
-    QString contentViewLayoutQmlPath()
-    {
-        return QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml");
-    }
-
-    void verifyNoTokens(const QString& source, const QStringList& tokens)
-    {
-        for (const QString& token : tokens)
-        {
-            QVERIFY2(!source.contains(token), qPrintable(QStringLiteral("Unexpected token: %1").arg(token)));
-        }
-    }
-}
-
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsLvrsTextEditorSurface()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
-    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
 
-    QVERIFY(!textEditorSource.isEmpty());
-    QVERIFY(!contentViewLayoutSource.isEmpty());
     QVERIFY(textEditorSource.contains(QStringLiteral("import LVRS 1.0 as LV")));
     QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property bool editorReadOnly: false")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property string noteBodyFilePath: \"\"")));
     QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readOnly: textEditor.editorReadOnly || textEditor.noteBodyFilePath.trim().length === 0")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("LV.EventListener {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"pressEnded\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"holdStarted\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorPressEnded(eventData)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function handleEditorHoldStarted(eventData)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function focusEditorFromGesture(eventData)")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportContentHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorViewportWidth")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property real editorBottomViewportPaddingRatio: 0.75")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPadding")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorPaddedEditorItemHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorBottomViewportPaddingHitAreaHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorPlainText")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property real editorLogicalLineHeight")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property int editorPlainTextRevision: 0")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property int editorLineMetricsRevision: 0")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorMeasuredContentHeight")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorRenderedLineCount")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorVisualLineHeight")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorLogicalLineCount")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function normalizedEditorPlainText(value)")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricsFor(lineIndex)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function editorLogicalLineMetricFor(lineIndex)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function logicalLineStartPositionFor(lineIndex)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function scrollEditorViewportTo(contentY)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function editorTextContentBottom()")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutVisualRecords()")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutVisualMetricFor(record)")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("function editorCalloutSurfaceColorHtmlToken()")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("serializedCalloutExpression")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutVisualBackgroundOverlay")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutSurface")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutVisualOverlay")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorCalloutLeadingBar")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutSurfaceColor")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarColor")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorCalloutLeadingBarWidth")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"bottomPadding\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorBottomViewportPadding")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("property: \"height\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("value: textEditor.editorPaddedEditorItemHeight")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("contentsTextEditorBottomViewportPaddingHitArea")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("textEditor.focusEditorAtDocumentEnd();")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("acceptedButtons: Qt.LeftButton")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("preventStealing: false")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionToRectangle")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("editorSurface.lineCount")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function onContentHeightChanged()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function onLineCountChanged()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.editorItem")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineCount: contentViewLayout.editorParsedLineCount")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("lineCount: Math.max(contentViewLayout.editorParsedLineCount, contentsTextEditor.editorLogicalLineCount)")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("lineCount: contentsTextEditor.editorRenderedLineCount")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("documentText: contentsTextEditor.editorDocumentText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceContentHeight: contentsTextEditor.editorViewportContentHeight")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sourceViewportHeight: contentsTextEditor.editorViewportHeight")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("scrollTarget: contentsTextEditor.scrollEditorViewportTo")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("showScrollBar: false")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import \"../contents\" as ContentsView")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteEditorSession")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorSourceFilePath")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath: contentViewLayout.editorSourceFilePath")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("requestEditorModifiedCountRawPush(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextPulled(noteId, editorDocumentText)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorApplyingPulledDocumentText")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function recordEditorUserActivity()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
-
-    verifyNoTokens(textEditorSource + contentViewLayoutSource, {
-        QStringLiteral("LV.CodeEditor"),
-        QStringLiteral("TextEdit {"),
-        QStringLiteral("ContentsStructuredDocumentFlow"),
-        QStringLiteral("ContentsLineNumberRail"),
-        QStringLiteral("ContentsMinimapLayoutMetrics"),
-        QStringLiteral("ContentsResourceEditorView"),
-        QStringLiteral("ContentsEditorDisplayBackend"),
-        QStringLiteral("ContentsPagePrintLayoutRenderer"),
-    });
+    QVERIFY(!textEditorSource.contains(QStringLiteral("TextEdit {")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("RichText")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsTextEditor_excludesSnapshotProjectionPersistence()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
-    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    verifyNoTokens(textEditorSource + contentViewLayoutSource, {
-        QStringLiteral("sourceText"),
-        QStringLiteral("renderedText"),
-        QStringLiteral("projection"),
-        QStringLiteral("normalizedHtmlBlocks"),
-        QStringLiteral("documentBlocks"),
-        QStringLiteral("resourceVisualBlocks"),
-        QStringLiteral("coordinateMapper"),
-        QStringLiteral("commitEditedSourceText"),
-        QStringLiteral("editorTextEdited"),
-        QStringLiteral("persistence"),
-    });
+    QVERIFY(!textEditorSource.contains(QStringLiteral("snapshot")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("projection")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("projection")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("persistEditor")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsNativeSurfaceOnly()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
 
-    QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
-    verifyNoTokens(textEditorSource, {
-        QStringLiteral("largeDocumentNativeSurface"),
-        QStringLiteral("renderedOverlay"),
-        QStringLiteral("displayGeometryText"),
-        QStringLiteral("ContentsEditorGeometryProvider"),
-        QStringLiteral("ContentsEditorVisualLineMetrics"),
-        QStringLiteral("ContentsLineNumberRailMetrics"),
-    });
+    QVERIFY(textEditorSource.contains(QStringLiteral("selectByMouse: true")));
+    QVERIFY(textEditorSource.contains(QStringLiteral("mouseSelectionMode: TextEdit.SelectCharacters")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("MouseArea {")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onPressed")));
 }
 
 void WhatSonCppRegressionTests::qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
-    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    QVERIFY(!textEditorSource.isEmpty());
-    QVERIFY(!contentViewLayoutSource.isEmpty());
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionStart")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property int editorSelectionLength")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readonly property string editorSelectedText")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function editorSelectedTextForCurrentSelection()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.getText(selectionStart, selectionEnd)")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("Shortcut {")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("insertFormatTagIntoSource")));
-
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function applyEditorFormatTag(tagName, allowSelectionSnapshot)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionStart")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectedText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("property var editorFormatSelectionSnapshot")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function rememberEditorFormatSelectionSnapshot()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function editorFormatSelectionForCommand(allowSelectionSnapshot)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.editorFormatSelectionForCommand(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("Boolean(allowSelectionSnapshot));")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("if (Boolean(allowSelectionSnapshot)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectionStart")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("selectionState.selectedText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("formatResult.editorDocumentText")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: contentsTextEditorStack")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorDocumentTextChanged: {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("function restoreEditorCursorPosition(nextCursorPosition)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("onCursorPositionChanged: textEditor.requestEnsureCursorVisibleInViewport()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("Qt.callLater(function ()")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("textEditor.forceEditorFocus();")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"bold\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Bold")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"italic\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Italic")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"underline\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: StandardKey.Underline")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"strikethrough\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+X\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+X\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"highlight\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+E\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+E\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"break\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+B\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+B\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag(\"callout\")")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+C\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+C\"")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Ctrl+Shift+Return\"")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("sequence: \"Meta+Shift+Return\"")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("onActivated: contentViewLayout.applyEditorFormatTag(\"highlight\", true)")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("Shortcut {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("applyEditorFormatTag")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorFormatContextMenu")));
 }
 
 void WhatSonCppRegressionTests::qmlContentViewLayout_opensEditorFormatContextMenuForSelection()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
-    const QString contentViewLayoutSource = readUtf8SourceFile(contentViewLayoutQmlPath());
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    QVERIFY(!textEditorSource.isEmpty());
-    QVERIFY(!contentViewLayoutSource.isEmpty());
-    QVERIFY(!textEditorSource.contains(QStringLiteral("LV.ContextMenu")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("Qt.RightButton")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("import QtQuick.Controls as Controls")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property bool editorFormatContextMenuAvailable")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor.editorSelectionLength > 0")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("readonly property var editorFormatContextMenuItems")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.bold\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.italic\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.underline\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.strikethrough\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("\"eventName\": \"editor.format.highlight\"")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function openEditorFormatContextMenuFromPointer")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("function handleEditorFormatContextMenuTrigger(eventName)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("return contentViewLayout.applyEditorFormatTag(\"highlight\", true);")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("editorFormatContextMenu.openFor")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("TapHandler {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("acceptedButtons: Qt.RightButton")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("enabled: contentViewLayout.editorFormatContextMenuAvailable")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectionStartChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectionLengthChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onEditorSelectedTextChanged: contentViewLayout.rememberEditorFormatSelectionSnapshot()")));
-    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("captureEditorFormatSelectionSnapshot")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("openEditorFormatContextMenuFromPointer(")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentsTextEditor,")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.ContextMenu {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("id: editorFormatContextMenu")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("items: contentViewLayout.editorFormatContextMenuItems")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onItemEventTriggered: function (eventName")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.handleEditorFormatContextMenuTrigger(eventName)")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("onClosed:")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("contentViewLayout.clearEditorFormatSelectionSnapshot();")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("LV.ContextMenu")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("openEditorFormatContextMenuFromPointer")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorSelectedText")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative()
 {
-    const QString textEditorSource = readUtf8SourceFile(textEditorQmlPath());
+    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
 
-    QVERIFY(textEditorSource.contains(QStringLiteral("preferNativeGestures: false")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("preferNativeGestures: LV.Theme.mobileTarget")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("autoFocusOnPress: !LV.Theme.mobileTarget")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("enabled: LV.Theme.mobileTarget && !textEditor.readOnly")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("includeUiHit: true")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"pressEnded\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("trigger: \"holdStarted\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("eventData.finalInteractionKind")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("finalInteractionKind !== \"tap\"")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("maximumFingerCount > 1")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("eventData.scrollActive || eventData.dragActive")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("editorSurface.positionAt(editorPoint.x, editorPoint.y)")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("item.mapFromGlobal")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("MouseArea {")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("TapHandler {")));
-    verifyNoTokens(textEditorSource, {
-        QStringLiteral("Keys.onPressed"),
-        QStringLiteral("Keys.onReleased"),
-        QStringLiteral("Shortcut {"),
-        QStringLiteral("Qt.inputMethod"),
-        QStringLiteral("InputMethod."),
-        QStringLiteral("ContentsInlineFormatEditorController"),
-        QStringLiteral("ContentsWysiwygEditorPolicy"),
-        QStringLiteral("tagManagement"),
-    });
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Qt.inputMethod")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("InputMethod.")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onReturnPressed")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onEnterPressed")));
+    QVERIFY(!textEditorSource.contains(QStringLiteral("preventDefault")));
 }

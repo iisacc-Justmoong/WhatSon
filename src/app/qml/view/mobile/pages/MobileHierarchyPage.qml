@@ -52,10 +52,7 @@ Item {
     ]
     property var navigationModeController: null
     property var noteActiveState: null
-    property var noteEditorSession: null
     property var inAppClipboard: null
-    property var clipboardEditorPaste: null
-    property var editorInputCommandFilter: null
     property var editorFontFamilyProvider: null
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
@@ -764,11 +761,8 @@ Item {
             libraryHierarchyController: noteCreationCoordinator.noteCreationController
             minimapVisible: false
             noteActiveState: mobileHierarchyPage.noteActiveState
-            noteEditorSession: mobileHierarchyPage.noteEditorSession
             noteListModel: mobileHierarchyPage.activeNoteListModel
             inAppClipboard: mobileHierarchyPage.inAppClipboard
-            clipboardEditorPaste: mobileHierarchyPage.clipboardEditorPaste
-            editorInputCommandFilter: mobileHierarchyPage.editorInputCommandFilter
             editorFontFamilyProvider: mobileHierarchyPage.editorFontFamilyProvider
             sidebarHierarchyController: mobileHierarchyPage.sidebarHierarchyController
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible

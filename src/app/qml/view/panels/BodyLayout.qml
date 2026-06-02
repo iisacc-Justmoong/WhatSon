@@ -39,10 +39,7 @@ Item {
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionController: null
     property var noteActiveState: null
-    property var noteEditorSession: null
     property var inAppClipboard: null
-    property var clipboardEditorPaste: null
-    property var editorInputCommandFilter: null
     property var editorFontFamilyProvider: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
@@ -264,12 +261,9 @@ Item {
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
                 noteActiveState: hStack.noteActiveState
-                noteEditorSession: hStack.noteEditorSession
                 noteListModel: hStack.activeNoteListModel
                 panelControllerRegistry: null
                 inAppClipboard: hStack.inAppClipboard
-                clipboardEditorPaste: hStack.clipboardEditorPaste
-                editorInputCommandFilter: hStack.editorInputCommandFilter
                 editorFontFamilyProvider: hStack.editorFontFamilyProvider
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible

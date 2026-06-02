@@ -42,13 +42,7 @@ namespace
         appendContextObjectBinding(plan, QStringLiteral("navigationModeController"), objects.navigationModeController);
         appendContextObjectBinding(plan, QStringLiteral("sidebarHierarchyController"), objects.sidebarHierarchyController);
         appendContextObjectBinding(plan, QStringLiteral("noteActiveState"), objects.noteActiveState);
-        appendContextObjectBinding(plan, QStringLiteral("noteEditorSession"), objects.noteEditorSession);
         appendContextObjectBinding(plan, QStringLiteral("inAppClipboard"), objects.inAppClipboard);
-        appendContextObjectBinding(plan, QStringLiteral("clipboardEditorPaste"), objects.clipboardEditorPaste);
-        appendContextObjectBinding(
-            plan,
-            QStringLiteral("editorInputCommandFilter"),
-            objects.editorInputCommandFilter);
         appendContextObjectBinding(
             plan,
             QStringLiteral("editorFontFamilyProvider"),

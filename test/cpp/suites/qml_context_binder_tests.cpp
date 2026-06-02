@@ -22,10 +22,8 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(binderSource.contains(QStringLiteral("objects.resourceDetailPanelController")));
     QVERIFY(binderSource.contains(
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"inAppClipboard\")")));
-    QVERIFY(binderSource.contains(
-        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"clipboardEditorPaste\")")));
-    QVERIFY(binderSource.contains(QStringLiteral("QStringLiteral(\"editorInputCommandFilter\")")));
-    QVERIFY(binderSource.contains(QStringLiteral("objects.editorInputCommandFilter")));
+    QVERIFY(!binderSource.contains(QStringLiteral("clipboardEditorPaste")));
+    QVERIFY(!binderSource.contains(QStringLiteral("editorInputCommandFilter")));
     QVERIFY(binderSource.contains(QStringLiteral("QStringLiteral(\"editorFontFamilyProvider\")")));
     QVERIFY(binderSource.contains(QStringLiteral("objects.editorFontFamilyProvider")));
     QVERIFY(binderSource.contains(
@@ -33,9 +31,8 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
     QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteActiveState = nullptr;")));
     QVERIFY(binderSource.contains(
         QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"noteActiveState\")")));
-    QVERIFY(binderHeader.contains(QStringLiteral("QObject* noteEditorSession = nullptr;")));
-    QVERIFY(binderSource.contains(
-        QStringLiteral("appendContextObjectBinding(plan, QStringLiteral(\"noteEditorSession\")")));
+    QVERIFY(!binderHeader.contains(QStringLiteral("noteEditorSession")));
+    QVERIFY(!binderSource.contains(QStringLiteral("noteEditorSession")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlControllerBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("QmlViewModelBinding")));
     QVERIFY(!binderSource.contains(QStringLiteral("appendControllerBinding")));
@@ -43,28 +40,24 @@ void WhatSonCppRegressionTests::qmlContextBinder_usesLvrsBindPlanForWorkspaceCon
 
     QVERIFY(mainCppSource.contains(QStringLiteral("const lvrs::QmlContextBindResult workspaceContextBindResult")));
     QVERIFY(mainCppSource.contains(QStringLiteral("NoteActiveStateTracker noteActiveState;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("NoteEditorDocumentSession noteEditorSession;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("InAppClipboardManager inAppClipboard;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("ClipboardEditorPaste clipboardEditorPaste;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("EditorInputCommandFilter editorInputCommandFilter;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("EditorFontFamilyProvider editorFontFamilyProvider;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("noteActiveState.setHierarchyContextSource(&sidebarHierarchyController);")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("noteEditorSession.setNoteActiveState(&noteActiveState);")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteActiveState = &noteActiveState;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.noteEditorSession = &noteEditorSession;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.inAppClipboard = &inAppClipboard;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.clipboardEditorPaste = &clipboardEditorPaste;")));
-    QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.editorInputCommandFilter = &editorInputCommandFilter;")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextObjects.editorFontFamilyProvider = &editorFontFamilyProvider;")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("NoteEditorDocumentSession")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("ClipboardEditorPaste")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("EditorInputCommandFilter")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("ResourcesImportController")));
     QVERIFY(mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine, workspaceContextObjects)")));
     QVERIFY(mainCppSource.contains(QStringLiteral("workspaceContextBindResult.errorMessage()")));
     QVERIFY(!mainCppSource.contains(QStringLiteral("bindWorkspaceContextObjects(engine.rootContext()")));
 
-    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property var rootClipboardEditorPaste")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("clipboardEditorPaste: applicationWindow.rootClipboardEditorPaste")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property var rootEditorInputCommandFilter")));
-    QVERIFY(mainQmlSource.contains(QStringLiteral("editorInputCommandFilter: applicationWindow.rootEditorInputCommandFilter")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("rootClipboardEditorPaste")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("clipboardEditorPaste:")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("rootEditorInputCommandFilter")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("editorInputCommandFilter:")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("readonly property var rootEditorFontFamilyProvider")));
     QVERIFY(mainQmlSource.contains(QStringLiteral("editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider")));
     QVERIFY(!mainQmlSource.contains(QStringLiteral("function registerRootControllers()")));

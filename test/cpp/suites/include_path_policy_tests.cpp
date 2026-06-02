@@ -400,25 +400,15 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
-        contentsRoot + QStringLiteral("/3DEditor.qml"),
-        contentsRoot + QStringLiteral("/AudioEditor.qml"),
-        contentsRoot + QStringLiteral("/BinEditor.qml"),
-        contentsRoot + QStringLiteral("/DocumentEditor.qml"),
         contentsRoot + QStringLiteral("/Gutter.qml"),
         contentsRoot + QStringLiteral("/ImageEditor.qml"),
-        contentsRoot + QStringLiteral("/TextEditor.qml"),
         contentsRoot + QStringLiteral("/Minimap.qml"),
-        contentsRoot + QStringLiteral("/VideoEditor.qml"),
+        contentsRoot + QStringLiteral("/TextEditor.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
-        docsContentsRoot + QStringLiteral("/3DEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/AudioEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/BinEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/DocumentEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/Gutter.qml.md"),
         docsContentsRoot + QStringLiteral("/ImageEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/TextEditor.qml.md"),
         docsContentsRoot + QStringLiteral("/Minimap.qml.md"),
-        docsContentsRoot + QStringLiteral("/VideoEditor.qml.md")
+        docsContentsRoot + QStringLiteral("/TextEditor.qml.md")
     };
     for (const QString& relativePath : requiredPaths)
     {
@@ -447,29 +437,19 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QStringList contentsQmlFiles =
         QDir(repositoryRoot.filePath(contentsRoot)).entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsQmlFiles, QStringList({
-        QStringLiteral("3DEditor.qml"),
-        QStringLiteral("AudioEditor.qml"),
-        QStringLiteral("BinEditor.qml"),
-        QStringLiteral("DocumentEditor.qml"),
         QStringLiteral("Gutter.qml"),
         QStringLiteral("ImageEditor.qml"),
         QStringLiteral("Minimap.qml"),
-        QStringLiteral("TextEditor.qml"),
-        QStringLiteral("VideoEditor.qml")
+        QStringLiteral("TextEditor.qml")
     }));
     const QStringList contentsDocsFiles =
         QDir(repositoryRoot.filePath(docsContentsRoot)).entryList(QStringList{QStringLiteral("*.md")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsDocsFiles, QStringList({
-        QStringLiteral("3DEditor.qml.md"),
-        QStringLiteral("AudioEditor.qml.md"),
-        QStringLiteral("BinEditor.qml.md"),
-        QStringLiteral("DocumentEditor.qml.md"),
         QStringLiteral("Gutter.qml.md"),
         QStringLiteral("ImageEditor.qml.md"),
         QStringLiteral("Minimap.qml.md"),
         QStringLiteral("README.md"),
-        QStringLiteral("TextEditor.qml.md"),
-        QStringLiteral("VideoEditor.qml.md")
+        QStringLiteral("TextEditor.qml.md")
     }));
 
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/ContentsView.qml"))));
@@ -663,13 +643,13 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         QStringLiteral("docs/src/app/models/clipboard/FiletypeCapture.h.md"))));
     QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/clipboard/FiletypeCapture.cpp.md"))));
-    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/clipboard/ClipboardEditorPaste.h.md"))));
-    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/clipboard/ClipboardEditorPaste.cpp.md"))));
-    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/editor/EditorInputCommandFilter.hpp.md"))));
-    QVERIFY(QFileInfo::exists(repositoryRoot.filePath(
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         QStringLiteral("docs/src/app/models/editor/EditorInputCommandFilter.cpp.md"))));
     QVERIFY(!clipboardSource.contains(QStringLiteral("WhatSonResourceClipboardImportSupport")));
     QVERIFY(!clipboardSource.contains(QStringLiteral("ClipboardImportSupport::")));
@@ -699,10 +679,10 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
         "src/app/models/file/resource/WhatSonResourceClipboardImportSupport.cpp")));
     QVERIFY(!testCMakeSource.contains(legacyResourceImportSourceDirectory));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/FiletypeCapture.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardEditorPaste.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardStore.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/EditorInputCommandFilter.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/EditorInputCommandFilter.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboard.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")));
