@@ -8,12 +8,11 @@
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
 - `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
   `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
-- Local note mutation paths now split into two classes:
+- Local note mutation paths now split into two classes, with persistence mutations disabled:
   - runtime-load / explicit full-snapshot paths still go through `setIndexedStateNotes(...)`,
     `applyIndexedStateSnapshot(...)`, and `loadIndexedStateFromWshub(...)`
-  - note-save / metadata-reload / folder-assign / note-create / note-delete / folder-clear paths now prefer one-note
-    `upsertIndexedNote(...)` / `removeIndexedNoteById(...)` updates and only fall back to full snapshot replacement
-    when the mutation service does not return a resolvable target note
+  - note-save / metadata-reload / folder-assign / note-create / note-delete / folder-clear paths now fail closed and
+    leave indexed note state unchanged
 - Those note-distribution mutation paths now also route through
   `refreshNoteListForSelectionAndNotifyHierarchyModel()`, which is the guard against stale sidebar `count` labels
   when only the note-to-folder distribution changed and the hierarchy row vector stayed byte-for-byte identical.
@@ -31,15 +30,10 @@
   the editor even when the asynchronous lazy-load path is late or temporarily unavailable.
 - The note-list row projection now also carries `noteDirectoryPath`, and the controller's internal note-list cache key
   is no longer `noteId` alone.
-  Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity so duplicate ids
-  from different `.wsnote` packages do not alias the same note-list projection.
+  Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity.
 - The library runtime snapshot exposes `noteBodySourceTextForNoteId(...)` for read-side consumers that need the already
   loaded indexed note source.
-- Note body persistence is split into two controller-facing phases:
-  - `applyPersistedBodyStateForNote(...)` mutates only the in-memory indexed note/body preview immediately after a
-    successful direct file-store write.
-  - `requestTrackedStatisticsRefreshForNote(...)` later pays the `.wsnbody` scan, rewrites tracked header stats, and
-    rehydrates the same note through `reloadNoteMetadataForNoteId(...)`.
+- Note body persistence and tracked-stat refresh are currently disabled at the controller boundary.
 - `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
   computes the insertion point after that folder's subtree and increases depth by one, creating the new folder as a
   child of the selected folder without forcing the selected parent open.
@@ -103,10 +97,9 @@
   - Failed activation must not switch the current note to an unrelated item.
   - The shared library note-list model must keep the selected note body available through `BodyTextRole` /
     `currentBodyText` so editor selection never collapses to an empty document after runtime snapshot refreshes.
-  - The shared library note-list model must also export the correct `noteDirectoryPath` for the selected row so the
-    editor mounts the same `.wsnote` package that the library list selected.
-  - If direct note-package resolution is temporarily unavailable, the indexed library snapshot must still be able to
-    provide the selected note's body source to the editor bridge.
+  - The shared library note-list model must also export the selected row's `noteDirectoryPath` for identity
+    disambiguation.
+  - Direct note-package resolution is currently disabled, so editor bridges must not depend on it.
   - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.
   - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.
   - Dragging one library folder onto another through the LVRS move event must persist exactly one nested subtree entry

@@ -3,7 +3,7 @@
 ## Responsibility
 
 This header provides the shared note-preview text rules for library-domain consumers that need to render note body
-snippets without reparsing `.wsnote` content at the view layer.
+snippets without reopening note storage at the view layer.
 
 ## Shared Preview Rules
 
@@ -17,9 +17,7 @@ snippets without reparsing `.wsnote` content at the view layer.
 - `notePrimaryHeadline(...)` extracts the first non-empty line from that same preview payload so compact consumers such
   as calendar event chips can reuse the note-list headline text instead of inventing a second label rule.
 - Callers are expected to pass fully normalized `LibraryNoteRecord` data.
-  In particular, note-creation paths must populate `bodyFirstLine` and related body preview metadata with the same
-  rules used by `WhatSonLocalNoteDocument.toLibraryNoteRecord()` so new notes do not momentarily render blank preview
-  rows for data that already exists on disk.
+  In particular, body preview metadata must already be normalized before this helper is called.
 
 ## Tests
 

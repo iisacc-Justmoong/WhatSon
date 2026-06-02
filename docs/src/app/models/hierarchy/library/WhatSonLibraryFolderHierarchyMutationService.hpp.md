@@ -3,16 +3,16 @@
 ## Responsibility
 
 This header declares the service that commits persistent library-folder mutations. The service owns
-the write order between the visible folder tree and note-header folder bindings.
+the folder tree write boundary only.
 
 ## Why The Service Exists
 
 Folder rename, move, delete, and reorder operations are not purely visual in this application:
 
 - `Folders.wsfolders` changes the sidebar tree.
-- `.wsnhead` folder bindings determine which notes appear under each folder.
+- note folder bindings are currently read-only runtime metadata.
 
-The service keeps those two layers synchronized as one mutation boundary.
+The service no longer mutates note headers while the package persistence layer is deleted.
 
 ## UUID-Oriented Contract
 
@@ -20,8 +20,7 @@ The current implementation treats folder UUID as the canonical identity:
 
 - path changes are allowed,
 - UUIDs remain stable,
-- note headers are rewritten by UUID lookup against the staged hierarchy,
-- persisted header I/O is delegated to `WhatSonNoteFolderBindingRepository`.
+- note records are returned unchanged.
 
 This solves the earlier failure mode where renaming a parent folder invalidated every descendant note
 binding because the stored path no longer matched the runtime tree.

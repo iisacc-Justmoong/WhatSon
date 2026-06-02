@@ -21,8 +21,8 @@ This means the library note list no longer depends on index-file append order or
 insertion order when presenting the visible rows.
 
 The selected-row contract also includes `currentNoteDirectoryPath`.
-View/controller layers can therefore treat the currently highlighted library note as one concrete
-`.wsnote` package instead of assuming that `noteId` alone identifies the mounted editor target.
+View/controller layers can therefore disambiguate duplicate note ids without treating `noteId`
+alone as the selected target identity.
 
 ## Source Metadata
 - Source path: `src/app/models/hierarchy/library/LibraryNoteListModel.hpp`
@@ -47,5 +47,4 @@ View/controller layers can therefore treat the currently highlighted library not
 - Refresh-time selection recovery is performed by note id in the implementation, so resorting after
   a save keeps the same logical note selected even when its row moves.
 - The exported row contract now also surfaces `noteDirectoryPath` / `currentNoteDirectoryPath`, so
-  downstream selection and mount code can disambiguate duplicate note ids that point at different
-  `.wsnote` packages.
+  downstream selection code can disambiguate duplicate note ids.

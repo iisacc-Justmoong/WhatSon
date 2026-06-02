@@ -18,7 +18,7 @@ bootstrap payload.
 Each row now also keeps a normalized `noteDirectoryPath`, and the selected-row contract exposes that
 value through `currentNoteDirectoryPath`.
 The list model therefore no longer describes the selected note purely by `noteId`; downstream
-selection/mount code can keep following the concrete `.wsnote` package that backs the visible row.
+selection code can keep following the concrete visible row identity.
 
 ## Sorting Pipeline
 
@@ -43,8 +43,7 @@ refreshes.
 `applySearchFilter()` still restores `m_currentIndex` by the previously selected logical note, and
 the selected-row notifications now also include `currentNoteDirectoryPathChanged()` when the visible
 package path changes.
-This keeps the same concrete `.wsnote` package active when duplicate ids exist across multiple note
-packages.
+This keeps duplicate ids disambiguated across visible note rows.
 
 The same reset path now also emits `currentNoteEntryChanged()` whenever the filtered selection
 materializes for the first time or the selected row is replaced in-place at the same visible index.

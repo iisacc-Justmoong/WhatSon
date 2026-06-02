@@ -3,8 +3,7 @@
 ## Responsibility
 
 `LibraryNoteRecord` is the normalized runtime payload for one note in the library domain. It is the
-shared data shape used by note list models, hierarchy filters, note mutation helpers, and local file
-stores.
+shared data shape used by note list models, hierarchy filters, and retained runtime projection code.
 
 ## Relevant Folder Fields
 
@@ -31,8 +30,5 @@ filtering and mutation logic rely on stable UUIDs.
 
 ## Main Collaborators
 
-- `LibraryAll.cpp`: produces runtime records from hub files.
-- `WhatSonHubNoteCreationService.cpp`: creates new records for freshly scaffolded notes.
-- `WhatSonHubNoteMutationSupport.cpp`: keeps runtime records synchronized with edited note
-  documents.
+- `LibraryAll.cpp`: owns the current library indexing boundary.
 - `LibraryHierarchyController.cpp`: filters records by selected folder UUID.
