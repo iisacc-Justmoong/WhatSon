@@ -12,12 +12,11 @@ LV.ContextMenu {
     property var hierarchyItems: []
     property bool manualFallbackEnabled: false
     property var anchorItem: null
-    readonly property bool mobileMode: LV.Theme.mobileTarget
     readonly property int popupHorizontalMargin: LV.Theme.gap12
     readonly property int popupVerticalMargin: LV.Theme.gap12
     readonly property int popupRowHeight: LV.Theme.gap20
     readonly property int popupSpacing: LV.Theme.gap2
-    readonly property int popupWidth: mobileMode ? Math.max(0, (parent ? parent.width : 0) - popupHorizontalMargin * 2) : LV.Theme.inputWidthMd + LV.Theme.gap18
+    readonly property int popupWidth: LV.Theme.inputWidthMd + LV.Theme.gap18
     readonly property int popupViewportHeight: {
         const rowCount = hierarchyItems.length + (manualFallbackEnabled ? 1 : 0);
         const minimumHeight = popupRowHeight;
@@ -47,50 +46,12 @@ LV.ContextMenu {
             height = nextHeight;
     }
 
-    function applyMobileSheetGeometry() {
-        const overlay = parent;
-        if (!overlay)
-            return;
-
-        syncPopupSize();
-
-        const minX = popupHorizontalMargin;
-        const maxX = Math.max(minX, overlay.width - popupWidth - popupHorizontalMargin);
-        const minY = popupVerticalMargin;
-        const maxY = Math.max(minY, overlay.height - popupHeight - popupVerticalMargin);
-        const resolvedX = clampPosition(Math.round((overlay.width - popupWidth) * 0.5), minX, maxX);
-        const resolvedY = clampPosition(Math.round(overlay.height - popupHeight - popupVerticalMargin), minY, maxY);
-        const anchorX = popupWidth * 0.5;
-        const anchorY = popupHeight;
-        const startScale = resolvedOpenBounceEnabled ? resolvedOpenStartScale : 1.0;
-
-        openHorizontalDirection = directionRight;
-        openVerticalDirection = directionUp;
-        openTargetX = resolvedX;
-        openTargetY = resolvedY;
-        x = resolvedX;
-        y = resolvedY;
-        openAnchorX = anchorX;
-        openAnchorY = anchorY;
-        openStartX = resolvedX + anchorX * (1.0 - startScale);
-        openStartY = resolvedY + anchorY * (1.0 - startScale);
-    }
-
     function openForAnchor(item, reason) {
         anchorItem = item ? item : null;
         if (reason !== undefined)
             viewHookRequested(String(reason));
 
         syncPopupSize();
-        if (mobileMode) {
-            applyMobileSheetGeometry();
-            Qt.callLater(function () {
-                applyMobileSheetGeometry();
-                picker.open();
-            });
-            return;
-        }
-
         const target = anchorItem && anchorItem.mapToItem !== undefined ? anchorItem : null;
         if (target) {
             picker.openFor(target, Number(target.width) || 0, (Number(target.height) || 0) + LV.Theme.gap2);
@@ -105,7 +66,7 @@ LV.ContextMenu {
     focus: true
     height: popupHeight
     items: []
-    modal: mobileMode
+    modal: false
     padding: LV.Theme.gap4
     parent: Controls.Overlay.overlay
     requestedPopupWidth: popupWidth
@@ -114,28 +75,9 @@ LV.ContextMenu {
     onClosed: anchorItem = null
     onPopupHeightChanged: {
         syncPopupSize();
-        if (opened && mobileMode)
-            applyMobileSheetGeometry();
     }
     onPopupWidthChanged: {
         syncPopupSize();
-        if (opened && mobileMode)
-            applyMobileSheetGeometry();
-    }
-
-    Connections {
-        target: picker.parent
-        ignoreUnknownSignals: true
-
-        function onHeightChanged() {
-            if (picker.opened && picker.mobileMode)
-                picker.applyMobileSheetGeometry();
-        }
-
-        function onWidthChanged() {
-            if (picker.opened && picker.mobileMode)
-                picker.applyMobileSheetGeometry();
-        }
     }
 
     contentItem: Item {

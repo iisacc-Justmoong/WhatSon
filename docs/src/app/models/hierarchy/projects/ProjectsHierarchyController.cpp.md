@@ -59,32 +59,12 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
   before the note list is rebuilt. Projects therefore enter with the same first-project filter that the sidebar marks
   as active, instead of falling back to an unfiltered list.
-- `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
-  filtered projection immediately, so project assignment writes do not require a later hub reload
-  before the projects note list catches up.
-- `applyPersistedBodyStateForNote(...)` now mirrors normalized body text, RAW source text, first-line
-  preview, and `lastModifiedAt` directly into the cached `m_allNotes` record, then refreshes the
-  selected projects note list in memory. Structured correction paths use this to avoid an immediate
-  second disk-backed metadata reload for the same note.
-- Those body-only refresh paths now call `refreshNoteListForSelection(false)`, which reuses the
-  already-cached per-note project labels instead of rescanning every `.wsnhead` file. Full header
-  synchronization remains enabled for ordinary selection changes and full snapshot refreshes where
-  project membership may actually have changed.
-- That same lightweight apply path now also emits `hubFilesystemMutated()`, aligning Projects with the
-  existing mutation notification contract used by other note-list-backed hierarchies.
-- `requestTrackedStatisticsRefreshForNote(...)` now owns the `.wsnbody` scan previously triggered by the editor
-  selection bridge for project-scoped note opens, then reuses `reloadNoteMetadataForNoteId(...)` to rehydrate the
-  updated header fields back into the projects projection.
-- When `reloadNoteMetadataForNoteId(...)` detects that a note's project label actually changed
-  (for example `Untitled -> <empty>`), it triggers one extra full re-index pass from
-  `ProjectLists.wsproj`/`Library.wslibrary` to guarantee that hierarchy badges and selected-project
-  note projection stay consistent even if the previous in-memory note snapshot carried stale paths.
+- Project note projection now stays metadata-only. Body-state apply paths and editor-triggered statistic refresh APIs
+  were removed with the note editor/save boundary.
+- Full header synchronization remains enabled for ordinary selection changes and full snapshot refreshes where project
+  membership may actually have changed.
 - `noteDirectoryPathForNoteId(...)` now resolves directory paths canonically by falling back to the
   readable `.wsnhead` location when the indexed directory path is missing or stale.
-- If `reloadNoteMetadataForNoteId(...)` cannot re-read the note header anymore (for example the
-  header file was removed), the controller immediately clears that note's project membership in the
-  in-memory projection and refreshes the note list, preventing stale project rows from lingering in
-  the sidebar/list panel.
 
 ## Hierarchy Count Badge
 
@@ -92,7 +72,7 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - The count is derived from the current in-memory indexed notes (`m_allNotes`) by case-insensitive
   match against the project label.
 - Any runtime note reindex path (`refreshIndexedNotesFromWshub(...)`,
-  `refreshIndexedNotesFromProjectsFilePath(...)`, `reloadNoteMetadataForNoteId(...)`) now emits
+  `refreshIndexedNotesFromProjectsFilePath(...)`) now emits
   `hierarchyModelChanged()` after refreshing note membership so sidebar count badges refresh
   without app restart.
 

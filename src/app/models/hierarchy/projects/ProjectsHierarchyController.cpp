@@ -227,26 +227,7 @@ namespace
 
     QString notePrimaryText(const LibraryNoteRecord& note)
     {
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
-        if (!firstLine.isEmpty())
-        {
-            if (bodyPlainText.isEmpty())
-            {
-                return firstLine;
-            }
-
-            if (!bodyPlainText.startsWith(firstLine))
-            {
-                return firstLine + QLatin1Char('\n') + bodyPlainText;
-            }
-        }
-
-        if (!bodyPlainText.isEmpty())
-        {
-            return bodyPlainText;
-        }
-
+        Q_UNUSED(kMaxNoteListSummaryLines)
         return note.noteId.trimmed();
     }
 
@@ -293,18 +274,6 @@ namespace
         if (!noteId.isEmpty())
         {
             parts.push_back(noteId);
-        }
-
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
-        {
-            parts.push_back(firstLine);
-        }
-
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
-        if (!bodyPlainText.isEmpty())
-        {
-            parts.push_back(bodyPlainText);
         }
 
         const QString project = note.project.trimmed();
@@ -685,66 +654,6 @@ bool ProjectsHierarchyController::supportsHierarchyNodeReorder() const noexcept
     return true;
 }
 
-bool ProjectsHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
-bool ProjectsHierarchyController::requestTrackedStatisticsRefreshForNote(
-    const QString& noteId,
-    const bool incrementOpenCount)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    Q_UNUSED(incrementOpenCount)
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
-bool ProjectsHierarchyController::applyPersistedBodyStateForNote(
-    const QString& noteId,
-    const QString& normalizedBodyText,
-    const QString& normalizedBodySourceText,
-    const QString& lastModifiedAt)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
-            &m_allNotes,
-            normalizedNoteId,
-            normalizedBodyText,
-            normalizedBodySourceText,
-            lastModifiedAt))
-    {
-        return false;
-    }
-
-    refreshNoteListForSelection(false);
-    emit hubFilesystemMutated();
-    return true;
-}
-
 QString ProjectsHierarchyController::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -754,17 +663,6 @@ QString ProjectsHierarchyController::noteDirectoryPathForNoteId(const QString& n
     }
 
     return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_allNotes, normalizedNoteId);
-}
-
-QString ProjectsHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return {};
-    }
-
-    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_allNotes, normalizedNoteId);
 }
 
 int ProjectsHierarchyController::selectedIndex() const noexcept
@@ -1531,13 +1429,11 @@ LibraryNoteListItem ProjectsHierarchyController::buildNoteListItem(const Library
     item.id = note.noteId.trimmed();
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = !note.bodySourceText.isEmpty()
-        ? note.bodySourceText
-        : note.bodyPlainText;
+    item.bodyText.clear();
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
-    item.image = note.bodyHasResource;
-    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.image = false;
+    item.imageSource.clear();
     item.displayDate = SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
     item.folders = folderLabels;
     item.tags = noteListTags(note);

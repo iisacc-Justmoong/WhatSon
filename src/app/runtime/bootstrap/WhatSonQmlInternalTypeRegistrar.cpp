@@ -1,13 +1,5 @@
 #include "app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 
-#include "app/platform/Apple/WhatSonIosHubPickerBridge.hpp"
-#include "app/models/content/mobile/MobileHierarchyBackSwipeCoordinator.hpp"
-#include "app/models/content/mobile/MobileHierarchyCanonicalRoutePlanner.hpp"
-#include "app/models/content/mobile/MobileHierarchyNavigationCoordinator.hpp"
-#include "app/models/content/mobile/MobileHierarchyPopRepairPolicy.hpp"
-#include "app/models/content/mobile/MobileHierarchyRouteSelectionSyncPolicy.hpp"
-#include "app/models/content/mobile/MobileHierarchyRouteStateStore.hpp"
-#include "app/models/content/mobile/MobileHierarchySelectionCoordinator.hpp"
 #include "app/models/panel/FocusedNoteDeletionBridge.hpp"
 #include "app/models/panel/HierarchyDragDropBridge.hpp"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
@@ -33,20 +25,6 @@ namespace
     QList<lvrs::QmlTypeRegistration> internalQmlTypeRegistrationManifest()
     {
         return {
-            whatsonInternalCreatableType<MobileHierarchyBackSwipeCoordinator>(
-                QStringLiteral("MobileHierarchyBackSwipeCoordinator")),
-            whatsonInternalCreatableType<MobileHierarchyCanonicalRoutePlanner>(
-                QStringLiteral("MobileHierarchyCanonicalRoutePlanner")),
-            whatsonInternalCreatableType<MobileHierarchyNavigationCoordinator>(
-                QStringLiteral("MobileHierarchyNavigationCoordinator")),
-            whatsonInternalCreatableType<MobileHierarchyPopRepairPolicy>(
-                QStringLiteral("MobileHierarchyPopRepairPolicy")),
-            whatsonInternalCreatableType<MobileHierarchyRouteSelectionSyncPolicy>(
-                QStringLiteral("MobileHierarchyRouteSelectionSyncPolicy")),
-            whatsonInternalCreatableType<MobileHierarchyRouteStateStore>(
-                QStringLiteral("MobileHierarchyRouteStateStore")),
-            whatsonInternalCreatableType<MobileHierarchySelectionCoordinator>(
-                QStringLiteral("MobileHierarchySelectionCoordinator")),
             whatsonInternalCreatableType<FocusedNoteDeletionBridge>(
                 QStringLiteral("FocusedNoteDeletionBridge")),
             whatsonInternalCreatableType<NoteListModelContractBridge>(
@@ -56,9 +34,7 @@ namespace
             whatsonInternalCreatableType<HierarchyInteractionBridge>(
                 QStringLiteral("HierarchyInteractionBridge")),
             whatsonInternalCreatableType<SidebarHierarchyInteractionController>(
-                QStringLiteral("SidebarHierarchyInteractionController")),
-            whatsonInternalCreatableType<WhatSonIosHubPickerBridge>(
-                QStringLiteral("WhatSonIosHubPickerBridge"))
+                QStringLiteral("SidebarHierarchyInteractionController"))
         };
     }
 

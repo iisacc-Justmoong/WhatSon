@@ -189,7 +189,7 @@ target_include_directories(WhatSon PRIVATE
 )
 whatson_app_register_directory_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/models")
 
-if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+if (WHATSON_IS_TRIAL_BUILD)
     target_sources(WhatSon PRIVATE
             ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialSecureStore.cpp
             ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialInstallStore.cpp
@@ -207,7 +207,6 @@ add_subdirectory(models/calendar)
 add_subdirectory(models/clipboard)
 add_subdirectory(models/content)
 add_subdirectory(models/detailPanel)
-add_subdirectory(models/editor)
 add_subdirectory(models/file)
 add_subdirectory(models/hierarchy)
 add_subdirectory(models/navigationbar)
@@ -226,49 +225,18 @@ add_subdirectory(store)
 set(WHATSON_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
 set(WHATSON_APP_ICON_DIR "${WHATSON_RESOURCES_DIR}/icons/app")
 set(WHATSON_APP_ICON_DESKTOP_DIR "${WHATSON_APP_ICON_DIR}/desktop")
-set(WHATSON_APP_ICON_IOS_DIR "${WHATSON_APP_ICON_DIR}/ios")
-set(WHATSON_APP_ICON_ANDROID_DIR "${WHATSON_APP_ICON_DIR}/android")
-set(WHATSON_APP_ICON_STORE_DIR "${WHATSON_APP_ICON_DIR}/store")
 set(WHATSON_ILLUSTRATIONS_DIR "${WHATSON_RESOURCES_DIR}/illustrations")
 set(WHATSON_ONBOARDING_ILLUSTRATION_PNG "${WHATSON_ILLUSTRATIONS_DIR}/onboarding/Onboarding.png")
 
 set(WHATSON_APP_ICON_PNG "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.png")
 set(WHATSON_APP_ICON_ICNS "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.icns")
 set(WHATSON_APP_ICON_ICO "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.ico")
-set(WHATSON_IOS_APP_ICON_FILES
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@2x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@3x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@2x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@3x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@2x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@3x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-60@2x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-60@3x.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@2x~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@2x~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@2x~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-76~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-76@2x~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-83.5@2x~ipad.png"
-        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon@ios~marketing.png"
-)
-set(WHATSON_IOS_BUNDLE_ICON_FILES "${WHATSON_APP_ICON_PNG}" ${WHATSON_IOS_APP_ICON_FILES})
-list(REMOVE_DUPLICATES WHATSON_IOS_BUNDLE_ICON_FILES)
 
 if (NOT DEFINED WHATSON_PLATFORM_DIR)
     set(WHATSON_PLATFORM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../platform")
 endif ()
 if (NOT DEFINED WHATSON_APPLE_DIR)
     set(WHATSON_APPLE_DIR "${WHATSON_PLATFORM_DIR}/Apple")
-endif ()
-if (NOT DEFINED WHATSON_ANDROID_DIR)
-    set(WHATSON_ANDROID_DIR "${WHATSON_PLATFORM_DIR}/Android")
-endif ()
-if (NOT DEFINED WHATSON_IOS_INFO_PLIST)
-    set(WHATSON_IOS_INFO_PLIST "${WHATSON_APPLE_DIR}/iOS/Info.plist")
 endif ()
 if (NOT DEFINED WHATSON_DEFAULT_INFO_PLIST)
     set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
@@ -279,10 +247,6 @@ endif ()
 if (NOT DEFINED WHATSON_APPLE_BUNDLE_ID)
     set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson")
 endif ()
-if (NOT DEFINED WHATSON_ANDROID_PACKAGE_ID)
-    set(WHATSON_ANDROID_PACKAGE_ID "com.iisacc.app.whatson")
-endif ()
 
-set(_whatson_android_package_source_dir "${WHATSON_ANDROID_DIR}")
 add_subdirectory(cmake/resources)
 add_subdirectory(cmake/defaults)

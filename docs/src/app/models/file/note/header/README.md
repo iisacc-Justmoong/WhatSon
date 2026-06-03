@@ -12,4 +12,4 @@
 
 ## Boundary
 - Uses shared XML support for tag and attribute extraction.
-- Must not own `.wsnbody` serialization, folder binding state, or editor session lifecycle.
+- Must not own body serialization, folder binding state, or editor session lifecycle.

@@ -39,7 +39,7 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_tracksCurrentNoteAcrossAc
     QCOMPARE(
         tracker.activeNoteEntry().value(QStringLiteral("noteId")).toString(),
         QStringLiteral("library-note"));
-    QCOMPARE(tracker.activeNoteBodyText(), QString());
+    QVERIFY(!tracker.activeNoteEntry().contains(QStringLiteral("bodyText")));
 
     sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
 
@@ -96,14 +96,12 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_clearsReadableEmptyAndNon
 
     QCOMPARE(tracker.activeNoteId(), QStringLiteral("entry-note"));
     QCOMPARE(tracker.activeNoteDirectoryPath(), QStringLiteral("/tmp/entry-note.note"));
-    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Entry body"));
     QVERIFY(!tracker.activeNoteEntry().contains(QStringLiteral("bodyText")));
     QVERIFY(tracker.hasActiveNote());
 
     libraryModel.setCurrentNoteEntry({});
     QVERIFY(tracker.activeNoteId().isEmpty());
     QVERIFY(tracker.activeNoteDirectoryPath().isEmpty());
-    QVERIFY(tracker.activeNoteBodyText().isEmpty());
     QVERIFY(!tracker.hasActiveNote());
 
     libraryModel.setCurrentNoteEntry({{QStringLiteral("id"), QStringLiteral("entry-note-2")}});
@@ -152,7 +150,6 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
     sidebarController.setControllerProvider(&provider);
 
     NoteActiveStateTracker tracker;
-    QString bodyTextDuringTagsNoteIdSignal;
     QString noteDirectoryPathDuringTagsNoteIdSignal;
     QVariantMap noteEntryDuringTagsNoteIdSignal;
     QObject::connect(
@@ -161,7 +158,6 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
         &tracker,
         [
             &tracker,
-            &bodyTextDuringTagsNoteIdSignal,
             &noteDirectoryPathDuringTagsNoteIdSignal,
             &noteEntryDuringTagsNoteIdSignal
         ]()
@@ -170,7 +166,6 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
             {
                 return;
             }
-            bodyTextDuringTagsNoteIdSignal = tracker.activeNoteBodyText();
             noteDirectoryPathDuringTagsNoteIdSignal = tracker.activeNoteDirectoryPath();
             noteEntryDuringTagsNoteIdSignal = tracker.activeNoteEntry();
         });
@@ -178,99 +173,11 @@ void WhatSonCppRegressionTests::noteActiveStateTracker_publishesAtomicNoteSnapsh
     tracker.setHierarchyContextSource(&sidebarController);
     sidebarController.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Tags));
 
-    QCOMPARE(bodyTextDuringTagsNoteIdSignal, QStringLiteral("Tags body"));
     QCOMPARE(noteDirectoryPathDuringTagsNoteIdSignal, QStringLiteral("/tmp/tags-note.note"));
     QCOMPARE(
         noteEntryDuringTagsNoteIdSignal.value(QStringLiteral("noteId")).toString(),
         QStringLiteral("tags-note"));
     QVERIFY(!noteEntryDuringTagsNoteIdSignal.contains(QStringLiteral("bodyText")));
-    QCOMPARE(tracker.activeNoteBodyText(), QStringLiteral("Tags body"));
-
-    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
-}
-
-void WhatSonCppRegressionTests::noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution()
-{
-    WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
-
-    QTemporaryDir workspaceDir;
-    QVERIFY(workspaceDir.isValid());
-
-    QString createError;
-    const QString firstNoteDirectoryPath = createLocalNoteForRegression(
-        workspaceDir.path(),
-        QStringLiteral("first-note"),
-        QStringLiteral("first body"),
-        &createError);
-    QVERIFY2(!firstNoteDirectoryPath.isEmpty(), qPrintable(createError));
-
-    const QString secondNoteDirectoryPath = createLocalNoteForRegression(
-        workspaceDir.path(),
-        QStringLiteral("second-note"),
-        QStringLiteral("second body"),
-        &createError);
-    QVERIFY2(!secondNoteDirectoryPath.isEmpty(), qPrintable(createError));
-
-    LibraryNoteListItem firstItem;
-    firstItem.id = QStringLiteral("first-note");
-    firstItem.noteDirectoryPath = firstNoteDirectoryPath;
-    firstItem.primaryText = QStringLiteral("First note");
-    firstItem.bodyText = QStringLiteral("first body");
-
-    LibraryNoteListItem secondItem;
-    secondItem.id = QStringLiteral("second-note");
-    secondItem.noteDirectoryPath = secondNoteDirectoryPath;
-    secondItem.primaryText = QStringLiteral("Second note");
-    secondItem.bodyText = QStringLiteral("second body");
-
-    LibraryNoteListModel noteListModel;
-    noteListModel.setItems({firstItem, secondItem});
-    noteListModel.setCurrentIndex(0);
-
-    FakeHierarchyController libraryController(QStringLiteral("library"));
-    libraryController.setNoteListModelObject(&noteListModel);
-
-    HierarchyControllerProvider provider;
-    provider.setMappings(QVector<HierarchyControllerProvider::Mapping>{
-        {static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library), &libraryController},
-    });
-
-    SidebarHierarchyController sidebarController;
-    sidebarController.setControllerProvider(&provider);
-
-    NoteActiveStateTracker tracker;
-    QSignalSpy activeNoteBodyPathChangedSpy(&tracker, &NoteActiveStateTracker::activeNoteBodyPathChanged);
-
-    QString bodyPathDuringSecondNoteSignal;
-    QObject::connect(
-        &tracker,
-        &NoteActiveStateTracker::activeNoteIdChanged,
-        &tracker,
-        [&tracker, &bodyPathDuringSecondNoteSignal]()
-        {
-            if (tracker.activeNoteId() == QStringLiteral("second-note"))
-            {
-                bodyPathDuringSecondNoteSignal = tracker.activeNoteBodyPath();
-            }
-        });
-
-    tracker.setHierarchyContextSource(&sidebarController);
-
-    QCOMPARE(
-        tracker.activeNoteBodyPath(),
-        WhatSon::NoteBodyPersistence::resolveBodyPath(firstNoteDirectoryPath));
-    QVERIFY(QFileInfo(tracker.activeNoteBodyPath()).isFile());
-
-    noteListModel.setCurrentIndex(1);
-
-    QCOMPARE(
-        tracker.activeNoteBodyPath(),
-        WhatSon::NoteBodyPersistence::resolveBodyPath(secondNoteDirectoryPath));
-    QCOMPARE(bodyPathDuringSecondNoteSignal, tracker.activeNoteBodyPath());
-    QVERIFY(activeNoteBodyPathChangedSpy.count() >= 2);
-
-    noteListModel.setCurrentIndex(-1);
-    QVERIFY(tracker.activeNoteBodyPath().isEmpty());
 
     WhatSon::Policy::ArchitecturePolicyLock::unlockForTests();
 }

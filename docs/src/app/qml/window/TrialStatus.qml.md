@@ -15,7 +15,6 @@
 
 ## Behavior
 - The window recenters itself against the host window when one is provided.
-- The window stays non-mobile and desktop-oriented: fixed size, decorated, and intended to coexist with the main workspace window.
 - All displayed values are read directly from `WhatSonTrialActivationPolicy`, so the view stays read-only and does not mutate trial state.
 - Fixed window size, card radius, divider thickness, and headline/body typography now route through named `LV.Theme`
   size, spacing, typography, and stroke tokens instead of local pixel literals, so the trial surface follows LVRS

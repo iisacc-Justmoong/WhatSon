@@ -3,7 +3,7 @@ set(_whatson_native_desktop_install_tree FALSE)
 if (NOT CMAKE_CROSSCOMPILING)
     if (WIN32)
         set(_whatson_native_desktop_install_tree TRUE)
-    elseif (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    elseif (APPLE)
         set(_whatson_native_desktop_install_tree TRUE)
     elseif (UNIX AND NOT APPLE)
         set(_whatson_native_desktop_install_tree TRUE)
@@ -226,12 +226,10 @@ if (TARGET whatson_package
             "-DWHATSON_IS_TRIAL_BUILD=ON"
             "-DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=OFF"
             "-DWHATSON_TRIAL_BUILD_DIR=${WHATSON_TRIAL_BUILD_DIR}"
-            "-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF"
             "-DWHATSON_BUILD_APP=${WHATSON_BUILD_APP}"
             "-DWHATSON_BUILD_DAEMON=${WHATSON_BUILD_DAEMON}"
             "-DWHATSON_BUILD_CLI=${WHATSON_BUILD_CLI}"
-            "-DWHATSON_ENABLE_DEV_TOOLING=OFF"
-            "-DWHATSON_IOS_SIMULATOR_ARCH=${WHATSON_IOS_SIMULATOR_ARCH}")
+            "-DWHATSON_ENABLE_DEV_TOOLING=OFF")
 
     if (DEFINED CMAKE_BUILD_TYPE AND NOT CMAKE_BUILD_TYPE STREQUAL "")
         list(APPEND _whatson_trial_configure_command "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")

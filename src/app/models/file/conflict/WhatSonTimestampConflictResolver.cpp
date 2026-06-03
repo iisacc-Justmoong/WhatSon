@@ -74,33 +74,6 @@ namespace
     }
 }
 
-WhatSonTimestampConflictResolver::MergeResult
-WhatSonTimestampConflictResolver::mergeBodyByTimestamp(const MergeRequest& request) const
-{
-    MergeResult result;
-    result.mergedBodySourceText = request.incomingBodySourceText;
-    result.winner = QStringLiteral("incoming");
-    result.winningLastModifiedAt = request.incomingLastModifiedAt.trimmed();
-
-    const QString baseTimestamp = request.baseLastModifiedAt.trimmed();
-    const QString filesystemTimestamp = request.filesystemLastModifiedAt.trimmed();
-    if (baseTimestamp.isEmpty()
-        || filesystemTimestamp.isEmpty()
-        || compareTimestamps(filesystemTimestamp, baseTimestamp) <= 0)
-    {
-        return result;
-    }
-
-    result.conflictDetected = true;
-    if (compareTimestamps(filesystemTimestamp, request.incomingLastModifiedAt) > 0)
-    {
-        result.mergedBodySourceText = request.filesystemBodySourceText;
-        result.winner = QStringLiteral("filesystem");
-        result.winningLastModifiedAt = filesystemTimestamp;
-    }
-    return result;
-}
-
 bool WhatSonTimestampConflictResolver::isTimestampNewer(
     const QString& candidateLastModifiedAt,
     const QString& baselineLastModifiedAt) const

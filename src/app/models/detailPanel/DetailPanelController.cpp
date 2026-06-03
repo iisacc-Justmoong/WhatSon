@@ -4,8 +4,6 @@
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
 
-#include <QSet>
-
 namespace
 {
     QString normalizeFolderLookupKey(QString value)
@@ -353,7 +351,6 @@ bool DetailPanelController::assignFolderByName(const QString& folderPath)
     {
         m_propertiesController.setActiveFolderIndex(activeFolderIndex);
     }
-    synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
 }
 
@@ -384,7 +381,6 @@ bool DetailPanelController::assignTagByName(const QString& tag)
     {
         m_propertiesController.setActiveTagIndex(activeTagIndex);
     }
-    synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
 }
 
@@ -493,7 +489,6 @@ bool DetailPanelController::writeSelectionIndex(
         m_projectSelectionSourceController.synchronize(false);
         m_bookmarkSelectionSourceController.synchronize(false);
         m_progressSelectionSourceController.synchronize(false);
-        synchronizeCurrentNoteMetadataConsumers(noteId);
     }
     return saved;
 }
@@ -524,7 +519,6 @@ bool DetailPanelController::removeMetadataEntry(const bool removeFolder)
     }
 
     m_propertiesController.applyHeader(m_noteHeaderSessionStore.header(noteId));
-    synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
 }
 
@@ -606,43 +600,4 @@ void DetailPanelController::reloadCurrentHeader(const bool forceReload)
     }
 
     setNoteContextLinked(linkedContext);
-}
-
-void DetailPanelController::synchronizeCurrentNoteMetadataConsumers(const QString& noteId)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return;
-    }
-
-    QSet<QObject*> synchronizedConsumers;
-    auto synchronizeConsumer = [&synchronizedConsumers, &normalizedNoteId](QObject* sourceController)
-    {
-        if (sourceController == nullptr || synchronizedConsumers.contains(sourceController))
-        {
-            return;
-        }
-
-        const QMetaObject* metaObject = sourceController->metaObject();
-        if (metaObject == nullptr || metaObject->indexOfMethod("reloadNoteMetadataForNoteId(QString)") < 0)
-        {
-            return;
-        }
-
-        bool synchronized = false;
-        QMetaObject::invokeMethod(
-            sourceController,
-            "reloadNoteMetadataForNoteId",
-            Qt::DirectConnection,
-            Q_RETURN_ARG(bool, synchronized),
-            Q_ARG(QString, normalizedNoteId));
-        synchronizedConsumers.insert(sourceController);
-    };
-
-    synchronizeConsumer(m_currentNoteContextBridge.noteDirectorySourceController());
-    synchronizeConsumer(m_projectSelectionSourceController.optionsSourceController());
-    synchronizeConsumer(m_bookmarkSelectionSourceController.optionsSourceController());
-    synchronizeConsumer(m_progressSelectionSourceController.optionsSourceController());
-    synchronizeConsumer(m_tagsSourceController);
 }

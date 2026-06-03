@@ -40,16 +40,9 @@ materializing the matching note list from `.wsnhead` metadata.
 - `refreshNoteListForSelection()` keeps only notes whose `.wsnhead` `progress` integer matches the
   selected progress value, so the initial progress entry state now filters by that first bucket instead of
   showing every indexed note.
-- `saveBodyTextForNote(...)`, `saveCurrentBodyText(...)`, and `noteDirectoryPathForNoteId(...)`
-  keep the progress domain compatible with existing note editing and detail-panel current-note
-  wiring.
-- Successful body saves now emit `hubFilesystemMutated()`, aligning progress note writes with hub sync baseline
-  acknowledgement logic already used by other note-editable hierarchy domains.
-- Editor autosave can now mirror normalized body state immediately through `applyPersistedBodyStateForNote(...)` and
-  leave the expensive `.wsnbody` backlink/open-count scan to `requestTrackedStatisticsRefreshForNote(...)`.
-- `reloadNoteMetadataForNoteId(...)` re-reads one indexed note from disk and re-applies the active
-  progress filter so a detail-panel progress write can immediately remove or keep the note in the
-  visible list according to its new enum value.
+- `noteDirectoryPathForNoteId(...)` keeps the progress domain compatible with detail-panel current-note wiring.
+- Body save, body-state apply, editor stat-refresh, and single-note metadata reload APIs were removed with the note
+  editor/save boundary.
 
 ## Hierarchy Count Badge
 
@@ -57,7 +50,7 @@ materializing the matching note list from `.wsnhead` metadata.
 - The badge value is computed from indexed note metadata by counting notes whose `progress` integer
   equals the row index.
 - Runtime metadata refresh paths (`refreshIndexedNotesFromWshub(...)`,
-  `refreshIndexedNotesFromProgressFilePath(...)`, `reloadNoteMetadataForNoteId(...)`) now emit
+  `refreshIndexedNotesFromProgressFilePath(...)`) now emit
   `hierarchyModelChanged()` after note refresh so progress counts are not stale until restart.
 
 ## Intentional Constraints

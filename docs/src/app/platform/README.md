@@ -10,7 +10,6 @@
 - Child files: 0
 
 ## Child Directories
-- `Android`
 - `Apple`
 
 ## Child Files

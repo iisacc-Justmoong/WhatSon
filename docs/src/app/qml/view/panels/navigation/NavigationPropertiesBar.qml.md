@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`
 - Source kind: QML view/component
 - File name: `NavigationPropertiesBar.qml`
-- Approximate line count: 44
+- Approximate line count: 37
 
 ## QML Surface Snapshot
 - Root type: `LV.HStack`
@@ -17,11 +17,10 @@
 - `propertiesBar`
 - `informationBar`
 - `modeBar`
-- `editorViewBar`
 
 ## Current Notes
-- The bar forwards `editorViewModeController` into `NavigationEditorViewBar`.
-- Desktop navigation shows the restored `View` combo beside the primary `Mode` combo.
+- The bar forwards application navigation mode state into `NavigationModeBar`.
+- The removed editor view-mode combo stays absent.
 
 ### Required Properties
 - None detected during scaffold generation.

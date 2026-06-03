@@ -1,13 +1,12 @@
 # `src/app/models/file/note/package`
 
 ## Scope
-- Owns base note package creation helpers and initial body package creation.
-- Keeps package bootstrap rules separate from ongoing body persistence and hub mutation services.
+- Owns base note package creation helpers.
+- Keeps package bootstrap rules separate from hub mutation services.
 
 ## Files
-- `WhatSonNoteBodyCreator.*`
 - `WhatSonNoteCreator.*`
 
 ## Boundary
-- May compose header/body defaults and package paths for a newly created note.
-- Must not own selected-note session orchestration or post-create hierarchy selection state.
+- May compose header defaults and package paths for a newly created note.
+- Must not own selected-note session orchestration, body persistence, or post-create hierarchy selection state.

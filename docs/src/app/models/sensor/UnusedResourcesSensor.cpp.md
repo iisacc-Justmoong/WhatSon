@@ -5,11 +5,8 @@ Implements the unused-resource scan over unpacked hub files.
 
 ## Scan Strategy
 1. Validate that `hubPath` points at an unpacked `.wshub` directory.
-2. Traverse note `.wsnbody` files, including hidden system roots such as `.wscontents`, while still skipping unrelated
-   hidden descendants.
-3. Extract every embedded `<resource ... />` path from RAW note source.
-4. Enumerate every `.wsresource` package under each hub resource root.
-5. Return package descriptors whose relative resource path is absent from the embedded-resource lookup.
+2. Enumerate every `.wsresource` package under each hub resource root.
+3. Return package descriptors for the package inventory. Note body source is not scanned.
 
 ## Returned Entry Shape
 - `resourcePath`

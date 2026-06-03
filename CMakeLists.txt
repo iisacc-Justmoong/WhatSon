@@ -4,60 +4,6 @@ project(WhatSon VERSION 0.1.0 LANGUAGES CXX)
 
 include(CTest)
 
-set(WHATSON_IOS_SIMULATOR_ARCH "arm64" CACHE STRING
-        "Preferred iOS simulator architecture.")
-set(WHATSON_IOS_SDK "iphoneos" CACHE STRING
-        "Target Apple SDK for iOS builds and generated Xcode projects.")
-set_property(CACHE WHATSON_IOS_SDK PROPERTY STRINGS iphonesimulator iphoneos)
-set(WHATSON_IOS_ARCHITECTURES "" CACHE STRING
-        "Architectures used for iOS builds. Leave empty to derive from WHATSON_IOS_SDK.")
-set(WHATSON_IOS_DEVELOPMENT_TEAM "$ENV{WHATSON_IOS_DEVELOPMENT_TEAM}" CACHE STRING
-        "Apple Development team identifier used for iOS device signing.")
-set(WHATSON_IOS_CODE_SIGN_IDENTITY "$ENV{WHATSON_IOS_CODE_SIGN_IDENTITY}" CACHE STRING
-        "Optional explicit code-sign identity used for iOS device signing.")
-set(WHATSON_IOS_CODE_SIGN_STYLE "Automatic" CACHE STRING
-        "Code-sign style used for generated iOS Xcode projects.")
-set_property(CACHE WHATSON_IOS_CODE_SIGN_STYLE PROPERTY STRINGS "" Automatic Manual)
-set(WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY "auto" CACHE STRING
-        "How iOS builds import Qt permission plugins: auto, include, or exclude.")
-set_property(CACHE WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY PROPERTY STRINGS auto include exclude)
-
-set(_whatson_supported_ios_sdks iphonesimulator iphoneos)
-list(FIND _whatson_supported_ios_sdks "${WHATSON_IOS_SDK}" _whatson_ios_sdk_index)
-if (_whatson_ios_sdk_index EQUAL -1)
-    message(FATAL_ERROR
-            "Unsupported WHATSON_IOS_SDK value: ${WHATSON_IOS_SDK}. "
-            "Expected one of: ${_whatson_supported_ios_sdks}.")
-endif ()
-
-set(_whatson_effective_ios_architectures "${WHATSON_IOS_ARCHITECTURES}")
-if (_whatson_effective_ios_architectures STREQUAL "")
-    if (WHATSON_IOS_SDK STREQUAL "iphonesimulator")
-        set(_whatson_effective_ios_architectures "${WHATSON_IOS_SIMULATOR_ARCH}")
-    else ()
-        set(_whatson_effective_ios_architectures "arm64")
-    endif ()
-endif ()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    if (NOT DEFINED CMAKE_OSX_SYSROOT OR CMAKE_OSX_SYSROOT STREQUAL "")
-        set(CMAKE_OSX_SYSROOT "${WHATSON_IOS_SDK}" CACHE STRING "iOS SDK name" FORCE)
-    endif ()
-
-    if (NOT DEFINED CMAKE_OSX_ARCHITECTURES OR CMAKE_OSX_ARCHITECTURES STREQUAL "")
-        set(CMAKE_OSX_ARCHITECTURES "${_whatson_effective_ios_architectures}" CACHE STRING
-                "iOS architectures" FORCE)
-    endif ()
-endif ()
-
-if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    if (NOT DEFINED LVRS_BOOTSTRAP_IOS_ARCHITECTURES OR LVRS_BOOTSTRAP_IOS_ARCHITECTURES STREQUAL "")
-        set(LVRS_BOOTSTRAP_IOS_ARCHITECTURES "${WHATSON_IOS_SIMULATOR_ARCH}" CACHE STRING
-                "LVRS bootstrap iOS simulator architectures." FORCE)
-    endif ()
-endif ()
-
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -74,10 +20,6 @@ endif ()
 
 set(WHATSON_LOCAL_LIBRARY_ROOT "$ENV{HOME}/.local" CACHE PATH
         "Root directory for user-built local libraries and frameworks.")
-set(WHATSON_IIXML_IOS_PREFIX "$ENV{WHATSON_IIXML_IOS_PREFIX}" CACHE PATH
-        "iOS iiXml prefix used for iOS builds and generated Xcode projects.")
-set(WHATSON_IIHTMLBLOCK_IOS_PREFIX "$ENV{WHATSON_IIHTMLBLOCK_IOS_PREFIX}" CACHE PATH
-        "iOS iiHtmlBlock prefix used for iOS builds and generated Xcode projects.")
 
 function(whatson_find_local_package_config_dir out_var package_name package_prefix)
     set(_whatson_package_config_dir "")
@@ -94,45 +36,6 @@ function(whatson_find_local_package_config_dir out_var package_name package_pref
     set("${out_var}" "${_whatson_package_config_dir}" PARENT_SCOPE)
 endfunction()
 
-function(whatson_require_ios_local_package package_name root_prefix_var ios_prefix_var package_dir_var)
-    if (DEFINED ${package_dir_var}
-            AND NOT "${${package_dir_var}}" STREQUAL ""
-            AND EXISTS "${${package_dir_var}}/${package_name}Config.cmake")
-        return()
-    endif ()
-
-    set(_whatson_ios_package_prefix "${${ios_prefix_var}}")
-    if (_whatson_ios_package_prefix STREQUAL ""
-            AND DEFINED ${root_prefix_var}
-            AND EXISTS "${${root_prefix_var}}/platforms/ios")
-        set(_whatson_ios_package_prefix "${${root_prefix_var}}/platforms/ios")
-    endif ()
-    if (_whatson_ios_package_prefix STREQUAL ""
-            AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios")
-        set(_whatson_ios_package_prefix "${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios")
-    endif ()
-
-    whatson_find_local_package_config_dir(
-            _whatson_ios_package_config_dir
-            "${package_name}"
-            "${_whatson_ios_package_prefix}")
-    if (NOT _whatson_ios_package_config_dir STREQUAL "")
-        set("${ios_prefix_var}" "${_whatson_ios_package_prefix}" CACHE PATH
-                "iOS ${package_name} prefix used for iOS builds and generated Xcode projects." FORCE)
-        set("${package_dir_var}" "${_whatson_ios_package_config_dir}" CACHE PATH
-                "iOS ${package_name} CMake package directory." FORCE)
-        list(PREPEND CMAKE_PREFIX_PATH "${_whatson_ios_package_prefix}")
-        set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}" PARENT_SCOPE)
-        return()
-    endif ()
-
-    message(FATAL_ERROR
-            "WhatSon iOS build requires an iOS ${package_name} package. "
-            "Expected ${WHATSON_LOCAL_LIBRARY_ROOT}/${package_name}/platforms/ios/lib/cmake/${package_name}/${package_name}Config.cmake "
-            "or set ${ios_prefix_var}/${package_dir_var}. "
-            "The host prefix ${${root_prefix_var}} cannot be used for iphoneos.")
-endfunction()
-
 if (NOT IIXML_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml")
     set(IIXML_PREFIX "${WHATSON_LOCAL_LIBRARY_ROOT}/iiXml" CACHE PATH "Path to iiXml root prefix")
 endif ()
@@ -146,11 +49,6 @@ if (NOT IIHTMLBLOCK_PREFIX AND EXISTS "${WHATSON_LOCAL_LIBRARY_ROOT}/iiHtmlBlock
 endif ()
 if (IIHTMLBLOCK_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${IIHTMLBLOCK_PREFIX}")
-endif ()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    whatson_require_ios_local_package(iiXml IIXML_PREFIX WHATSON_IIXML_IOS_PREFIX iiXml_DIR)
-    whatson_require_ios_local_package(iiHtmlBlock IIHTMLBLOCK_PREFIX WHATSON_IIHTMLBLOCK_IOS_PREFIX iiHtmlBlock_DIR)
 endif ()
 
 if (APPLE)
@@ -187,7 +85,7 @@ option(WHATSON_ENABLE_TRIAL_BUILD_MIRROR
 set(WHATSON_TRIAL_BUILD_DIR "${CMAKE_SOURCE_DIR}/build-trial" CACHE PATH
         "Output directory for the dedicated desktop trial packaging tree.")
 set(_WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT "")
-if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+if (APPLE)
     set(_whatson_trial_requested_osx_architectures "")
     if (DEFINED CMAKE_OSX_ARCHITECTURES AND NOT CMAKE_OSX_ARCHITECTURES STREQUAL "")
         set(_whatson_trial_requested_osx_architectures "${CMAKE_OSX_ARCHITECTURES}")
@@ -268,23 +166,11 @@ set(WHATSON_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
 set(WHATSON_APP_ICON_DIR "${WHATSON_RESOURCES_DIR}/icons/app")
 set(WHATSON_APP_ICON_DESKTOP_DIR "${WHATSON_APP_ICON_DIR}/desktop")
 set(WHATSON_APPLE_DIR "${WHATSON_PLATFORM_DIR}/Apple")
-set(WHATSON_ANDROID_DIR "${WHATSON_PLATFORM_DIR}/Android")
 set(WHATSON_LINUX_DIR "${WHATSON_PLATFORM_DIR}/Linux")
-set(WHATSON_IOS_INFO_PLIST "${WHATSON_APPLE_DIR}/iOS/Info.plist")
 set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
 set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
 set(WHATSON_APP_ICON_PNG "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.png")
 set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson" CACHE STRING "Apple bundle id for WhatSon app")
-set(WHATSON_ANDROID_PACKAGE_ID "com.iisacc.app.whatson" CACHE STRING "Android package id for WhatSon app")
-set(WHATSON_IOS_XCODEPROJ_DIR "${CMAKE_BINARY_DIR}/ios-xcode-artifact" CACHE PATH
-        "Output directory for generated iOS Xcode project.")
-
-set(_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT OFF)
-if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    set(_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT ON)
-endif ()
-set(WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD "${_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT}" CACHE BOOL
-        "Enable the explicit iOS Xcode project export target on Apple hosts.")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
@@ -307,12 +193,6 @@ message(STATUS "  WHATSON_IS_TRIAL_BUILD: ${WHATSON_IS_TRIAL_BUILD}")
 message(STATUS "  WHATSON_ENABLE_TRIAL_BUILD_MIRROR: ${WHATSON_ENABLE_TRIAL_BUILD_MIRROR}")
 message(STATUS "  WHATSON_TRIAL_BUILD_DIR: ${WHATSON_TRIAL_BUILD_DIR}")
 message(STATUS "  WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES: ${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}")
-message(STATUS "  WHATSON_IOS_SDK: ${WHATSON_IOS_SDK}")
-message(STATUS "  WHATSON_IOS_ARCHITECTURES: ${WHATSON_IOS_ARCHITECTURES}")
-message(STATUS "  WHATSON_IOS_DEVELOPMENT_TEAM: ${WHATSON_IOS_DEVELOPMENT_TEAM}")
-message(STATUS "  WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY: ${WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY}")
-message(STATUS "  WHATSON_IIXML_IOS_PREFIX: ${WHATSON_IIXML_IOS_PREFIX}")
-message(STATUS "  WHATSON_IIHTMLBLOCK_IOS_PREFIX: ${WHATSON_IIHTMLBLOCK_IOS_PREFIX}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
@@ -373,23 +253,7 @@ if (WHATSON_BUILD_APP)
             ${_whatson_app_qml_resource_files}
     )
 
-    if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
-        # Keep loose PNG icons in the bundle root even when Xcode asset catalogs are enabled.
-        # Some generated Xcode projects still miss the asset catalog Resources-phase entry, and
-        # the manual CFBundleIcons fallback keeps the installed app icon visible on device.
-        # Xcode does not reliably attach MACOSX_PACKAGE_LOCATION "." image sources to the app
-        # Resources phase, so copy the fallback PNGs from the owning root target directory after link.
-        foreach (_whatson_ios_bundle_icon_file IN LISTS WHATSON_IOS_POST_BUILD_BUNDLE_ICON_FILES)
-            get_filename_component(_whatson_ios_bundle_icon_name "${_whatson_ios_bundle_icon_file}" NAME)
-            add_custom_command(TARGET WhatSon POST_BUILD
-                    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-                    "${_whatson_ios_bundle_icon_file}"
-                    "$<TARGET_BUNDLE_DIR:WhatSon>/${_whatson_ios_bundle_icon_name}"
-                    VERBATIM)
-        endforeach ()
-    endif ()
-
-    if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE)
+    if (APPLE AND WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE)
         add_custom_command(TARGET WhatSon POST_BUILD
                 COMMAND "${CMAKE_COMMAND}" -E make_directory
                 "$<TARGET_BUNDLE_DIR:WhatSon>/Contents/Resources"

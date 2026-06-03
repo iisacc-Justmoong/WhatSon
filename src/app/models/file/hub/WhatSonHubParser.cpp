@@ -461,33 +461,6 @@ int WhatSonHubParser::countNoteDirectories(const QString& libraryPath)
     return 0;
 }
 
-int WhatSonHubParser::countWsnbodyCharacters(const QString& libraryPath)
-{
-    if (libraryPath.trimmed().isEmpty() || !QFileInfo(libraryPath).isDir())
-    {
-        return 0;
-    }
-
-    QDirIterator iterator(
-        libraryPath,
-        QStringList{QStringLiteral("*.wsnbody")},
-        QDir::Files | QDir::NoDotAndDotDot,
-        QDirIterator::Subdirectories);
-
-    int count = 0;
-    while (iterator.hasNext())
-    {
-        iterator.next();
-        QFile bodyFile(iterator.filePath());
-        if (!bodyFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            continue;
-        }
-        count += QString::fromUtf8(bodyFile.readAll()).size();
-    }
-    return count;
-}
-
 QStringList WhatSonHubParser::listRelativeFilesRecursive(const QString& rootPath)
 {
     return WhatSon::Resources::listRelativeResourcePackagePaths(rootPath);
@@ -875,7 +848,7 @@ bool WhatSonHubParser::parseStatText(
                                   }, -1);
     if (characterCount < 0)
     {
-        characterCount = countWsnbodyCharacters(libraryPath);
+        characterCount = 0;
     }
 
     QString createdAtUtc = firstString(root, {

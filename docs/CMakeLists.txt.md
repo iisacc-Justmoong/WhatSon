@@ -2,59 +2,26 @@
 
 ## Responsibility
 - Owns repository-wide toolchain setup, product build options, and the top-level `add_subdirectory(...)` graph.
-- Auto-discovers common macOS Qt installations under `~/Qt/6.*` through `QT_ROOT_PATH`, giving CLion's default CMake
-  profile and the repository preset the same package-discovery path.
-- Declares the `WhatSon` Qt executable target at the root when `WHATSON_BUILD_APP` is enabled, then lets
-  `src/app/CMakeLists.txt` attach app-domain sources, QML assets, packaging shards, and runtime wiring to that target.
-- Finalizes the app QML module and enters `src/app/cmake/runtime` from the root after `src/app` has collected QML
-  entries. Qt-generated executable tooling expects these target-finalization calls to share the root target directory.
-- Converts `src/app`-relative QML manifests to absolute source paths with `QT_RESOURCE_ALIAS`, preserving the existing
-  module-internal paths and `build/src/app/WhatSon/App` output directory even though `qt_add_qml_module(...)` now runs
-  from the root.
-- Owns root-scope `POST_BUILD` commands for the root-created app target, including Apple bundle icon fallback copies
-  that CMake requires to live in the same directory as the target declaration.
-- Keeps application, daemon, CLI, and `test/` enablement close to the root configuration entrypoint.
-- Delegates large custom-target groups to `cmake/root/*/CMakeLists.txt` so the root file remains an orchestration surface instead of a full target catalog.
+- Declares the desktop `WhatSon` Qt executable target when `WHATSON_BUILD_APP` is enabled.
+- Finalizes the app QML module after `src/app` has collected QML entries.
+- Delegates grouped target definitions to `cmake/root/*/CMakeLists.txt` so the root file remains an orchestration surface.
+- Owns root-scope `POST_BUILD` hooks that must live in the same directory as the root-created app target.
 
 ## Current Root Split
-- `cmake/root/build/CMakeLists.txt`: maintained regression targets such as `whatson_build_regression` and
-  `whatson_regression`, plus `whatson_clean_build_extras`, which removes stale root-level diagnostic logs, ad-hoc
-  screenshots, `.wsnbody` backup XML, and Finder metadata from `build/`. The regression gate runs this cleanup before
-  and after CTest so build-root clutter does not survive normal verification.
-- `cmake/root/dev/CMakeLists.txt`: developer tooling targets such as `whatson_qmllint`, `whatson_qmlformat_*`, and `whatson_clang_tidy`.
-  Generated QML/C++ file lists live under `build/CMakeFiles/whatson_dev/`, not directly in the build root.
-- `cmake/root/runtime/CMakeLists.txt`: run, healthcheck, mobile launch/export aliases, and iOS Xcode-project generation.
-- `cmake/root/distribution/CMakeLists.txt`: install/export/package targets and the dedicated `build-trial` mirror flow.
+- `cmake/root/build/CMakeLists.txt`: maintained regression gates, CTest integration, and `whatson_clean_build_extras`.
+- `cmake/root/dev/CMakeLists.txt`: developer tools such as QML lint, QML format, and clang-tidy targets.
+- `cmake/root/runtime/CMakeLists.txt`: desktop run and healthcheck targets.
+- `cmake/root/distribution/CMakeLists.txt`: install, export, package, and trial mirror targets.
 
 ## Invariants
-- Keep option declarations, package discovery, the root `qt_add_executable(WhatSon ...)` declaration, root
-  `qt_add_qml_module(WhatSon ...)` finalization, and primary product `add_subdirectory(...)` calls in the root file.
-- Keep grouped custom targets in `cmake/root/*` and avoid moving product-level source ownership back into the root file.
-- Keep app source/module ownership below `src/app`; the root executable declaration owns the target shell,
-  `src/app/main.cpp`, and target-directory-only root `POST_BUILD` hooks.
-- `whatson_build_all` is an aggregate custom target with explicit `add_dependencies(...)` on product targets. Do not
-  put bundle executable paths or product target names in the custom target's `DEPENDS` list, because macOS app bundles
-  can otherwise be interpreted as file dependencies without a make rule.
-- Reuse `build/` for configure/build/test flows; the nested `build-trial` path remains opt-in packaging infrastructure only.
-- Keep `CMakePresets.json` aligned with this root entrypoint. CLion should import the `macos-clion` preset and configure
-  `${sourceDir}/build`, while root CMake continues to own dependency discovery.
-- Keep `build/` free of ad-hoc diagnostic artifacts. Build-system support files may exist there, but temporary
-  WhatSon logs/images/backups should be routed under owned subdirectories or removed by `whatson_clean_build_extras`.
-- User-built local libraries under `~/.local` are surfaced through cacheable root prefixes. `iiXml` and `iiHtmlBlock`
-  are required when the app or regression suite is enabled, and are discovered through their CMake package configs
-  before child target wiring runs. iOS builds must use platform packages, not the host macOS dylib prefixes: provide
-  `WHATSON_IIXML_IOS_PREFIX` and `WHATSON_IIHTMLBLOCK_IOS_PREFIX`, or install them under
-  `~/.local/iiXml/platforms/ios` and `~/.local/iiHtmlBlock/platforms/ios`.
-- Keep iOS export defaults centralized in root cache variables (`WHATSON_IOS_SDK`, `WHATSON_IOS_ARCHITECTURES`,
-  `WHATSON_IOS_DEVELOPMENT_TEAM`, `WHATSON_IOS_CODE_SIGN_IDENTITY`, `WHATSON_IOS_CODE_SIGN_STYLE`,
-  `WHATSON_IOS_QT_PERMISSION_PLUGIN_POLICY`, `WHATSON_IIXML_IOS_PREFIX`, and
-  `WHATSON_IIHTMLBLOCK_IOS_PREFIX`) so generated Xcode projects do not depend on manual Xcode Build Settings edits or
-  script-local signing logic. The default export profile should stay device-first (`iphoneos`) unless the maintained
-  Qt iOS kit proves simulator-safe again.
+- Keep option declarations, package discovery, root target declaration, QML finalization, and primary product
+  `add_subdirectory(...)` calls in this root file.
+- Keep app source/module ownership below `src/app`.
+- Reuse `build/` for configure, build, and test flows.
+- Keep local `iiXml` and `iiHtmlBlock` package discovery host-side through cacheable root prefixes.
+- Do not reintroduce separated platform export or launcher targets into this repository.
 
 ## Verification Notes
 - Run `cmake -S . -B build` after structural root-CMake changes.
 - Run `cmake --build build --target whatson_build_regression -j` after root-target refactors.
-- Run `cmake --build build --target whatson_regression -j` when regression-target wiring changes.
-- Run `cmake --build build --target whatson_generate_ios_xcodeproj -j` after iOS export-option or Xcode-project
-  generation changes.
+- Run `cmake --build build --target whatson_regression -j` when regression target wiring changes.

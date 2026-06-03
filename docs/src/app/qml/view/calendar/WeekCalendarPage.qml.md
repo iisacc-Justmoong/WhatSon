@@ -34,7 +34,6 @@ ownership to `WeekCalendarController`.
   - current-week emphasis is now limited to text tone and the existing today outline,
   - the scaffold computes `hourRowHeight` from the available viewport height so 24 rows evenly fill the remaining area (`00:00` top slot, final slot at the bottom edge),
   - the 3 day columns divide the remaining width after the hour column and the three inter-column gaps, so the
-    timeline width matches the page viewport on both desktop and mobile,
   - horizontal scrolling has no snap behavior.
 - The centered-day highlight radius now routes through `LV.Theme.gap20 + LV.Theme.strokeThin` instead of a local pixel constant.
 

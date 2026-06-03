@@ -23,10 +23,6 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
 
     QVERIFY(rootCmakeSource.contains(QStringLiteral("set(IIXML_PREFIX")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("set(IIHTMLBLOCK_PREFIX")));
-    QVERIFY(rootCmakeSource.contains(QStringLiteral("WHATSON_IIXML_IOS_PREFIX")));
-    QVERIFY(rootCmakeSource.contains(QStringLiteral("WHATSON_IIHTMLBLOCK_IOS_PREFIX")));
-    QVERIFY(rootCmakeSource.contains(QStringLiteral("whatson_require_ios_local_package(iiXml")));
-    QVERIFY(rootCmakeSource.contains(QStringLiteral("whatson_require_ios_local_package(iiHtmlBlock")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiXml 0.1.0 CONFIG REQUIRED)")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(iiHtmlBlock 0.1.0 CONFIG REQUIRED)")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)")));
@@ -137,8 +133,8 @@ void WhatSonCppRegressionTests::cmakeBuildTargets_cleanTransientBuildDiagnostics
     QVERIFY(!devCmakeSource.contains(QStringLiteral("${CMAKE_BINARY_DIR}/whatson_cpp_files.txt")));
 
     QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson-*.png")));
-    QVERIFY(cleanupScriptSource.contains(QStringLiteral("*.wsnbody.backup.xml")));
-    QVERIFY(cleanupScriptSource.contains(QStringLiteral("*.wsnbody.pre-*-backup.xml")));
+    QVERIFY(!cleanupScriptSource.contains(QStringLiteral("*.wsnbody.backup.xml")));
+    QVERIFY(!cleanupScriptSource.contains(QStringLiteral("*.wsnbody.pre-*-backup.xml")));
     QVERIFY(cleanupScriptSource.contains(QStringLiteral(".DS_Store")));
     QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_qmllint.latest.log")));
     QVERIFY(cleanupScriptSource.contains(QStringLiteral("whatson_qmllint_diagnostic.log")));

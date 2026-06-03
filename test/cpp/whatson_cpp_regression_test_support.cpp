@@ -80,9 +80,10 @@ QString WhatSonCppRegressionTests::createMinimalHubFixture(
 QString WhatSonCppRegressionTests::createLocalNoteForRegression(
     const QString& parentDirectoryPath,
     const QString& noteId,
-    const QString& bodySourceText,
+    const QString& unusedInitialText,
     QString* errorMessage)
 {
+    Q_UNUSED(unusedInitialText)
     if (errorMessage != nullptr)
     {
         errorMessage->clear();
@@ -133,12 +134,6 @@ QString WhatSonCppRegressionTests::createLocalNoteForRegression(
     WhatSonNoteHeaderCreator headerCreator(normalizedParentDirectoryPath, QString());
     const QString headerPath = QDir(noteDirectoryPath).filePath(normalizedNoteId + QStringLiteral(".wsnhead"));
     if (!writeTextFile(headerPath, headerCreator.createHeaderText(headerStore)))
-    {
-        return {};
-    }
-
-    const QString bodyPath = QDir(noteDirectoryPath).filePath(normalizedNoteId + QStringLiteral(".wsnbody"));
-    if (!writeTextFile(bodyPath, WhatSon::NoteBodyPersistence::serializeBodyDocument(normalizedNoteId, bodySourceText)))
     {
         return {};
     }

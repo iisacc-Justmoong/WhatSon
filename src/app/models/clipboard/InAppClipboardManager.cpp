@@ -1557,26 +1557,9 @@ bool InAppClipboardManager::importUrlsWithConflictPolicy(const QVariantList& url
     return importUrlsInternal(urls, nullptr, true, conflictPolicy, false);
 }
 
-QVariantList InAppClipboardManager::importUrlsForEditor(const QVariantList& urls)
+bool InAppClipboardManager::importClipboardResource(const int conflictPolicy)
 {
-    QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries, false, ConflictPolicyAbort, false))
-    {
-        return {};
-    }
-    return importedEntries;
-}
-
-QVariantList InAppClipboardManager::importUrlsForEditorWithConflictPolicy(
-    const QVariantList& urls,
-    const int conflictPolicy)
-{
-    QVariantList importedEntries;
-    if (!importUrlsInternal(urls, &importedEntries, false, conflictPolicy, false))
-    {
-        return {};
-    }
-    return importedEntries;
+    return importClipboardResourceInternal(nullptr, true, conflictPolicy);
 }
 
 bool InAppClipboardManager::refreshClipboardResourceAvailabilitySnapshot()
@@ -1584,26 +1567,6 @@ bool InAppClipboardManager::refreshClipboardResourceAvailabilitySnapshot()
     const bool captured = captureSystemClipboardResource();
     emit resourceChanged();
     return captured;
-}
-
-QVariantList InAppClipboardManager::importClipboardResourceForEditor()
-{
-    QVariantList importedEntries;
-    if (!importClipboardResourceInternal(&importedEntries, false, ConflictPolicyAbort))
-    {
-        return {};
-    }
-    return importedEntries;
-}
-
-QVariantList InAppClipboardManager::importClipboardResourceForEditorWithConflictPolicy(const int conflictPolicy)
-{
-    QVariantList importedEntries;
-    if (!importClipboardResourceInternal(&importedEntries, false, conflictPolicy))
-    {
-        return {};
-    }
-    return importedEntries;
 }
 
 bool InAppClipboardManager::importClipboardResourceInternal(
@@ -1658,9 +1621,7 @@ bool InAppClipboardManager::importUrlsInternal(
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        importedEntries == nullptr
-            ? QStringLiteral("importUrls.begin")
-            : QStringLiteral("importUrlsForEditor.begin"),
+        QStringLiteral("importUrls.begin"),
         QStringLiteral("urlCount=%1 hubPath=%2").arg(urls.size()).arg(m_currentHubPath));
 
     if (m_busy)
@@ -1998,9 +1959,7 @@ bool InAppClipboardManager::importUrlsInternal(
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        importedEntries == nullptr
-            ? QStringLiteral("importUrls.success")
-            : QStringLiteral("importUrlsForEditor.success"),
+        QStringLiteral("importUrls.success"),
         QStringLiteral("importedCount=%1").arg(importedResourcePaths.size()));
     if (importedEntries != nullptr)
     {

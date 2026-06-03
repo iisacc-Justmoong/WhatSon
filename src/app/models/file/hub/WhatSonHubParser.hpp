@@ -56,7 +56,6 @@ private:
     static QVariantMap firstObjectMap(const QJsonObject& object, const QStringList& keys);
     static int countFilesRecursive(const QString& rootPath, const QStringList& nameFilters);
     static int countNoteDirectories(const QString& libraryPath);
-    static int countWsnbodyCharacters(const QString& libraryPath);
     static QStringList listRelativeFilesRecursive(const QString& rootPath);
     static QVariantMap buildHubPayload(const WhatSonHubStore& store);
     static QVariantMap buildStatPayload(const WhatSonHubStat& stat);

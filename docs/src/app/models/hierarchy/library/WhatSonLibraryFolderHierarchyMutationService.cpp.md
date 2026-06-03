@@ -25,8 +25,7 @@ This means a rename or reparent mutation preserves folder identity in the staged
   descendant folder.
 - UUID equality alone is not treated as “already synchronized”. The serialized folder path must also
   match the staged tree, otherwise the header is rewritten.
-- Header-only folder rewrites preserve existing `lastModified` and `modifiedBy` values; timestamp
-  changes are reserved for `.wsnbody` persistence.
+- Header-only folder rewrites preserve existing `lastModified` and `modifiedBy` values.
 - Folder path comparisons now run through the shared escaped-segment semantics, so one folder label
   containing a literal `/` is not mis-read as a parent/child path during note-header remapping.
 

@@ -29,14 +29,12 @@
 - Added `pragma ComponentBehavior: Bound` to enforce bound delegate id access for nested metadata rows.
 - Folder/tag metadata `Repeater` delegates now declare `required property var modelData` and read
   `folderLabelRow.modelData` / `tagLabelRow.modelData` explicitly.
-- `primaryText` is a display-ready note preview supplied by the note-list model. The component must not parse or strip
-  `.wsnbody` source tags itself; RAW/visible projection belongs to the model/file-note layer before QML receives the
-  string.
+- `primaryText` is display-ready note metadata supplied by the note-list model. The component must not parse or strip
+  note source tags itself.
 - Resources rows no longer reuse this component; `ListBarLayout.qml` now mounts dedicated
   `ResourceListItem.qml` when the bound model exposes `currentResourceEntry`.
 - Card padding, preview size, metadata spacing, and implicit row geometry now resolve from named `LV.Theme` spacing,
   icon, typography, and panel tokens instead of fixed pixel/color literals, so the note card follows LVRS
-  desktop/mobile UI scale.
 - The bookmark canvas glyph now derives its points from the live frame size, so the bookmark mark scales with the
   LVRS-sized icon frame instead of staying pinned to a `16px` path.
 - Image placeholders now use the LVRS `strokeSoft` token instead of the previous raw gray fill.

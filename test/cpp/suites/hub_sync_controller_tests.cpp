@@ -82,7 +82,7 @@ void WhatSonCppRegressionTests::hubSyncObservationBuilder_ignoresPrivateWhatSonB
     QVERIFY(visibleChange.signature != baseline.signature);
 }
 
-void WhatSonCppRegressionTests::hubSyncWiring_includesNoteEditorSessionVersionDiffMutations()
+void WhatSonCppRegressionTests::hubSyncWiring_excludesNoteEditorSessionVersionDiffMutations()
 {
     const QString mainSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
     QVERIFY(!mainSource.isEmpty());

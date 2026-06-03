@@ -44,9 +44,7 @@ The Figma node mapping is:
   `navigation/view/`, while `AddNewBar` and `PreferenceBar` stay shared under `navigation/`.
 - The view-only calendar cluster no longer reuses the shared root `NavigationCalendarBar.qml`, because
   Figma `149:4001` uses `validator` for the restored task button only in the view-mode `ApplicationViewBar`.
-- On mobile compact shell, this menu button is rendered alongside (not instead of) the shared
   `nodesnewFolder` add-folder button from `NavigationBarLayout.qml`.
-- Compact trigger icon now matches control mode (`toolwindowtodo`) so mobile mode bars keep one
   consistent menu affordance pattern.
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
@@ -56,7 +54,6 @@ The Figma node mapping is:
 - The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from
   the `DetailPanelControlButton` affordance, exposed locally as `detailPanelControlButton`, with the same
   `toggleDetailPanelRequested` signal path used by the desktop preference bar.
-- That compact detail affordance opens the dedicated mobile detail page directly; it is intentionally not duplicated as
   a context-menu entry.
 - The compact detail button now emits the hook reason `open-detail-page`, matching the routed-page behavior instead of
   the older collapse/expand overlay wording.

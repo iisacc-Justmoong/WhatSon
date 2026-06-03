@@ -70,15 +70,7 @@ public:
         int targetIndex,
         int targetDepth,
         const QString& activeItemKey = QString()) override;
-    Q_INVOKABLE bool applyPersistedBodyStateForNote(
-        const QString& noteId,
-        const QString& normalizedBodyText,
-        const QString& normalizedBodySourceText,
-        const QString& lastModifiedAt);
-    Q_INVOKABLE bool requestTrackedStatisticsRefreshForNote(const QString& noteId, bool incrementOpenCount);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
-    Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const;
-    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
     bool supportsHierarchyNodeReorder() const noexcept override;
 
     void setProjectNames(QStringList projectNames);

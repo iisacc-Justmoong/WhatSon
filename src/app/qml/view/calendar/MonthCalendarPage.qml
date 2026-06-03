@@ -16,7 +16,7 @@ Rectangle {
     readonly property int monthHeaderHeight: LV.Theme.headerMinHeight - LV.Theme.gap2
     readonly property int monthPagerCenterIndex: 1
     property bool monthPagerResetting: false
-    readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
+    readonly property bool monthSwipeEnabled: false
     readonly property string monthTitleText: monthCalendarPage.calendarController ? String(monthCalendarPage.calendarController.monthLabel) + ", " + String(monthCalendarPage.calendarController.displayedYear) : "Month"
     readonly property var pagerMonthModels: monthCalendarPage.calendarController && monthCalendarPage.calendarController.pagerMonthModels !== undefined ? monthCalendarPage.calendarController.pagerMonthModels : []
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12

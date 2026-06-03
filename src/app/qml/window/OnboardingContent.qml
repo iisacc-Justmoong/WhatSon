@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Dialogs
 import QtQuick.Window
 import LVRS 1.0 as LV
-import WhatSon.App.Internal 1.0
 
 Item {
     id: root
@@ -31,23 +30,13 @@ Item {
             return "idle";
         return String(root.hubSessionController.sessionState).trim();
     }
-    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "android" || Qt.platform.os === "osx"
-    readonly property bool useNativeIosExistingHubPicker: Qt.platform.os === "ios"
-    readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
-    readonly property bool onboardingInteractionBusy: (root.hubSessionController && root.hubSessionController.busy) || iosHubPickerBridge.busy
-    readonly property bool useDirectoryCreateHubFlow: root.isMobilePlatform || Qt.platform.os === "osx"
+    readonly property bool useDirectExistingHubFileFlow: Qt.platform.os === "osx"
+    readonly property bool onboardingInteractionBusy: root.hubSessionController && root.hubSessionController.busy
+    readonly property bool useDirectoryCreateHubFlow: Qt.platform.os === "osx"
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
     readonly property int createHubFieldHeight: LV.Theme.gap20 + LV.Theme.gap20
     readonly property int createHubFieldTextHeight: LV.Theme.iconSm
-    readonly property int mobileActionSpacing: LV.Theme.gap24
-    readonly property int mobileActionWidth: LV.Theme.inputMinWidth
-    readonly property int mobileContentSpacing: LV.Theme.headerExtraHeight
-    readonly property int mobileContentWidth: LV.Theme.inputWidthMd + LV.Theme.gap3
-    readonly property int mobileDesignHeight: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.inputWidthMd + LV.Theme.gap24 + LV.Theme.gap12
-    readonly property int mobileDesignWidth: LV.Theme.dialogMaxWidth + LV.Theme.buttonMinWidth + LV.Theme.gap10
-    readonly property int mobileSurfaceRadius: LV.Theme.radiusXl * 2
-    readonly property int mobileVersionWidth: LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap24 + LV.Theme.gap3
     readonly property var owningWindow: root.hostWindow ? root.hostWindow : root.Window.window
     readonly property int panelCornerRadius: LV.Theme.radiusXl * 2
     readonly property int panelTextHorizontalInset: LV.Theme.gap16
@@ -58,20 +47,7 @@ Item {
     readonly property int actionTextLineHeight: LV.Theme.textHeader2LineHeight
     readonly property int actionTextSize: LV.Theme.textHeader2
     readonly property int statusLabelLineHeight: LV.Theme.textHeader2LineHeight
-    readonly property int availableScreenHeight: {
-        const targetScreen = root.owningWindow && root.owningWindow.screen ? root.owningWindow.screen : null;
-        return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
-    }
-    readonly property int availableScreenWidth: {
-        const targetScreen = root.owningWindow && root.owningWindow.screen ? root.owningWindow.screen : null;
-        return targetScreen ? Math.round(targetScreen.width) : root.mobileDesignWidth;
-    }
-    readonly property bool useMobileLayout: {
-        if (root.hostWindow && root.hostWindow.adaptiveMobileLayout !== undefined)
-            return Boolean(root.hostWindow.adaptiveMobileLayout) || root.isMobilePlatform;
-        return root.isMobilePlatform;
-    }
-    readonly property bool useRoundedWindowFrame: !root.useMobileLayout
+    readonly property bool useRoundedWindowFrame: true
     property var hostWindow: null
     property var hubSessionController: null
     property color panelColor: LV.Theme.panelBackground06
@@ -86,17 +62,6 @@ Item {
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
-    }
-    readonly property string mobileSelectionAssistText: {
-        if (root.statusText.length > 0)
-            return root.statusText;
-        if (root.useNativeIosExistingHubPicker)
-            return "On iOS, browse Files or cloud storage, select the .wshub package directly or open it and choose any file or folder inside it, then tap Open.";
-        if (root.useDirectExistingHubFileFlow)
-            return "On mobile, choose the .wshub package directly from the native picker.";
-        if (root.hasHubSelectionCandidates)
-            return "Choose the WhatSon Hub package found in the selected folder.";
-        return "On mobile, choose the folder that contains your WhatSon Hub.";
     }
     readonly property string selectedHubStatusText: {
         if (root.hubSessionController) {
@@ -113,7 +78,7 @@ Item {
         }
         return "No WhatSon Hub Selected";
     }
-    readonly property bool hasOnboardingError: (root.hubSessionController && root.hubSessionController.lastError.length > 0) || iosHubPickerBridge.lastError.length > 0
+    readonly property bool hasOnboardingError: root.hubSessionController && root.hubSessionController.lastError.length > 0
     property color sidePanelColor: LV.Theme.panelBackground10
     property var selectHubFileDialogInstance: null
     property bool standaloneMode: false
@@ -126,8 +91,6 @@ Item {
             return "Resolving WhatSon Hub...";
         if (hubSessionController && hubSessionController.busy)
             return "Preparing WhatSon Hub...";
-        if (root.useNativeIosExistingHubPicker && iosHubPickerBridge.lastError.length > 0)
-            return iosHubPickerBridge.lastError;
         if (hubSessionController && hubSessionController.lastError.length > 0)
             return hubSessionController.lastError;
         return "";
@@ -162,7 +125,6 @@ Item {
 
         root.hubSessionController.clearLastError();
         root.hubSessionController.clearHubSelectionCandidates();
-        iosHubPickerBridge.clearLastError();
     }
 
     function beginCreateHubFlow() {
@@ -249,29 +211,12 @@ Item {
     }
 
     function openExistingHubSelector() {
-        if (root.useNativeIosExistingHubPicker) {
-            iosHubPickerBridge.open(root.currentFolderUrl);
-            return;
-        }
-
         if (root.useDirectExistingHubFileFlow) {
             root.openSelectHubFileDialog();
             return;
         }
 
         root.openSelectHubFolderDialog();
-    }
-
-    WhatSonIosHubPickerBridge {
-        id: iosHubPickerBridge
-
-        onAccepted: {
-            if (root.hubSessionController) {
-                root.hubSessionController.prepareHubSelectionFromUrl(selectedUrl);
-            } else {
-                root.selectFileRequested();
-            }
-        }
     }
 
     Connections {
@@ -319,14 +264,11 @@ Item {
     FolderDialog {
         id: selectHubDialog
 
-        title: root.isMobilePlatform ? "Choose Folder Containing WhatSon Hub" : "Select WhatSon Hub"
+        title: "Select WhatSon Hub"
 
         onAccepted: {
             if (root.hubSessionController) {
-                if (root.isMobilePlatform)
-                    root.hubSessionController.prepareHubSelectionFromUrl(selectedFolder);
-                else
-                    root.hubSessionController.loadHubFromUrl(selectedFolder);
+                root.hubSessionController.loadHubFromUrl(selectedFolder);
             } else {
                 root.selectFileRequested();
             }
@@ -362,7 +304,6 @@ Item {
 
         Item {
             anchors.fill: parent
-            visible: !root.useMobileLayout
 
             MouseArea {
                 anchors.left: parent.left
@@ -585,140 +526,6 @@ Item {
             }
         }
 
-        Item {
-            anchors.fill: parent
-            visible: root.useMobileLayout
-
-            Item {
-                anchors.centerIn: parent
-                height: mobileAppColumn.implicitHeight
-                width: root.mobileContentWidth
-
-                Item {
-                    anchors.centerIn: parent
-                    height: mobileAppColumn.implicitHeight
-                    width: parent.width
-
-                    Column {
-                        id: mobileAppColumn
-
-                        anchors.centerIn: parent
-                        spacing: root.mobileContentSpacing
-                        width: parent.width
-
-                        Column {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: root.mobileContentSpacing
-                            width: parent.width
-
-                            Image {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                fillMode: Image.PreserveAspectFit
-                                height: root.appIconSize
-                                mipmap: true
-                                smooth: true
-                                source: root.appIconSource
-                                sourceSize.height: root.appIconSize
-                                sourceSize.width: root.appIconSize
-                                width: root.appIconSize
-                            }
-                            LV.Label {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: LV.Theme.titleHeaderColor
-                                font.pixelSize: root.titleTextSize
-                                font.styleName: "Bold"
-                                font.weight: Font.Bold
-                                horizontalAlignment: Text.AlignHCenter
-                                lineHeight: root.titleLineHeight
-                                lineHeightMode: Text.FixedHeight
-                                maximumLineCount: 1
-                                style: title
-                                text: "WhatSon"
-                                width: parent.width
-                                wrapMode: Text.NoWrap
-                            }
-                            LV.Label {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: LV.Theme.descriptionColor
-                                font.pixelSize: root.versionTextSize
-                                font.styleName: "SemiBold"
-                                font.weight: Font.DemiBold
-                                horizontalAlignment: Text.AlignHCenter
-                                lineHeight: root.versionLineHeight
-                                lineHeightMode: Text.FixedHeight
-                                style: description
-                                text: root.resolvedVersionText
-                                width: root.mobileVersionWidth
-                            }
-                        }
-                        HubNameEditor {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            enabled: !root.onboardingInteractionBusy
-                            width: parent.width
-
-                            onSubmitRequested: root.beginCreateHubFlow()
-                        }
-
-                        Column {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: root.mobileActionSpacing
-                            width: root.mobileActionWidth
-
-                            ActionLink {
-                                enabled: !root.onboardingInteractionBusy
-                                label: "Create new WhatSon Hub"
-                                width: parent.width
-
-                                onTriggered: root.beginCreateHubFlow()
-                            }
-                            ActionLink {
-                                enabled: !root.onboardingInteractionBusy
-                                label: "Select WhatSon Hub"
-                                width: parent.width
-
-                                onTriggered: root.beginSelectHubFlow()
-                            }
-                        }
-
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: root.statusText.length > 0 ? root.statusTextColor : LV.Theme.descriptionColor
-                            horizontalAlignment: Text.AlignHCenter
-                            maximumLineCount: 4
-                            style: description
-                            text: root.mobileSelectionAssistText
-                            width: parent.width
-                            wrapMode: Text.WordWrap
-                        }
-
-                        Column {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: root.mobileActionSpacing
-                            visible: root.hasHubSelectionCandidates
-                            width: root.mobileActionWidth
-
-                            Repeater {
-                                model: root.hubSessionController ? root.hubSessionController.hubSelectionCandidateNames : []
-
-                                delegate: ActionLink {
-                                    required property int index
-                                    required property string modelData
-
-                                    enabled: !root.hubSessionController || !root.hubSessionController.busy
-                                    label: modelData
-                                    width: parent.width
-
-                                    onTriggered: {
-                                        if (root.hubSessionController)
-                                            root.hubSessionController.loadHubSelectionCandidate(index);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     component ActionLink: Item {

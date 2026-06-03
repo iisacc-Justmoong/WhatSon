@@ -5,7 +5,6 @@ Implements the `.wshub` access gate for the optional trial extension.
 
 ## Behavior
 - Local file-system paths are normalized with `QDir::cleanPath(...)`.
-- URI targets keep their original text form so Android document URIs are preserved.
 - The backend recognizes both local `.wshub` directories and URI paths that end with `.wshub`.
 - If `WhatSonRegisterManager::authenticated()` is `true`, the backend returns an allowed decision before any trial register checks run.
 - When the trial is expired, the backend denies access and reports the last active date in ISO format.

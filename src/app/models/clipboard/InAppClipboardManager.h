@@ -61,11 +61,8 @@ public:
     Q_INVOKABLE QVariantMap inspectImportConflictForUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importUrls(const QVariantList& urls);
     Q_INVOKABLE bool importUrlsWithConflictPolicy(const QVariantList& urls, int conflictPolicy);
-    Q_INVOKABLE QVariantList importUrlsForEditor(const QVariantList& urls);
-    Q_INVOKABLE QVariantList importUrlsForEditorWithConflictPolicy(const QVariantList& urls, int conflictPolicy);
+    Q_INVOKABLE bool importClipboardResource(int conflictPolicy = ConflictPolicyAbort);
     Q_INVOKABLE bool refreshClipboardResourceAvailabilitySnapshot();
-    Q_INVOKABLE QVariantList importClipboardResourceForEditor();
-    Q_INVOKABLE QVariantList importClipboardResourceForEditorWithConflictPolicy(int conflictPolicy);
     Q_INVOKABLE bool canImportDroppedUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importDroppedUrls(const QVariantList& urls);
     Q_INVOKABLE bool reloadImportedResources();

@@ -19,7 +19,5 @@ The app icon must stay on the macOS `.app` bundle path. Do not move this respons
 
 ## Other Platform Icons
 
-- iOS keeps asset-catalog generation plus bundle-root PNG fallbacks because generated Xcode projects can drop the
   asset catalog from the Resources phase.
-- Android copies density-specific PNG launchers into the generated Android package source tree.
 - Windows emits a generated `.rc` file that points at the desktop `.ico`.

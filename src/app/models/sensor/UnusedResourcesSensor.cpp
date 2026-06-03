@@ -5,59 +5,13 @@
 
 #include <QDir>
 #include <QDirIterator>
-#include <QFile>
 #include <QFileInfo>
-#include <QRegularExpression>
 #include <QVariantMap>
 
 #include <utility>
 
 namespace
 {
-    QString decodeXmlEntities(QString text)
-    {
-        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
-        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
-        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
-        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
-        text.replace(QStringLiteral("&#39;"), QStringLiteral("'"));
-        text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
-        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
-        return text;
-    }
-
-    QString extractXmlAttributeValue(const QString& tagText, const QStringList& attributeNames)
-    {
-        for (const QString& attributeName : attributeNames)
-        {
-            const QRegularExpression attributePattern(
-                QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+?)(?=\s|/?>)))ATTR")
-                    .arg(QRegularExpression::escape(attributeName)),
-                QRegularExpression::CaseInsensitiveOption);
-            const QRegularExpressionMatch match = attributePattern.match(tagText);
-            if (!match.hasMatch())
-            {
-                continue;
-            }
-
-            for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
-            {
-                if (match.capturedStart(captureIndex) < 0)
-                {
-                    continue;
-                }
-
-                const QString value = decodeXmlEntities(match.captured(captureIndex)).trimmed();
-                if (!value.isEmpty())
-                {
-                    return value;
-                }
-            }
-        }
-
-        return {};
-    }
-
     QString validatedHubPath(const QString& hubPath, QString* errorMessage)
     {
         const QString normalizedHubPath = WhatSon::HubPath::normalizeAbsolutePath(hubPath);
@@ -111,98 +65,6 @@ namespace
         }
 
         return false;
-    }
-
-    QStringList extractEmbeddedResourcePaths(const QString& bodyDocumentText)
-    {
-        static const QRegularExpression resourcePattern(
-            QStringLiteral(R"(<\s*resource\b[^>]*?/?>)"),
-            QRegularExpression::CaseInsensitiveOption);
-
-        QStringList resourcePaths;
-        QRegularExpressionMatchIterator iterator = resourcePattern.globalMatch(bodyDocumentText);
-        while (iterator.hasNext())
-        {
-            const QRegularExpressionMatch match = iterator.next();
-            if (!match.hasMatch())
-            {
-                continue;
-            }
-
-            const QString resourcePath = WhatSon::Resources::normalizePath(
-                extractXmlAttributeValue(
-                    match.captured(0),
-                    {
-                        QStringLiteral("resourcePath"),
-                        QStringLiteral("path"),
-                        QStringLiteral("src"),
-                        QStringLiteral("href"),
-                        QStringLiteral("url")
-                    }));
-            if (resourcePath.isEmpty())
-            {
-                continue;
-            }
-
-            const QFileInfo referencedInfo(resourcePath);
-            if (!WhatSon::Resources::isResourcePackageDirectoryName(referencedInfo.fileName()))
-            {
-                continue;
-            }
-
-            if (!resourcePaths.contains(resourcePath))
-            {
-                resourcePaths.push_back(resourcePath);
-            }
-        }
-
-        return resourcePaths;
-    }
-
-    QSet<QString> collectEmbeddedResourceLookup(const QString& normalizedHubPath, QString* errorMessage)
-    {
-        QSet<QString> embeddedResourceLookup;
-
-        QDirIterator iterator(
-            normalizedHubPath,
-            QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden,
-            QDirIterator::Subdirectories);
-        while (iterator.hasNext())
-        {
-            const QString currentPath = WhatSon::Resources::normalizePath(iterator.next());
-            const QFileInfo currentInfo(currentPath);
-            if (!currentInfo.isFile() || currentInfo.suffix().compare(QStringLiteral("wsnbody"), Qt::CaseInsensitive) != 0)
-            {
-                continue;
-            }
-            if (shouldIgnoreHubPath(currentPath, normalizedHubPath))
-            {
-                continue;
-            }
-
-            QFile bodyFile(currentPath);
-            if (!bodyFile.open(QIODevice::ReadOnly | QIODevice::Text))
-            {
-                if (errorMessage != nullptr)
-                {
-                    *errorMessage = QStringLiteral("Failed to open note body file: %1").arg(currentPath);
-                }
-                return {};
-            }
-
-            const QString bodyDocumentText = QString::fromUtf8(bodyFile.readAll());
-            const QStringList referencedPaths = extractEmbeddedResourcePaths(bodyDocumentText);
-            for (const QString& referencedPath : referencedPaths)
-            {
-                embeddedResourceLookup.insert(referencedPath.toCaseFolded());
-            }
-        }
-
-        if (errorMessage != nullptr)
-        {
-            errorMessage->clear();
-        }
-        return embeddedResourceLookup;
     }
 
     QString fallbackAssetFilePathForPackage(const QString& packageDirectoryPath)
@@ -280,19 +142,6 @@ namespace
             return unusedResources;
         }
 
-        QString embeddedLookupError;
-        const QSet<QString> embeddedResourceLookup = collectEmbeddedResourceLookup(
-            normalizedHubPath,
-            &embeddedLookupError);
-        if (!embeddedLookupError.isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = embeddedLookupError;
-            }
-            return {};
-        }
-
         for (const QString& resourceRoot : resourceRoots)
         {
             const QFileInfoList packageDirectories = QDir(resourceRoot).entryInfoList(
@@ -310,11 +159,6 @@ namespace
 
                 const QString resourcePath =
                     WhatSon::Resources::resourcePathForPackageDirectory(packageDirectoryPath);
-                if (embeddedResourceLookup.contains(resourcePath.toCaseFolded()))
-                {
-                    continue;
-                }
-
                 WhatSon::Resources::ResourcePackageMetadata metadata;
                 QString metadataError;
                 const bool metadataValid = WhatSon::Resources::loadResourcePackageMetadata(

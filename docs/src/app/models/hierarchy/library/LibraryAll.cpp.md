@@ -25,10 +25,8 @@ their UUID counterparts so later filters can match notes by folder identity inst
 - When `.wsnhead` is present, its `<project>` field is authoritative even when it is explicitly
   empty. This clears stale project labels that may still be cached in `index.wsnindex`, so project
   hierarchy filters do not accidentally surface "No project" notes under a named project bucket.
-- Runtime body indexing now derives `bodyFirstLine` from `firstLineFromBodyDocument(...)`, which preserves inline titles that appear before the first paragraph block.
-- Runtime body indexing now also carries a dedicated editor-source projection (`bodySourceText`) built from canonical
-  `.wsnbody` inline tags, while keeping `bodyPlainText` for search/preview filtering.
-- Resource thumbnail extraction also understands `.wsresource` package references in `.wsnbody`, including unquoted shorthand resource tags like `path=Hub.wsresources/image.wsresource`, so library note cards now preview packaged assets instead of requiring raw file paths.
+- Runtime library indexing is metadata-only. It does not derive body preview fields or resource thumbnails from note body
+  source.
 - The canonical `all notes` bucket now also supports change-gated single-note `upsertNote(...)`, `removeNoteById(...)`,
   and `noteById(...)` operations. Those operations are the basis for partial library/calendar refreshes after local
   note edits.

@@ -6,7 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
 #include "app/platform/Apple/WhatSonApplePackageAppearance.hpp"
 #endif
 
@@ -130,7 +130,7 @@ bool WhatSonHubPackager::applyPackagePresentation(
     const QString& absolutePackagePath,
     QString* errorMessage) const
 {
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     return WhatSon::Apple::PackageAppearance::applyPackageDirectoryPresentation(
         absolutePackagePath,
         errorMessage);

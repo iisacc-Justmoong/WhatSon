@@ -33,9 +33,7 @@
   future calendar-only UI can grow without reopening note/resource branching.
 - `ResourceDetailPanel.qml` is intentionally blank for now, but it already owns a dedicated resource-detail
   controller contract so future resource-only UI can grow without reopening note-detail branching.
-- `DetailContents.qml` is shared by desktop and mobile detail routes, so compact section spacing and fixed-height
   surfaces must remain LVRS scale-aware instead of assuming desktop `1.0x` metrics.
-- `DetailMetadataHierarchyPicker.qml` now owns the shared folder/tag add overlay so desktop and mobile reuse the
   same hierarchy rendering contract through an overridden `LV.ContextMenu`, and the picker body now renders the full
   hierarchy as a permanently expanded `LV.HierarchyItem` list instead of an embeddable tree panel.
 

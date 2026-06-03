@@ -26,9 +26,7 @@ identity.
 Each inline helper must initialize its required root dependencies explicitly. If those bindings are missing, QML can
 abort workspace route construction with required-property errors and show only the empty LVRS window background.
 
-The sidebar also now owns an explicit mobile kinetic-scroll contract. `SidebarHierarchyView.qml`
 does not just rely on LVRS defaults anymore; it pushes the shared `LV.Hierarchy` surface onto a
-touch-friendly overshoot/flick profile so mobile hierarchy scrolling keeps momentum after release.
 
 ## Relationship To C++
 This directory talks to C++ almost entirely through:

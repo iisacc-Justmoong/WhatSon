@@ -49,13 +49,7 @@ namespace
 
     QString bookmarkLabelText(const LibraryNoteRecord& note)
     {
-        QString primary = note.bodyFirstLine.trimmed();
-        if (!primary.isEmpty())
-        {
-            return primary;
-        }
-
-        primary = note.noteId.trimmed();
+        QString primary = note.noteId.trimmed();
         if (!primary.isEmpty())
         {
             return primary;
@@ -75,11 +69,7 @@ namespace
 
     QString bookmarkPrimaryText(const LibraryNoteRecord& note)
     {
-        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
-        if (!bodyPlainText.isEmpty())
-        {
-            return bodyPlainText;
-        }
+        Q_UNUSED(kMaxNoteListSummaryLines)
         return bookmarkLabelText(note);
     }
 
@@ -91,18 +81,6 @@ namespace
         if (!noteId.isEmpty())
         {
             parts.push_back(noteId);
-        }
-
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
-        {
-            parts.push_back(firstLine);
-        }
-
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
-        if (!bodyPlainText.isEmpty())
-        {
-            parts.push_back(bodyPlainText);
         }
 
         const QStringList folderLabels = bookmarkListFolders(note);
@@ -535,72 +513,6 @@ bool BookmarksHierarchyController::removeNoteById(const QString& noteId)
     return true;
 }
 
-bool BookmarksHierarchyController::saveBodyTextForNote(const QString& noteId, const QString& text)
-{
-    Q_UNUSED(text)
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("saveBodyTextForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
-bool BookmarksHierarchyController::saveCurrentBodyText(const QString& text)
-{
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
-}
-
-bool BookmarksHierarchyController::applyPersistedBodyStateForNote(
-    const QString& noteId,
-    const QString& normalizedBodyText,
-    const QString& normalizedBodySourceText,
-    const QString& lastModifiedAt)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
-            &m_bookmarkedNotes,
-            normalizedNoteId,
-            normalizedBodyText,
-            normalizedBodySourceText,
-            lastModifiedAt))
-    {
-        return false;
-    }
-
-    refreshNoteListForSelection();
-    emit hubFilesystemMutated();
-    return true;
-}
-
-bool BookmarksHierarchyController::requestTrackedStatisticsRefreshForNote(
-    const QString& noteId,
-    const bool incrementOpenCount)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    Q_UNUSED(incrementOpenCount)
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
 QString BookmarksHierarchyController::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -610,32 +522,6 @@ QString BookmarksHierarchyController::noteDirectoryPathForNoteId(const QString& 
     }
 
     return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_bookmarkedNotes, normalizedNoteId);
-}
-
-QString BookmarksHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return {};
-    }
-
-    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_bookmarkedNotes, normalizedNoteId);
-}
-
-bool BookmarksHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
 }
 
 bool BookmarksHierarchyController::renameEnabled() const noexcept
@@ -843,13 +729,11 @@ BookmarksNoteListItem BookmarksHierarchyController::buildBookmarksListItem(const
     item.id = note.noteId.trimmed();
     item.primaryText = bookmarkPrimaryText(note);
     item.searchableText = bookmarkSearchableText(note);
-    item.bodyText = !note.bodySourceText.isEmpty()
-        ? note.bodySourceText
-        : note.bodyPlainText;
+    item.bodyText.clear();
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
-    item.image = note.bodyHasResource;
-    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.image = false;
+    item.imageSource.clear();
     item.displayDate = m_systemCalendarStore
                            ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
                            : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);

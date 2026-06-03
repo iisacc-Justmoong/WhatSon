@@ -16,7 +16,6 @@ Rectangle {
     readonly property int compactHorizontalInset: LV.Theme.gapNone
     readonly property int compactLeftGroupSpacing: LV.Theme.gap4
     property bool compactDetailPanelVisible: false
-    property bool compactEditorViewVisible: false
     property bool compactNoteListControlsVisible: false
     property bool compactSettingsVisible: true
     readonly property int compactRightGroupSpacing: LV.Theme.gap12
@@ -29,7 +28,6 @@ Rectangle {
     property color compactSurfaceColor: LV.Theme.panelBackground10
     readonly property int compactTopInset: LV.Theme.gapNone
     property bool detailPanelCollapsed: false
-    property var editorViewModeController: null
     readonly property int effectivePanelHeight: panelHeight
     property var navigationModeController: null
     property color panelColor: "transparent"
@@ -108,7 +106,6 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: LV.Theme.gap20
                     compactMode: false
-                    editorViewModeController: navigationBar.editorViewModeController
                     navigationModeController: navigationBar.navigationModeController
                     sidebarCollapsed: navigationBar.sidebarCollapsed
 
@@ -155,7 +152,7 @@ Rectangle {
                         onClicked: navigationBar.compactLeadingActionRequested()
                     }
                     LV.IconButton {
-                        visible: navigationBar.compactSettingsVisible && !navigationBar.compactEditorViewVisible
+                        visible: navigationBar.compactSettingsVisible
                         iconName: "settings"
                         horizontalPadding: LV.Theme.gap2
                         tone: LV.AbstractButton.Borderless
@@ -168,13 +165,6 @@ Rectangle {
                         Layout.preferredHeight: LV.Theme.gap18
                         navigationModeController: navigationBar.navigationModeController
                         showLabel: false
-                    }
-                    NavigationView.NavigationEditorViewBar {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: LV.Theme.gap18
-                        editorViewModeController: navigationBar.editorViewModeController
-                        showLabel: false
-                        visible: navigationBar.compactEditorViewVisible
                     }
                 }
                 Item {

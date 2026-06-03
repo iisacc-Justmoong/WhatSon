@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import QtQml
 import QtQuick.Window
 import LVRS 1.0 as LV
-import "view/mobile/pages" as MobilePageView
 import "view/panels" as BodyPanelView
 import "window" as WindowView
 
@@ -16,16 +15,14 @@ LV.ApplicationWindow {
     property int rightPadding: LV.Theme.gapNone
     property int bottomPadding: LV.Theme.gapNone
     property int leftPadding: LV.Theme.gapNone
-    readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: LV.Theme.inputMinWidth + LV.Theme.gap14
     readonly property int baseSidebarWidth: hierarchyToolbarWidth
-    readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
+    readonly property int bodyHeight: Math.max(0, height - statusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property color canvasColor: LV.Theme.panelBackground01
     readonly property color desktopPanelSurfaceColor: LV.Theme.accentTransparent
-    readonly property color mobileControlSurfaceColor: LV.Theme.panelBackground10
     property bool desktopOnboardingWindowVisible: false
     readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth) + (hideListView ? 0 : minListViewWidth) + minContentWidth + (hideRightPanel ? 0 : minRightPanelWidth) + bodySplitterThickness * Math.max(0, ((hideSidebar ? 0 : 1) + (hideListView ? 0 : 1) + 1 + (hideRightPanel ? 0 : 1)) - 1)
     readonly property bool hideListView: false
@@ -38,7 +35,6 @@ LV.ApplicationWindow {
     readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? (LV.Theme.gap20 + LV.Theme.gap20) / (hierarchyToolbarCount - 1) : LV.Theme.gapNone
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
-    readonly property var rootEditorViewModeController: typeof editorViewModeController !== "undefined" ? editorViewModeController : null
     readonly property int libraryHierarchyIndex: 0
     readonly property var rootLibraryHierarchyController: typeof libraryHierarchyController !== "undefined" ? libraryHierarchyController : null
     readonly property var rootLibraryNoteMutationController: typeof libraryNoteMutationController !== "undefined" ? libraryNoteMutationController : null
@@ -51,7 +47,6 @@ LV.ApplicationWindow {
     readonly property var rootSidebarHierarchyController: typeof sidebarHierarchyController !== "undefined" ? sidebarHierarchyController : null
     readonly property var rootNoteActiveState: typeof noteActiveState !== "undefined" ? noteActiveState : null
     readonly property var rootInAppClipboard: typeof inAppClipboard !== "undefined" ? inAppClipboard : null
-    readonly property var rootEditorFontFamilyProvider: typeof editorFontFamilyProvider !== "undefined" ? editorFontFamilyProvider : null
     readonly property var rootDayCalendarController: typeof dayCalendarController !== "undefined" ? dayCalendarController : null
     readonly property var rootMonthCalendarController: typeof monthCalendarController !== "undefined" ? monthCalendarController : null
     readonly property var rootWeekCalendarController: typeof weekCalendarController !== "undefined" ? weekCalendarController : null
@@ -60,15 +55,8 @@ LV.ApplicationWindow {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return toolbarWidth;
     }
-    readonly property color mobileSafeAreaBackdropColor: canvasColor
     readonly property int navigationBarHeight: LV.Theme.gap24
-    readonly property var onboardingRoute: ({
-            path: applicationWindow.onboardingRoutePath,
-            component: onboardingPageComponent
-        })
-    readonly property string onboardingRoutePath: "/onboarding"
     property var onboardingHubController: null
-    property var onboardingRouteBootstrapController: null
     readonly property int onboardingMinHeight: LV.Theme.scaffoldBlobSecondaryHeight + LV.Theme.gap20 + LV.Theme.gap20
     readonly property int onboardingMinWidth: LV.Theme.scaffoldBlobSecondaryWidth - LV.Theme.gap20
     property int preferredListViewWidth: baseListViewWidth
@@ -77,15 +65,10 @@ LV.ApplicationWindow {
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
-    readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
-    readonly property bool useIosInlineOnboardingSequence: applicationWindow.platform === "ios"
-    readonly property bool useRoutedEmbeddedOnboardingRoute: !applicationWindow.useIosInlineOnboardingSequence && (adaptiveMobileLayout || isMobilePlatform)
-    readonly property bool useEmbeddedOnboardingPresentation: applicationWindow.useIosInlineOnboardingSequence || applicationWindow.useRoutedEmbeddedOnboardingRoute
-    readonly property string startupRoutePath: applicationWindow.useIosInlineOnboardingSequence ? workspaceRoutePath : (onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath)
+    readonly property string startupRoutePath: workspaceRoutePath
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
-    readonly property int windowMobileMinWidth: LV.Theme.controlHeightMd * 10
     readonly property string workspaceRoutePath: "/"
     readonly property var workspaceShellRoute: ({
             path: applicationWindow.workspaceRoutePath,
@@ -163,11 +146,6 @@ LV.ApplicationWindow {
         return " ";
     }
     function showOnboardingWindow() {
-        if (applicationWindow.useEmbeddedOnboardingPresentation && applicationWindow.onboardingRouteBootstrapController) {
-            applicationWindow.onboardingRouteBootstrapController.reopenEmbeddedOnboarding();
-            return;
-        }
-
         applicationWindow.desktopOnboardingWindowVisible = true;
         onboardingSubWindow.show();
         onboardingSubWindow.raise();
@@ -192,21 +170,16 @@ LV.ApplicationWindow {
     }
 
     autoAttachRuntimeEvents: true
-    delegateMobileInsetsToSystem: false
-    delegateMobileWindowingToSystem: false
-    forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform
-    forcedDeviceTierPreset: applicationWindow.platform === "ios" ? LV.RenderQuality.LowTier : -1
     globalEventListenersEnabled: true
     height: windowDefaultHeight
     initialRoutePath: startupRoutePath
     internalRouterRegisterAsGlobalNavigator: true
     minimumHeight: windowMinHeight
-    minimumWidth: adaptiveMobileLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
-    mobileOversizedHeightEnabled: false
+    minimumWidth: desktopMinimumBodyWidth
     navItems: []
     navigationEnabled: false
     pageInitialPath: startupRoutePath
-    pageRoutes: applicationWindow.useIosInlineOnboardingSequence ? [workspaceShellRoute] : [onboardingRoute, workspaceShellRoute]
+    pageRoutes: [workspaceShellRoute]
     useInternalPageStack: true
     usePlatformSafeMargin: false
     visible: true
@@ -220,11 +193,7 @@ LV.ApplicationWindow {
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
-        if (applicationWindow.useRoutedEmbeddedOnboardingRoute) {
-            Qt.callLater(function () {
-                applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, "completed");
-            });
-        } else if (applicationWindow.desktopOnboardingWindowVisible) {
+        if (applicationWindow.desktopOnboardingWindowVisible) {
             onboardingSubWindow.show();
         }
     }
@@ -238,13 +207,9 @@ LV.ApplicationWindow {
     }
     onPageStackNavigated: function (path, params) {
         windowInteractions.reportLayoutBranch("pageStackNavigated");
-        if (applicationWindow.onboardingRouteBootstrapController)
-            applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(String(path));
     }
     onPageStackNavigationFailed: function (path) {
         console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
-        if (applicationWindow.onboardingRouteBootstrapController)
-            applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigationFailed(String(path));
     }
     onWidthChanged: {
         if (applicationWindow.isDesktopPlatform) {
@@ -260,7 +225,6 @@ LV.ApplicationWindow {
         readonly property string addNewPanelKey: "navigation.NavigationAddNewBar"
         property bool adaptiveDesktopLayout: false
         property string adaptiveLayoutProfile: ""
-        property bool adaptiveMobileLayout: false
         property string adaptiveNavigationMode: ""
         property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
         property var hostWindow: null
@@ -276,14 +240,11 @@ LV.ApplicationWindow {
         property var sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
 
         function applyRenderQualityPolicy(source) {
-            if (!windowInteractions.hostWindow || (!windowInteractions.hostWindow.isDesktopPlatform && !windowInteractions.hostWindow.isMobilePlatform))
+            if (!windowInteractions.hostWindow || !windowInteractions.hostWindow.isDesktopPlatform)
                 return;
 
-            const guardPolicy = windowInteractions.resizeRenderGuardSupported ? "desktopResizeSuspendResumeGuard" : "mobileResizeGuardDisabled";
-            const forcedTierPreset = windowInteractions.hostWindow.forcedDeviceTierPreset !== undefined ? windowInteractions.hostWindow.forcedDeviceTierPreset : -1;
-            const fullWindowAreaOnMobileEnabled = windowInteractions.hostWindow.fullWindowAreaOnMobileEnabled === true;
-            const delegateMobileWindowingToSystem = windowInteractions.hostWindow.delegateMobileWindowingToSystem === true;
-            console.log("[whatson:debug][render.policy][" + source + "] platform=" + windowInteractions.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
+            const guardPolicy = windowInteractions.resizeRenderGuardSupported ? "desktopResizeSuspendResumeGuard" : "desktopResizeGuardDisabled";
+            console.log("[whatson:debug][render.policy][" + source + "] platform=" + windowInteractions.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled);
         }
         function clearActiveFocus(reason) {
             let current = windowInteractions.hostWindow ? windowInteractions.hostWindow.activeFocusItem : null;
@@ -369,7 +330,7 @@ LV.ApplicationWindow {
         }
         function reportLayoutBranch(source) {
             const currentPath = windowInteractions.activePageRouter && windowInteractions.activePageRouter.currentPath !== undefined ? String(windowInteractions.activePageRouter.currentPath) : "<none>";
-            console.log("[whatson:debug][main.layout][" + source + "] platform=" + (windowInteractions.hostWindow ? windowInteractions.hostWindow.platform : "") + " adaptiveLayoutProfile=" + windowInteractions.adaptiveLayoutProfile + " adaptiveNavigationMode=" + windowInteractions.adaptiveNavigationMode + " adaptiveMobileLayout=" + windowInteractions.adaptiveMobileLayout + " adaptiveDesktopLayout=" + windowInteractions.adaptiveDesktopLayout + " currentPath=" + currentPath);
+            console.log("[whatson:debug][main.layout][" + source + "] platform=" + (windowInteractions.hostWindow ? windowInteractions.hostWindow.platform : "") + " adaptiveLayoutProfile=" + windowInteractions.adaptiveLayoutProfile + " adaptiveNavigationMode=" + windowInteractions.adaptiveNavigationMode + " adaptiveDesktopLayout=" + windowInteractions.adaptiveDesktopLayout + " currentPath=" + currentPath);
         }
         function shouldRetainFocusForUiHit(uiData) {
             if (!uiData || uiData.insideWindow === false)
@@ -434,97 +395,6 @@ LV.ApplicationWindow {
         includeUiHit: true
         trigger: "globalPressed"
     }
-    Connections {
-        target: applicationWindow.onboardingRouteBootstrapController
-
-        function onRouteSyncRequested(targetPath, deferred, reason) {
-            const normalizedTargetPath = String(targetPath);
-            const normalizedReason = String(reason);
-            const sync = function () {
-                if (applicationWindow.useIosInlineOnboardingSequence) {
-                    if (normalizedTargetPath === applicationWindow.workspaceRoutePath && applicationWindow.onboardingRouteBootstrapController) {
-                        applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(applicationWindow.workspaceRoutePath);
-                    }
-                    return;
-                }
-
-                if (!applicationWindow.useRoutedEmbeddedOnboardingRoute)
-                    return;
-
-                applicationWindow.applyRequestedRoute(normalizedTargetPath, normalizedReason);
-            };
-
-            if (deferred)
-                Qt.callLater(sync);
-            else
-                sync();
-        }
-    }
-    Connections {
-        target: applicationWindow.onboardingHubController
-
-        function onHubLoaded(hubPath) {
-            if (!applicationWindow.useEmbeddedOnboardingPresentation)
-                return;
-            if (applicationWindow.onboardingRouteBootstrapController)
-                applicationWindow.onboardingRouteBootstrapController.handleHubLoaded();
-        }
-
-        function onOperationFailed(message) {
-            if (applicationWindow.onboardingRouteBootstrapController)
-                applicationWindow.onboardingRouteBootstrapController.handleOperationFailed(message);
-        }
-    }
-    Item {
-        id: mobileSafeAreaColorOverride
-
-        parent: applicationWindow.nativeWindowContentRoot
-        visible: applicationWindow.isMobilePlatform && parent !== null && applicationWindow.contentItem !== null && !applicationWindow.fullWindowAreaOnMobileEnabled
-        z: 9000
-        anchors.fill: parent
-
-        readonly property real resolvedContentX: applicationWindow.contentItem ? applicationWindow.contentItem.x : 0
-        readonly property real resolvedContentY: applicationWindow.contentItem ? applicationWindow.contentItem.y : 0
-        readonly property real resolvedContentRight: applicationWindow.contentItem ? applicationWindow.contentItem.x + applicationWindow.contentItem.width : width
-        readonly property real resolvedContentBottom: applicationWindow.contentItem ? applicationWindow.contentItem.y + applicationWindow.contentItem.height : height
-        readonly property real leftInset: Math.max(0, Math.ceil(resolvedContentX))
-        readonly property real topInset: Math.max(0, Math.ceil(resolvedContentY))
-        readonly property real rightInset: Math.max(0, Math.ceil(width - resolvedContentRight))
-        readonly property real bottomInset: Math.max(0, Math.ceil(height - resolvedContentBottom))
-
-        Rectangle {
-            x: 0
-            y: 0
-            width: parent.width
-            height: mobileSafeAreaColorOverride.topInset
-            visible: height > 0
-            color: applicationWindow.mobileSafeAreaBackdropColor
-        }
-        Rectangle {
-            x: 0
-            y: mobileSafeAreaColorOverride.topInset
-            width: mobileSafeAreaColorOverride.leftInset
-            height: Math.max(0, parent.height - mobileSafeAreaColorOverride.topInset - mobileSafeAreaColorOverride.bottomInset)
-            visible: width > 0 && height > 0
-            color: applicationWindow.mobileSafeAreaBackdropColor
-        }
-        Rectangle {
-            x: parent.width - mobileSafeAreaColorOverride.rightInset
-            y: mobileSafeAreaColorOverride.topInset
-            width: mobileSafeAreaColorOverride.rightInset
-            height: Math.max(0, parent.height - mobileSafeAreaColorOverride.topInset - mobileSafeAreaColorOverride.bottomInset)
-            visible: width > 0 && height > 0
-            color: applicationWindow.mobileSafeAreaBackdropColor
-        }
-        Rectangle {
-            x: 0
-            y: parent.height - mobileSafeAreaColorOverride.bottomInset
-            width: parent.width
-            height: mobileSafeAreaColorOverride.bottomInset
-            visible: height > 0
-            color: applicationWindow.mobileSafeAreaBackdropColor
-        }
-    }
     Loader {
         active: applicationWindow.platform === "osx"
         source: applicationWindow.platform === "osx" ? Qt.resolvedUrl("window/MacNativeMenuBar.qml") : ""
@@ -533,29 +403,6 @@ LV.ApplicationWindow {
             if (item) {
                 item.hostWindow = applicationWindow;
                 item.inAppClipboard = applicationWindow.rootInAppClipboard;
-            }
-        }
-    }
-    Component {
-        id: onboardingPageComponent
-
-        Item {
-            clip: true
-
-            Rectangle {
-                anchors.fill: parent
-                color: applicationWindow.canvasColor
-            }
-            WindowView.OnboardingContent {
-                anchors.fill: parent
-                autoCompleteOnHubLoaded: false
-                hostWindow: applicationWindow
-                hubSessionController: applicationWindow.onboardingHubController
-
-                onDismissRequested: {
-                    if (applicationWindow.onboardingRouteBootstrapController)
-                        applicationWindow.onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
-                }
             }
         }
     }
@@ -569,24 +416,9 @@ LV.ApplicationWindow {
                 id: workspaceLayoutLoader
 
                 anchors.fill: parent
-                sourceComponent: applicationWindow.useIosInlineOnboardingSequence && applicationWindow.onboardingRouteBootstrapController && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible ? iosInlineOnboardingSequenceComponent : (applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent)
+                sourceComponent: desktopMainLayoutComponent
 
                 onSourceComponentChanged: windowInteractions.reportLayoutBranch("workspaceSourceChanged")
-            }
-        }
-    }
-    Component {
-        id: iosInlineOnboardingSequenceComponent
-
-        WindowView.IosInlineOnboardingSequence {
-            anchors.fill: parent
-            canvasColor: applicationWindow.canvasColor
-            hostWindow: applicationWindow
-            hubSessionController: applicationWindow.onboardingHubController
-
-            onDismissRequested: {
-                if (applicationWindow.onboardingRouteBootstrapController)
-                    applicationWindow.onboardingRouteBootstrapController.dismissEmbeddedOnboarding();
             }
         }
     }
@@ -624,7 +456,6 @@ LV.ApplicationWindow {
 
                     compactMode: false
                     detailPanelCollapsed: applicationWindow.hideRightPanel
-                    editorViewModeController: applicationWindow.rootEditorViewModeController
                     navigationModeController: applicationWindow.rootNavigationModeController
                     panelColor: applicationWindow.desktopPanelSurfaceColor
                     panelHeight: applicationWindow.navigationBarHeight
@@ -645,7 +476,6 @@ LV.ApplicationWindow {
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: false
                     contentsDisplayColor: applicationWindow.desktopPanelSurfaceColor
-                    isMobilePlatform: applicationWindow.isMobilePlatform
                     listViewColor: applicationWindow.desktopPanelSurfaceColor
                     listViewWidth: applicationWindow.listViewWidth
                     libraryHierarchyController: applicationWindow.rootLibraryHierarchyController
@@ -656,7 +486,6 @@ LV.ApplicationWindow {
                     noteDeletionController: applicationWindow.rootLibraryNoteMutationController
                     noteActiveState: applicationWindow.rootNoteActiveState
                     inAppClipboard: applicationWindow.rootInAppClipboard
-                    editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
@@ -704,43 +533,6 @@ LV.ApplicationWindow {
             }
         }
     }
-    Component {
-        id: mobileMainLayoutComponent
-
-        MobilePageView.MobileHierarchyPage {
-            anchors.fill: parent
-            canvasColor: applicationWindow.canvasColor
-            controlSurfaceColor: applicationWindow.mobileControlSurfaceColor
-            editorViewModeController: applicationWindow.rootEditorViewModeController
-            navigationModeController: applicationWindow.rootNavigationModeController
-            noteActiveState: applicationWindow.rootNoteActiveState
-            inAppClipboard: applicationWindow.rootInAppClipboard
-            editorFontFamilyProvider: applicationWindow.rootEditorFontFamilyProvider
-            sidebarHierarchyController: applicationWindow.rootSidebarHierarchyController
-            statusPlaceholderText: ""
-            toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
-            windowInteractions: windowInteractions
-            dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
-            dayCalendarController: applicationWindow.rootDayCalendarController
-            monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
-            monthCalendarController: applicationWindow.rootMonthCalendarController
-            weekCalendarOverlayVisible: applicationWindow.weekCalendarOverlayVisible
-            weekCalendarController: applicationWindow.rootWeekCalendarController
-            yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
-            yearCalendarController: applicationWindow.rootYearCalendarController
-
-            onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)
-            onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)
-            onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)
-            onYearCalendarRequested: applicationWindow.openYearCalendarOverlay(true)
-            onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
-            onMonthCalendarOverlayOpenRequested: applicationWindow.openMonthCalendarOverlay(false)
-            onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
-            onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
-            onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
-        }
-    }
-
     WindowView.Onboarding {
         id: onboardingSubWindow
 

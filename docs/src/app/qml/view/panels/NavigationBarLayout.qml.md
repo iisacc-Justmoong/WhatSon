@@ -40,17 +40,13 @@
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` so nested mode `Component` branches can safely reference
   `navigationBar` id members without unqualified-scope warnings.
-- Compact mobile right-group contract keeps two independent actions:
   one `nodesnewFolder` add-folder button and one mode-specific application-bar slot loaded from the
   active View/Edit/Control application bar component.
-- Compact mobile navigation now also forwards an explicit `compactDetailPanelVisible` contract into
-  the active View/Edit/Control application bar component. This lets the editor route show a dedicated
+  the active View/Edit/Control application bar component. This lets the active content route show a dedicated
   right-edge detail-page icon button without leaking that affordance into hierarchy or note-list routes, and without
   duplicating that action inside the compact context menus.
-- The editor view-mode selector is restored. Desktop navigation forwards `editorViewModeController` into
-  `NavigationPropertiesBar`; compact editor navigation hides the settings affordance and mounts
-  `NavigationEditorViewBar` as the small `View` combo.
-- The compact mobile surface fill is supplied by `compactSurfaceColor`; the Figma mobile editor chrome uses
+- The editor view-mode selector is removed. Desktop and compact navigation must not forward editor view-mode
+  controllers or mount editor-specific view chrome.
   `panelBackground10` (`#343536`) for that pill background instead of leaving it transparent or inheriting the page
   canvas tone.
 - Calendar hook reasons emitted by the View/Edit application bars are normalized in `handleApplicationBarViewHook(...)`.

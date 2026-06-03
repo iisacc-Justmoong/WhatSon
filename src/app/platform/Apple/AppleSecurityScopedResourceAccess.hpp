@@ -6,7 +6,7 @@
 
 namespace WhatSon::Apple::SecurityScopedResourceAccess
 {
-#if defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     QUrl scopedUrlForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage);
     QString localPathForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage);
     QString localPathForUrl(const QUrl& url, int ancestorDepth, QString* errorMessage);

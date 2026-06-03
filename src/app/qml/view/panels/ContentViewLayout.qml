@@ -19,11 +19,8 @@ Item {
     property color displayColor: "transparent"
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property bool gutterVisible: true
-    property bool isMobilePlatform: false
     property int libraryHierarchyIndex: 0
     property var libraryHierarchyController: null
-    property bool minimapVisible: true
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarController: null
     property var noteActiveState: null
@@ -43,11 +40,9 @@ Item {
             && (contentViewLayout.resourceEntryString("source").length > 0
                 || contentViewLayout.resourceEntryString("resolvedPath").length > 0
                 || contentViewLayout.resourceEntryString("resourcePath").length > 0)
-    readonly property bool noteEditorSurfaceVisible: !contentViewLayout.imageResourceSelected
     property var panelControllerRegistry: null
     readonly property var panelController: contentViewLayout.panelControllerRegistry ? contentViewLayout.panelControllerRegistry.panelController("ContentViewLayout") : null
     property var inAppClipboard: null
-    property var editorFontFamilyProvider: null
     property var sidebarHierarchyController: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarController: null
@@ -159,20 +154,12 @@ Item {
             spacing: LV.Theme.gapNone
             visible: !contentViewLayout.calendarOverlayActive
 
-            ContentsView.Gutter {
+            Item {
+                id: emptyContentSurface
+
                 Layout.fillHeight: true
-                Layout.preferredWidth: visible ? implicitWidth : 0
-                contentY: contentsTextEditor.viewportContentY
-                currentLineIndex: contentsTextEditor.editorCursorLineIndex
-                fallbackLineHeight: contentsTextEditor.editorLogicalLineHeight
-                lineCount: 0
-                lineMetricProvider: contentsTextEditor.editorLogicalLineMetricFor
-                lineMetricsRevision: contentsTextEditor.editorLineMetricsRevision
-                parsedLineCount: 0
-                selectedNoteDirectoryPath: ""
-                selectedNoteId: ""
-                sourceFilePath: ""
-                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.gutterVisible
+                Layout.fillWidth: true
+                visible: !contentViewLayout.imageResourceSelected
             }
 
             ContentsView.ImageEditor {
@@ -182,40 +169,6 @@ Item {
                 Layout.fillWidth: true
                 resourceEntry: contentViewLayout.currentResourceEntry
                 visible: contentViewLayout.imageResourceSelected
-            }
-
-            Item {
-                id: contentsTextEditorStack
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                enabled: contentViewLayout.noteEditorSurfaceVisible
-                visible: contentViewLayout.noteEditorSurfaceVisible
-
-                ContentsView.TextEditor {
-                    id: contentsTextEditor
-
-                    anchors.fill: parent
-                    editorReadOnly: true
-                    noteBodyFilePath: ""
-                    objectName: "contentsDisplayTextEditor"
-                }
-            }
-
-            ContentsView.Minimap {
-                Layout.fillHeight: true
-                Layout.preferredWidth: visible ? implicitWidth : 0
-                documentText: contentsTextEditor.editorDocumentText
-                scrollTarget: contentsTextEditor.scrollEditorViewportTo
-                sourceContentHeight: contentsTextEditor.editorViewportContentHeight
-                sourceContentWidth: contentsTextEditor.editorViewportWidth
-                sourceContentY: contentsTextEditor.viewportContentY
-                sourceFontFamily: LV.Theme.fontBody
-                sourceFontLetterSpacing: LV.Theme.textBodyLetterSpacing
-                sourceFontPixelSize: LV.Theme.textBody
-                sourceFontWeight: LV.Theme.textBodyWeight
-                sourceViewportHeight: contentsTextEditor.editorViewportHeight
-                visible: contentViewLayout.noteEditorSurfaceVisible && contentViewLayout.minimapVisible
             }
         }
 

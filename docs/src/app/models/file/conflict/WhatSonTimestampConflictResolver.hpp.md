@@ -2,17 +2,13 @@
 
 ## Responsibility
 
-Declares the timestamp-based note body conflict resolver.
+Declares the timestamp freshness helper used by file conflict checks.
 
 ## Contract
 
-- Accepts a base pull timestamp, current filesystem timestamp, incoming editor timestamp, and both body candidates.
-- Reports whether a conflict was detected and which side won.
-- Uses `incoming` as the default winner when the filesystem did not advance after the base pull.
-- Uses `filesystem` when both sides changed but the filesystem timestamp is newer than the incoming timestamp.
-- Exposes `isTimestampNewer(...)` for strict read-side freshness checks that should not perform a full body merge.
+- Exposes `isTimestampNewer(...)` for strict read-side freshness checks.
 
 ## Boundary
 
-- The resolver does not parse `.wsnbody`, mutate `.wsnhead`, or persist files.
+- The resolver does not parse note payloads, mutate headers, or persist files.
 - File IO and version capture are outside this module.

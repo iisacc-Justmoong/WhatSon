@@ -3,15 +3,12 @@
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/conflict/WhatSonTimestampConflictResolver.hpp"
-#include "app/models/file/sync/WhatSonEditorRawPullController.hpp"
-#include "app/models/file/sync/WhatSonEditorRawPushController.hpp"
 #include "app/models/clipboard/FiletypeCapture.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
 #include "app/models/clipboard/InAppClipboardStore.h"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
-#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderCreator.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
@@ -36,9 +33,6 @@
 #include "app/models/hierarchy/library/LibraryNoteListModel.hpp"
 #include "app/models/hierarchy/progress/ProgressHierarchyControllerSupport.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
-#include "app/models/navigationbar/EditorViewSectionController.hpp"
-#include "app/models/navigationbar/EditorViewState.hpp"
-#include "app/models/navigationbar/EditorViewModeController.hpp"
 #include "app/models/navigationbar/NavigationModeSectionController.hpp"
 #include "app/models/navigationbar/NavigationModeState.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
@@ -48,14 +42,6 @@
 #include "app/models/detailPanel/DetailCurrentNoteContextBridge.hpp"
 #include "app/models/detailPanel/ResourceDetailPanelController.hpp"
 #include "app/models/hierarchy/resources/ResourcesListModel.hpp"
-#include "app/models/editor/GetProperty.h"
-#include "app/models/editor/EditorFontFamilyProvider.hpp"
-#include "app/models/editor/component/Break.h"
-#include "app/models/editor/component/Callout.h"
-#include "app/models/editor/component/ResourceImageFrame.h"
-#include "app/models/editor/component/style.h"
-#include "app/models/editor/SetProperty.h"
-#include "app/models/editor/SetTag.h"
 #include "app/models/panel/HierarchyInteractionBridge.hpp"
 #include "app/models/panel/NoteListModelContractBridge.hpp"
 #include "app/models/panel/NoteActiveStateTracker.hpp"
@@ -513,138 +499,13 @@ public:
         return m_noteDirectoryPaths.value(noteId.trimmed());
     }
 
-    Q_INVOKABLE bool applyPersistedBodyStateForNote(
-        const QString& noteId,
-        const QString& bodyPlainText,
-        const QString& bodySourceText,
-        const QString& lastModifiedAt)
-    {
-        ++applyPersistedBodyStateCallCount;
-        lastAppliedNoteId = noteId.trimmed();
-        lastAppliedBodyPlainText = bodyPlainText;
-        lastAppliedBodySourceText = bodySourceText;
-        lastAppliedLastModifiedAt = lastModifiedAt;
-        return true;
-    }
-
-    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId)
-    {
-        ++reloadNoteMetadataCallCount;
-        lastReloadedNoteId = noteId.trimmed();
-        return true;
-    }
-
-    Q_INVOKABLE bool saveCurrentBodyText(const QString& text)
-    {
-        ++saveCurrentBodyTextCallCount;
-        lastSavedCurrentBodyText = text;
-        return true;
-    }
-
-    Q_INVOKABLE QString noteBodySourceTextForNoteId(const QString& noteId) const
-    {
-        return m_noteBodySourceTexts.value(noteId.trimmed());
-    }
-
     void setNoteDirectoryPath(const QString& noteId, const QString& noteDirectoryPath)
     {
         m_noteDirectoryPaths.insert(noteId.trimmed(), QDir::cleanPath(noteDirectoryPath.trimmed()));
     }
 
-    void setNoteBodySourceText(const QString& noteId, const QString& bodySourceText)
-    {
-        m_noteBodySourceTexts.insert(noteId.trimmed(), bodySourceText);
-    }
-
-    int applyPersistedBodyStateCallCount = 0;
-    int reloadNoteMetadataCallCount = 0;
-    int saveCurrentBodyTextCallCount = 0;
-    QString lastAppliedNoteId;
-    QString lastAppliedBodyPlainText;
-    QString lastAppliedBodySourceText;
-    QString lastAppliedLastModifiedAt;
-    QString lastReloadedNoteId;
-    QString lastSavedCurrentBodyText;
-
 private:
     QHash<QString, QString> m_noteDirectoryPaths;
-    QHash<QString, QString> m_noteBodySourceTexts;
-};
-
-class FakeMobileSidebarBindingSource final : public QObject
-{
-    Q_OBJECT
-
-    Q_PROPERTY(
-        int resolvedActiveHierarchyIndex READ resolvedActiveHierarchyIndex WRITE setResolvedActiveHierarchyIndex NOTIFY
-            resolvedActiveHierarchyIndexChanged)
-    Q_PROPERTY(
-        QVariant resolvedHierarchyController READ resolvedHierarchyController WRITE setResolvedHierarchyController NOTIFY
-            resolvedHierarchyControllerChanged)
-
-public:
-    explicit FakeMobileSidebarBindingSource(QObject* parent = nullptr)
-        : QObject(parent)
-    {
-    }
-
-    int resolvedActiveHierarchyIndex() const noexcept
-    {
-        return m_resolvedActiveHierarchyIndex;
-    }
-
-    void setResolvedActiveHierarchyIndex(const int value)
-    {
-        if (m_resolvedActiveHierarchyIndex == value)
-        {
-            return;
-        }
-
-        m_resolvedActiveHierarchyIndex = value;
-        emit resolvedActiveHierarchyIndexChanged();
-    }
-
-    QVariant resolvedHierarchyController() const
-    {
-        return m_resolvedHierarchyController;
-    }
-
-    void setResolvedHierarchyController(const QVariant& value)
-    {
-        if (m_resolvedHierarchyController == value)
-        {
-            return;
-        }
-
-        m_resolvedHierarchyController = value;
-        emit resolvedHierarchyControllerChanged();
-    }
-
-    void setHierarchyControllerForIndex(const int index, QObject* controller)
-    {
-        m_indexedHierarchyControllers.insert(index, QVariant::fromValue(controller));
-    }
-
-    Q_INVOKABLE QVariant hierarchyControllerForIndex(const QVariant& hierarchyIndex) const
-    {
-        bool ok = false;
-        const int resolvedIndex = hierarchyIndex.toInt(&ok);
-        if (!ok)
-        {
-            return {};
-        }
-
-        return m_indexedHierarchyControllers.value(resolvedIndex);
-    }
-
-signals:
-    void resolvedActiveHierarchyIndexChanged();
-    void resolvedHierarchyControllerChanged();
-
-private:
-    int m_resolvedActiveHierarchyIndex = 0;
-    QVariant m_resolvedHierarchyController;
-    QHash<int, QVariant> m_indexedHierarchyControllers;
 };
 
 class FakeSelectionNoteListModel final : public QObject
@@ -984,49 +845,6 @@ private:
     bool m_noteBacked = true;
 };
 
-class FakeEditorInputCommandOwner final : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit FakeEditorInputCommandOwner(QObject* parent = nullptr)
-        : QObject(parent)
-    {
-    }
-
-    Q_INVOKABLE QVariant replaceEditorDocumentText(
-        const QVariant& editorDocumentText,
-        const QVariant& cursorPosition)
-    {
-        m_replaceCalled = true;
-        m_lastEditorDocumentText = editorDocumentText.toString();
-        m_lastCursorPosition = cursorPosition.toInt();
-        setProperty("editorDocumentText", editorDocumentText);
-        setProperty("editorCursorPosition", cursorPosition);
-        return QVariant(true);
-    }
-
-    bool replaceCalled() const noexcept
-    {
-        return m_replaceCalled;
-    }
-
-    QString lastEditorDocumentText() const
-    {
-        return m_lastEditorDocumentText;
-    }
-
-    int lastCursorPosition() const noexcept
-    {
-        return m_lastCursorPosition;
-    }
-
-private:
-    bool m_replaceCalled = false;
-    QString m_lastEditorDocumentText;
-    int m_lastCursorPosition = 0;
-};
-
 class FakeRowOnlySelectionNoteListModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -1236,18 +1054,6 @@ private slots:
     void cronExpression_and_asyncScheduler_coverParsingMatchingAndDeduplication();
     void debugTraceFilter_suppressesIiXmlDebugSpamByDefault();
     void debugTrace_summarizesLargeTextFromPreviewOnly();
-    void editorGetProperty_capturesTypedKeyValuePairsFromResourceTag();
-    void editorGetProperty_updatesStoredStateAndClearsWhenNoTag();
-    void editorGetProperty_readsBodyDocumentAttributesIntoAppStore();
-    void editorSetProperty_setsDynamicAttributesWithInferredValueTypes();
-    void editorSetProperty_updatesExistingAttributeAndRejectsInvalidNames();
-    void editorSetProperty_serializesResourceAttributeIntoWsnbodyDocument();
-    void editorFontFamilyProvider_buildsMenuItemsFromSystemFamilies();
-    void editorSetTag_insertsStaticCalloutPairIntoSourceSelection();
-    void editorSetTag_rejectsUnsupportedStaticNames();
-    void editorSetTag_addsHeaderSubheaderAndResourceTemplates();
-    void editorSetTag_togglesSameInlineFormatWhenSelectionMatchesWrappedContent();
-    void editorSetTag_serializesInsertedStaticTagIntoWsnbodyDocument();
     void cmakeDependencyWiring_declaresLocalXmlAndHtmlBlockPackages();
     void cmakePresets_exposeStableClionConfigureProfile();
     void cmakeBuildTargets_cleanTransientBuildDiagnostics();
@@ -1262,19 +1068,12 @@ private slots:
     void hubMountValidator_rejectsIncompleteHubPackage();
     void sourceTree_usesRepositoryAbsoluteProjectIncludes();
     void sourceTree_forbidsDeprecatedPresentationLayerVocabulary();
-    void sourceTree_keepsEditorModelBackendRegistered();
+    void sourceTree_forbidsNoteEditingAndBodyPersistenceObjects();
+    void sourceTree_forbidsSeparatedPlatformAppObjects();
     void sourceTree_keepsContentsQmlUnderViewContents();
     void sourceTree_keepsHierarchyBackendDecomposed();
     void sourceTree_keepsNoteFileShardClassifiedByResponsibility();
     void sourceTree_forbidsSharedFileIoObjectLayer();
-    void iosBundleIconPackaging_declaresPrimaryAndIpadFallbackIconsInInfoPlist();
-    void iosBundleIconPackaging_stagesBundleRootPngsEvenWithAssetCatalogsEnabled();
-    void appleBundleIconPackaging_usesMacosAppBundleIconResourceContract();
-    void iosXcodeprojExport_surfacesSdkSigningAndPermissionPolicyOptionsInCmake();
-    void iosXcodeprojExport_routesSimulatorPermissionFallbackThroughAppRuntimeCmake();
-    void iosXcodeprojExport_embedsLocalDynamicLibrariesIntoIosBundle();
-    void iosXcodeprojExport_patchScriptStripsQtPermissionsEvenWhenIconPhaseAlreadyExists();
-    void iosXcodeprojExport_keepsBuildIosScriptOnHighLevelCmakeOptions();
     void libraryHierarchyController_keepsInAppScaffoldIndependentFromHubSnapshots();
     void libraryHierarchyController_appliesLvrsMoveEventAsSingleFolderReparent();
     void libraryHierarchyController_mirrorsFoldersFileAfterHierarchyCommit();
@@ -1282,53 +1081,18 @@ private slots:
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenInitialSelectionMaterializes();
     void libraryNoteListModel_emitsCurrentNoteEntryChangedWhenSelectedRowReplacesCurrentSelection();
     void libraryNoteListModel_hidesRawInlineTagsFromPreviewText();
-    void mobileChrome_keepsRestoredShellWithEditorViewModeCombo();
-    void mobileHierarchyRouteStateStore_tracksNormalizedSelectionRestoreState();
-    void mobileHierarchySelectionCoordinator_prefersExplicitSidebarBindingsAndFallbacks();
-    void mobileHierarchyNavigationCoordinator_routesBackAsDismissTargets();
     void navigationModeController_cyclesActiveSections();
-    void editorViewModeController_cyclesActiveSections();
     void noteActiveStateTracker_tracksCurrentNoteAcrossActiveHierarchyChanges();
     void noteActiveStateTracker_clearsReadableEmptyAndNonNoteBackedSelections();
     void noteActiveStateTracker_publishesAtomicNoteSnapshotBeforeChangeSignals();
-    void noteActiveStateTracker_publishesBodyPathForNoteEditorSessionResolution();
-    void breakComponent_projectsStandaloneBreakAsLogicalEditorLine();
-    void calloutComponent_rendersFigmaCalloutBlock();
-    void calloutComponent_plansBoundaryEditsAgainstDecoratedCursor();
-    void styleComponent_ownsStyleRawTokenProjection();
-    void resourceFrame_rendersImageOnlyContainer();
-    void noteBodyPersistence_roundTripsAndProjectsCanonicalWebLinks();
-    void noteBodyPersistence_projectsSourceToEditorHtmlWithExplicitBreaks();
-    void noteBodyPersistence_recoversEditorHtmlBreaksAsCanonicalSourceLines();
-    void noteBodyPersistence_recoversEditorFormattingTagsFromRichText();
-    void noteBodyPersistence_roundTripsCanonicalStyleTagAttributes();
-    void noteBodyPersistence_recoversQtTextEditSerializedStyleAnchors();
-    void noteBodyPersistence_preservesCrossParagraphInlineSourceTagsWithoutEscaping();
-    void noteBodyPersistence_projectsCalloutAsFigmaBlockAndRecoversSource();
-    void noteBodyPersistence_preservesExplicitBlankLineBeforeStandaloneCallout();
-    void noteBodyPersistence_doesNotReplicateParagraphsAroundRepeatedCalloutSaves();
-    void noteBodyPersistence_persistsCalloutAsParagraphTag();
-    void noteBodyPersistence_stripsRenderedHtmlBlockArtifactsFromSourceProjection();
-    void noteBodyPersistence_recoversRenderedResourceFrameMarkersAsSourceTags();
-    void noteBodyPersistence_dropsDeletedSingleResourceObjectMarker();
-    void noteBodyPersistence_preservesIntentionalBlankLinesAroundRenderedResourceFrame();
-    void noteBodyPersistence_preservesEmptyParagraphCursorLineAfterResource();
-    void noteBodyPersistence_preservesEmptyParagraphBoundariesAroundResources();
     void noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt();
     void noteHeaderParser_usesIiXmlDocumentTreeForWsnHead();
     void noteListModelContractBridge_resolvesHierarchyBoundNoteListImmediately();
     void noteListModelContractBridge_prefersExplicitRowsAcrossHierarchySwitches();
-    void timestampConflictResolver_prefersNewestBodyAfterBaseDivergence();
     void timestampConflictResolver_reportsStrictlyNewerTimestamp();
-    void editorRawPullController_requestsNoteEntryAndOpenPulls();
-    void editorRawPullController_pullsActiveNoteEveryIdleInterval();
-    void editorRawPushController_pushesOnIdleModifiedCountAndNoteDeparture();
-    void editorRawPushController_keepsPendingModifiedCountWhenIdleSyncArrives();
-    void editorRawPushController_refreshesPendingModifiedPayloadForSameRevision();
-    void editorRawPushController_discardsPendingPushForAuthoritativeWrite();
     void hubSyncController_splitsFilesystemResponsibilitiesIntoDedicatedObjects();
     void hubSyncObservationBuilder_ignoresPrivateWhatSonBookkeeping();
-    void hubSyncWiring_includesNoteEditorSessionVersionDiffMutations();
+    void hubSyncWiring_excludesNoteEditorSessionVersionDiffMutations();
     void noteListModelContractBridge_exposesCurrentNoteEntryFromCurrentSelection();
     void detailCurrentNoteContextBridge_prefersCurrentNoteEntryAndClearsNonNoteBackedSelection();
     void detailCurrentNoteContextBridge_clearsReadableEmptyCurrentNoteEntrySelection();
@@ -1337,19 +1101,13 @@ private slots:
     void projectsHierarchyParser_roundTripsNestedProjectTree();
     void projectsHierarchyController_keepsNestedProjectPolicy();
     void qmlContentsView_keepsOnlyAllowedContentsViews();
-    void qmlContentsTextEditor_returnKeyExtendsEmptyLine();
+    void qmlContentsView_excludesNoteTextEditorSurface();
     void qmlContentsViewsStayViewOnlyAndNativeInputSafe();
     void qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks();
     void qmlNavigationCalendarButtons_mountCalendarPagesInContentSurface();
     void qmlOnboardingContent_routesMacCreateHubThroughDirectoryDialog();
     void qmlLvrsTokens_replaceDirectHardcodedVisualTokensOutsideContents();
     void qmlContextBinder_usesLvrsBindPlanForWorkspaceContextObjects();
-    void qmlContentViewLayout_wiresEditorFormatShortcutsOutsideTextEditor();
-    void qmlContentViewLayout_opensEditorFormatContextMenuForSelection();
-    void qmlContentsTextEditor_keepsLvrsTextEditorSurface();
-    void qmlContentsTextEditor_excludesSnapshotProjectionPersistence();
-    void qmlContentsTextEditor_keepsNativeSurfaceOnly();
-    void qmlContentsTextEditor_keepsKeyboardSelectionAndOsImeNative();
     void resourceDetailPanelController_tracksCurrentResourceSelection();
     void resourcePackageSupport_roundTripsAnnotationMetadataAndBitmap();
     void resourcePackageSupport_normalizesTerminalFormatForMultiDotAssetNames();
@@ -1362,7 +1120,7 @@ private slots:
     void resourcesHierarchyController_updatesChevronExpansionThroughSharedModelRow();
     void resourcesHierarchyController_commitsChevronExpansionThroughSharedBridge();
     void inAppClipboard_wiresAnnotationBitmapGenerationIntoPackageCreation();
-    void inAppClipboard_importsUrlsForEditorAsResourcePackages();
+    void inAppClipboard_importsUrlsAsResourcePackagesWithoutEditorWrappers();
     void inAppClipboard_importsClipboardImageThroughManager();
     void inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds();
     void inAppClipboard_randomizesClipboardResourceNameBeforeConflictPreflight();
@@ -1398,7 +1156,7 @@ private slots:
     void unixTimeAnalyzer_reportsStableEpochFields();
     void unusedNoteSensors_filterNoteIdsByLastOpenedWindow();
     void unusedResourcesSensor_reportsHubPackagesMissingFromAllNoteEmbeddings();
-    void unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource();
+    void unusedResourcesSensor_reportsPackagesWithoutReadingNoteBodies();
 
 private:
     static QString createMinimalHubFixture(
@@ -1408,7 +1166,7 @@ private:
     static QString createLocalNoteForRegression(
         const QString& parentDirectoryPath,
         const QString& noteId,
-        const QString& bodySourceText,
+        const QString& unusedInitialText,
         QString* errorMessage = nullptr);
     static QJSValue evaluateQmlJsLibrary(
         QJSEngine* engine,

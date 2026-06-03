@@ -87,7 +87,7 @@ void WhatSonPermissionBootstrapper::buildPermissionSteps()
 #if defined(Q_OS_MACOS)
     addApplePermissionStep(QStringLiteral("full_disk_access"), WhatSon::Permissions::requestFullDiskAccessPermission);
 #endif
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     addApplePermissionStep(QStringLiteral("photo_library"), WhatSon::Permissions::requestPhotoLibraryPermission);
 #endif
 #if QT_CONFIG(permissions) && !defined(WHATSON_DISABLE_QT_PERMISSION_REQUESTS)
@@ -103,7 +103,7 @@ void WhatSonPermissionBootstrapper::buildPermissionSteps()
         return permission;
     });
 #endif
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     addApplePermissionStep(QStringLiteral("reminders"), WhatSon::Permissions::requestRemindersPermission);
     addApplePermissionStep(QStringLiteral("local_network"), WhatSon::Permissions::requestLocalNetworkPermission);
 #endif

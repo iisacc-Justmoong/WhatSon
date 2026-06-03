@@ -12,38 +12,18 @@ Window {
     readonly property int desktopDesignWidth: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.dialogMaxWidth - LV.Theme.gap12 - Math.round(LV.Theme.strokeThin)
     readonly property int desktopMinHeight: LV.Theme.scaffoldBlobSecondaryHeight + LV.Theme.gap20 + LV.Theme.gap20
     readonly property int desktopMinWidth: LV.Theme.scaffoldBlobSecondaryWidth - LV.Theme.gap20
-    readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
-    readonly property int mobileDesignHeight: LV.Theme.scaffoldBlobPrimarySize + LV.Theme.inputWidthMd + LV.Theme.gap24 + LV.Theme.gap12
-    readonly property int mobileDesignWidth: LV.Theme.dialogMaxWidth + LV.Theme.buttonMinWidth + LV.Theme.gap10
-    readonly property int availableScreenHeight: {
-        const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
-        return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
-    }
-    readonly property int availableScreenWidth: {
-        const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
-        return targetScreen ? Math.round(targetScreen.width) : root.mobileDesignWidth;
-    }
-    readonly property int mobileWindowHeight: Math.max(0, root.availableScreenHeight)
-    readonly property int mobileWindowWidth: Math.max(0, root.availableScreenWidth)
-    readonly property bool useMobileLayout: {
-        if (root.hostWindow && root.hostWindow.adaptiveMobileLayout !== undefined)
-            return Boolean(root.hostWindow.adaptiveMobileLayout) || root.isMobilePlatform;
-        return root.isMobilePlatform;
-    }
-    readonly property int compactMinHeight: root.useMobileLayout ? root.mobileWindowHeight : root.desktopMinHeight
-    readonly property int compactMinWidth: root.useMobileLayout ? root.mobileWindowWidth : root.desktopMinWidth
-    property int defaultHeight: compactMinHeight
-    property int defaultWidth: compactMinWidth
-    readonly property int designHeight: root.useMobileLayout ? root.mobileDesignHeight : root.desktopDesignHeight
-    readonly property int designWidth: root.useMobileLayout ? root.mobileDesignWidth : root.desktopDesignWidth
+    property int defaultHeight: root.desktopMinHeight
+    property int defaultWidth: root.desktopMinWidth
+    readonly property int designHeight: root.desktopDesignHeight
+    readonly property int designWidth: root.desktopDesignWidth
     readonly property int fixedHeight: Math.max(defaultHeight, minHeight)
     readonly property int fixedWidth: Math.max(defaultWidth, minWidth)
-    readonly property int effectiveHeight: root.useMobileLayout ? root.compactMinHeight : root.fixedHeight
-    readonly property int effectiveWidth: root.useMobileLayout ? root.compactMinWidth : root.fixedWidth
+    readonly property int effectiveHeight: root.fixedHeight
+    readonly property int effectiveWidth: root.fixedWidth
     property var hostWindow: null
     property var hubSessionController: null
-    property int minHeight: compactMinHeight
-    property int minWidth: compactMinWidth
+    property int minHeight: root.desktopMinHeight
+    property int minWidth: root.desktopMinWidth
     property color panelColor: LV.Theme.panelBackground06
     property color sidePanelColor: LV.Theme.panelBackground10
     property bool standaloneMode: false

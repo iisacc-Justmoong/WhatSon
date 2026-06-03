@@ -90,16 +90,16 @@ namespace
     {
         QStringList parts;
 
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
         {
-            parts.push_back(firstLine);
+            parts.push_back(noteId);
         }
 
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
-        if (!bodyPlainText.isEmpty())
+        const QString project = note.project.trimmed();
+        if (!project.isEmpty())
         {
-            parts.push_back(bodyPlainText);
+            parts.push_back(project);
         }
 
         for (const QString& folder : folderLabels)
@@ -650,13 +650,11 @@ LibraryNoteListItem WhatSonLibraryNoteListProjection::buildNoteListItem(
     item.noteDirectoryPath = noteDirectoryPath;
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = !note.bodySourceText.isEmpty()
-        ? note.bodySourceText
-        : note.bodyPlainText;
+    item.bodyText.clear();
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
-    item.image = note.bodyHasResource;
-    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.image = false;
+    item.imageSource.clear();
     item.displayDate = m_systemCalendarStore
                            ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
                            : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
@@ -668,13 +666,10 @@ LibraryNoteListItem WhatSonLibraryNoteListProjection::buildNoteListItem(
     WhatSon::Debug::trace(
         QStringLiteral("library.noteListProjection"),
         QStringLiteral("buildNoteListItem"),
-        QStringLiteral("noteId=%1 noteDirectoryPath=%2 primaryText=%3 bodySourceText=%4 bodyPlainText=%5 bodyChosen=%6")
+        QStringLiteral("noteId=%1 noteDirectoryPath=%2 primaryText=%3")
             .arg(item.id)
             .arg(item.noteDirectoryPath)
-            .arg(WhatSon::Debug::summarizeText(item.primaryText, 48))
-            .arg(WhatSon::Debug::summarizeText(note.bodySourceText, 48))
-            .arg(WhatSon::Debug::summarizeText(note.bodyPlainText, 48))
-            .arg(WhatSon::Debug::summarizeText(item.bodyText, 48)));
+            .arg(WhatSon::Debug::summarizeText(item.primaryText, 48)));
     if (!cacheKey.isEmpty())
     {
         m_noteListItemCache.insert(cacheKey, item);

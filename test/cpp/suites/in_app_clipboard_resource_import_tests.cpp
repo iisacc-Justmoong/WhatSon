@@ -1,10 +1,13 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
 #include "app/models/clipboard/InAppClipboardManager.h"
+#include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QBuffer>
 #include <QClipboard>
 #include <QMimeData>
+
+#include <algorithm>
 
 namespace
 {
@@ -22,6 +25,51 @@ namespace
     {
         static const QRegularExpression pattern(QStringLiteral("^[A-Za-z0-9]{32}$"));
         return pattern.match(value).hasMatch();
+    }
+
+    QString resourcesFilePathForHub(const QString& hubPath)
+    {
+        return QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
+    }
+
+    QString resourcesFileTextForHub(const QString& hubPath)
+    {
+        return readUtf8FileForInAppClipboardImportTest(resourcesFilePathForHub(hubPath));
+    }
+
+    QString resourcesDirectoryPathForHub(const QString& hubPath)
+    {
+        return QDir(hubPath).filePath(QStringLiteral(".wsresources"));
+    }
+
+    QVector<WhatSon::Resources::ResourcePackageMetadata> importedResourceMetadataForHub(const QString& hubPath)
+    {
+        QVector<WhatSon::Resources::ResourcePackageMetadata> result;
+        const QDir resourcesDirectory(resourcesDirectoryPathForHub(hubPath));
+        const QFileInfoList packageDirectories = resourcesDirectory.entryInfoList(
+            QStringList{QStringLiteral("*.wsresource")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        result.reserve(packageDirectories.size());
+        for (const QFileInfo& packageDirectory : packageDirectories)
+        {
+            WhatSon::Resources::ResourcePackageMetadata metadata;
+            QString metadataError;
+            if (WhatSon::Resources::loadResourcePackageMetadata(
+                packageDirectory.absoluteFilePath(),
+                &metadata,
+                &metadataError))
+            {
+                result.push_back(metadata);
+            }
+        }
+        return result;
+    }
+
+    WhatSon::Resources::ResourcePackageMetadata singleImportedResourceMetadataForHub(const QString& hubPath)
+    {
+        const QVector<WhatSon::Resources::ResourcePackageMetadata> metadata = importedResourceMetadataForHub(hubPath);
+        return metadata.size() == 1 ? metadata.constFirst() : WhatSon::Resources::ResourcePackageMetadata{};
     }
 
 } // namespace
@@ -44,7 +92,7 @@ void WhatSonCppRegressionTests::inAppClipboard_wiresAnnotationBitmapGenerationIn
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")).exists());
 }
 
-void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePackages()
+void WhatSonCppRegressionTests::inAppClipboard_importsUrlsAsResourcePackagesWithoutEditorWrappers()
 {
     QTemporaryDir workspaceDirectory;
     QVERIFY(workspaceDirectory.isValid());
@@ -63,17 +111,15 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
 
     InAppClipboardManager clipboard;
     clipboard.setCurrentHubPath(hubPath);
+    QSignalSpy importCompletedSpy(&clipboard, &InAppClipboardManager::importCompleted);
 
-    const QVariantList importedEntries =
-        clipboard.importUrlsForEditor(QVariantList{QUrl::fromLocalFile(capturedImagePath)});
     QVERIFY2(
-        importedEntries.size() == 1,
+        clipboard.importUrls(QVariantList{QUrl::fromLocalFile(capturedImagePath)}),
         qPrintable(clipboard.lastError()));
 
-    const QVariantMap importedResource = importedEntries.constFirst().toMap();
-    const QString resourceId = importedResource.value(QStringLiteral("resourceId")).toString();
-    const QString resourcePath = importedResource.value(QStringLiteral("resourcePath")).toString();
-    const QString assetPath = importedResource.value(QStringLiteral("assetPath")).toString();
+    const QString resourceId = QStringLiteral("clipboard-resource");
+    const QString resourcePath = QStringLiteral(".wsresources/clipboard-resource.wsresource");
+    const QString assetPath = QStringLiteral("clipboard-resource.png");
 
     QCOMPARE(resourceId, QStringLiteral("clipboard-resource"));
     QCOMPARE(resourcePath, QStringLiteral(".wsresources/clipboard-resource.wsresource"));
@@ -81,8 +127,8 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     QVERIFY(resourcePath.startsWith(QStringLiteral(".wsresources/")));
     QVERIFY(resourcePath.endsWith(QStringLiteral(".wsresource")));
     QVERIFY(assetPath.endsWith(QStringLiteral(".png")));
-    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
-    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
+    QCOMPARE(importCompletedSpy.count(), 1);
+    QCOMPARE(importCompletedSpy.constFirst().constFirst().toInt(), 1);
 
     const QString packageDirectoryPath = QDir(hubPath).filePath(resourcePath);
     QVERIFY(QFileInfo(packageDirectoryPath).isDir());
@@ -90,17 +136,16 @@ void WhatSonCppRegressionTests::inAppClipboard_importsUrlsForEditorAsResourcePac
     QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName())).isFile());
     QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(WhatSon::Resources::annotationFileName())).isFile());
 
-    const QString resourcesFilePath =
-        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
-    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    const QString resourcesListText = resourcesFileTextForHub(hubPath);
     QVERIFY(resourcesListText.contains(resourcePath));
 
     const QString clipboardHeader = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboardManager.h"));
     const QString clipboardSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
-    QVERIFY(clipboardHeader.contains(QStringLiteral("importClipboardResourceForEditor")));
-    QVERIFY(clipboardHeader.contains(QStringLiteral("importUrlsForEditor")));
+    QVERIFY(clipboardHeader.contains(QStringLiteral("importClipboardResource")));
+    QVERIFY(!clipboardHeader.contains(QStringLiteral("importClipboardResourceForEditor")));
+    QVERIFY(!clipboardHeader.contains(QStringLiteral("importUrlsForEditor")));
     QVERIFY(!clipboardHeader.contains(QStringLiteral("importClipboardImage")));
     QVERIFY(!QFileInfo(QStringLiteral("src/app/models/clipboard/ClipboardResourcePackageImport.cpp")).exists());
     QVERIFY(!clipboardSource.contains(QStringLiteral("ClipboardImportSupport")));
@@ -128,27 +173,24 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImageThroughManag
     QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".png"));
     clipboard.setCurrentHubPath(hubPath);
 
-    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
-    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QVERIFY2(
+        clipboard.importClipboardResource(InAppClipboardManager::ConflictPolicyAbort),
+        qPrintable(clipboard.lastError()));
 
-    const QVariantMap importedResource = importedEntries.constFirst().toMap();
-    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
-    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
-    QCOMPARE(importedResource.value(QStringLiteral("bucket")).toString(), QStringLiteral("Image"));
-    QVERIFY(importedResource.value(QStringLiteral("resourcePath")).toString().endsWith(QStringLiteral(".wsresource")));
-    QVERIFY(importedResource.value(QStringLiteral("assetPath")).toString().endsWith(QStringLiteral(".png")));
+    const WhatSon::Resources::ResourcePackageMetadata importedResource = singleImportedResourceMetadataForHub(hubPath);
+    QCOMPARE(importedResource.type, QStringLiteral("image"));
+    QCOMPARE(importedResource.format, QStringLiteral(".png"));
+    QCOMPARE(importedResource.bucket, QStringLiteral("Image"));
+    QVERIFY(importedResource.resourcePath.endsWith(QStringLiteral(".wsresource")));
+    QVERIFY(importedResource.assetPath.endsWith(QStringLiteral(".png")));
     QVERIFY(!clipboard.hasResource());
 
-    const QString packageDirectoryPath =
-        QDir(hubPath).filePath(importedResource.value(QStringLiteral("resourcePath")).toString());
+    const QString packageDirectoryPath = QDir(hubPath).filePath(importedResource.resourcePath);
     QVERIFY(QFileInfo(packageDirectoryPath).isDir());
-    QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(
-        importedResource.value(QStringLiteral("assetPath")).toString())).isFile());
+    QVERIFY(QFileInfo(QDir(packageDirectoryPath).filePath(importedResource.assetPath)).isFile());
 
-    const QString resourcesFilePath =
-        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
-    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
-    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    const QString resourcesListText = resourcesFileTextForHub(hubPath);
+    QVERIFY(resourcesListText.contains(importedResource.resourcePath));
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImagesWithRandomAlnumResourceIds()
@@ -169,21 +211,30 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImagesWithRandomA
     QImage firstClipboardImage(QSize(10, 7), QImage::Format_ARGB32_Premultiplied);
     firstClipboardImage.fill(qRgba(32, 90, 180, 255));
     QVERIFY(clipboard.setImageResource(firstClipboardImage, QStringLiteral("image/png")));
-    const QVariantList firstEntries = clipboard.importClipboardResourceForEditor();
-    QVERIFY2(firstEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QVERIFY2(
+        clipboard.importClipboardResource(InAppClipboardManager::ConflictPolicyAbort),
+        qPrintable(clipboard.lastError()));
+    const QVector<WhatSon::Resources::ResourcePackageMetadata> firstMetadata =
+        importedResourceMetadataForHub(hubPath);
+    QCOMPARE(firstMetadata.size(), 1);
 
     QImage secondClipboardImage(QSize(11, 8), QImage::Format_ARGB32_Premultiplied);
     secondClipboardImage.fill(qRgba(180, 80, 32, 255));
     QVERIFY(clipboard.setImageResource(secondClipboardImage, QStringLiteral("image/png")));
-    const QVariantList secondEntries = clipboard.importClipboardResourceForEditor();
-    QVERIFY2(secondEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QVERIFY2(
+        clipboard.importClipboardResource(InAppClipboardManager::ConflictPolicyAbort),
+        qPrintable(clipboard.lastError()));
+    const QVector<WhatSon::Resources::ResourcePackageMetadata> allMetadata =
+        importedResourceMetadataForHub(hubPath);
+    QCOMPARE(allMetadata.size(), 2);
 
-    const QVariantMap firstResource = firstEntries.constFirst().toMap();
-    const QVariantMap secondResource = secondEntries.constFirst().toMap();
-    const QString firstResourceId = firstResource.value(QStringLiteral("resourceId")).toString();
-    const QString secondResourceId = secondResource.value(QStringLiteral("resourceId")).toString();
-    const QString firstResourcePath = firstResource.value(QStringLiteral("resourcePath")).toString();
-    const QString secondResourcePath = secondResource.value(QStringLiteral("resourcePath")).toString();
+    const WhatSon::Resources::ResourcePackageMetadata firstResource = firstMetadata.constFirst();
+    const WhatSon::Resources::ResourcePackageMetadata secondResource =
+        allMetadata.constFirst().resourceId == firstResource.resourceId ? allMetadata.constLast() : allMetadata.constFirst();
+    const QString firstResourceId = firstResource.resourceId;
+    const QString secondResourceId = secondResource.resourceId;
+    const QString firstResourcePath = firstResource.resourcePath;
+    const QString secondResourcePath = secondResource.resourcePath;
 
     QVERIFY(isThirtyTwoCharacterAlnumResourceId(firstResourceId));
     QVERIFY(isThirtyTwoCharacterAlnumResourceId(secondResourceId));
@@ -191,24 +242,20 @@ void WhatSonCppRegressionTests::inAppClipboard_importsClipboardImagesWithRandomA
     QCOMPARE(firstResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(firstResourceId));
     QCOMPARE(secondResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(secondResourceId));
     QCOMPARE(
-        firstResource.value(QStringLiteral("assetPath")).toString(),
+        firstResource.assetPath,
         QStringLiteral("%1.png").arg(firstResourceId));
     QCOMPARE(
-        secondResource.value(QStringLiteral("assetPath")).toString(),
+        secondResource.assetPath,
         QStringLiteral("%1.png").arg(secondResourceId));
 
     const QString firstPackageDirectoryPath = QDir(hubPath).filePath(firstResourcePath);
     const QString secondPackageDirectoryPath = QDir(hubPath).filePath(secondResourcePath);
     QVERIFY(QFileInfo(firstPackageDirectoryPath).isDir());
     QVERIFY(QFileInfo(secondPackageDirectoryPath).isDir());
-    QVERIFY(QFileInfo(QDir(firstPackageDirectoryPath).filePath(
-        firstResource.value(QStringLiteral("assetPath")).toString())).isFile());
-    QVERIFY(QFileInfo(QDir(secondPackageDirectoryPath).filePath(
-        secondResource.value(QStringLiteral("assetPath")).toString())).isFile());
+    QVERIFY(QFileInfo(QDir(firstPackageDirectoryPath).filePath(firstResource.assetPath)).isFile());
+    QVERIFY(QFileInfo(QDir(secondPackageDirectoryPath).filePath(secondResource.assetPath)).isFile());
 
-    const QString resourcesFilePath =
-        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
-    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
+    const QString resourcesListText = resourcesFileTextForHub(hubPath);
     QVERIFY(resourcesListText.contains(firstResourcePath));
     QVERIFY(resourcesListText.contains(secondResourcePath));
 }
@@ -234,24 +281,33 @@ void WhatSonCppRegressionTests::inAppClipboard_randomizesClipboardResourceNameBe
     InAppClipboardManager clipboard;
     clipboard.setCurrentHubPath(hubPath);
 
-    const QVariantList existingEntries =
-        clipboard.importUrlsForEditor(QVariantList{QUrl::fromLocalFile(existingClipboardNamedPath)});
-    QVERIFY2(existingEntries.size() == 1, qPrintable(clipboard.lastError()));
-    QCOMPARE(
-        existingEntries.constFirst().toMap().value(QStringLiteral("assetPath")).toString(),
-        QStringLiteral("clipboard-resource.png"));
+    QVERIFY2(
+        clipboard.importUrls(QVariantList{QUrl::fromLocalFile(existingClipboardNamedPath)}),
+        qPrintable(clipboard.lastError()));
+    const QString existingResourcePath = QStringLiteral(".wsresources/clipboard-resource.wsresource");
+    QVERIFY(resourcesFileTextForHub(hubPath).contains(existingResourcePath));
 
     QImage pastedClipboardImage(QSize(9, 7), QImage::Format_ARGB32_Premultiplied);
     pastedClipboardImage.fill(qRgba(190, 75, 40, 255));
     QVERIFY(clipboard.setImageResource(pastedClipboardImage, QStringLiteral("image/png")));
 
-    const QVariantList pastedEntries = clipboard.importClipboardResourceForEditor();
-    QVERIFY2(pastedEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QVERIFY2(
+        clipboard.importClipboardResource(InAppClipboardManager::ConflictPolicyAbort),
+        qPrintable(clipboard.lastError()));
 
-    const QVariantMap pastedResource = pastedEntries.constFirst().toMap();
-    const QString pastedResourceId = pastedResource.value(QStringLiteral("resourceId")).toString();
-    const QString pastedResourcePath = pastedResource.value(QStringLiteral("resourcePath")).toString();
-    const QString pastedAssetPath = pastedResource.value(QStringLiteral("assetPath")).toString();
+    const QVector<WhatSon::Resources::ResourcePackageMetadata> metadata = importedResourceMetadataForHub(hubPath);
+    QCOMPARE(metadata.size(), 2);
+    const auto pastedIterator = std::find_if(
+        metadata.cbegin(),
+        metadata.cend(),
+        [](const WhatSon::Resources::ResourcePackageMetadata& item)
+        {
+            return item.resourceId != QStringLiteral("clipboard-resource");
+        });
+    QVERIFY(pastedIterator != metadata.cend());
+    const QString pastedResourceId = pastedIterator->resourceId;
+    const QString pastedResourcePath = pastedIterator->resourcePath;
+    const QString pastedAssetPath = pastedIterator->assetPath;
 
     QVERIFY(isThirtyTwoCharacterAlnumResourceId(pastedResourceId));
     QCOMPARE(pastedResourcePath, QStringLiteral(".wsresources/%1.wsresource").arg(pastedResourceId));
@@ -261,7 +317,7 @@ void WhatSonCppRegressionTests::inAppClipboard_randomizesClipboardResourceNameBe
     const QString resourcesFilePath =
         QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
     const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
-    QVERIFY(resourcesListText.contains(QStringLiteral(".wsresources/clipboard-resource.wsresource")));
+    QVERIFY(resourcesListText.contains(existingResourcePath));
     QVERIFY(resourcesListText.contains(pastedResourcePath));
 }
 
@@ -287,29 +343,26 @@ void WhatSonCppRegressionTests::inAppClipboard_importsNonImageClipboardPayloadTh
     QCOMPARE(clipboard.resourceFormat(), QStringLiteral(".pdf"));
     clipboard.setCurrentHubPath(hubPath);
 
-    const QVariantList importedEntries = clipboard.importClipboardResourceForEditor();
-    QVERIFY2(importedEntries.size() == 1, qPrintable(clipboard.lastError()));
+    QVERIFY2(
+        clipboard.importClipboardResource(InAppClipboardManager::ConflictPolicyAbort),
+        qPrintable(clipboard.lastError()));
 
-    const QVariantMap importedResource = importedEntries.constFirst().toMap();
-    QCOMPARE(importedResource.value(QStringLiteral("type")).toString(), QStringLiteral("document"));
-    QCOMPARE(importedResource.value(QStringLiteral("format")).toString(), QStringLiteral(".pdf"));
-    QCOMPARE(importedResource.value(QStringLiteral("bucket")).toString(), QStringLiteral("Document"));
-    QVERIFY(importedResource.value(QStringLiteral("resourcePath")).toString().endsWith(QStringLiteral(".wsresource")));
-    QVERIFY(importedResource.value(QStringLiteral("assetPath")).toString().endsWith(QStringLiteral(".pdf")));
+    const WhatSon::Resources::ResourcePackageMetadata importedResource = singleImportedResourceMetadataForHub(hubPath);
+    QCOMPARE(importedResource.type, QStringLiteral("document"));
+    QCOMPARE(importedResource.format, QStringLiteral(".pdf"));
+    QCOMPARE(importedResource.bucket, QStringLiteral("Document"));
+    QVERIFY(importedResource.resourcePath.endsWith(QStringLiteral(".wsresource")));
+    QVERIFY(importedResource.assetPath.endsWith(QStringLiteral(".pdf")));
     QVERIFY(!clipboard.hasResource());
 
-    const QString packageDirectoryPath =
-        QDir(hubPath).filePath(importedResource.value(QStringLiteral("resourcePath")).toString());
-    const QString assetPath = QDir(packageDirectoryPath).filePath(
-        importedResource.value(QStringLiteral("assetPath")).toString());
+    const QString packageDirectoryPath = QDir(hubPath).filePath(importedResource.resourcePath);
+    const QString assetPath = QDir(packageDirectoryPath).filePath(importedResource.assetPath);
     QFile assetFile(assetPath);
     QVERIFY(assetFile.open(QIODevice::ReadOnly));
     QCOMPARE(assetFile.readAll(), pdfBytes);
 
-    const QString resourcesFilePath =
-        QDir(QDir(hubPath).filePath(QStringLiteral(".wscontents"))).filePath(QStringLiteral("Resources.wsresources"));
-    const QString resourcesListText = readUtf8FileForInAppClipboardImportTest(resourcesFilePath);
-    QVERIFY(resourcesListText.contains(importedResource.value(QStringLiteral("resourcePath")).toString()));
+    const QString resourcesListText = resourcesFileTextForHub(hubPath);
+    QVERIFY(resourcesListText.contains(importedResource.resourcePath));
 }
 
 void WhatSonCppRegressionTests::inAppClipboard_refreshReplacesStaleSnapshotWithSystemClipboardImage()

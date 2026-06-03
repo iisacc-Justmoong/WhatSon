@@ -16,14 +16,10 @@
 - Exposes `activateNoteById(...)` so cross-surface callers such as calendar overlays can force the library hierarchy
   back to a visible/selectable state for one note without reimplementing library bucket/search rules in QML.
 - That invokable remains part of the public QML-facing surface because calendar note chips must be able to reopen the
-  matching library note from both desktop and mobile editor routes.
 - Exposes `setItemExpanded(...)` through the shared expansion capability; rows with `showChevron` are expandable even
   when separate CRUD policy protects the same row from rename/delete.
-- Exposes `noteBodySourceTextForNoteId(...)` so editor-selection infrastructure can reuse the already-loaded runtime
-  snapshot for one selected note when direct package-path resolution is unavailable.
-- Exposes `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)` so editor autosave
-  can keep the note list hot with a cheap body-state update first and defer `.wsnbody` backlink scans to a later
-  controller-owned pass.
+- Exposes `noteDirectoryPathForNoteId(...)` for metadata/detail-panel callers. Body source lookup and persisted
+  body-state updates were removed with the note editor/save boundary.
 - Keeps the private `applyInAppLibraryScaffold()` path in the controller contract so `All Library`, `Drafts`, and
   `Today` remain app-owned rows even before, after, or without a successfully loaded hub.
 - Keeps the private `reloadFolderHierarchyFromFoldersFile(...)` mirror path in the controller contract so successful

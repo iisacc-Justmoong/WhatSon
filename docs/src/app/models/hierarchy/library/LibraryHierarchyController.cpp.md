@@ -8,11 +8,11 @@
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
 - `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
   `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
-- Local note mutation paths now split into two classes, with persistence mutations disabled:
+- Local note mutation paths now split into metadata/distribution paths, with note body persistence mutations removed:
   - runtime-load / explicit full-snapshot paths still go through `setIndexedStateNotes(...)`,
     `applyIndexedStateSnapshot(...)`, and `loadIndexedStateFromWshub(...)`
-  - note-save / metadata-reload / folder-assign / note-create / note-delete / folder-clear paths now fail closed and
-    leave indexed note state unchanged
+  - metadata, folder-assign, note-create, note-delete, and folder-clear paths update note-list projection without
+    reintroducing body save hooks
 - Those note-distribution mutation paths now also route through
   `refreshNoteListForSelectionAndNotifyHierarchyModel()`, which is the guard against stale sidebar `count` labels
   when only the note-to-folder distribution changed and the hierarchy row vector stayed byte-for-byte identical.
@@ -24,16 +24,13 @@
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
-- Library note-list row projection now carries the normalized note body source again.
-  The controller still derives `primaryText` / `searchableText` from indexed note metadata, but it no longer clears
-  `bodyText` before rows are pushed into the shared note-list model. This keeps the selected-note body available to
-  the editor even when the asynchronous lazy-load path is late or temporarily unavailable.
+- Library note-list row projection is metadata-only. The controller derives `primaryText` / `searchableText` from indexed
+  note metadata and keeps `bodyText` empty.
 - The note-list row projection now also carries `noteDirectoryPath`, and the controller's internal note-list cache key
   is no longer `noteId` alone.
   Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity.
-- The library runtime snapshot exposes `noteBodySourceTextForNoteId(...)` for read-side consumers that need the already
-  loaded indexed note source.
-- Note body persistence and tracked-stat refresh are currently disabled at the controller boundary.
+- The library runtime snapshot no longer exposes body source text. Note body persistence and tracked-stat refresh remain
+  outside the controller boundary.
 - `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
   computes the insertion point after that folder's subtree and increases depth by one, creating the new folder as a
   child of the selected folder without forcing the selected parent open.
@@ -77,10 +74,8 @@
 - Regression checklist:
   - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
     before the user manually pokes the calendar surface.
-  - local single-note mutations such as `saveBodyTextForNote(...)` and `reloadNoteMetadataForNoteId(...)` must not
-    require copying/replacing the full `allNotes` vector
-  - body saves must be able to mirror normalized body text into the in-memory library note immediately without forcing
-    the same save path to rescan every `.wsnbody` in the hub
+  - local single-note metadata and distribution mutations must not require copying/replacing the full `allNotes` vector
+  - note-list projection must stay metadata-only and must not rebuild body save paths
   - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
     snapshot replacement when the service result cannot resolve the target note
   - library folder/system-bucket sidebar counters must refresh immediately after folder assignment, note create,

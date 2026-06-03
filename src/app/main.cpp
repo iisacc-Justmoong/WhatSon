@@ -1,7 +1,6 @@
 #include "backend/runtime/appbootstrap.h"
 #include "backend/runtime/foregroundservices.h"
 #include "app/models/clipboard/InAppClipboardManager.h"
-#include "app/models/editor/EditorFontFamilyProvider.hpp"
 #include "app/models/hierarchy/bookmarks/BookmarksHierarchyController.hpp"
 #include "app/models/hierarchy/event/EventHierarchyController.hpp"
 #include "app/models/hierarchy/library/LibraryHierarchyController.hpp"
@@ -11,7 +10,6 @@
 #include "app/models/hierarchy/projects/ProjectsHierarchyController.hpp"
 #include "app/models/hierarchy/resources/ResourcesHierarchyController.hpp"
 #include "app/models/hierarchy/tags/TagsHierarchyController.hpp"
-#include "app/models/navigationbar/EditorViewModeController.hpp"
 #include "app/models/navigationbar/NavigationModeController.hpp"
 #include "app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp"
 #include "app/models/detailPanel/NoteDetailPanelController.hpp"
@@ -43,21 +41,20 @@
 #include "app/runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "app/models/file/hub/WhatSonHubCreator.hpp"
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
-#include "app/models/file/hub/WhatSonHubPathUtils.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
-#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "app/platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 #include "app/permissions/ApplePermissionBridge.hpp"
 #include "app/store/hub/SelectedHubStore.hpp"
 #include "app/store/sidebar/SidebarSelectionStore.hpp"
 #include "app/models/file/sync/WhatSonHubSyncController.hpp"
-#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if defined(WHATSON_IS_TRIAL_BUILD)
 #include "extension/trial/WhatSonTrialActivationPolicy.hpp"
 #endif
 
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QPointer>
@@ -223,7 +220,7 @@ int main(int argc, char* argv[])
             .arg(internalQmlTypeRegistrationReport.errorMessage());
         return EXIT_FAILURE;
     }
-#if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
+#if !defined(Q_OS_MACOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif
 
@@ -262,7 +259,6 @@ int main(int argc, char* argv[])
     TagsHierarchyController tagsHierarchyController;
     ResourcesHierarchyController resourcesHierarchyController;
     InAppClipboardManager inAppClipboard;
-    EditorFontFamilyProvider editorFontFamilyProvider;
     ProgressHierarchyController progressHierarchyController;
     EventHierarchyController eventHierarchyController;
     PresetHierarchyController presetHierarchyController;
@@ -274,7 +270,6 @@ int main(int argc, char* argv[])
     DetailPanelCurrentHierarchyBinder detailPanelCurrentHierarchyBinder;
     NoteDetailPanelController noteDetailPanelController;
     ResourceDetailPanelController resourceDetailPanelController;
-    EditorViewModeController editorViewModeController;
     NavigationModeController navigationModeController;
     WhatSonAsyncScheduler asyncScheduler;
     PanelControllerRegistry panelControllerRegistry;
@@ -286,7 +281,7 @@ int main(int argc, char* argv[])
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
     WhatSonPermissionBootstrapper permissionBootstrapper(app);
-#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if defined(WHATSON_IS_TRIAL_BUILD)
     WhatSonRegisterManager trialRegisterManager;
     WhatSonTrialActivationPolicy trialActivationPolicy;
     trialActivationPolicy.setRegisterManager(&trialRegisterManager);
@@ -576,14 +571,12 @@ int main(int argc, char* argv[])
     workspaceContextObjects.tagsHierarchyController = &tagsHierarchyController;
     workspaceContextObjects.resourcesHierarchyController = &resourcesHierarchyController;
     workspaceContextObjects.inAppClipboard = &inAppClipboard;
-    workspaceContextObjects.editorFontFamilyProvider = &editorFontFamilyProvider;
     workspaceContextObjects.progressHierarchyController = &progressHierarchyController;
     workspaceContextObjects.eventHierarchyController = &eventHierarchyController;
     workspaceContextObjects.presetHierarchyController = &presetHierarchyController;
     workspaceContextObjects.detailPanelController = &noteDetailPanelController;
     workspaceContextObjects.noteDetailPanelController = &noteDetailPanelController;
     workspaceContextObjects.resourceDetailPanelController = &resourceDetailPanelController;
-    workspaceContextObjects.editorViewModeController = &editorViewModeController;
     workspaceContextObjects.navigationModeController = &navigationModeController;
     workspaceContextObjects.sidebarHierarchyController = &sidebarHierarchyController;
     workspaceContextObjects.noteActiveState = &noteActiveState;
@@ -673,7 +666,7 @@ int main(int argc, char* argv[])
         return true;
     };
 
-#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if defined(WHATSON_IS_TRIAL_BUILD)
     const auto loadTrialStatusWindow =
         [&engine](QObject* hostWindow, QObject* trialPolicyObject) -> QObject*
     {
@@ -707,7 +700,7 @@ int main(int argc, char* argv[])
             return EXIT_FAILURE;
         }
 
-#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if defined(WHATSON_IS_TRIAL_BUILD)
         QObject* trialWindow = loadTrialStatusWindow(
             onboardingWindow,
             static_cast<QObject*>(&trialActivationPolicy));
@@ -794,15 +787,10 @@ int main(int argc, char* argv[])
         return app.exec();
     }
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
-    const bool useEmbeddedStartupOnboarding = true;
-#else
-    const bool useEmbeddedStartupOnboarding = false;
-#endif
     const bool startupWorkspaceAvailable = WhatSon::Runtime::Bootstrap::startupWorkspaceReady(
         startupHubSelection.mounted);
-    const bool showDesktopStartupOnboarding = !startupWorkspaceAvailable && !useEmbeddedStartupOnboarding;
-    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupWorkspaceAvailable);
+    const bool showDesktopStartupOnboarding = !startupWorkspaceAvailable;
+    onboardingRouteBootstrapController.configure(false, startupWorkspaceAvailable);
 
     const QVariantMap mainWindowInitialProperties{
         {
@@ -838,7 +826,7 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if defined(WHATSON_IS_TRIAL_BUILD)
     QObject* trialWindow = loadTrialStatusWindow(
         mainWindow,
         static_cast<QObject*>(&trialActivationPolicy));

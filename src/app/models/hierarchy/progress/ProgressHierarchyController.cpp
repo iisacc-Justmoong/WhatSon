@@ -66,26 +66,7 @@ namespace
 
     QString notePrimaryText(const LibraryNoteRecord& note)
     {
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
-        if (!firstLine.isEmpty())
-        {
-            if (bodyPlainText.isEmpty())
-            {
-                return firstLine;
-            }
-
-            if (!bodyPlainText.startsWith(firstLine))
-            {
-                return firstLine + QLatin1Char('\n') + bodyPlainText;
-            }
-        }
-
-        if (!bodyPlainText.isEmpty())
-        {
-            return bodyPlainText;
-        }
-
+        Q_UNUSED(kMaxNoteListSummaryLines)
         return note.noteId.trimmed();
     }
 
@@ -132,18 +113,6 @@ namespace
         if (!noteId.isEmpty())
         {
             parts.push_back(noteId);
-        }
-
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
-        {
-            parts.push_back(firstLine);
-        }
-
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
-        if (!bodyPlainText.isEmpty())
-        {
-            parts.push_back(bodyPlainText);
         }
 
         for (const QString& folder : folderLabels)
@@ -465,101 +434,9 @@ bool ProgressHierarchyController::deleteFolderEnabled() const noexcept
     return false;
 }
 
-bool ProgressHierarchyController::saveBodyTextForNote(const QString& noteId, const QString& text)
-{
-    Q_UNUSED(text)
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("saveBodyTextForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
-bool ProgressHierarchyController::saveCurrentBodyText(const QString& text)
-{
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
-}
-
-bool ProgressHierarchyController::applyPersistedBodyStateForNote(
-    const QString& noteId,
-    const QString& normalizedBodyText,
-    const QString& normalizedBodySourceText,
-    const QString& lastModifiedAt)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
-            &m_allNotes,
-            normalizedNoteId,
-            normalizedBodyText,
-            normalizedBodySourceText,
-            lastModifiedAt))
-    {
-        return false;
-    }
-
-    refreshNoteListForSelection();
-    emit hubFilesystemMutated();
-    return true;
-}
-
-bool ProgressHierarchyController::requestTrackedStatisticsRefreshForNote(
-    const QString& noteId,
-    const bool incrementOpenCount)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    Q_UNUSED(incrementOpenCount)
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
 QString ProgressHierarchyController::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(m_allNotes, noteId);
-}
-
-QString ProgressHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return {};
-    }
-
-    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(m_allNotes, normalizedNoteId);
-}
-
-bool ProgressHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QString::fromLatin1(kScope),
-                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
 }
 
 bool ProgressHierarchyController::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -844,13 +721,11 @@ LibraryNoteListItem ProgressHierarchyController::buildNoteListItem(const Library
     item.id = note.noteId.trimmed();
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = !note.bodySourceText.isEmpty()
-        ? note.bodySourceText
-        : note.bodyPlainText;
+    item.bodyText.clear();
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
-    item.image = note.bodyHasResource;
-    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.image = false;
+    item.imageSource.clear();
     item.displayDate = SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
     item.folders = folderLabels;
     item.tags = noteListTags(note);

@@ -26,7 +26,6 @@ Rectangle {
     property bool headerVisible: true
     property var hierarchyController: null
     property color hintColor: LV.Theme.descriptionColor
-    readonly property int mobileNoteDragHoldInterval: 1000
     readonly property var noteContextMenuItems: [
         {
             "label": listBarLayout.noteContextMenuSelectionCount > 1 ? "Delete notes" : "Delete note",
@@ -51,14 +50,13 @@ Rectangle {
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionController !== null && listBarLayout.noteDeletionController !== undefined && (listBarLayout.noteDeletionController.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionController.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.resolvedNoteListModel.currentIndex !== undefined || listBarLayout.resolvedNoteListModel.setCurrentIndex !== undefined)
-    property bool isMobilePlatform: false
-    readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget || listBarLayout.isMobilePlatform
-    readonly property int noteListBoundsBehavior: listBarLayout.noteListKineticViewportEnabled ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
-    readonly property int noteListBoundsMovement: listBarLayout.noteListKineticViewportEnabled ? Flickable.FollowBoundsBehavior : Flickable.StopAtBounds
+    readonly property bool noteListKineticViewportEnabled: false
+    readonly property int noteListBoundsBehavior: Flickable.StopAtBounds
+    readonly property int noteListBoundsMovement: Flickable.StopAtBounds
     readonly property int noteListDesktopFlickDeceleration: 1000000
-    readonly property int noteListFlickDeceleration: listBarLayout.noteListKineticViewportEnabled ? Math.max(0, Math.round(LV.Theme.scaleMetric(2800))) : listBarLayout.noteListDesktopFlickDeceleration
+    readonly property int noteListFlickDeceleration: listBarLayout.noteListDesktopFlickDeceleration
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
-    readonly property int noteListMaximumFlickVelocity: listBarLayout.noteListKineticViewportEnabled ? Math.max(0, Math.round(LV.Theme.scaleMetric(12000))) : listBarLayout.noteListScrollTick
+    readonly property int noteListMaximumFlickVelocity: listBarLayout.noteListScrollTick
     property var noteListModel: null
     readonly property int noteListViewportInset: LV.Theme.gap2
     property int noteListModelTransitionRevision: 0
@@ -79,7 +77,7 @@ Rectangle {
     property bool syncingCurrentIndexFromModel: false
     property bool syncingNoteListViewport: false
     readonly property int topToolbarHeight: LV.Theme.gap24
-    readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
+    readonly property bool useInternalNoteDrag: true
 
     signal noteActivated(int index, string noteId)
     signal viewHookRequested
@@ -398,7 +396,7 @@ Rectangle {
             return true;
         }
         if (normalizedTrigger === "longpress" || normalizedTrigger === "long-press" || normalizedTrigger === "pressandhold" || normalizedTrigger === "press-and-hold") {
-            return listBarLayout.noteListKineticViewportEnabled;
+            return false;
         }
         return false;
     }
@@ -945,21 +943,18 @@ Rectangle {
                         required property var folders
                         required property bool image
                         required property var imageSource
-                        readonly property bool immediatePointerDragEnabled: !noteItemDelegate.pointerDragRequiresLongPress
+                        readonly property bool immediatePointerDragEnabled: true
                         required property int index
-                        property bool mobileLongPressPendingContextMenu: false
-                        property bool mobilePointerDragging: false
-                        property bool mobileSuppressNextClick: false
                         required property string noteId
-                        readonly property bool pointerDragActive: noteDragHandler.active || noteItemDelegate.mobilePointerDragging
-                        readonly property bool pointerDragRequiresLongPress: LV.Theme.mobileTarget
+                        readonly property bool pointerDragActive: noteDragHandler.active
+                        readonly property bool pointerDragRequiresLongPress: false
                         property int pointerSelectionModifiers: Qt.NoModifier
                         property double pointerSelectionModifiersCapturedAtMs: 0
                         required property string primaryText
                         required property var tags
 
                         Drag.active: noteItemDelegate.pointerDragActive
-                        Drag.dragType: listBarLayout.useInternalNoteDrag ? Drag.Internal : Drag.Automatic
+                        Drag.dragType: Drag.Internal
                         Drag.hotSpot.x: noteItemDelegate.dragHotSpotX
                         Drag.hotSpot.y: noteItemDelegate.dragHotSpotY
                         Drag.keys: ["whatson.library.note"]
@@ -1043,93 +1038,6 @@ Rectangle {
                                 listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, noteDragHandler.centroid.position.x, noteDragHandler.centroid.position.y);
                             }
                         }
-                        MouseArea {
-                            id: mobileLongPressDragArea
-
-                            acceptedButtons: Qt.LeftButton
-                            anchors.fill: parent
-                            enabled: noteItemDelegate.pointerDragRequiresLongPress
-                            hoverEnabled: false
-                            pressAndHoldInterval: listBarLayout.mobileNoteDragHoldInterval
-                            preventStealing: noteItemDelegate.mobilePointerDragging
-
-                            onCanceled: {
-                                const dragging = noteItemDelegate.mobilePointerDragging;
-                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
-                                noteItemDelegate.mobilePointerDragging = false;
-                                noteItemDelegate.mobileSuppressNextClick = false;
-                                listBarLayout.pressedNoteIndex = -1;
-                                if (!dragging)
-                                    return;
-                                listBarLayout.noteDragCanceled = true;
-                                listBarLayout.noteDragActive = false;
-                                listBarLayout.clearInternalNoteDropPreview();
-                                listBarLayout.clearNoteDragPreview(noteItemDelegate);
-                                listBarLayout.noteDragCanceled = false;
-                            }
-                            onClicked: function (mouse) {
-                                if (noteItemDelegate.mobileSuppressNextClick) {
-                                    noteItemDelegate.mobileSuppressNextClick = false;
-                                    return;
-                                }
-                                if (noteItemDelegate.mobilePointerDragging)
-                                    return;
-                                listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.requestNoteSelection(noteItemDelegate.index, noteItemDelegate.noteId, mouse.modifiers);
-                            }
-                            onPositionChanged: function (mouse) {
-                                if (noteItemDelegate.mobilePointerDragging) {
-                                    listBarLayout.updateNoteDragPreviewPosition(noteItemDelegate, mouse.x, mouse.y);
-                                    listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, mouse.x, mouse.y);
-                                    return;
-                                }
-                                if (!noteItemDelegate.mobileLongPressPendingContextMenu)
-                                    return;
-                                const deltaX = Math.abs((Number(mouse.x) || 0) - noteItemDelegate.dragHotSpotX);
-                                const deltaY = Math.abs((Number(mouse.y) || 0) - noteItemDelegate.dragHotSpotY);
-                                if (Math.max(deltaX, deltaY) < 4)
-                                    return;
-                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
-                                listBarLayout.noteDragCanceled = false;
-                                listBarLayout.noteDragActive = true;
-                                noteItemDelegate.mobilePointerDragging = true;
-                                listBarLayout.beginNoteDragPreview(noteItemDelegate, noteItemDelegate.dragHotSpotX, noteItemDelegate.dragHotSpotY);
-                                listBarLayout.updateNoteDragPreviewPosition(noteItemDelegate, mouse.x, mouse.y);
-                                listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, mouse.x, mouse.y);
-                                if (listBarLayout.pressedNoteIndex === noteItemDelegate.index)
-                                    listBarLayout.pressedNoteIndex = -1;
-                            }
-                            onPressAndHold: function (mouse) {
-                                noteItemDelegate.mobileLongPressPendingContextMenu = true;
-                                noteItemDelegate.mobileSuppressNextClick = true;
-                            }
-                            onPressed: function (mouse) {
-                                noteItemDelegate.dragHotSpotX = Number(mouse.x) || width * 0.5;
-                                noteItemDelegate.dragHotSpotY = Number(mouse.y) || height * 0.5;
-                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
-                                noteItemDelegate.mobilePointerDragging = false;
-                                noteItemDelegate.mobileSuppressNextClick = false;
-                                listBarLayout.pressedNoteIndex = noteItemDelegate.index;
-                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
-                            }
-                            onReleased: function (mouse) {
-                                const dragging = noteItemDelegate.mobilePointerDragging;
-                                const openContextMenu = noteItemDelegate.mobileLongPressPendingContextMenu && !dragging;
-                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
-                                noteItemDelegate.mobilePointerDragging = false;
-                                listBarLayout.pressedNoteIndex = -1;
-                                if (openContextMenu) {
-                                    listBarLayout.openNoteContextMenuFromPointer(noteItemDelegate, mouse.x, mouse.y, "longPress");
-                                    return;
-                                }
-                                if (!dragging)
-                                    return;
-                                listBarLayout.noteDragActive = false;
-                                listBarLayout.clearInternalNoteDropPreview();
-                                listBarLayout.clearNoteDragPreview(noteItemDelegate);
-                                listBarLayout.noteDragCanceled = false;
-                            }
-                        }
                         TapHandler {
                             id: noteTapHandler
 
@@ -1207,10 +1115,7 @@ Rectangle {
                             listBarLayout.syncFocusedNoteDeletionState();
                         });
                     }
-                    onFlickStarted: {
-                        if (!LV.Theme.mobileTarget)
-                            noteListView.cancelFlick();
-                    }
+                    onFlickStarted: noteListView.cancelFlick()
                     onHeightChanged: listBarLayout.settleNoteListViewport()
                     onMovementEnded: listBarLayout.settleNoteListViewport()
                 }

@@ -11,16 +11,10 @@ list.
   filtered notes through the same hierarchy interface used by other domains.
 - Exposes `setProgressState(int, QStringList)` for direct state injection and
   `applyRuntimeSnapshot(...)` for startup/runtime refreshes.
-- Exposes body persistence helpers and note-directory lookup so the active progress note can remain
-  editable in shared editor flows.
-- The same editable surface now keeps direct editor RAW writes separate from expensive stat refresh by exposing
-  `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)`.
+- Exposes note-directory lookup for detail-panel current-note flows. Body persistence and editor stat-refresh helpers
+  are not part of the progress controller surface.
 - Exposes `requestControllerHook()` as a file-backed refresh hook that reparses
   `Progress.wsprogress` and reindexes note metadata.
-- Emits `hubFilesystemMutated()` after successful `.wsnbody` writes so hub sync can treat progress-domain edits as
-  local mutations without full user-interaction hints.
-- Exposes `reloadNoteMetadataForNoteId(QString)` so detail-panel writes can refresh the current
-  progress-filtered note list without waiting for a full runtime reload.
 - Declares every inherited capability method with explicit `override`, keeping the header aligned
   with `IHierarchyRenameCapability`, `IHierarchyCrudCapability`, and
   `IHierarchyExpansionCapability` without compiler override warnings.

@@ -52,7 +52,7 @@
 - 이미지 크기를 알아낼 수 없으면 최소 `1x1` 투명 PNG로 fallback 한다.
 - `writeResourcePackageAnnotationBitmap(...)`는 그 PNG를 `annotation.png`로 패키지 내부에 원자적으로 기록한다.
 
-마지막 함수는 `.wsnbody`의 `<resource ... resourcePath="...">`와 같은 참조를 받아:
+마지막 함수는 persisted resource reference를 받아:
 
 - 패키지 디렉터리면 `resource.xml`을 읽고 내부 에셋 파일 절대 경로로 변환하고
 - 기존 raw 파일/URL 참조면 그대로 호환 처리한다.

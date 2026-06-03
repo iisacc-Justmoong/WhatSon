@@ -1,6 +1,5 @@
 #include "app/store/hub/SelectedHubStore.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
-#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -100,9 +99,6 @@ bool SelectedHubStore::isStoredHubPathValid(const QString& hubPath) const
     if (normalizedHubPath.trimmed().isEmpty())
         return false;
 
-    if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
-        return true;
-
     const QFileInfo hubInfo(normalizedHubPath);
     return hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive);
 }
@@ -112,13 +108,6 @@ QString SelectedHubStore::normalizeHubPath(const QString& hubPath) const
     const QString normalizedHubPath = WhatSon::HubPath::normalizeAbsolutePath(hubPath);
     if (normalizedHubPath.isEmpty())
         return {};
-
-    if (WhatSon::Android::Storage::isMountedHubPath(normalizedHubPath))
-    {
-        const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(normalizedHubPath);
-        if (!sourceUri.trimmed().isEmpty())
-            return WhatSon::HubPath::normalizePath(sourceUri);
-    }
 
     return normalizedHubPath;
 }

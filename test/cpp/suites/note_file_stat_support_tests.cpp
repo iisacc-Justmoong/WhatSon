@@ -1,5 +1,20 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+namespace
+{
+    QString firstHeaderPathInNoteDirectory(const QString& noteDirectoryPath)
+    {
+        const QDir noteDirectory(noteDirectoryPath);
+        const QStringList headerFiles =
+            noteDirectory.entryList(QStringList{QStringLiteral("*.wsnhead")}, QDir::Files, QDir::Name);
+        if (headerFiles.isEmpty())
+        {
+            return {};
+        }
+        return noteDirectory.filePath(headerFiles.constFirst());
+    }
+}
+
 void WhatSonCppRegressionTests::noteFileStatSupport_incrementsOpenCountAndPersistsLastOpenedAt()
 {
     QTemporaryDir workspaceDir;
@@ -15,7 +30,7 @@ void WhatSonCppRegressionTests::noteFileStatSupport_incrementsOpenCountAndPersis
         !noteDirectoryPath.isEmpty(),
         qPrintable(QStringLiteral("Failed to create note fixture: %1").arg(createError)));
 
-    const QString headerPath = WhatSon::NoteBodyPersistence::resolveHeaderPath(QString(), noteDirectoryPath);
+    const QString headerPath = firstHeaderPathInNoteDirectory(noteDirectoryPath);
     QVERIFY(QFileInfo::exists(headerPath));
 
     const QDateTime beforeIncrementUtc = QDateTime::currentDateTimeUtc();

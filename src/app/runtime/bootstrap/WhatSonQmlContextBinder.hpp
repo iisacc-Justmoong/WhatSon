@@ -16,14 +16,12 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* tagsHierarchyController = nullptr;
         QObject* resourcesHierarchyController = nullptr;
         QObject* inAppClipboard = nullptr;
-        QObject* editorFontFamilyProvider = nullptr;
         QObject* progressHierarchyController = nullptr;
         QObject* eventHierarchyController = nullptr;
         QObject* presetHierarchyController = nullptr;
         QObject* detailPanelController = nullptr;
         QObject* noteDetailPanelController = nullptr;
         QObject* resourceDetailPanelController = nullptr;
-        QObject* editorViewModeController = nullptr;
         QObject* navigationModeController = nullptr;
         QObject* sidebarHierarchyController = nullptr;
         QObject* noteActiveState = nullptr;

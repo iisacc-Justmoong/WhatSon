@@ -39,19 +39,14 @@ ctest --test-dir build --output-on-failure -L cpp_regression
 
 ## Current Focus
 
-- Runtime editor QML coverage pins the center editor route to exactly three contents views: `Gutter.qml`,
-  `TextEditor.qml`, and `Minimap.qml`; `TextEditor.qml` is rooted in `LV.TextEditor` with an empty `filePath`. The same
-  coverage locks the mobile editor route to hidden gutter/minimap rails.
-- Source-tree policy coverage requires the explicit `src/app/models/editor` CMake shard while still rejecting removed
-  editor minimap backends and any extra contents-view QML beyond those three files.
-- Editor model coverage verifies that `SetTag` inserts only static `.wsnbody` RAW tag templates, including the paired
-  `style` text wrapper whose `style` attribute follows LVRS text token names, while `SetProperty`
-  uses dynamic string attribute names with inferred string/int/float/bool values. `GetProperty` captures tag
-  attributes into in-app key/value state with the matching inferred value kinds. These paths reserialize or project
-  body documents through the note-body persistence boundary.
-- The same coverage now verifies that `Main.qml` keeps the restored desktop/mobile shell while the removed editor
-  view-mode selector/controller family stays absent.
+- Runtime content QML coverage pins the center content route to `ImageEditor.qml` plus a blank placeholder for note and
+  non-image selections.
+- Source-tree policy coverage keeps the note editing, body persistence, raw sync, and editor view-mode object families
+  absent from CMake, QML, docs, and the regression source list.
+- Clipboard resource coverage verifies package import through `InAppClipboardManager` without editor paste wrappers or
+  body tag insertion paths.
+- The same coverage verifies that `Main.qml` keeps the desktop shell while removed editor and separated platform app
+  object families stay absent.
 - The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list
-  selection state, resource/package utilities, note file persistence, startup hub resolution, scheduler support, and
-  mobile routing coordinator units.
+  selection state, resource/package utilities, note file persistence, startup hub resolution, and scheduler support.
 - The suite avoids booting the full application shell or loading a hub package.

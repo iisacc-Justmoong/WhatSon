@@ -26,7 +26,7 @@
 
 ## Current Domain Notes
 - This directory owns hub structure filesystem validation only.
-- `.wsnbody` body-format persistence for `<break>` and `<resource ... />` stays inside `src/app/models/file/note`.
+- Body-format persistence is not part of the current validator or note-file surface.
 
 ## 한국어
 

@@ -21,11 +21,8 @@ Owns read-side hub inspection objects that derive sensor outputs from the unpack
 - `WeeklyUnusedNote` and `MonthlyUnusedNote` currently return empty note result lists.
 - Both note sensors keep their public properties so callers do not need a view contract change during the package-model
   removal.
-- `UnusedResourcesSensor` scans hub-local `.wsresource` packages and compares them against `<resource ... />`
-  embeddings found in note `.wsnbody` documents.
-- The sensor returns only packages that are present in the hub but unused by every note.
-- The sensor treats RAW note source and package metadata as the source of truth; it does not inspect editor-side DOM
-  projections.
+- `UnusedResourcesSensor` scans hub-local `.wsresource` packages and returns package inventory as unused candidates.
+- The sensor no longer reads note body source or editor-side DOM projections.
 
 ## 한국어
 

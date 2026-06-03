@@ -18,14 +18,12 @@ the year view acts as a high-level event/task heatmap.
   - calendar-system switching is no longer exposed in this page; that control belongs to settings UI.
 - Body:
   - desktop: fixed 4x3 month-card grid (`desktopYearGridColumnCount = 4`),
-  - mobile: vertical scroll year list (`mobileYearGridColumnCount = 1`),
   - month title color uses accent token (`monthTitleColor = LV.Theme.accent`) instead of fixed red,
   - desktop month cards scale responsively using `desktopResponsiveScale`, so grid gap/card padding/day-cell sizes
     change with window size (`yearGridSpacing`, `monthCardPadding`, `monthSectionSpacing`, `monthTitlePixelSize`),
   - weekday/day numeric labels now route through `LV.Theme.textBody` and remain `Font.Medium`,
   - weekday header row per card,
   - 42-cell day grid per month.
-- Month spacing, card padding, today badge fill, transparent cards, and mobile month-card minimum height now route
   through named `LV.Theme` tokens or token compositions.
 
 ## LVRS/QML Standard Alignment
@@ -48,7 +46,6 @@ the year view acts as a high-level event/task heatmap.
 
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - Year calendar view must not render a calendar-system segmented control on mobile.
     - Header prev/today/next actions must continue to work after removing the selector row.
     - Tapping a month title must switch the content surface from year view to the corresponding month view.
     - Tapping an in-month or adjacent-month day must open the month view for that tapped date and preserve its selected

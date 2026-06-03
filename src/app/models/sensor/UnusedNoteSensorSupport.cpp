@@ -1,7 +1,6 @@
 #include "app/models/sensor/UnusedNoteSensorSupport.hpp"
 
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
-#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/file/note/header/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>

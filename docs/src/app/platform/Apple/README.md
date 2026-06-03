@@ -15,9 +15,6 @@
 ## Child Files
 - `AppleSecurityScopedResourceAccess.hpp`
 - `AppleSecurityScopedResourceAccess.mm`
-- `WhatSonIosHubPickerBridge.cpp`
-- `WhatSonIosHubPickerBridge.hpp`
-- `WhatSonIosHubPickerBridge.mm`
 - `WhatSonApplePackageAppearance.hpp`
 - `WhatSonApplePackageAppearance.mm`
 

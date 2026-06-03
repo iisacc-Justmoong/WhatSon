@@ -48,10 +48,8 @@ from the same persisted `.wsnhead` cache as the properties tab.
 `noteContextLinked` is the gating contract for the panel surface: it flips to `true` only when the current note id and
 directory are both resolved and the active `.wsnhead` snapshot loads successfully.
 `setCurrentNoteListModel(QObject*)` also observes an optional `itemsChanged()` signal from the active note-list model so the same selected note can force-refresh its `.wsnhead` metadata snapshot after out-of-band folder or tag edits.
-The private write path now also routes successful metadata edits back into the active hierarchy domain through `reloadNoteMetadataForNoteId(QString)`, keeping the note list and detail panel in lockstep.
-It additionally tracks the canonical Tags hierarchy controller as a secondary refresh target, so
-tag writes performed while another sidebar domain is active still refresh the Tags note-list
-projection.
+The private write path re-applies successful metadata edits to the loaded detail header snapshot. It no longer routes
+single-note reload calls into hierarchy domains.
 Folder and tag add actions now share the same mutation shape from QML's point of view: the popup hands a canonical
 string identifier to `assignFolderByName(...)` or `assignTagByName(...)`, and the controller persists it before
 re-applying the refreshed header snapshot.

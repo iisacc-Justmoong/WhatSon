@@ -12,7 +12,6 @@
 ## Child Directories
 - `calendar`
 - `content`
-- `mobile`
 - `panels`
 
 ## Child Files

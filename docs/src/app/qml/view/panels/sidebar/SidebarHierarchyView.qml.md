@@ -51,10 +51,7 @@ without changing delegate call sites.
   `hierarchyReorderCommitModel()`. That helper snapshots the shared `WhatSonHierarchyModel` through its `items()`
   method after LVRS has applied the editable move, then the bridge persists the final depth-array result.
 - The embedded `LV.Hierarchy` now lets the shared `TapHandler` explicitly approve flick takeover, so vertical swipes on
-  mobile routes are not trapped by row taps and the underlying LVRS hierarchy scroller can keep its inertial carry.
 - The host now also drives `LV.Hierarchy.listOvershootEnabled`, `listFlickDeceleration`,
-  `listMaximumFlickVelocity`, and `listReboundDuration` from an explicit mobile kinetic profile, so hierarchy scrolling
-  keeps touch momentum even when the active mobile route needs a stronger guarantee than the default theme profile.
 
 ## Important Outputs
 - `searchSubmitted(...)`
@@ -139,7 +136,6 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `requestViewOptions()` and coalesces one dispatch turn so LVRS versions that emit both the callback and signal do not
   create/delete/open twice.
 - The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and named token compositions
-  (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - The default tree context menu is `hierarchyTreeContextMenuItems`. It exposes `Expand All` and `Collapse All` actions
   in English, which matches the repository rule that project-facing strings stay in English.
 - The old `hierarchyViewOptionsMenuItems` compatibility alias is intentionally not retained; the tree context-menu
@@ -165,7 +161,6 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The same `LV.ContextMenu` instance is now reused for library-folder right-click actions instead of creating a second
   popup owner.
 - Folder context-menu pointer invocation is centralized through `openHierarchyFolderContextMenuFromPointer(...)`, so
-  desktop right-click and mobile long-press share the same hit testing, selection promotion, and protected-folder
   filtering.
 - Right-click hit testing routes through the inline `noteDropController.noteDropTargetAtPosition(...)`, so the menu
   opens only when the pointer is over a concrete visible hierarchy row.
@@ -244,7 +239,6 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - This prevents LVRS internal active-row normalization from leaking into the application selection
   state when a chevron expand/collapse triggers a stray activation on a lower visible row.
 - This keeps the suppression stable even when LVRS emits activation and expansion callbacks in
-  different order on mobile touch input.
 - `armHierarchyExpansionActivationSuppression(...)` now also increments
   `hierarchyActivationPendingSerial`, so already queued activation callbacks from the same pointer
   transaction are invalidated immediately when expansion is detected.
@@ -258,8 +252,6 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   remain parked on an internally normalized row.
 - The underlying LVRS `HierarchyItem` also reserves a dedicated chevron interaction slot
   (`chevronInteractionWidth`) and blocks row activation while the chevron interaction flag is active.
-  This keeps desktop and mobile on the same contract: chevron tap/click only expands or collapses.
-- This is specifically required for mobile routing, where `hierarchyItemActivated(...)` is treated as
   "open the note-list page for this folder". A chevron tap must only fold or unfold the hierarchy.
 
 ## Drag and Rename Behavior
@@ -321,9 +313,7 @@ This file should be read as a composed view, not as the place where hierarchy bu
   LVRS activation callbacks are delivered after pointer-up.
 - Restored explicit `NumberAnimation.from` keys on the note-drop hover pulse so Xcode/qmlcache ahead-of-time parsing
   accepts the sidebar animation object again.
-- Added mobile flick-takeover approval to the shared `LV.Hierarchy` host so the hierarchy list keeps inertial carry on
   touch routes without changing the existing desktop routing hooks.
-- Added an explicit mobile kinetic-scroll configuration layer on top of `LV.Hierarchy`, so the sidebar does not rely on
   LVRS defaults alone to preserve post-release touch momentum.
 
 ## Tests
@@ -371,7 +361,5 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - Enter-driven folder rename must not leave the row blank after commit or cancel.
 - After a rename, later focus/selection/context-menu interactions must keep the folder label instead of exposing
   `itemKey`, `uuid`, or other internal identifiers.
-- On mobile, hierarchy rows must allow the list viewport to take over a vertical swipe and continue scrolling after
   release with kinetic carry.
-- On mobile, the host must keep `LV.Hierarchy` overshoot/flick parameters aligned with the touch runtime profile instead
   of leaving the sidebar on the desktop fallback scroll contract.

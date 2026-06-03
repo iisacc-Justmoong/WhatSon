@@ -15,8 +15,8 @@
 - QObject macro present: no
 
 ## Current Notes
-- The registry includes `navigation.NavigationEditorViewBar` so the restored editor view-mode combo can request panel
-  hooks consistently with the other navigation controls.
+- The registry no longer includes deleted editor view-mode chrome. Navigation hook routing remains limited to the
+  active application/navigation panels.
 
 ### Classes and Structs
 - None detected during scaffold generation.

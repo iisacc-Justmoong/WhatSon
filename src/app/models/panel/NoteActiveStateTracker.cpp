@@ -1,6 +1,5 @@
 #include "app/models/panel/NoteActiveStateTracker.hpp"
 
-#include "app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"
 #include "app/models/sidebar/IActiveHierarchyContextSource.hpp"
 #include "app/policy/ArchitecturePolicyLock.hpp"
 
@@ -12,7 +11,6 @@
 #include <QQmlEngine>
 
 #include <algorithm>
-#include <optional>
 #include <utility>
 
 namespace
@@ -61,16 +59,6 @@ namespace
         bool converted = false;
         const int value = object->property(propertyName).toInt(&converted);
         return converted ? value : fallbackValue;
-    }
-
-    std::optional<QString> readStringProperty(const QObject* object, const char* propertyName)
-    {
-        if (!hasReadableProperty(object, propertyName))
-        {
-            return std::nullopt;
-        }
-
-        return object->property(propertyName).toString();
     }
 
     QString normalizeNoteDirectoryPath(QString noteDirectoryPath)
@@ -164,40 +152,6 @@ namespace
         return normalizeNoteEntry(std::move(snapshot));
     }
 
-    std::optional<QString> rowBodyTextAt(const QAbstractItemModel* model, const int row)
-    {
-        if (model == nullptr || row < 0 || row >= model->rowCount())
-        {
-            return std::nullopt;
-        }
-
-        const QModelIndex modelIndex = model->index(row, 0);
-        if (!modelIndex.isValid())
-        {
-            return std::nullopt;
-        }
-
-        const QHash<int, QByteArray> roleNames = model->roleNames();
-        for (auto iterator = roleNames.constBegin(); iterator != roleNames.constEnd(); ++iterator)
-        {
-            if (iterator.value().trimmed() == QByteArrayLiteral("bodyText"))
-            {
-                return modelIndex.data(iterator.key()).toString();
-            }
-        }
-
-        return std::nullopt;
-    }
-
-    std::optional<QString> noteBodyTextFromEntry(const QVariantMap& noteEntry)
-    {
-        if (!noteEntry.contains(QStringLiteral("bodyText")))
-        {
-            return std::nullopt;
-        }
-        return noteEntry.value(QStringLiteral("bodyText")).toString();
-    }
-
     QString noteIdFromEntry(const QVariantMap& noteEntry)
     {
         const QString noteId = noteEntry.value(QStringLiteral("noteId")).toString().trimmed();
@@ -212,12 +166,6 @@ namespace
     {
         return normalizeNoteDirectoryPath(
             noteEntry.value(QStringLiteral("noteDirectoryPath")).toString());
-    }
-
-    QString noteBodyPathFromDirectoryPath(const QString& noteDirectoryPath)
-    {
-        return normalizeNoteDirectoryPath(
-            WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath));
     }
 
     void stabilizeQmlBindingOwnership(QObject* object)
@@ -333,16 +281,6 @@ QString NoteActiveStateTracker::activeNoteDirectoryPath() const
     return m_activeNoteDirectoryPath;
 }
 
-QString NoteActiveStateTracker::activeNoteBodyPath() const
-{
-    return m_activeNoteBodyPath;
-}
-
-QString NoteActiveStateTracker::activeNoteBodyText() const
-{
-    return m_activeNoteBodyText;
-}
-
 bool NoteActiveStateTracker::hasActiveNote() const noexcept
 {
     return !m_activeNoteId.trimmed().isEmpty();
@@ -412,27 +350,21 @@ void NoteActiveStateTracker::refreshActiveNoteState()
     QVariantMap nextEntry;
     QString nextNoteId;
     QString nextNoteDirectoryPath;
-    QString nextNoteBodyText;
 
     if (noteListModel != nullptr && noteBackedSelectionEnabled(noteListModel))
     {
         const bool currentNoteEntryReadable = hasReadableProperty(noteListModel, "currentNoteEntry");
         const bool currentNoteIdReadable = hasReadableProperty(noteListModel, "currentNoteId");
         const bool currentNoteDirectoryPathReadable = hasReadableProperty(noteListModel, "currentNoteDirectoryPath");
-        const bool currentBodyTextReadable = hasReadableProperty(noteListModel, "currentBodyText");
-        std::optional<QString> noteBodyText;
 
         if (currentNoteEntryReadable)
         {
-            const QVariantMap rawEntry = readRawCurrentNoteEntryProperty(noteListModel);
-            noteBodyText = noteBodyTextFromEntry(rawEntry);
             nextEntry = readCurrentNoteEntryProperty(noteListModel);
         }
         else if (!currentNoteIdReadable)
         {
             const int currentIndex = readIntProperty(noteListModel, "currentIndex", -1);
             nextEntry = rowSnapshotAt(qobject_cast<const QAbstractItemModel*>(noteListModel), currentIndex);
-            noteBodyText = rowBodyTextAt(qobject_cast<const QAbstractItemModel*>(noteListModel), currentIndex);
         }
 
         nextNoteId = noteIdFromEntry(nextEntry);
@@ -448,25 +380,13 @@ void NoteActiveStateTracker::refreshActiveNoteState()
                 noteListModel->property("currentNoteDirectoryPath").toString());
         }
 
-        if (!noteBodyText.has_value() && currentBodyTextReadable)
-        {
-            noteBodyText = readStringProperty(noteListModel, "currentBodyText");
-        }
-        if (!noteBodyText.has_value())
-        {
-            const int currentIndex = readIntProperty(noteListModel, "currentIndex", -1);
-            noteBodyText = rowBodyTextAt(qobject_cast<const QAbstractItemModel*>(noteListModel), currentIndex);
-        }
-
         if (nextNoteId.isEmpty())
         {
             nextEntry.clear();
             nextNoteDirectoryPath.clear();
-            nextNoteBodyText.clear();
         }
         else
         {
-            nextNoteBodyText = noteBodyText.value_or(QString());
             nextEntry.insert(QStringLiteral("noteId"), nextNoteId);
             if (!nextNoteDirectoryPath.isEmpty())
             {
@@ -478,8 +398,7 @@ void NoteActiveStateTracker::refreshActiveNoteState()
     setActiveNoteState(
         std::move(nextEntry),
         std::move(nextNoteId),
-        std::move(nextNoteDirectoryPath),
-        std::move(nextNoteBodyText));
+        std::move(nextNoteDirectoryPath));
 }
 
 void NoteActiveStateTracker::disconnectHierarchyContextSource()
@@ -535,7 +454,6 @@ void NoteActiveStateTracker::setActiveNoteListModel(QObject* model)
         connectOptionalSignal("currentNoteEntryChanged()", SIGNAL(currentNoteEntryChanged()));
         connectOptionalSignal("currentNoteIdChanged()", SIGNAL(currentNoteIdChanged()));
         connectOptionalSignal("currentNoteDirectoryPathChanged()", SIGNAL(currentNoteDirectoryPathChanged()));
-        connectOptionalSignal("currentBodyTextChanged()", SIGNAL(currentBodyTextChanged()));
         connectOptionalSignal("noteBackedChanged()", SIGNAL(noteBackedChanged()));
 
         if (auto* abstractModel = qobject_cast<QAbstractItemModel*>(m_activeNoteListModel.data()))
@@ -575,26 +493,19 @@ void NoteActiveStateTracker::setActiveNoteListModel(QObject* model)
 void NoteActiveStateTracker::setActiveNoteState(
     QVariantMap noteEntry,
     QString noteId,
-    QString noteDirectoryPath,
-    QString noteBodyText)
+    QString noteDirectoryPath)
 {
     noteId = noteId.trimmed();
     noteDirectoryPath = normalizeNoteDirectoryPath(std::move(noteDirectoryPath));
     if (noteId.isEmpty())
     {
         noteDirectoryPath.clear();
-        noteBodyText.clear();
     }
-    const QString noteBodyPath = noteId.isEmpty()
-        ? QString()
-        : noteBodyPathFromDirectoryPath(noteDirectoryPath);
 
     const bool previousHasActiveNote = hasActiveNote();
     const bool entryChanged = m_activeNoteEntry != noteEntry;
     const bool noteIdChanged = m_activeNoteId != noteId;
     const bool noteDirectoryPathChanged = m_activeNoteDirectoryPath != noteDirectoryPath;
-    const bool noteBodyPathChanged = m_activeNoteBodyPath != noteBodyPath;
-    const bool noteBodyTextChanged = m_activeNoteBodyText != noteBodyText;
 
     if (entryChanged)
     {
@@ -608,15 +519,6 @@ void NoteActiveStateTracker::setActiveNoteState(
     {
         m_activeNoteDirectoryPath = std::move(noteDirectoryPath);
     }
-    if (noteBodyPathChanged)
-    {
-        m_activeNoteBodyPath = noteBodyPath;
-    }
-    if (noteBodyTextChanged)
-    {
-        m_activeNoteBodyText = std::move(noteBodyText);
-    }
-
     if (entryChanged)
     {
         emit activeNoteEntryChanged();
@@ -629,19 +531,11 @@ void NoteActiveStateTracker::setActiveNoteState(
     {
         emit activeNoteDirectoryPathChanged();
     }
-    if (noteBodyPathChanged)
-    {
-        emit activeNoteBodyPathChanged();
-    }
-    if (noteBodyTextChanged)
-    {
-        emit activeNoteBodyTextChanged();
-    }
     if (previousHasActiveNote != hasActiveNote())
     {
         emit hasActiveNoteChanged();
     }
-    if (entryChanged || noteIdChanged || noteDirectoryPathChanged || noteBodyPathChanged || noteBodyTextChanged)
+    if (entryChanged || noteIdChanged || noteDirectoryPathChanged)
     {
         emit activeNoteStateChanged();
     }

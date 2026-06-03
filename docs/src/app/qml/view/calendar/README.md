@@ -43,7 +43,6 @@
   instead of drawing per-column grid fills, and the day-column model now comes directly from
   `WeekCalendarController.timelineDayModels` instead of a QML-owned `ListModel` plus entry cache. Current-week
   initialization and `Today` both recenter the surface so the real current date occupies the middle visible column.
-- Monthly page mirrors Figma node `228:9666` with fixed header (`54`) and a reusable month-grid surface; mobile adds a
   snap-paged horizontal month swiper while desktop keeps non-interactive paging.
 - Year view now acts as a routing surface into month view: month-title/day taps preconfigure the month overlay before
   the host switches overlays.

@@ -13,8 +13,8 @@ These classes are not the core domain state. They are adaptation layers between:
 - `HierarchyDragDropBridge`: reorder and note-drop access through capabilities.
 - `FocusedNoteDeletionBridge`: focused-note deletion helper.
 - `NoteActiveStateTracker`: app-wide active-note state tracker that follows the active hierarchy context, publishes
-  normalized `activeNoteId` / `activeNoteDirectoryPath` / `activeNoteEntry` / `activeNoteBodyText` for QML. It stops
-  at selection publication and does not mount editor sessions, mutate note source, or participate in editor persistence.
+  normalized `activeNoteId` / `activeNoteDirectoryPath` / `activeNoteEntry` for QML. It stops at selection publication
+  and does not mount editor sessions, mutate note source, or participate in editor persistence.
 - `NoteListModelContractBridge`: dynamic note-list search/selection contract adapter used by `ListBarLayout.qml`.
 - `PanelController` and `PanelControllerRegistry`: panel-specific controller routing and hook dispatch.
 

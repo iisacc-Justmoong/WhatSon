@@ -86,10 +86,10 @@ Rectangle {
         }
         return false;
     }
-    readonly property bool hierarchyKineticViewportEnabled: LV.Theme.mobileTarget || (Window.window && Window.window.isMobilePlatform !== undefined ? Boolean(Window.window.isMobilePlatform) : false)
-    readonly property int hierarchyListFlickDeceleration: hierarchyKineticViewportEnabled ? Math.max(1, Math.round(LV.Theme.scaleMetric(1800))) : Math.max(1, Math.round(LV.Theme.scaleMetric(3200)))
-    readonly property int hierarchyListMaximumFlickVelocity: hierarchyKineticViewportEnabled ? Math.max(1, Math.round(LV.Theme.scaleMetric(12000))) : Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
-    readonly property int hierarchyListReboundDuration: hierarchyKineticViewportEnabled ? 220 : 160
+    readonly property bool hierarchyKineticViewportEnabled: false
+    readonly property int hierarchyListFlickDeceleration: Math.max(1, Math.round(LV.Theme.scaleMetric(3200)))
+    readonly property int hierarchyListMaximumFlickVelocity: Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
+    readonly property int hierarchyListReboundDuration: 160
     property string hierarchyContextMenuKind: "options"
     readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder" ? sidebarHierarchyView.hierarchyFolderContextMenuItems : sidebarHierarchyView.hierarchyTreeContextMenuItems
     property int hierarchyContextMenuTargetIndex: -1

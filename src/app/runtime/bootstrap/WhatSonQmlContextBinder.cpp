@@ -38,15 +38,10 @@ namespace
             plan,
             QStringLiteral("resourceDetailPanelController"),
             objects.resourceDetailPanelController);
-        appendContextObjectBinding(plan, QStringLiteral("editorViewModeController"), objects.editorViewModeController);
         appendContextObjectBinding(plan, QStringLiteral("navigationModeController"), objects.navigationModeController);
         appendContextObjectBinding(plan, QStringLiteral("sidebarHierarchyController"), objects.sidebarHierarchyController);
         appendContextObjectBinding(plan, QStringLiteral("noteActiveState"), objects.noteActiveState);
         appendContextObjectBinding(plan, QStringLiteral("inAppClipboard"), objects.inAppClipboard);
-        appendContextObjectBinding(
-            plan,
-            QStringLiteral("editorFontFamilyProvider"),
-            objects.editorFontFamilyProvider);
         appendContextObjectBinding(plan, QStringLiteral("asyncScheduler"), objects.asyncScheduler);
         appendContextObjectBinding(plan, QStringLiteral("calendarBoardStore"), objects.calendarBoardStore);
         appendContextObjectBinding(plan, QStringLiteral("systemCalendarStore"), objects.systemCalendarStore);

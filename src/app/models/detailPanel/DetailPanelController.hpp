@@ -99,7 +99,6 @@ private:
     void reconnectCurrentNoteListModelSignals(QObject* noteListModel);
     void disconnectCurrentNoteListModelSignals();
     void reloadCurrentHeader(bool forceReload);
-    void synchronizeCurrentNoteMetadataConsumers(const QString& noteId);
     bool ensureCurrentHeaderLoaded(QString* errorMessage = nullptr);
     QString currentNoteId() const;
     QString currentNoteDirectoryPath() const;

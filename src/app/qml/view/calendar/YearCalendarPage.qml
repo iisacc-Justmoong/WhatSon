@@ -9,12 +9,10 @@ Rectangle {
 
     readonly property var calendarController: yearCalendarController
     readonly property var monthModels: calendarController && calendarController.monthModels ? calendarController.monthModels : []
-    readonly property bool mobileYearListMode: LV.Theme.mobileTarget
     readonly property int desktopYearGridColumnCount: 4
     readonly property int desktopYearGridRowCount: 3
-    readonly property int mobileYearGridColumnCount: 1
-    readonly property int yearGridColumnCount: yearCalendarPage.mobileYearListMode ? yearCalendarPage.mobileYearGridColumnCount : yearCalendarPage.desktopYearGridColumnCount
-    readonly property real desktopResponsiveScale: yearCalendarPage.mobileYearListMode ? 1.0 : Math.min(1.2, Math.max(0.72, Math.min(yearCalendarPage.width / 1600, yearCalendarPage.height / 1020)))
+    readonly property int yearGridColumnCount: yearCalendarPage.desktopYearGridColumnCount
+    readonly property real desktopResponsiveScale: Math.min(1.2, Math.max(0.72, Math.min(yearCalendarPage.width / 1600, yearCalendarPage.height / 1020)))
     readonly property int yearGridSpacing: Math.max(LV.Theme.gap4, Math.round(LV.Theme.gap24 * yearCalendarPage.desktopResponsiveScale))
     readonly property int monthCardPadding: Math.max(LV.Theme.gap4, Math.round(LV.Theme.gap14 * yearCalendarPage.desktopResponsiveScale))
     readonly property int monthSectionSpacing: Math.max(LV.Theme.gap2, Math.round(LV.Theme.gap8 * yearCalendarPage.desktopResponsiveScale))
@@ -27,7 +25,6 @@ Rectangle {
     readonly property color activeDayColor: LV.Theme.titleHeaderColor
     readonly property color adjacentDayColor: Qt.darker(yearCalendarPage.activeDayColor, 1.2)
     readonly property color todayBadgeColor: LV.Theme.disabledColor
-    readonly property int mobileMonthCardMinHeight: LV.Theme.scaffoldBlobPrimaryRadius
     readonly property var weekdayLabels: calendarController && calendarController.weekdayLabels ? calendarController.weekdayLabels : []
     property var yearCalendarController: null
 
@@ -97,8 +94,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: yearCalendarPage.mobileYearListMode ? LV.Theme.gap12 : Math.max(LV.Theme.gap10, Math.round(LV.Theme.gap20 * yearCalendarPage.desktopResponsiveScale))
-        spacing: yearCalendarPage.mobileYearListMode ? LV.Theme.gap8 : yearCalendarPage.yearGridSpacing
+        anchors.margins: Math.max(LV.Theme.gap10, Math.round(LV.Theme.gap20 * yearCalendarPage.desktopResponsiveScale))
+        spacing: yearCalendarPage.yearGridSpacing
 
         Rectangle {
             id: calendarToolbar
@@ -152,10 +149,10 @@ Rectangle {
             Layout.fillWidth: true
             boundsBehavior: Flickable.StopAtBounds
             clip: true
-            contentHeight: yearCalendarPage.mobileYearListMode ? monthGrid.implicitHeight : monthsFlickable.height
+            contentHeight: monthsFlickable.height
             contentWidth: monthsFlickable.width
             flickableDirection: Flickable.VerticalFlick
-            interactive: yearCalendarPage.mobileYearListMode
+            interactive: false
 
             Grid {
                 id: monthGrid
@@ -179,9 +176,9 @@ Rectangle {
                         readonly property int dayCellHeight: Math.max(10, Math.floor((monthCard.height - (yearCalendarPage.monthCardPadding * 2) - monthTitleLabel.implicitHeight - weekdayGrid.implicitHeight - (yearCalendarPage.monthSectionSpacing * 2) - (dayGrid.spacing * 5)) / 6))
 
                         color: LV.Theme.accentTransparent
-                        height: yearCalendarPage.mobileYearListMode ? Math.max(yearCalendarPage.mobileMonthCardMinHeight, monthBodyColumn.implicitHeight + (yearCalendarPage.monthCardPadding * 2)) : monthGrid.desktopCardHeight
+                        height: monthGrid.desktopCardHeight
                         radius: LV.Theme.radiusSm
-                        width: yearCalendarPage.mobileYearListMode ? monthGrid.width : monthGrid.desktopCardWidth
+                        width: monthGrid.desktopCardWidth
 
                         Column {
                             id: monthBodyColumn

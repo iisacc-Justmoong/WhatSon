@@ -9,10 +9,7 @@ registers that manifest through LVRS `QmlTypeRegistrar`.
 
 - The registrar no longer exports editor parser, renderer, projection, session, input-policy, minimap, line-number, tag,
   display-backend, resource-viewer, or paper helper types.
-- The note editor QML path mounts `LV.TextEditor` through `src/app/qml/view/contents/TextEditor.qml`; it does not require a C++
-  editor backend registration.
-- Remaining registrations are shell/navigation helpers such as the mobile event surface classifier, mobile route
-  coordinators, note-list and hierarchy interaction bridges, and the iOS onboarding picker.
+- The content QML path no longer mounts a note text editor and does not require C++ editor backend registration.
 
 ## Test Coverage
 

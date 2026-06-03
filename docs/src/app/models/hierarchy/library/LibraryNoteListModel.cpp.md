@@ -6,14 +6,10 @@ This implementation sanitizes incoming note-list items, derives searchable text 
 search filtering, preserves the selected note by id across resets, and now performs the canonical
 latest-modified-first sort for library notes.
 
-The model now keeps the normalized `bodyText` payload on each row instead of clearing it after
-sanitization. That preserves the selected-note body contract exposed through `currentBodyText` and
-prevents the editor from falling back to an empty document when the lazy note-body reload path does
-not win the selection race.
+Runtime note-list projection now keeps `bodyText` empty. The list model may still carry an explicit row payload supplied
+by tests or non-editor callers, but it no longer provides a selected-note body contract for an editor surface.
 
-`primaryText` is display text, not editor RAW source. Upstream `LibraryNoteRecord` normalization must strip inline
-source tags into `bodyPlainText` before note-list items are built, while `bodyText` remains available as the RAW editor
-bootstrap payload.
+`primaryText` is display-ready metadata, not editor RAW source.
 
 Each row now also keeps a normalized `noteDirectoryPath`, and the selected-row contract exposes that
 value through `currentNoteDirectoryPath`.

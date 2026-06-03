@@ -11,7 +11,7 @@
 #include <QUrl>
 #include <QtCore/qglobal.h>
 
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
 #import <Foundation/Foundation.h>
 #import <EventKit/EventKit.h>
 #import <Photos/Photos.h>
@@ -138,7 +138,7 @@ namespace
         completion(granted);
     }
 
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     bool isPhotoGranted(PHAuthorizationStatus status)
     {
         return status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited;
@@ -217,8 +217,8 @@ namespace WhatSon::Permissions
     {
         const PermissionCallback completionCopy = completion;
         WhatSon::Debug::trace(QStringLiteral("permissions.photo"), QStringLiteral("request"));
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-        if (@ available(macOS 11.0, iOS 14.0, *))
+#if defined(Q_OS_MACOS)
+        if (@ available(macOS 11.0, *))
         {
             const PHAuthorizationStatus status =
                 [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
@@ -285,7 +285,7 @@ namespace WhatSon::Permissions
     {
         const PermissionCallback completionCopy = completion;
         WhatSon::Debug::trace(QStringLiteral("permissions.reminders"), QStringLiteral("request"));
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
         const EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
         WhatSon::Debug::trace(
             QStringLiteral("permissions.reminders"),
@@ -303,7 +303,7 @@ namespace WhatSon::Permissions
         }
 
         EKEventStore* eventStore =  [[EKEventStore alloc] init];
-        if (@ available(macOS 14.0, iOS 17.0, *))
+        if (@ available(macOS 14.0, *))
         {
             [eventStore requestFullAccessToRemindersWithCompletion:^(BOOL granted, NSError* error)
                 {
@@ -373,7 +373,7 @@ namespace WhatSon::Permissions
     {
         const PermissionCallback completionCopy = completion;
         WhatSon::Debug::trace(QStringLiteral("permissions.localNetwork"), QStringLiteral("request"));
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
         LocalNetworkPermissionRequester* requester =  [[LocalNetworkPermissionRequester alloc] init];
         requester.completion =  ^ (BOOL granted)
         {

@@ -31,8 +31,8 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - `Backlink by`
   - `Include resources`
 - `Modified count` is backed by version-diff-gated note package commits. A note update must produce a serialized
-  `.wsnhead` / `.wsnbody` payload diff that is captured in `.wsnversion` before the counter can advance, so the detail
-  surface does not count timestamp-only or unchanged save turns.
+  header payload diff that is captured in `.wsnversion` before the counter can advance, so the detail surface does not
+  count timestamp-only or unchanged save turns.
 
 ## Numeric Grouping Rules
 - `overviewItems`

@@ -12,9 +12,7 @@ Implements startup-time permission request sequencing and persisted decision tra
 - Computes and stores final aggregate grant state to `permissions/granted`.
 
 ## Platform Branches
-- macOS/iOS-specific Apple permission requests are routed through `WhatSon::Permissions::*` bridge functions.
 - Qt runtime permissions are requested only when `QT_CONFIG(permissions)` is enabled.
-- iOS simulator-safe exports can additionally suppress the Qt runtime permission steps through the compile definition
   `WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1`, which is injected from app runtime CMake when Qt `permissions` plugins
   are excluded for simulator linking stability.
 

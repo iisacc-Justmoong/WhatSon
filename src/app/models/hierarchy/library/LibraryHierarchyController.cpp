@@ -2073,76 +2073,6 @@ bool LibraryHierarchyController::clearNoteFoldersById(const QString& noteId)
     return false;
 }
 
-bool LibraryHierarchyController::saveBodyTextForNote(const QString& noteId, const QString& text)
-{
-    Q_UNUSED(text)
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.controller"),
-                              QStringLiteral("saveBodyTextForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
-bool LibraryHierarchyController::saveCurrentBodyText(const QString& text)
-{
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
-}
-
-bool LibraryHierarchyController::applyPersistedBodyStateForNote(
-    const QString& noteId,
-    const QString& normalizedBodyText,
-    const QString& normalizedBodySourceText,
-    const QString& lastModifiedAt)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    LibraryNoteRecord note;
-    if (!m_indexedState.noteById(normalizedNoteId, &note))
-    {
-        return false;
-    }
-
-    if (!WhatSon::Hierarchy::NoteRecordSupport::applyPersistedBodyState(
-            &note,
-            normalizedBodyText,
-            normalizedBodySourceText,
-            lastModifiedAt))
-    {
-        return false;
-    }
-
-    upsertIndexedNote(note);
-    refreshNoteListForSelection();
-    emit hubFilesystemMutated();
-    return true;
-}
-
-bool LibraryHierarchyController::requestTrackedStatisticsRefreshForNote(
-    const QString& noteId,
-    const bool incrementOpenCount)
-{
-    Q_UNUSED(incrementOpenCount)
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.controller"),
-                              QStringLiteral("requestTrackedStatisticsRefreshForNote.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
-}
-
 QString LibraryHierarchyController::noteDirectoryPathForNoteId(const QString& noteId) const
 {
     const QString normalizedNoteId = noteId.trimmed();
@@ -2154,39 +2084,6 @@ QString LibraryHierarchyController::noteDirectoryPathForNoteId(const QString& no
     return WhatSon::Hierarchy::NoteRecordSupport::directoryPathForNoteId(
         m_indexedState.allNotes(),
         normalizedNoteId);
-}
-
-QString LibraryHierarchyController::noteBodySourceTextForNoteId(const QString& noteId) const
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return {};
-    }
-
-    LibraryNoteRecord note;
-    if (!m_indexedState.noteById(normalizedNoteId, &note))
-    {
-        return {};
-    }
-
-    return WhatSon::Hierarchy::NoteRecordSupport::bodySourceTextForNoteId(
-        QVector<LibraryNoteRecord>{note},
-        normalizedNoteId);
-}
-
-bool LibraryHierarchyController::reloadNoteMetadataForNoteId(const QString& noteId)
-{
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.controller"),
-                              QStringLiteral("reloadNoteMetadataForNoteId.notePackagesDisabled"),
-                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    return false;
 }
 
 bool LibraryHierarchyController::shouldAutoActivateMostRecentNote() const noexcept

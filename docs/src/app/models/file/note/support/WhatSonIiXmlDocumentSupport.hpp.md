@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Declares the note-package iiXml support boundary shared by `.wsnhead` and `.wsnbody` readers.
+Declares the note-package iiXml support boundary used by note-header readers.
 
 ## Contract
 

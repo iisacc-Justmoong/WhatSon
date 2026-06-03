@@ -28,7 +28,6 @@ Item {
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
-    property bool isMobilePlatform: false
     property var libraryHierarchyController: null
     property color listViewColor: "transparent"
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
@@ -40,7 +39,6 @@ Item {
     property var noteDeletionController: null
     property var noteActiveState: null
     property var inAppClipboard: null
-    property var editorFontFamilyProvider: null
     readonly property var resolvedNoteDeletionController: {
         const activeController = hStack.activeHierarchyController;
         if (activeController && (activeController.deleteNotesByIds !== undefined || activeController.deleteNoteById !== undefined || activeController.clearNoteFoldersByIds !== undefined || activeController.clearNoteFoldersById !== undefined)) {
@@ -221,7 +219,6 @@ Item {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
                     hierarchyController: hStack.activeHierarchyController
-                    isMobilePlatform: hStack.isMobilePlatform
                     noteListModel: hStack.activeNoteListModel
                     noteDeletionController: hStack.resolvedNoteDeletionController
                     noteDropTarget: sideBar.noteDropTargetView
@@ -258,13 +255,11 @@ Item {
                 Layout.minimumWidth: hStack.minContentWidth
                 contentController: hStack.activeHierarchyController
                 displayColor: hStack.contentsDisplayColor
-                isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyController: hStack.libraryHierarchyController
                 noteActiveState: hStack.noteActiveState
                 noteListModel: hStack.activeNoteListModel
                 panelControllerRegistry: null
                 inAppClipboard: hStack.inAppClipboard
-                editorFontFamilyProvider: hStack.editorFontFamilyProvider
                 sidebarHierarchyController: hStack.sidebarHierarchyController
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarController: hStack.dayCalendarController

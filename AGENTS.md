@@ -49,7 +49,7 @@
 - `scripts/test_*.py` 아래의 Python 테스트 스크립트는 제거되었으며 다시 도입하면 안 된다. 자동 회귀 커버리지는 CTest와 `test/`의 C++ 회귀 suite 아래에 유지한다.
 - 사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.
 - 기본 작업 흐름은 인계 전 가장 작은 관련 검증 게이트를 실행하고, 모든 생성 산출물을 `build/` 아래에 둔다.
-- `build/` 루트에는 임시 WhatSon 진단 로그, 스크린샷 PNG, `.wsnbody` 백업 XML, Finder metadata를 남기지 않는다.
+- `build/` 루트에는 임시 WhatSon 진단 로그, 스크린샷 PNG, 백업 XML, Finder metadata를 남기지 않는다.
   불가피한 임시 산출물은 소유 하위 디렉터리에 두고, 일반 회귀 흐름은 `whatson_clean_build_extras`로 루트 clutter를 정리해야 한다.
 
 ### 계층 컨트롤러 소유권 (중요)
@@ -104,8 +104,9 @@
 - 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.
 - `LibraryHierarchyController`는 계층/선택 조정자 역할에 머물러야 하며 note-list projection/cache 조립은
   `WhatSonLibraryNoteListProjection` 같은 전용 C++ collaborator에 둔다.
-- note record lookup, persisted body-state 반영, note directory/body-source 조회처럼 여러 note-backed hierarchy
-  Controller가 반복하는 저수준 note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다.
+- note record lookup과 note directory 조회처럼 여러 note-backed hierarchy Controller가 반복하는 저수준
+  note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다. 본문 상태 반영이나 body source 조회 경로는
+  삭제된 note editor/save 계약이므로 되살리지 않는다.
 - `InAppClipboardManager`는 `src/app/models/clipboard`에서 file/url 기반 import orchestration,
   conflict/persistence 처리를 소유하고, 단일 in-app clipboard resource state는 `InAppClipboardStore`에 둔다.
   이 clipboard resource state는 이미지 전용이 아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML,
@@ -131,59 +132,45 @@
   직접 구현하는 것을 기본값으로 한다.
 
 
-### 편집기 Source of Truth (중요)
+### 콘텐츠 Source of Truth (중요)
 
-- 현재 LVRS 갱신 계약에서 본문 편집기 QML의 단일 표면은 `LV.TextEditor`다.
-- workspace route의 shell/layout은 기존 status bar, navigation bar, sidebar, note list, detail panel,
-  mobile hierarchy scaffold 구조를 유지한다.
-- editor content surface는 LVRS `TextEditor` 중심으로 유지하되, 현재 문서 모델과 active note document
-  session은 삭제된 상태다. `ContentViewLayout.qml`은 노트 본문 parse/projection/persistence bridge를
-  mount하지 않고, 빈 read-only `LV.TextEditor` surface와 이미지 리소스 viewer만 조합한다.
-- contents 내부 QML(`src/app/qml/view/contents`)에는 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
-  네 뷰만 허용한다. `ImageEditor.qml`은 리소스 하이어라키 list model의 `currentResourceEntry`가 이미지 리소스일
-  때 콘텐츠 영역에 표시하는 viewer 전용 QML이다.
-- `TextEditor.qml`의 root는 `LV.TextEditor`여야 하며 `filePath`는 `noteBodyFilePath` alias를 유지하되
-  현재는 문서 session file에 연결하지 않는다. 선택된 노트가 있어도 active note body를 직접 mount하지 않는다.
-- `ContentViewLayout.qml`은 contents alias를 통해 `Gutter.qml`, `ImageEditor.qml`, `TextEditor.qml`, `Minimap.qml`
-  네 뷰만 mount한다. 노트 선택 시에는 gutter/TextEditor/minimap surface를 보이고, 이미지 리소스 선택 시에는
-  `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에 전달해 이미지 viewer surface로 전환한다.
-- `Gutter.qml`은 `TextEditor.qml`이 전달하는 viewport offset/line height와 view-local line count만 받아
-  line number rail을 표시한다. 거터가 직접 파일을 읽거나 `.wsnbody`를 파싱하면 안 된다.
+- workspace route의 shell/layout은 desktop status bar, navigation bar, sidebar, note list, detail panel 구조를 유지한다.
+- 노트 본문 편집과 저장에 연결되던 객체는 삭제된 상태다. `ContentViewLayout.qml`은 노트 본문
+  parse/projection/persistence bridge를 mount하지 않고, 이미지 리소스 viewer와 빈 content placeholder만 조합한다.
+- contents 내부 QML(`src/app/qml/view/contents`)에는 `ImageEditor.qml`만 허용한다. `Gutter.qml`,
+  `TextEditor.qml`, `Minimap.qml`은 삭제된 note editor surface이므로 되살리지 않는다.
+- `ContentViewLayout.qml`은 이미지 리소스 선택 시 `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에
+  전달해 이미지 viewer surface로 전환한다. 노트 선택 또는 비이미지 리소스 선택은 본문 editor 대신 빈 content
+  placeholder를 표시한다.
 - clipboard image paste, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷 컨텍스트 메뉴, editor native key
-  filter는 현재 삭제된 문서 모델 경계다. `ClipboardEditorPaste`, `EditorInputCommandFilter`,
+  filter는 삭제된 문서 모델 경계다. `ClipboardEditorPaste`, `EditorInputCommandFilter`,
   `NoteEditorDocumentSession`을 되살리거나 QML compatibility wrapper로 우회하지 않는다.
 - clipboard resource import는 `InAppClipboardManager`가 `.wsresources/<id>.wsresource` 패키지와
-  `Resources.wsresources` 목록에 등록하는 경로까지만 유지한다. 본문 RAW `<resource ... />` 태그 삽입 경로는
-  현재 삭제된 editor document model에 속하므로 연결하지 않는다.
-- `ContentViewLayout.qml`의 note editor branch는 `ContentsEditorDisplayBackend`, page/print renderer,
-  generic resource editor, structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
-- `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`의
-  Plain/Page/Print/Web/Presentation 선택 계약은 navigation bar의 view-mode 콤보박스 계약으로 유지한다.
-  단, 이 콤보박스는 현재 editor surface를 `LV.TextEditor`에서 다른 renderer로 전환하는 백엔드 계약이 아니며,
-  `ContentViewLayout.qml`은 active note document session file을 소비하지 않는다.
+  `Resources.wsresources` 목록에 등록하는 경로까지만 유지한다. 본문 태그 삽입 경로는 삭제된 editor document
+  model에 속하므로 연결하지 않는다.
+- `ContentViewLayout.qml`은 `ContentsEditorDisplayBackend`, page/print renderer, generic resource editor,
+  structured-document wrapper, projection, renderer를 직접 mount하지 않는다.
+- `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`은
+  삭제된 view-mode chrome이다. Plain/Page/Print/Web/Presentation 콤보박스 계약을 되살리지 않는다.
 - 새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,
   직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge, editor document session을
   되살리지 않는다.
 - note body parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.
   현재 노트 본문을 편집기에 연결하는 문서 session 경로와 note package persistence 경로는 삭제된 상태이며,
   QML은 이를 대체 구현하지 않는다.
-- live editor formatting command surface와 지속 태그 삽입 writer는 삭제되었다. `SetTag` 같은 남은 C++ helper를
+- live editor formatting command surface와 지속 태그 삽입 writer는 삭제되었다. `SetTag` 계열 C++ helper를
   QML 단축키나 컨텍스트 메뉴로 직접 연결하지 않는다.
 
 ### 입력기 권한 (중요)
 
-- editor input layer는 OS/Qt IME 처리를 live `LV.TextEditor` path에 맡겨야 한다. 현재 LVRS 갱신 계약에서는
-  note body surface도 `LV.TextEditor`를 직접 배치하고 `filePath`는 parsed RAW source session file 경로를
-  따른다.
-- 현재 editor QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를
+- 현재 content QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를
   설치하지 않는다. clipboard image paste command wiring, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷
   컨텍스트 메뉴, native editor item event filter는 삭제된 문서 모델 경계이며 다시 추가하지 않는다.
 - Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.
 - editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.
 - `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.
 - text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.
-  현재 입력 표면은 active note 파일 읽기/저장, `.wsnbody` parse/serialize, editor document projection을
-  수행하지 않는다.
+  현재 입력 표면은 active note 파일 읽기/저장, body parse/serialize, editor document projection을 수행하지 않는다.
 
 ## LVRS 통합의 단일 Source of Truth
 
@@ -235,17 +222,14 @@ import LVRS 1.0 as LV
 ## 현재 UI 레이아웃
 
 - Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
-- Workspace route: `Main.qml`은 기존 desktop/mobile layout shell을 유지한다. `BodyLayout.qml`의 content slot이
-  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount하고, 노트 선택 시 내부는 gutter/TextEditor/minimap으로
-  제한하되 선택된 노트의 `.wsnbody`를 C++에서 parsed RAW source session file로 mount한 뒤
-  `LV.TextEditor.filePath`에 연결한다. 리소스 하이어라키에서 이미지 리소스 list item을 선택하면 같은 content
-  slot이 `ImageEditor.qml`을 표시한다.
+- Workspace route: `Main.qml`은 desktop layout shell을 유지한다. `BodyLayout.qml`의 content slot이
+  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount한다. 노트 선택 시 본문 editor를 열지 않고 빈 content
+  placeholder를 유지한다. 리소스 하이어라키에서 이미지 리소스 list item을 선택하면 같은 content slot이
+  `ImageEditor.qml`을 표시한다.
 - View directory(legacy `shell`과 `pages`에서 병합됨):
     - `src/app/qml/view/panels/StatusBarLayout.qml`
     - `src/app/qml/view/panels/NavigationBarLayout.qml`
     - `src/app/qml/view/panels/BodyLayout.qml`
-    - `src/app/qml/view/mobile/MobilePageScaffold.qml`(shared mobile workspace scaffold)
-    - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`(routed mobile workspace page. editor route는 `ContentViewLayout.qml`을 통해 active note의 parsed source session file을 편집한다)
     - `src/app/qml/view/panels/ListBarLayout.qml`(Figma-driven list bar panel, node `73:2635`)
     - `src/app/qml/view/panels/ListBarHeader.qml`(Figma-driven list bar header, node `134:3180`)
         - `src/app/qml/view/panels/NoteListItem.qml`(Figma-driven note item card, node `119:3028`)
@@ -262,10 +246,7 @@ import LVRS 1.0 as LV
             - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma frame `DetailContents`, node `134:3649`)
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
-                    - `src/app/qml/view/contents/Gutter.qml`
                     - `src/app/qml/view/contents/ImageEditor.qml`
-                    - `src/app/qml/view/contents/TextEditor.qml`
-                    - `src/app/qml/view/contents/Minimap.qml`
                 - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`

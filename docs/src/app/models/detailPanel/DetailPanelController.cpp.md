@@ -34,10 +34,8 @@ The exported `activeStateName()` now follows the corrected page ids:
   panel as detached.
 - `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, and `writeProgressSelection(...)` persist directly into the active note header file and then re-synchronize the selector copies from the file-backed session store.
 - The shared write path now short-circuits when the incoming selector index already matches the detail-local selector-copy `selectedIndex`, so repeated `No ...` or same-option clicks do not re-persist identical `.wsnhead` state.
-- After any detail-panel metadata write succeeds, the controller now asks the active hierarchy domain,
-  the injected project/bookmark/progress option-source domains, and the canonical Tags hierarchy
-  controller to `reloadNoteMetadataForNoteId(...)` so every affected note-list projection
-  immediately mirrors the same `.wsnhead` state instead of waiting for a later hub reload.
+- After any detail-panel metadata write succeeds, the controller re-applies the active header snapshot to the detail
+  panel surfaces. Hierarchy note-list reprojection is no longer routed through a single-note reload helper.
 - Each selector model now prepends a synthetic clear entry (`No project`, `No bookmark`, `No progress`), and selecting that entry clears the corresponding field in the current `.wsnhead` file instead of writing the visible label text.
 - `assignFolderByName(...)` first resolves or creates the folder entry in `Folders.wsfolders`, then persists the resulting folder path/uuid binding into the active note header file, and finally re-applies the current header to the properties content view-model.
 - `assignTagByName(...)` persists the chosen tag into the active note header file through the shared session store,

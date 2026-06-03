@@ -3,7 +3,6 @@
 ## Role
 `NavigationApplicationControlBar.qml` owns the application-level trailing control cluster for the shared navigation bar.
 
-On desktop it mounts the full control row. On mobile compact mode it collapses into the right-edge menu trigger that sits beside the add-folder button.
 
 ## Compact Variants
 The file exposes two compact variants:
@@ -11,7 +10,6 @@ The file exposes two compact variants:
   optional right-edge `columnIndex` detail-page button when `compactDetailPanelVisible == true`
 - note-list route: `sortByType`, `cwmPermissionView`, and the same `toolwindowtodo` menu trigger
 
-The hierarchy/control compact trigger follows the Figma `174:4993` chrome rather than the old project-structure glyph. Both compact menu triggers use LVRS gap tokens for padding and `LV.Theme.gapNone` for the zero spacing case so the icon-plus-chevron footprint matches the mobile navigation bar frame.
 
 ## Menu Ownership
 The file owns two context menus:
@@ -35,8 +33,6 @@ The desktop row preserves the Figma child order:
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` so compact/full mode nested `Component` branches can
   access `applicationControlBar` id members with LVRS-standard bound component scope.
-- The mobile editor/control route now also renders the dedicated right-edge `columnIndex` detail button from
-  Figma node `193:6606`, and that affordance now opens the dedicated mobile detail page directly instead of surfacing a
   duplicate context-menu action.
 - That compact detail button now emits the hook reason `open-detail-page`, matching the routed-page interaction instead
   of the older collapse/expand overlay wording.

@@ -1,7 +1,6 @@
 #include "app/models/file/hub/WhatSonHubMountValidator.hpp"
 
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
-#include "app/platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "app/platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 
 #include <QDir>
@@ -103,45 +102,13 @@ WhatSonHubMountValidation WhatSonHubMountValidator::resolveMountedHub(
     }
 
     QString mountedHubPath = normalizedHubPath;
-    if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
-    {
-        QString mountError;
-        if (!WhatSon::Android::Storage::mountHub(normalizedHubPath, &mountedHubPath, &mountError))
-        {
-            return failedMountValidation(
-                mountError.trimmed().isEmpty()
-                    ? QStringLiteral("Failed to mount the selected WhatSon Hub package.")
-                    : mountError);
-        }
-        mountedHubPath = normalizeAbsolutePath(mountedHubPath);
-    }
-    else if (WhatSon::Android::Storage::isMountedHubPath(normalizedHubPath))
-    {
-        const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(normalizedHubPath);
-        if (sourceUri.trimmed().isEmpty())
-        {
-            return failedMountValidation(
-                QStringLiteral("Stored Android mounted WhatSon Hub is missing its source document URI."));
-        }
-
-        QString remountError;
-        if (!WhatSon::Android::Storage::mountHub(sourceUri, &mountedHubPath, &remountError))
-        {
-            return failedMountValidation(
-                remountError.trimmed().isEmpty()
-                    ? QStringLiteral("Failed to remount the stored WhatSon Hub package.")
-                    : remountError);
-        }
-        mountedHubPath = normalizeAbsolutePath(mountedHubPath);
-    }
-
     if (WhatSon::HubPath::isNonLocalUrl(mountedHubPath))
     {
         return failedMountValidation(
             QStringLiteral("The selected WhatSon Hub provider does not expose a mountable local directory path."));
     }
 
-#if defined(Q_OS_IOS)
+#if defined(Q_OS_MACOS)
     QString bookmarkRestoreError;
     if (!hubAccessBookmark.isEmpty())
     {
@@ -152,8 +119,8 @@ WhatSonHubMountValidation WhatSonHubMountValidator::resolveMountedHub(
             &bookmarkRestoreError);
     }
 
-    QString iosAccessError;
-    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(mountedHubPath, &iosAccessError))
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(mountedHubPath, &accessError))
     {
         const QString parentDirectoryPath = QFileInfo(mountedHubPath).absolutePath();
         QString parentAccessError;
@@ -165,14 +132,14 @@ WhatSonHubMountValidation WhatSonHubMountValidator::resolveMountedHub(
         if (!parentAccessGranted)
         {
             return failedMountValidation(
-                iosAccessError.trimmed().isEmpty()
+                accessError.trimmed().isEmpty()
                     ? (bookmarkRestoreError.trimmed().isEmpty()
                            ? (parentAccessError.trimmed().isEmpty()
                                   ? QStringLiteral(
-                                        "iOS denied access to the selected WhatSon Hub path.")
+                                        "Apple security scope denied access to the selected WhatSon Hub path.")
                                   : parentAccessError.trimmed())
                            : bookmarkRestoreError.trimmed())
-                    : iosAccessError.trimmed());
+                    : accessError.trimmed());
         }
     }
 #endif

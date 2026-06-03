@@ -31,25 +31,29 @@ namespace WhatSon::LibraryPreview
 
     inline QString notePrimaryText(const LibraryNoteRecord& note, int maxLines = 5)
     {
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        const QString bodyPlainText = truncatePreviewToMaxLines(note.bodyPlainText.trimmed(), maxLines);
-        if (!firstLine.isEmpty())
-        {
-            if (bodyPlainText.isEmpty())
-            {
-                return firstLine;
-            }
+        Q_UNUSED(maxLines)
 
-            if (!bodyPlainText.startsWith(firstLine))
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            return noteId;
+        }
+
+        const QString project = note.project.trimmed();
+        if (!project.isEmpty())
+        {
+            return project;
+        }
+
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmedFolder = folder.trimmed();
+            if (!trimmedFolder.isEmpty())
             {
-                return firstLine + QLatin1Char('\n') + bodyPlainText;
+                return trimmedFolder;
             }
         }
 
-        if (!bodyPlainText.isEmpty())
-        {
-            return bodyPlainText;
-        }
         return {};
     }
 

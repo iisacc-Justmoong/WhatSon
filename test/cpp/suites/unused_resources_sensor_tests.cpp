@@ -101,10 +101,11 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingF
     sensor.setHubPath(hubPath);
 
     QCOMPARE(sensor.lastError(), QString());
-    QCOMPARE(sensor.unusedResourceCount(), 2);
+    QCOMPARE(sensor.unusedResourceCount(), 3);
     const QStringList expectedUnusedResourcePaths{
         hiddenOnlyResourcePath,
-        unusedResourcePath
+        unusedResourcePath,
+        usedResourcePath
     };
     QCOMPARE(
         sensor.unusedResourcePaths(),
@@ -113,7 +114,7 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingF
     QCOMPARE(scanCompletedSpy.count(), 1);
 
     const QVariantList unusedEntries = sensor.unusedResources();
-    QCOMPARE(unusedEntries.size(), 2);
+    QCOMPARE(unusedEntries.size(), 3);
 
     const QVariantMap firstEntry = unusedEntries.at(0).toMap();
     QCOMPARE(firstEntry.value(QStringLiteral("resourcePath")).toString(), hiddenOnlyResourcePath);
@@ -122,10 +123,10 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_reportsHubPackagesMissingF
     QVERIFY(QFileInfo(firstEntry.value(QStringLiteral("assetAbsolutePath")).toString()).isFile());
 
     const QVariantList completedEntries = scanCompletedSpy.constFirst().constFirst().toList();
-    QCOMPARE(completedEntries.size(), 2);
+    QCOMPARE(completedEntries.size(), 3);
 }
 
-void WhatSonCppRegressionTests::unusedResourcesSensor_refreshesAfterRawBodyEmbedsAResource()
+void WhatSonCppRegressionTests::unusedResourcesSensor_reportsPackagesWithoutReadingNoteBodies()
 {
     QTemporaryDir workspaceDir;
     QVERIFY(workspaceDir.isValid());
@@ -188,24 +189,12 @@ void WhatSonCppRegressionTests::unusedResourcesSensor_refreshesAfterRawBodyEmbed
     QCOMPARE(sensor.unusedResourceCount(), 1);
     QCOMPARE(sensor.unusedResourcePaths(), QStringList{resourcePath});
 
-    const QString bodyFilePath = WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath);
-    QFile bodyFile(bodyFilePath);
-    QVERIFY(bodyFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
-    QVERIFY(
-        bodyFile.write(
-            WhatSon::NoteBodyPersistence::serializeBodyDocument(
-                noteId,
-                QStringLiteral("<resource type=\"image\" format=\".png\" path=\"%1\" />").arg(resourcePath))
-                .toUtf8())
-        >= 0);
-    bodyFile.close();
-
     sensor.refresh();
 
     QCOMPARE(sensor.lastError(), QString());
-    QCOMPARE(sensor.unusedResourceCount(), 0);
-    QVERIFY(sensor.unusedResources().isEmpty());
-    QCOMPARE(sensor.collectUnusedResourcePaths(), QStringList{});
-    QCOMPARE(unusedResourcesChangedSpy.count(), 2);
+    QCOMPARE(sensor.unusedResourceCount(), 1);
+    QCOMPARE(sensor.unusedResourcePaths(), QStringList{resourcePath});
+    QCOMPARE(sensor.collectUnusedResourcePaths(), QStringList{resourcePath});
+    QCOMPARE(unusedResourcesChangedSpy.count(), 1);
     QCOMPARE(scanCompletedSpy.count(), 3);
 }

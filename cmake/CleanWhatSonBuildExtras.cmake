@@ -20,10 +20,6 @@ set(_whatson_build_extra_paths
 file(GLOB _whatson_root_diagnostic_images
         "${_whatson_build_dir}/whatson-*.png"
 )
-file(GLOB _whatson_root_body_backups
-        "${_whatson_build_dir}/*.wsnbody.backup.xml"
-        "${_whatson_build_dir}/*.wsnbody.pre-*-backup.xml"
-)
 file(GLOB_RECURSE _whatson_finder_metadata
         "${_whatson_build_dir}/.DS_Store"
         "${_whatson_build_dir}/*/.DS_Store"
@@ -31,7 +27,6 @@ file(GLOB_RECURSE _whatson_finder_metadata
 
 list(APPEND _whatson_build_extra_paths
         ${_whatson_root_diagnostic_images}
-        ${_whatson_root_body_backups}
         ${_whatson_finder_metadata}
 )
 

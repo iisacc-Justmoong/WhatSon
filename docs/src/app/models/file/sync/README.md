@@ -1,5 +1,6 @@
 # File Sync
 
-This shard contains editor RAW push/pull ordering helpers and timestamp conflict support.
+This shard contains timestamp conflict support.
 
-The active contents editor no longer connects to these helpers because the document session model was removed. Existing classes may remain for non-mounted tests or future replacement work, but no QML route currently binds them to `LV.TextEditor`.
+Editor RAW push/pull controllers were removed with the active note document session model. Do not add replacement sync
+helpers without a new document model contract.

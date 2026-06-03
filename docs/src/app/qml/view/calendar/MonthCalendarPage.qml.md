@@ -3,7 +3,6 @@
 ## Role
 
 `MonthCalendarPage.qml` renders the month calendar overlay shell for the editor area.
-It owns the shared month header (`CalendarTodayControl` + title) and, on mobile, exposes a horizontal paged month
 surface so left/right swipes move to the previous or next month.
 
 ## View Contract
@@ -44,7 +43,6 @@ surface so left/right swipes move to the previous or next month.
 
 1. `Component.onCompleted` recenters the already-precomputed pager and requests `page-open`.
 2. Header prev/next still call `shiftMonth(-1|1)`.
-3. Mobile swipe completion also resolves to `shiftMonth(-1|1)`.
 4. `monthViewChanged` now only recenters the pager because the shared `MonthCalendarController` already owns the updated
    `pagerMonthModels`.
 5. Day selection is still delegated back into `monthCalendarController.setSelectedDateIso(...)`.
@@ -65,7 +63,6 @@ surface so left/right swipes move to the previous or next month.
 
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - On mobile, monthly view must accept left/right swipe navigation between adjacent months.
     - Swipe completion must update the canonical displayed month, not leave the pager parked on a side slot.
     - Desktop month view must remain width-fitted without enabling unintended horizontal scrolling.
     - Day selection inside any visible month page must still update `selectedDateIso`.

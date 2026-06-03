@@ -99,29 +99,20 @@ void WhatSonCppRegressionTests::libraryNoteListModel_emitsCurrentNoteEntryChange
 
 void WhatSonCppRegressionTests::libraryNoteListModel_hidesRawInlineTagsFromPreviewText()
 {
-    const QString rawSource =
-        QStringLiteral("<bold>Al<italic>pha</italic></bold><italic> Beta</italic>\nSecond line");
-
     LibraryNoteRecord record;
     record.noteId = QStringLiteral("inline-preview-note");
-    record.bodyPlainText = rawSource;
-    record.bodySourceText = rawSource;
-    record.normalizeBodyFields();
+    record.project = QStringLiteral("Fallback project");
+    record.folders = {QStringLiteral("Fallback folder")};
 
-    QCOMPARE(record.bodyPlainText, QStringLiteral("Alpha Beta\nSecond line"));
-    QCOMPARE(record.bodySourceText, rawSource);
-    QCOMPARE(record.bodyFirstLine, QStringLiteral("Alpha Beta"));
     QCOMPARE(
         WhatSon::LibraryPreview::notePrimaryText(record),
-        QStringLiteral("Alpha Beta\nSecond line"));
-    QVERIFY(!WhatSon::LibraryPreview::notePrimaryText(record).contains(QStringLiteral("<bold>")));
-    QVERIFY(!WhatSon::LibraryPreview::notePrimaryText(record).contains(QStringLiteral("<italic>")));
+        QStringLiteral("inline-preview-note"));
 
     LibraryNoteListItem item;
     item.id = record.noteId;
     item.noteDirectoryPath = QStringLiteral("/tmp/inline-preview-note.note");
     item.primaryText = WhatSon::LibraryPreview::notePrimaryText(record);
-    item.bodyText = record.bodySourceText;
+    item.bodyText.clear();
     item.lastModifiedAt = QStringLiteral("2026-05-07-09-00-00");
 
     LibraryNoteListModel model;
@@ -130,7 +121,7 @@ void WhatSonCppRegressionTests::libraryNoteListModel_hidesRawInlineTagsFromPrevi
     const QModelIndex rowIndex = model.index(0, 0);
     QCOMPARE(
         model.data(rowIndex, LibraryNoteListModel::PrimaryTextRole).toString(),
-        QStringLiteral("Alpha Beta\nSecond line"));
-    QCOMPARE(model.data(rowIndex, LibraryNoteListModel::BodyTextRole).toString(), rawSource);
+        QStringLiteral("inline-preview-note"));
+    QCOMPARE(model.data(rowIndex, LibraryNoteListModel::BodyTextRole).toString(), QString());
     QVERIFY(!model.data(rowIndex, LibraryNoteListModel::PrimaryTextRole).toString().contains(QStringLiteral("<")));
 }

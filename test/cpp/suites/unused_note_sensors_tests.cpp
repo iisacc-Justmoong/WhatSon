@@ -1,5 +1,20 @@
 #include "test/cpp/whatson_cpp_regression_tests.hpp"
 
+namespace
+{
+    QString firstHeaderPathInUnusedNoteDirectory(const QString& noteDirectoryPath)
+    {
+        const QDir noteDirectory(noteDirectoryPath);
+        const QStringList headerFiles =
+            noteDirectory.entryList(QStringList{QStringLiteral("*.wsnhead")}, QDir::Files, QDir::Name);
+        if (headerFiles.isEmpty())
+        {
+            return {};
+        }
+        return noteDirectory.filePath(headerFiles.constFirst());
+    }
+}
+
 void WhatSonCppRegressionTests::unusedNoteSensors_filterNoteIdsByLastOpenedWindow()
 {
     QTemporaryDir workspaceDir;
@@ -18,7 +33,7 @@ void WhatSonCppRegressionTests::unusedNoteSensors_filterNoteIdsByLastOpenedWindo
                                    const QString& lastOpenedAt,
                                    const int openCount)
     {
-        const QString headerPath = WhatSon::NoteBodyPersistence::resolveHeaderPath(QString(), noteDirectoryPath);
+        const QString headerPath = firstHeaderPathInUnusedNoteDirectory(noteDirectoryPath);
         QFile headerFile(headerPath);
         if (!headerFile.open(QIODevice::ReadOnly | QIODevice::Text))
         {

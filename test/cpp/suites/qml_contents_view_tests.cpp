@@ -5,16 +5,16 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
     const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList allowedFiles{
-        QStringLiteral("Gutter.qml"),
-        QStringLiteral("ImageEditor.qml"),
-        QStringLiteral("Minimap.qml"),
-        QStringLiteral("TextEditor.qml")
+        QStringLiteral("ImageEditor.qml")
     };
 
     QDir contentsDir(contentsRoot);
     const QStringList qmlFiles = contentsDir.entryList({QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
     QCOMPARE(qmlFiles, allowedFiles);
     QVERIFY(!QFileInfo::exists(contentsDir.filePath(QStringLiteral("DocumentEditor.qml"))));
+    QVERIFY(!QFileInfo::exists(contentsDir.filePath(QStringLiteral("Gutter.qml"))));
+    QVERIFY(!QFileInfo::exists(contentsDir.filePath(QStringLiteral("Minimap.qml"))));
+    QVERIFY(!QFileInfo::exists(contentsDir.filePath(QStringLiteral("TextEditor.qml"))));
 
     for (const QString& fileName : allowedFiles)
     {
@@ -26,42 +26,43 @@ void WhatSonCppRegressionTests::qmlContentsView_keepsOnlyAllowedContentsViews()
             qPrintable(QStringLiteral("Missing contents QML document: %1.md").arg(fileName)));
     }
     QVERIFY(!QFileInfo::exists(QDir(docsContentsRoot).filePath(QStringLiteral("DocumentEditor.qml.md"))));
+    QVERIFY(!QFileInfo::exists(QDir(docsContentsRoot).filePath(QStringLiteral("Gutter.qml.md"))));
+    QVERIFY(!QFileInfo::exists(QDir(docsContentsRoot).filePath(QStringLiteral("Minimap.qml.md"))));
+    QVERIFY(!QFileInfo::exists(QDir(docsContentsRoot).filePath(QStringLiteral("TextEditor.qml.md"))));
 }
 
-void WhatSonCppRegressionTests::qmlContentsTextEditor_returnKeyExtendsEmptyLine()
+void WhatSonCppRegressionTests::qmlContentsView_excludesNoteTextEditorSurface()
 {
-    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
+    const QString contentViewLayoutSource = readUtf8SourceFile(
+        QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
 
-    QVERIFY(textEditorSource.contains(QStringLiteral("LV.TextEditor {")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("filePath: textEditor.noteBodyFilePath")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("readOnly: textEditor.editorReadOnly")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("NoteEditorDocumentSession")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("noteEditorSession")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("EditorInputCommandFilter")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("clipboardEditorPaste")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onReturnPressed")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("Keys.onEnterPressed")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("LV.TextEditor")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("noteBodyFilePath")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("NoteEditorDocumentSession")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("EditorInputCommandFilter")));
 }
 
 void WhatSonCppRegressionTests::qmlContentsViewsStayViewOnlyAndNativeInputSafe()
 {
     const QString contentViewLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
-    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
 
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.ImageEditor {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
-    QVERIFY(contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.TextEditor {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.Gutter {")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentsView.Minimap {")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("ContentEditorToolbar {")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("noteEditorSession")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("clipboardEditorPaste")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("editorInputCommandFilter")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("insertFormatTagIntoSource")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("requestEditorIdleRawPush")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("Qt.inputMethod")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("InputMethod.")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("TextDocumentModel")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("Qt.inputMethod")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("InputMethod.")));
+    QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("TextDocumentModel")));
 }
 
 void WhatSonCppRegressionTests::qmlNavigationCalendarBars_restoreTaskButtonWithoutLegacyHooks()
@@ -112,11 +113,10 @@ void WhatSonCppRegressionTests::qmlLvrsTokens_replaceDirectHardcodedVisualTokens
 {
     const QString contentViewLayoutSource = readUtf8SourceFile(
         QStringLiteral("src/app/qml/view/panels/ContentViewLayout.qml"));
-    const QString textEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/TextEditor.qml"));
+    const QString imageEditorSource = readUtf8SourceFile(QStringLiteral("src/app/qml/view/contents/ImageEditor.qml"));
 
     QVERIFY(contentViewLayoutSource.contains(QStringLiteral("LV.Theme.gapNone")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("LV.Theme.fontBody")));
-    QVERIFY(textEditorSource.contains(QStringLiteral("LV.Theme.textBody")));
+    QVERIFY(imageEditorSource.contains(QStringLiteral("LV.Theme")));
     QVERIFY(!contentViewLayoutSource.contains(QStringLiteral("QtQuick.Controls.Material")));
-    QVERIFY(!textEditorSource.contains(QStringLiteral("QtQuick.Controls.Material")));
+    QVERIFY(!imageEditorSource.contains(QStringLiteral("QtQuick.Controls.Material")));
 }

@@ -268,23 +268,29 @@ void WhatSonCppRegressionTests::sourceTree_forbidsDeprecatedPresentationLayerVoc
     QVERIFY2(violations.isEmpty(), qPrintable(violations.join(QLatin1Char('\n'))));
 }
 
-void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
+void WhatSonCppRegressionTests::sourceTree_forbidsNoteEditingAndBodyPersistenceObjects()
 {
     const QDir repositoryRoot(repositoryRootPath());
     QVERIFY(repositoryRoot.exists());
 
-    const QStringList requiredDirectories{
+    const QStringList forbiddenDirectories{
         QStringLiteral("src/app/models/editor"),
-        QStringLiteral("docs/src/app/models/editor")
+        QStringLiteral("docs/src/app/models/editor"),
+        QStringLiteral("src/app/models/file/note/body"),
+        QStringLiteral("docs/src/app/models/file/note/body"),
+        QStringLiteral("src/app/models/minimap"),
+        QStringLiteral("src/app/models/editor/display/minimap"),
+        QStringLiteral("docs/src/app/models/minimap"),
+        QStringLiteral("docs/src/app/models/editor/display/minimap")
     };
-    for (const QString& relativePath : requiredDirectories)
+    for (const QString& relativePath : forbiddenDirectories)
     {
         QVERIFY2(
-            QDir(repositoryRoot.filePath(relativePath)).exists(),
-            qPrintable(QStringLiteral("Editor model shard must stay present: %1").arg(relativePath)));
+            !QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Deleted note editor/body directory must stay absent: %1").arg(relativePath)));
     }
 
-    const QStringList requiredFiles{
+    const QStringList forbiddenFiles{
         QStringLiteral("src/app/models/editor/CMakeLists.txt"),
         QStringLiteral("src/app/models/editor/GetProperty.cpp"),
         QStringLiteral("src/app/models/editor/GetProperty.h"),
@@ -306,50 +312,39 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("docs/src/app/models/editor/SetProperty.cpp.md"),
         QStringLiteral("docs/src/app/models/editor/SetProperty.h.md"),
         QStringLiteral("docs/src/app/models/editor/SetTag.cpp.md"),
-        QStringLiteral("docs/src/app/models/editor/SetTag.h.md")
-    };
-    for (const QString& relativePath : requiredFiles)
-    {
-        QVERIFY2(
-            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
-            qPrintable(QStringLiteral("Editor model shard file must stay present: %1").arg(relativePath)));
-    }
-
-    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
-    QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.h")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/Callout.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/Callout.h")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.h")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.h")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.h")));
-
-    const QString editorCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/models/editor/CMakeLists.txt"));
-    QVERIFY(editorCmakeSource.contains(QStringLiteral(
-        "whatson_app_register_directory_sources(\"${CMAKE_CURRENT_SOURCE_DIR}\" RECURSE)")));
-    QVERIFY(editorCmakeSource.contains(QStringLiteral(
-        "whatson_app_register_directory_include_directories(\"${CMAKE_CURRENT_SOURCE_DIR}\")")));
-
-    const QStringList forbiddenDirectories{
-        QStringLiteral("src/app/models/minimap"),
-        QStringLiteral("src/app/models/editor/display/minimap"),
-        QStringLiteral("docs/src/app/models/minimap"),
-        QStringLiteral("docs/src/app/models/editor/display/minimap")
-    };
-    for (const QString& relativePath : forbiddenDirectories)
-    {
-        QVERIFY2(
-            !QDir(repositoryRoot.filePath(relativePath)).exists(),
-            qPrintable(QStringLiteral("Removed editor minimap backend directory must stay absent: %1").arg(relativePath)));
-    }
-
-    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
-
-    const QStringList requiredEditorViewModeFiles{
+        QStringLiteral("docs/src/app/models/editor/SetTag.h.md"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.hpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.cpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.cpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.cpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.hpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteMarkdownStyleObject.cpp"),
+        QStringLiteral("src/app/models/file/note/body/WhatSonNoteMarkdownStyleObject.hpp"),
+        QStringLiteral("src/app/models/file/note/package/WhatSonNoteBodyCreator.cpp"),
+        QStringLiteral("src/app/models/file/note/package/WhatSonNoteBodyCreator.hpp"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyPersistence.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyResourceTagGenerator.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodySemanticTagSupport.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteBodyWebLinkSupport.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteMarkdownStyleObject.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/body/WhatSonNoteMarkdownStyleObject.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/package/WhatSonNoteBodyCreator.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/note/package/WhatSonNoteBodyCreator.hpp.md"),
+        QStringLiteral("src/app/models/file/sync/WhatSonEditorRawPullController.cpp"),
+        QStringLiteral("src/app/models/file/sync/WhatSonEditorRawPullController.hpp"),
+        QStringLiteral("src/app/models/file/sync/WhatSonEditorRawPushController.cpp"),
+        QStringLiteral("src/app/models/file/sync/WhatSonEditorRawPushController.hpp"),
+        QStringLiteral("docs/src/app/models/file/sync/WhatSonEditorRawPullController.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/sync/WhatSonEditorRawPullController.hpp.md"),
+        QStringLiteral("docs/src/app/models/file/sync/WhatSonEditorRawPushController.cpp.md"),
+        QStringLiteral("docs/src/app/models/file/sync/WhatSonEditorRawPushController.hpp.md"),
         QStringLiteral("src/app/models/navigationbar/EditorViewModeController.cpp"),
         QStringLiteral("src/app/models/navigationbar/EditorViewModeController.hpp"),
         QStringLiteral("src/app/models/navigationbar/EditorViewSectionController.cpp"),
@@ -364,26 +359,161 @@ void WhatSonCppRegressionTests::sourceTree_keepsEditorModelBackendRegistered()
         QStringLiteral("docs/src/app/models/navigationbar/EditorViewState.cpp.md"),
         QStringLiteral("docs/src/app/models/navigationbar/EditorViewState.hpp.md"),
         QStringLiteral("docs/src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml.md"),
-        QStringLiteral("test/cpp/suites/editor_view_mode_controller_tests.cpp")
+        QStringLiteral("test/cpp/suites/editor_view_mode_controller_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_get_property_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_set_property_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_set_tag_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_font_family_provider_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_raw_pull_controller_tests.cpp"),
+        QStringLiteral("test/cpp/suites/editor_raw_push_controller_tests.cpp"),
+        QStringLiteral("test/cpp/suites/note_body_persistence_tests.cpp")
     };
-    for (const QString& relativePath : requiredEditorViewModeFiles)
+    for (const QString& relativePath : forbiddenFiles)
     {
         QVERIFY2(
-            QFileInfo::exists(repositoryRoot.filePath(relativePath)),
-            qPrintable(QStringLiteral("Restored editor view-mode contract must stay present: %1").arg(relativePath)));
+            !QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Deleted note editor/body object must stay absent: %1").arg(relativePath)));
     }
+
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(models/editor)")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/GetProperty.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/Callout.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/Callout.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/component/style.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetProperty.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.cpp")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/editor/SetTag.h")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("models/minimap")));
 
     const QString qmlContextBinderHeader = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.hpp"));
     const QString qmlContextBinderSource = readUtf8SourceFile(
         QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp"));
-    QVERIFY(qmlContextBinderHeader.contains(QStringLiteral("editorViewModeController")));
-    QVERIFY(qmlContextBinderSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(!qmlContextBinderHeader.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(!qmlContextBinderSource.contains(QStringLiteral("editorViewModeController")));
+    QVERIFY(!qmlContextBinderHeader.contains(QStringLiteral("editorFontFamilyProvider")));
+    QVERIFY(!qmlContextBinderSource.contains(QStringLiteral("editorFontFamilyProvider")));
 
     const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
-    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewModeController.cpp")));
-    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewSectionController.cpp")));
-    QVERIFY(testCmakeSource.contains(QStringLiteral("EditorViewState.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("EditorViewModeController.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("EditorViewSectionController.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("EditorViewState.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("WhatSonEditorRawPullController.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("WhatSonEditorRawPushController.cpp")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("WhatSonNoteBodyPersistence.cpp")));
+}
+
+void WhatSonCppRegressionTests::sourceTree_forbidsSeparatedPlatformAppObjects()
+{
+    const QDir repositoryRoot(repositoryRootPath());
+    QVERIFY(repositoryRoot.exists());
+
+    const QString compactUi = QStringLiteral("mob") + QStringLiteral("ile");
+    const QString platformA = QStringLiteral("And") + QStringLiteral("roid");
+    const QString platformALower = platformA.toLower();
+    const QString platformAUpper = platformA.toUpper();
+    const QString platformB = QStringLiteral("i") + QStringLiteral("OS");
+    const QString platformBLower = platformB.toLower();
+    const QString platformBUpper = platformB.toUpper();
+
+    const QStringList forbiddenDirectories{
+        QStringLiteral("src/app/models/content/") + compactUi,
+        QStringLiteral("docs/src/app/models/content/") + compactUi,
+        QStringLiteral("src/app/qml/view/") + compactUi,
+        QStringLiteral("docs/src/app/qml/view/") + compactUi,
+        QStringLiteral("src/app/platform/") + platformA,
+        QStringLiteral("docs/src/app/platform/") + platformA,
+        QStringLiteral("platform/") + platformA,
+        QStringLiteral("platform/Apple/") + platformB,
+        QStringLiteral("resources/icons/app/") + platformALower,
+        QStringLiteral("resources/icons/app/") + platformBLower
+    };
+    for (const QString& relativePath : forbiddenDirectories)
+    {
+        QVERIFY2(
+            !QDir(repositoryRoot.filePath(relativePath)).exists(),
+            qPrintable(QStringLiteral("Deleted separated-platform app directory must stay absent: %1").arg(relativePath)));
+    }
+
+    const QStringList forbiddenFiles{
+        QStringLiteral("src/app/qml/window/I") + platformBLower + QStringLiteral("InlineOnboardingSequence.qml"),
+        QStringLiteral("docs/src/app/qml/window/I") + platformBLower + QStringLiteral("InlineOnboardingSequence.qml.md"),
+        QStringLiteral("src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.cpp"),
+        QStringLiteral("src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.hpp"),
+        QStringLiteral("src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.mm"),
+        QStringLiteral("docs/src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.cpp.md"),
+        QStringLiteral("docs/src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.hpp.md"),
+        QStringLiteral("docs/src/app/platform/Apple/WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge.mm.md"),
+        QStringLiteral("scripts/build_") + platformALower + QStringLiteral(".py"),
+        QStringLiteral("scripts/build_") + platformBLower + QStringLiteral(".py"),
+        QStringLiteral("cmake/PrepareWhatSonI") + platformBLower + QStringLiteral("Xcodeproj.cmake.in"),
+        QStringLiteral("cmake/patch_whatson_") + platformBLower + QStringLiteral("_xcodeproj.py"),
+        QStringLiteral("test/cpp/suites/") + compactUi + QStringLiteral("_chrome_tests.cpp"),
+        QStringLiteral("test/cpp/suites/") + platformBLower + QStringLiteral("_bundle_icon_packaging_tests.cpp"),
+        QStringLiteral("test/cpp/suites/") + platformBLower + QStringLiteral("_xcodeproj_export_tests.cpp")
+    };
+    for (const QString& relativePath : forbiddenFiles)
+    {
+        QVERIFY2(
+            !QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Deleted separated-platform app object must stay absent: %1").arg(relativePath)));
+    }
+
+    const QString rootCmakeSource = readUtf8SourceFile(QStringLiteral("CMakeLists.txt"));
+    QVERIFY(!rootCmakeSource.contains(QStringLiteral("WHATSON_") + platformBUpper));
+    QVERIFY(!rootCmakeSource.contains(platformAUpper));
+    QVERIFY(!rootCmakeSource.contains(QStringLiteral("CMAKE_SYSTEM_NAME STREQUAL \"") + platformB + QStringLiteral("\"")));
+    QVERIFY(!rootCmakeSource.contains(QStringLiteral("whatson_require_") + platformBLower + QStringLiteral("_local_package")));
+
+    const QString runtimeCmakeSource = readUtf8SourceFile(QStringLiteral("cmake/root/runtime/CMakeLists.txt"));
+    QVERIFY(!runtimeCmakeSource.contains(QStringLiteral("whatson_generate_") + platformBLower + QStringLiteral("_xcodeproj")));
+    QVERIFY(!runtimeCmakeSource.contains(QStringLiteral("whatson_launch_") + platformBLower));
+    QVERIFY(!runtimeCmakeSource.contains(QStringLiteral("whatson_launch_") + platformALower));
+    QVERIFY(!runtimeCmakeSource.contains(QStringLiteral("whatson_export_") + platformALower + QStringLiteral("_studio")));
+    QVERIFY(!runtimeCmakeSource.contains(QStringLiteral("whatson_export_xcodeproj")));
+
+    const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("WHATSON_APP_ICON_") + platformBUpper + QStringLiteral("_DIR")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("WHATSON_APP_ICON_") + platformAUpper + QStringLiteral("_DIR")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("WHATSON_") + platformAUpper + QStringLiteral("_PACKAGE_ID")));
+    QVERIFY(!appCmakeSource.contains(QStringLiteral("add_subdirectory(models/content/") + compactUi + QStringLiteral(")")));
+
+    const QString appResourcesCmakeSource =
+        readUtf8SourceFile(QStringLiteral("src/app/cmake/resources/CMakeLists.txt"));
+    QVERIFY(!appResourcesCmakeSource.contains(platformAUpper));
+    QVERIFY(!appResourcesCmakeSource.contains(platformB));
+    QVERIFY(!appResourcesCmakeSource.contains(QStringLiteral("WHATSON_") + platformBUpper));
+
+    const QString appDefaultsCmakeSource =
+        readUtf8SourceFile(QStringLiteral("src/app/cmake/defaults/CMakeLists.txt"));
+    QVERIFY(!appDefaultsCmakeSource.contains(platformAUpper + QStringLiteral("_PACKAGE_ID")));
+    QVERIFY(!appDefaultsCmakeSource.contains(QStringLiteral("WHATSON_") + platformBUpper + QStringLiteral("_INFO_PLIST")));
+
+    const QString mainCppSource = readUtf8SourceFile(QStringLiteral("src/app/main.cpp"));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("Q_OS_") + platformAUpper));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("Q_OS_") + platformBUpper));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("useEmbeddedStartupOnboarding")));
+    QVERIFY(!mainCppSource.contains(QStringLiteral("WhatSon") + platformA + QStringLiteral("StorageBackend")));
+
+    const QString internalRegistrarSource =
+        readUtf8SourceFile(QStringLiteral("src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp"));
+    QVERIFY(!internalRegistrarSource.contains(QStringLiteral("Mob") + QStringLiteral("ileHierarchy")));
+    QVERIFY(!internalRegistrarSource.contains(QStringLiteral("WhatSonI") + platformBLower + QStringLiteral("HubPickerBridge")));
+
+    const QString mainQmlSource = readUtf8SourceFile(QStringLiteral("src/app/qml/Main.qml"));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("Mob") + QStringLiteral("ilePageView")));
+    QVERIFY(!mainQmlSource.contains(compactUi + QStringLiteral("MainLayoutComponent")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("adaptive") + QStringLiteral("Mob") + QStringLiteral("ileLayout")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("is") + QStringLiteral("Mob") + QStringLiteral("ilePlatform")));
+    QVERIFY(!mainQmlSource.contains(QStringLiteral("platform === \"") + platformBLower + QStringLiteral("\"")));
+
+    const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("Mob") + QStringLiteral("ileHierarchy")));
+    QVERIFY(!testCmakeSource.contains(QStringLiteral("WhatSon") + platformA + QStringLiteral("StorageBackend")));
 }
 
 void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
@@ -394,15 +524,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QString contentsRoot = QStringLiteral("src/app/qml/view/contents");
     const QString docsContentsRoot = QStringLiteral("docs/src/app/qml/view/contents");
     const QStringList requiredPaths{
-        contentsRoot + QStringLiteral("/Gutter.qml"),
         contentsRoot + QStringLiteral("/ImageEditor.qml"),
-        contentsRoot + QStringLiteral("/Minimap.qml"),
-        contentsRoot + QStringLiteral("/TextEditor.qml"),
         docsContentsRoot + QStringLiteral("/README.md"),
-        docsContentsRoot + QStringLiteral("/Gutter.qml.md"),
-        docsContentsRoot + QStringLiteral("/ImageEditor.qml.md"),
-        docsContentsRoot + QStringLiteral("/Minimap.qml.md"),
-        docsContentsRoot + QStringLiteral("/TextEditor.qml.md")
+        docsContentsRoot + QStringLiteral("/ImageEditor.qml.md")
     };
     for (const QString& relativePath : requiredPaths)
     {
@@ -431,23 +555,23 @@ void WhatSonCppRegressionTests::sourceTree_keepsContentsQmlUnderViewContents()
     const QStringList contentsQmlFiles =
         QDir(repositoryRoot.filePath(contentsRoot)).entryList(QStringList{QStringLiteral("*.qml")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsQmlFiles, QStringList({
-        QStringLiteral("Gutter.qml"),
-        QStringLiteral("ImageEditor.qml"),
-        QStringLiteral("Minimap.qml"),
-        QStringLiteral("TextEditor.qml")
+        QStringLiteral("ImageEditor.qml")
     }));
     const QStringList contentsDocsFiles =
         QDir(repositoryRoot.filePath(docsContentsRoot)).entryList(QStringList{QStringLiteral("*.md")}, QDir::Files, QDir::Name);
     QCOMPARE(contentsDocsFiles, QStringList({
-        QStringLiteral("Gutter.qml.md"),
         QStringLiteral("ImageEditor.qml.md"),
-        QStringLiteral("Minimap.qml.md"),
-        QStringLiteral("README.md"),
-        QStringLiteral("TextEditor.qml.md")
+        QStringLiteral("README.md")
     }));
 
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/ContentsView.qml"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/EditorView.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/Gutter.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/Minimap.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/TextEditor.qml"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(docsContentsRoot + QStringLiteral("/Gutter.qml.md"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(docsContentsRoot + QStringLiteral("/Minimap.qml.md"))));
+    QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(docsContentsRoot + QStringLiteral("/TextEditor.qml.md"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(contentsRoot + QStringLiteral("/editor/ContentsInlineFormatEditor.qml"))));
     QVERIFY(!QFileInfo::exists(repositoryRoot.filePath(
         contentsRoot + QStringLiteral("/editor/ContentsDisplayView.qml"))));
@@ -560,12 +684,14 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!libraryControllerSource.contains(QStringLiteral("LibraryHierarchyController::buildNoteListItem(")));
     QVERIFY(projectionSource.contains(QStringLiteral("WhatSonLibraryNoteListProjection::buildNoteListItem")));
     QVERIFY(libraryControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
-    QVERIFY(libraryControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!libraryControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!libraryControllerHeader.contains(QStringLiteral("saveBodyTextForNote")));
+    QVERIFY(!libraryControllerHeader.contains(QStringLiteral("noteBodySourceTextForNoteId")));
 
     const QString projectsControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp"));
     QVERIFY(projectsControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
-    QVERIFY(projectsControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!projectsControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
     QVERIFY(!projectsControllerSource.contains(QStringLiteral("int indexOfNoteRecordById(")));
 
     const QString bookmarksControllerSource = readUtf8SourceFile(
@@ -573,9 +699,9 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     const QString progressControllerSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/hierarchy/progress/ProgressHierarchyController.cpp"));
     QVERIFY(bookmarksControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
-    QVERIFY(bookmarksControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!bookmarksControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
     QVERIFY(progressControllerSource.contains(QStringLiteral("WhatSonHierarchyNoteRecordSupport.hpp")));
-    QVERIFY(progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
+    QVERIFY(!progressControllerSource.contains(QStringLiteral("NoteRecordSupport::applyPersistedBodyState")));
 
     const QString clipboardSource = readUtf8SourceFile(
         QStringLiteral("src/app/models/clipboard/InAppClipboardManager.cpp"));
@@ -654,8 +780,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!clipboardSource.contains(QStringLiteral("ResourcesImportController")));
     QVERIFY(!clipboardSource.contains(QStringLiteral("resources.import")));
     QVERIFY(clipboardSource.contains(QStringLiteral("clipboard.import")));
-    QVERIFY(clipboardSource.contains(QStringLiteral("InAppClipboardManager::importClipboardResourceForEditor")));
-    QVERIFY(clipboardSource.contains(QStringLiteral("InAppClipboardManager::importUrlsForEditor")));
+    QVERIFY(!clipboardSource.contains(QStringLiteral("InAppClipboardManager::importClipboardResourceForEditor")));
+    QVERIFY(!clipboardSource.contains(QStringLiteral("InAppClipboardManager::importUrlsForEditor")));
 
     const QString appCmakeSource = readUtf8SourceFile(QStringLiteral("src/app/CMakeLists.txt"));
     QVERIFY(appCmakeSource.contains(QStringLiteral("add_subdirectory(models/file)")));
@@ -682,11 +808,11 @@ void WhatSonCppRegressionTests::sourceTree_keepsHierarchyBackendDecomposed()
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/InAppClipboardResourceImport.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/clipboard/ClipboardResourceImport.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/file/resource/ResourcesImportController.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/Callout.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/style.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/GetProperty.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/Callout.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/component/style.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetProperty.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/SetTag.cpp")));
     QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/editor/display/minimap")));
 }
 
@@ -698,7 +824,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
     const QString noteRoot = QStringLiteral("src/app/models/file/note");
     const QString docsNoteRoot = QStringLiteral("docs/src/app/models/file/note");
     const QStringList requiredSourceDirectories{
-        noteRoot + QStringLiteral("/body"),
         noteRoot + QStringLiteral("/folder"),
         noteRoot + QStringLiteral("/header"),
         noteRoot + QStringLiteral("/package"),
@@ -712,7 +837,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
     }
 
     const QStringList requiredDocsDirectories{
-        docsNoteRoot + QStringLiteral("/body"),
         docsNoteRoot + QStringLiteral("/folder"),
         docsNoteRoot + QStringLiteral("/header"),
         docsNoteRoot + QStringLiteral("/package"),
@@ -726,16 +850,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
     }
 
     const QStringList requiredFiles{
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.cpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.hpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.cpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.hpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.cpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.hpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.cpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.hpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.cpp"),
-        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.hpp"),
         noteRoot + QStringLiteral("/folder/WhatSonNoteFolderSemantics.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonBookmarkColorPalette.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderCreator.cpp"),
@@ -744,8 +858,6 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderParser.hpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.cpp"),
         noteRoot + QStringLiteral("/header/WhatSonNoteHeaderStore.hpp"),
-        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.cpp"),
-        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.hpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteCreator.cpp"),
         noteRoot + QStringLiteral("/package/WhatSonNoteCreator.hpp"),
         noteRoot + QStringLiteral("/support/WhatSonIiXmlDocumentSupport.cpp"),
@@ -758,6 +870,33 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
             qPrintable(QStringLiteral("Classified note file must stay present: %1").arg(relativePath)));
     }
 
+    const QStringList forbiddenFiles{
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyResourceTagGenerator.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodySemanticTagSupport.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteBodyWebLinkSupport.hpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.cpp"),
+        noteRoot + QStringLiteral("/body/WhatSonNoteMarkdownStyleObject.hpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.cpp"),
+        noteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.hpp"),
+        docsNoteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.cpp.md"),
+        docsNoteRoot + QStringLiteral("/body/WhatSonNoteBodyPersistence.hpp.md"),
+        docsNoteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.cpp.md"),
+        docsNoteRoot + QStringLiteral("/package/WhatSonNoteBodyCreator.hpp.md")
+    };
+    for (const QString& relativePath : forbiddenFiles)
+    {
+        QVERIFY2(
+            !QFileInfo::exists(repositoryRoot.filePath(relativePath)),
+            qPrintable(QStringLiteral("Deleted note body file must stay absent: %1").arg(relativePath)));
+    }
+    QVERIFY(!QDir(repositoryRoot.filePath(noteRoot + QStringLiteral("/body"))).exists());
+    QVERIFY(!QDir(repositoryRoot.filePath(docsNoteRoot + QStringLiteral("/body"))).exists());
+
     const QStringList flatNoteFiles =
         QDir(repositoryRoot.filePath(noteRoot)).entryList(
             QStringList{QStringLiteral("*.cpp"), QStringLiteral("*.hpp"), QStringLiteral("*.h")},
@@ -768,7 +907,8 @@ void WhatSonCppRegressionTests::sourceTree_keepsNoteFileShardClassifiedByRespons
         qPrintable(QStringLiteral("Note file shard root must not keep flat C++ files: %1").arg(flatNoteFiles.join(QLatin1Char(',')))));
 
     const QString testCMakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
-    QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/file/note/body/WhatSonNoteBodyPersistence.cpp")));
+    QVERIFY(!testCMakeSource.contains(QStringLiteral("src/app/models/file/note/package/WhatSonNoteBodyCreator.cpp")));
     QVERIFY(testCMakeSource.contains(QStringLiteral("src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp")));
     const QString flatNoteBodyPersistenceSource =
         QStringLiteral("src/app/models/file/note/") + QStringLiteral("WhatSonNoteBodyPersistence.cpp");
