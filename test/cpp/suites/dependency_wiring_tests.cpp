@@ -15,11 +15,22 @@ void WhatSonCppRegressionTests::cmakeDependencyWiring_declaresLocalXmlAndHtmlBlo
     const QString appRuntimeCmakeSource = readUtf8SourceFile(
         QStringLiteral("src/app/cmake/runtime/CMakeLists.txt"));
     const QString testCmakeSource = readUtf8SourceFile(QStringLiteral("test/cpp/CMakeLists.txt"));
+    const QString bootstrapSource = readUtf8SourceFile(QStringLiteral("scripts/bootstrap_whatson.sh"));
+    const QString devEnvironmentSource = readUtf8SourceFile(QStringLiteral("scripts/dev_env.py"));
+    const QString buildRunnerSource = readUtf8SourceFile(QStringLiteral("scripts/build_platform_runner.py"));
 
     QVERIFY(!rootCmakeSource.isEmpty());
     QVERIFY(!appCmakeSource.isEmpty());
     QVERIFY(!appRuntimeCmakeSource.isEmpty());
     QVERIFY(!testCmakeSource.isEmpty());
+
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("set(LVRS_PREFIX \"$ENV{HOME}/.local/SDK/LVRS\" CACHE PATH")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("set(WHATSON_LOCAL_LIBRARY_ROOT \"$ENV{HOME}/.local/SDK\" CACHE PATH")));
+    QVERIFY(bootstrapSource.contains(QStringLiteral("LVRS_PREFIX=\"${LVRS_PREFIX:-${HOME}/.local/SDK/LVRS}\"")));
+    for (const QString& source : {devEnvironmentSource, buildRunnerSource}) {
+        QVERIFY(source.contains(QStringLiteral("home / \".local\" / \"SDK\" / \"LVRS\"")));
+        QVERIFY(source.contains(QStringLiteral("parent / \"SDK\" / \"LVRS\" for parent in repo_root.parents")));
+    }
 
     QVERIFY(rootCmakeSource.contains(QStringLiteral("set(IIXML_PREFIX")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("set(IIHTMLBLOCK_PREFIX")));

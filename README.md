@@ -14,9 +14,12 @@ WhatSon is an LVRS-based Qt Quick desktop application for creative, branding, in
 ## Build Dependencies
 
 - Qt 6.5+ is the baseline Qt requirement. The local maintained kit currently resolves through the configured Qt prefix.
-- LVRS is discovered from `~/.local/LVRS` unless a cache override is provided.
+- LVRS is discovered from `~/.local/SDK/LVRS` unless a cache override is provided.
 - `iiXml` and `iiHtmlBlock` are required local libraries for app and regression builds. Their CMake package prefixes
-  default to `~/.local/iiXml` and `~/.local/iiHtmlBlock`.
+  default to `~/.local/SDK/iiXml` and `~/.local/SDK/iiHtmlBlock`.
+- CMake, the bootstrap script, and Python developer tools share these SDK installation defaults. The developer tools
+  discover the LVRS source checkout under an ancestor workspace's `SDK/LVRS`, including when WhatSon is under
+  `Product/.Deprecated`. Explicit prefix overrides remain supported.
 
 ## Build
 
@@ -26,6 +29,10 @@ Configure and build through the repository-owned `build/` tree:
 cmake -S . -B build
 cmake --build build --target whatson_build_regression -j
 ```
+
+After moving the checkout or SDK installation, regenerate the existing `build/` cache with
+`cmake --fresh -S . -B build` before building. The maintained C++ dependency-wiring regression checks the SDK defaults
+in CMake and both developer entrypoints.
 
 Run the desktop application:
 

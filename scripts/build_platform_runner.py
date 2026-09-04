@@ -170,16 +170,14 @@ def _default_qt_host_prefix(system_name: str, qt_root: Path) -> Path:
 
 def _default_lvrs_prefix(system_name: str, home: Path) -> Path:
     _ = system_name
-    return _find_existing([home / ".local" / "LVRS", Path("/local/LVRS")]) or home / ".local" / "LVRS"
+    return _find_existing([home / ".local" / "SDK" / "LVRS", Path("/local/SDK/LVRS")]) or home / ".local" / "SDK" / "LVRS"
 
 
 def _default_lvrs_source_dir(home: Path, repo_root: Path) -> Path:
     candidates = [
+        *(parent / "SDK" / "LVRS" for parent in repo_root.parents),
         home / "Developer" / "LVRS",
-        repo_root.parent / "LVRS",
-        repo_root.parent.parent / "LVRS",
-        repo_root.parent.parent / "InfraSystem" / "LVRS",
-        Path("/local/LVRS"),
+        Path("/local/SDK/LVRS"),
     ]
     for candidate in candidates:
         if (candidate / "CMakeLists.txt").exists():

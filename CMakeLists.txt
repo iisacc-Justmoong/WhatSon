@@ -11,14 +11,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add local prefixes for dependency discovery.
 # LVRS root package now dispatches platform-specific configs internally.
-if (NOT LVRS_PREFIX AND EXISTS "$ENV{HOME}/.local/LVRS")
-    set(LVRS_PREFIX "$ENV{HOME}/.local/LVRS" CACHE PATH "Path to LVRS root prefix")
+if (NOT LVRS_PREFIX AND EXISTS "$ENV{HOME}/.local/SDK/LVRS")
+    set(LVRS_PREFIX "$ENV{HOME}/.local/SDK/LVRS" CACHE PATH "Path to LVRS root prefix")
 endif ()
 if (LVRS_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${LVRS_PREFIX}")
 endif ()
 
-set(WHATSON_LOCAL_LIBRARY_ROOT "$ENV{HOME}/.local" CACHE PATH
+set(WHATSON_LOCAL_LIBRARY_ROOT "$ENV{HOME}/.local/SDK" CACHE PATH
         "Root directory for user-built local libraries and frameworks.")
 
 function(whatson_find_local_package_config_dir out_var package_name package_prefix)
