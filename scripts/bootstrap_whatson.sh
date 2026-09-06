@@ -56,7 +56,7 @@ join_by_semicolon() {
 detect_qt_version_root() {
     local qt_home
     local candidate
-    qt_home="${HOME}/Qt"
+    qt_home="/Volumes/Storage/Qt"
 
     if [[ -d "${qt_home}" ]]; then
         candidate="$(

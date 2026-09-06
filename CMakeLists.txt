@@ -54,7 +54,7 @@ endif ()
 if (APPLE)
     # Common Qt installation paths on macOS
     if (NOT QT_ROOT_PATH)
-        file(GLOB QT_INSTALL_DIRS "$ENV{HOME}/Qt/6.*")
+        file(GLOB QT_INSTALL_DIRS "/Volumes/Storage/Qt/6.*")
         if (QT_INSTALL_DIRS)
             list(SORT QT_INSTALL_DIRS ORDER DESCENDING)
             list(GET QT_INSTALL_DIRS 0 LATEST_QT)

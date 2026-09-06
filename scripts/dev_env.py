@@ -48,7 +48,7 @@ def _first_existing(paths: Iterable[Path]) -> Optional[Path]:
 
 
 def _default_qt_version_root(home: Path) -> Path:
-    qt_home = home / "Qt"
+    qt_home = Path("/Volumes/Storage/Qt")
     return _latest_version_dir(qt_home) or qt_home
 
 

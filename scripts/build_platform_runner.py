@@ -154,7 +154,7 @@ def _latest_version_dir(parent: Path, pattern: str = r"^\d+(\.\d+)*$") -> Option
 
 
 def _default_qt_version_root(home: Path) -> Path:
-    qt_home = home / "Qt"
+    qt_home = Path("/Volumes/Storage/Qt")
     return _latest_version_dir(qt_home) or qt_home
 
 

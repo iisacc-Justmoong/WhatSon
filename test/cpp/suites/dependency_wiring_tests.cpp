@@ -67,7 +67,7 @@ void WhatSonCppRegressionTests::cmakePresets_exposeStableClionConfigureProfile()
 
     QVERIFY(!rootCmakeSource.isEmpty());
     QVERIFY(!presetSource.isEmpty());
-    QVERIFY(rootCmakeSource.contains(QStringLiteral("file(GLOB QT_INSTALL_DIRS \"$ENV{HOME}/Qt/6.*\")")));
+    QVERIFY(rootCmakeSource.contains(QStringLiteral("file(GLOB QT_INSTALL_DIRS \"/Volumes/Storage/Qt/6.*\")")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("set(QT_ROOT_PATH \"${LATEST_QT}/macos\" CACHE PATH")));
     QVERIFY(rootCmakeSource.contains(QStringLiteral("list(APPEND CMAKE_PREFIX_PATH \"${QT_ROOT_PATH}\")")));
 

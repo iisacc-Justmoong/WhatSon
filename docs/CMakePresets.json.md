@@ -16,7 +16,7 @@
 - Do not redirect the default preset away from `build/`.
 - Do not commit `.idea` profile state to solve CLion configure issues; keep the reproducible contract in this preset
   file instead.
-- Let the root `CMakeLists.txt` discover the local Qt installation through `QT_ROOT_PATH` and `~/Qt/6.*` instead of
+- Let the root `CMakeLists.txt` discover the local Qt installation through `QT_ROOT_PATH` and `/Volumes/Storage/Qt/6.*` instead of
   pinning a user-specific Qt patch version in this preset.
 
 ## Verification Notes
