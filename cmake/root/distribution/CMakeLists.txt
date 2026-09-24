@@ -11,7 +11,9 @@ if (NOT CMAKE_CROSSCOMPILING)
 endif ()
 
 if (WHATSON_BUILD_TARGETS)
-    if (_whatson_native_desktop_install_tree)
+    if (APPLE)
+        add_custom_target(whatson_export_binaries DEPENDS WhatSon)
+    elseif (_whatson_native_desktop_install_tree)
         set(_whatson_install_dist_command
                 "${CMAKE_COMMAND}"
                 --install "${CMAKE_BINARY_DIR}"
@@ -34,19 +36,11 @@ if (WHATSON_BUILD_TARGETS)
         )
 
         if (TARGET WhatSon)
-            if (APPLE)
-                add_custom_command(TARGET whatson_export_binaries POST_BUILD
-                        COMMAND "${CMAKE_COMMAND}" -E copy_directory
-                        "$<TARGET_BUNDLE_DIR:WhatSon>"
-                        "${WHATSON_DIST_DIR}/WhatSon.app"
-                )
-            else ()
                 add_custom_command(TARGET whatson_export_binaries POST_BUILD
                         COMMAND "${CMAKE_COMMAND}" -E copy
                         "$<TARGET_FILE:WhatSon>"
                         "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon>"
                 )
-            endif ()
         endif ()
 
         if (TARGET WhatSon_daemon)
@@ -168,9 +162,18 @@ elseif (WIN32)
 elseif (UNIX)
     set(CPACK_GENERATOR "TGZ;ZIP")
 endif ()
-include(CPack)
+if(APPLE)
+    file(REMOVE "${CMAKE_BINARY_DIR}/CPackConfig.cmake" "${CMAKE_BINARY_DIR}/CPackSourceConfig.cmake")
+else()
+    include(CPack)
+endif()
 
-if (CMAKE_CPACK_COMMAND)
+if (APPLE AND TARGET WhatSon)
+    add_custom_target(whatson_package
+        COMMAND ditto -c -k --sequesterRsrc --keepParent "$<TARGET_BUNDLE_DIR:WhatSon>"
+            "${CMAKE_BINARY_DIR}/WhatSon-${PROJECT_VERSION}.zip"
+        DEPENDS WhatSon VERBATIM)
+elseif (CMAKE_CPACK_COMMAND)
     add_custom_target(whatson_package
             COMMAND "${CMAKE_CPACK_COMMAND}" --config "${CMAKE_BINARY_DIR}/CPackConfig.cmake"
             USES_TERMINAL

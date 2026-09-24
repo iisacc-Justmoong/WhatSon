@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/single-app/Defaults.cmake")
 
 project(WhatSon VERSION 0.1.0 LANGUAGES CXX)
 
@@ -295,3 +296,10 @@ if (WHATSON_BUILD_TARGETS)
 endif ()
 
 add_subdirectory(cmake/root)
+
+# Apply after Qt/LVRS finalizers, which may enable bundles for test targets.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/single-app/SingleApp.cmake")
+product_plain_executables("${CMAKE_SOURCE_DIR}" WhatSon)
+cmake_language(DEFER CALL product_single_app WhatSon "")
+
+product_deploy_app(WhatSon "src/app/qml")
