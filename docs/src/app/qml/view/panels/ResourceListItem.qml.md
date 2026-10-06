@@ -1,48 +1,63 @@
 # `src/app/qml/view/panels/ResourceListItem.qml`
 
-## Responsibility
+<a id="responsibility"></a>
 
-`ResourceListItem.qml` is the dedicated right-panel card component for resources-list rows. It intentionally does not
-reuse `NoteListItem` structure and keeps the Figma `232:7892` geometry and state colors as an isolated contract.
+## 책임
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/ResourceListItem.qml`
-- Source kind: QML view/component
-- File name: `ResourceListItem.qml`
-- Approximate line count: 91
+`ResourceListItem.qml`는 리소스 목록 행을 위한 전용 오른쪽 패널 카드 구성 요소입니다. 의도적으로 `NoteListItem` 구조를 재사용하지 않고 Figma `232:7892` 형상 및 상태 색상을 격리된 계약으로 유지합니다.
 
-## QML Surface Snapshot
-- Root type: `Item`
+<a id="source-metadata"></a>
 
-### Object IDs
+## 소스 메타데이터
+- 소스 경로: `src/app/qml/view/panels/ResourceListItem.qml`
+- 소스 종류: QML 뷰/컴포넌트
+- 파일 이름: `ResourceListItem.qml`
+- 대략적인 줄 수: 91
+
+<a id="qml-surface-snapshot"></a>
+
+## QML 표면 스냅샷
+- 루트 유형: `Item`
+
+<a id="object-ids"></a>
+
+### 개체 ID
 - `resourceListItem`
 - `resourceHoverHandler`
 
-### Public Properties
+<a id="public-properties"></a>
+
+### 공개 속성
 - `active`
 - `pressed`
 - `previewSource`
 - `titleText`
 
-## Visual Contract
+<a id="visual-contract"></a>
 
-- Width uses `LV.Theme.inputMinWidth + LV.Theme.gap14` instead of a raw fixed pixel literal.
-- Frame padding uses `LV.Theme.gap8`.
-- Single horizontal row with:
-  - a thumbnail frame sized from `LV.Theme.gap24 + LV.Theme.gap24`.
-  - a row gap sized from `LV.Theme.gap10`.
-  - semibold title text with `LV.Theme.textBody` / `LV.Theme.textBodyLineHeight`.
-- Background states:
-  - default: `LV.Theme.accentTransparent`
-  - hover/pressed: `LV.Theme.panelBackground06`
-  - active: `LV.Theme.accentBlueMuted`
-- Thumbnail placeholders use `LV.Theme.strokeSoft`.
+## 시각적 계약
 
-## Integration
+- 너비는 원시 고정 픽셀 리터럴 대신 `LV.Theme.inputMinWidth + LV.Theme.gap14`를 사용합니다.
+- 프레임 패딩은 `LV.Theme.gap8`를 사용합니다.
+- 다음이 포함된 단일 가로 행:
+  - `LV.Theme.gap24 + LV.Theme.gap24` 크기의 썸네일 프레임.
+  - `LV.Theme.gap10` 크기의 행 간격입니다.
+  - `LV.Theme.textBody` / `LV.Theme.textBodyLineHeight`가 포함된 세미볼드 제목 텍스트.
+- 배경 상태:
+  - 기본값: `LV.Theme.accentTransparent`
+  - 호버/눌림: `LV.Theme.panelBackground06`
+  - 활성: `LV.Theme.accentBlueMuted`
+- 썸네일 자리 표시자는 `LV.Theme.strokeSoft`를 사용합니다.
 
-- `ListBarLayout.qml` switches delegate composition by `resourceListMode`.
-- Resources rows render `ResourceListItem`; non-resource note rows keep `NoteListItem`.
+<a id="integration"></a>
 
-## Tests
+## 통합
 
-Automated test files were removed from this repository; verify component geometry and delegate bindings through runtime inspection.
+- `ListBarLayout.qml` 스위치는 `resourceListMode`로 대표 구성을 전환합니다.
+- 리소스 행은 `ResourceListItem`를 렌더링합니다. 리소스 메모가 아닌 행은 `NoteListItem`를 유지합니다.
+
+<a id="tests"></a>
+
+## 테스트
+
+자동 테스트 파일이 이 저장소에서 제거되었습니다. 런타임 검사를 통해 구성요소 형상 및 위임 바인딩을 확인합니다.

@@ -1,56 +1,46 @@
 # `src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This helper owns the sidebar inline-rename transaction. It decides whether the selected hierarchy row can be renamed,
-seeds the temporary label, commits the bridge call, and unwinds focus/cancellation.
+## 책임
 
-## Rename Target Resolution
+이 도우미는 사이드바 인라인 이름 바꾸기 트랜잭션을 소유합니다. 선택한 계층 구조 행의 이름을 바꿀 수 있는지 여부를 결정하고, 임시 레이블을 시드하고, 브리지 호출을 커밋하고, 포커스/취소를 해제합니다.
 
-- `beginRenameSelectedHierarchyItem()` resolves the selected hierarchy index from `hostView.selectedFolderIndex`.
-- Before showing the editor, it calls `hostView.syncSelectedHierarchyItem(false)` and
-  `hostView.refreshEditingHierarchyPresentation(true)` so the overlay is anchored through the visible item locator
-  instead of a stale topmost generated item.
-- The `Qt.callLater(...)` pass refreshes the presentation snapshot again after LVRS finishes any row regeneration.
-- The post-create path uses `beginRenameHierarchyItemWhenVisible(...)`: it captures the controller's new selected index
-  after `createFolder()`, refreshes the displayed model, activates the row by stable key when possible, and retries on
-  later QML turns until the row has non-zero geometry. Inline rename state is not entered while the row is missing, so
-  the input field cannot appear over `All Library` or another stale active row.
-- The row-readiness guard also checks the visual `HierarchyItem` identity against the selected model row's stable key.
-  This prevents a newly inserted blank folder row from hiding its label while the input field is still positioned over a
-  stale system-bucket row.
-- The post-create path keeps selection activation separate from focus. `syncSelectedHierarchyItem(...)` may still align
-  the active LVRS row, but inline rename focus is scheduled through `scheduleHierarchyRenameFieldFocus(...)` and applied
-  directly to the `LV.InputField`. The repeated deferred passes absorb hierarchy row regeneration after creation without
-  sending active focus back to the sidebar root.
-- New-folder rename uses `beginRenameHierarchyItemKeyWhenVisible(...)` when a stable inserted key is available. The key
-  is derived from the before/after hierarchy model diff in the host view, so a stale or briefly reset
-  `hierarchySelectedIndex` cannot place the editor over a system bucket while the newly inserted folder row is elsewhere.
+<a id="rename-target-resolution"></a>
 
-## Commit / Cancel Rules
+## 대상 해상도 이름 바꾸기
 
-- `commitHierarchyRename()` delegates the actual rename to `hierarchyInteractionBridge.renameItem(...)`.
-- Both commit and cancel clear the cached row presentation through `hostView.clearEditingHierarchyPresentation()` before
-  resynchronizing LVRS selection.
-- Both commit and cancel also force `hostView.syncDisplayedHierarchyModel(true)` after the rename state is cleared, so
-  the rendered hierarchy row reflects the final controller state immediately after the transaction ends.
+- `beginRenameSelectedHierarchyItem()`는 `hostView.selectedFolderIndex`에서 선택한 계층 구조 인덱스를 확인합니다.
+- 편집기를 표시하기 전에 `hostView.syncSelectedHierarchyItem(false)`와 `hostView.refreshEditingHierarchyPresentation(true)`를 호출하여 오버레이가 오래된 최상위 생성 항목이 아니라 보이는 항목 찾기를 통해 고정됩니다.
+- `Qt.callLater(...)` 패스는 LVRS가 행 재생성을 완료한 후 프레젠테이션 스냅샷을 다시 새로 고칩니다.
+- 생성 후 경로 는 `beginRenameHierarchyItemWhenVisible(...)` 를 사용하여 컨트롤러의 새로 선택된 인덱스를 `createFolder()` 이후 포착하고, 표시된 모델을 새로고침하며, 가능하면 안정 키로 행을 활성화하고, 행이0 기하가 아닌 상태인 경우 이후 QML 턴에서 재시도합니다. 행이 누락된 동안 인라인 이름 변경 상태는 입력되지 않으므로 입력 필드는 `All Library` 또는 다른 오래된 활성 행 위에 나타날 수 없습니다.
+- 행 준비도 가드는 선택된 모델 행의 안정 키에 대해 시각적 `HierarchyItem` 식별을 확인합니다. 이렇게 하면 새로 삽입된 빈 폴더 행이 레이블을 숨기는 것을 방지하고, 입력 필드가 오래된 시스템 버킷 행 위에 여전히 위치합니다.
+- 생성 후 경로는 선택 활성화를 포커스와 분리합니다. `syncSelectedHierarchyItem(...)`는 여전히 활성 LVRS 행을 정렬할 수 있지만, 인라인 이름 변경 포커스는 `scheduleHierarchyRenameFieldFocus(...)`를 통해 예약되어 `LV.InputField`에 직접 적용됩니다. 반복되는 지연 패스는 생성 후 계층 행 재생성을 흡수하며, 활성 포커스를 사이드바 루트로 다시 전송하지 않습니다.
+- 새 폴더 이름 변경은 안정적인 삽입 키가 사용 가능할 때 `beginRenameHierarchyItemKeyWhenVisible(...)`를 사용합니다. 키는 호스트 뷰의 전/후 계층 구조 모델 차이에서 파생되므로, 오래된 `hierarchySelectedIndex`가 일시적으로 재설정된 경우 새로 삽입된 폴더 행이 다른 위치에 있는 동안 편집기를 시스템 버킷 위에 배치할 수 없습니다.
 
-## Label Handling
+<a id="commit--cancel-rules"></a>
 
-- `leafHierarchyItemLabel(...)` now resolves the edit label from the hierarchy item's escaped `id/path` first instead
-  of naively splitting the rendered label on `/`.
-- Literal-slash folder names such as `Marketing/Sales` therefore stay one rename target when the persisted hierarchy
-  path is `Marketing\\/Sales`; the inline editor no longer collapses them to only `Sales`.
-- Starting inline rename does not rebuild `displayedHierarchyModel` just to hide the edited label. The input overlay
-  uses the captured row presentation directly, which keeps newly created folder geometry stable while focus is applied.
+## 커밋/취소 규칙
 
-## Tests
+- `commitHierarchyRename()`는 실제 이름 바꾸기를 `hierarchyInteractionBridge.renameItem(...)`에 위임합니다.
+- `hostView.clearEditingHierarchyPresentation()`를 통해 캐시된 행 프레젠테이션을 커밋하고 취소한 뒤, LVRS 선택을 다시 동기화하십시오.
+- 커밋과 취소는 모두 이름 변경 상태가 해제된 후에도 `hostView.syncDisplayedHierarchyModel(true)`를 강제하므로, 렌더링된 계층 행은 트랜잭션이 종료된 직후 최종 컨트롤러 상태를 반영합니다.
 
-- The maintained C++ regression suite now also pins the escape-aware rename-label path for literal-slash folder names.
-- Regression checklist for this helper:
-  - Pressing `Enter` on a renamable folder must open the inline input without replacing the visible row label with a
-    UUID-like fallback value.
-  - A folder label such as `Marketing/Sales` must seed the inline editor with the full literal label, not only the
-    terminal `Sales` segment.
-  - Committing a rename must restore the rendered row label immediately after the overlay closes.
-  - Cancelling a rename must likewise restore the original rendered row label immediately.
+<a id="label-handling"></a>
+
+## 라벨 취급
+
+- `leafHierarchyItemLabel(...)`는 이제 계층 항목의 이스케이프된 `id/path`에서 편집 레이블을 먼저 해결하며, `/`에서 렌더링된 레이블을 순진하게 분할하지 않습니다.
+- `Marketing/Sales`와 같은 리터럴 슬래시 폴더 이름은 영구 계층 경로가 `Marketing\\/Sales`인 경우 하나의 이름 변경 대상이 유지되며, 인라인 편집기에서는 더 이상 이를 `Sales` 로만 압축하지 않습니다.
+- 인라인 이름을 시작하면 편집된 레이블을 숨기기 위해 `displayedHierarchyModel`가 재구성되지 않습니다. 입력 오버레이는 캡처된 행 프레젠테이션을 직접 사용하여 포커스가 적용되는 동안 새로 생성된 폴더 지오메트리를 안정적으로 유지합니다.
+
+<a id="tests"></a>
+
+## 테스트
+
+- 유지 관리되는 C++ 회귀 제품군은 이제 리터럴 슬래시 폴더 이름에 대한 이스케이프 인식 이름 바꾸기 레이블 경로도 고정합니다.
+- 이 도우미에 대한 회귀 체크리스트:
+  - 재명명 가능한 폴더에서 `Enter`를 누르면 보이는 행 레이블을 UUID와 같은 대체 경로 값으로 교체하지 않고 인라인 입력이 열려야 합니다.
+  - `Marketing/Sales`와 같은 폴더 레이블은 터미널 `Sales` 세그먼트만이 아니라 전체 리터럴 라벨을 인라인 편집기에 시드해야 합니다.
+  - 이름 바꾸기를 커밋하면 오버레이가 닫힌 직후에 렌더링된 행 레이블을 복원해야 합니다.
+  - 이름 바꾸기를 취소하면 마찬가지로 원래 렌더링된 행 레이블을 즉시 복원해야 합니다.

@@ -1,12 +1,15 @@
 # `src/app/qml/view/calendar/MonthCalendarDayCell.qml`
 
-## Role
-`MonthCalendarDayCell.qml` is the reusable monthly day-cell component for Figma node `227:9427`.
-It supports two variants through one boolean argument:
-- `disable: false` for in-month date cells
-- `disable: true` for adjacent-month overflow dates shown in the month grid
+<a id="role"></a>
 
-## Public QML Contract
+## 역할
+`MonthCalendarDayCell.qml` 는 Figma 노드 `227:9427` 에 대한 재사용 가능한 월별 일 셀 컴포넌트입니다. 그것은 하나의 불리언 인수를 통해 2 변형을 지원합니다:
+- 월별 날짜 셀용 `disable: false`
+- 월 그리드에 표시된 인접월 오버플로 날짜에 대한 `disable: true`
+
+<a id="public-qml-contract"></a>
+
+## 퍼블릭 QML 계약
 - `property int dayNumber`
 - `property bool disable`
 - `property bool selected`
@@ -16,37 +19,40 @@ It supports two variants through one boolean argument:
 - `signal clicked`
 - `signal entryActivated(var entryCellModel)`
 
-## Render Rules
-- Background: `LV.Theme.panelBackground04`
-- Disabled variant: `opacity: 0.5`
-- Selected state: applies an accent border using `LV.Theme.accent` and `LV.Theme.strokeThin`
-- Today state: when the cell is not the selected date, applies a soft border using `LV.Theme.strokeSoft` and
-  `LV.Theme.strokeThin`
-- Content padding: `LV.Theme.gap8`
-- Day number and overflow label typography use `LV.Theme.textBody`.
-- Day-label gap, event-row height, and event-row spacing use `LV.Theme.gap10`, `LV.Theme.iconSm`, and
-  `LV.Theme.gap2`.
-- Entry chips delegate to shared `CalendarEventCell` with `cornerRadius: LV.Theme.radiusSm` in month-grid usage.
-- Overflow state: renders `+N more` when visible entry capacity is exceeded
-- The parent grid may now pass note/event chip payloads that already originated from `dayModel.entries` inside the
-  month projection, so visible calendar items stay aligned with the rebuilt month snapshot.
+<a id="render-rules"></a>
 
-## Interaction
-1. Whole cell is clickable through an internal `MouseArea`.
-2. Parent page handles `clicked` and updates selected date in `MonthCalendarController`.
-3. Individual note chips can emit `entryActivated(entryCellModel)` so note-open gestures do not need to hijack the
-   whole day-cell click contract.
+## 렌더링 규칙
+- 배경: `LV.Theme.panelBackground04`
+- 비활성화된 변형: `opacity: 0.5`
+- 선택된 상태: `LV.Theme.accent` 및 `LV.Theme.strokeThin`를 사용하여 악센트 테두리를 적용합니다.
+- 오늘 상태: 셀이 선택된 날짜가 아닐 때, `LV.Theme.strokeSoft` 와 `LV.Theme.strokeThin` 를 사용하여 부드러운 테두리를 적용합니다.
+- 콘텐츠 패딩: `LV.Theme.gap8`
+- 요일 번호 및 오버플로 라벨 타이포그래피는 `LV.Theme.textBody`를 사용합니다.
+- 데이 레이블 간격, 이벤트 행 높이 및 이벤트 행 간격은 `LV.Theme.gap10`, `LV.Theme.iconSm` 및 `LV.Theme.gap2`를 사용합니다.
+- 월별 그리드 사용량에서 엔트리 칩은 `cornerRadius: LV.Theme.radiusSm`와 공유 `CalendarEventCell`에 위임됩니다.
+- 오버플로 상태: 표시되는 항목 용량을 초과하면 `+N more`를 렌더링합니다.
+- 부모 그리드는 이제 월 예측 내에서 이미 `dayModel.entries`에서 시작된 메모/이벤트 칩 페이로드를 통과할 수 있으므로, 눈에 보이는 캘린더 항목이 재구성된 월 스냅샷과 정렬된 상태를 유지합니다.
 
-## Collaborators
+<a id="interaction"></a>
+
+## 상호작용
+1. 내부 `MouseArea`를 통해 전체 셀을 클릭할 수 있습니다.
+2. 상위 페이지는 `clicked`를 처리하고 `MonthCalendarController`에서 선택한 날짜를 업데이트합니다.
+3. 개별 노트 칩은 `entryActivated(entryCellModel)`를 방출할 수 있어, 노트 열기 제스처가 전체 데이셀 클릭 계약을 탈취할 필요가 없습니다.
+
+<a id="collaborators"></a>
+
+## 협력자
 - `src/app/qml/view/calendar/MonthCalendarPage.qml`
 - `src/app/qml/view/calendar/CalendarEventCell.qml`
 
-## Tests
-- Automated test files are not currently present in this repository.
-- Regression checklist:
-    - The selected date cell must render with an accent border even when it is not today.
-    - When today is also selected, the accent border must win over the soft today border.
-    - The day cell mapped from `dayModel.isToday === true` must still render with a visible but low-contrast border
-      when it is not the selected date.
-    - Adjacent non-today, non-selected overflow dates must continue to render without the added border.
-    - A visible note chip inside the cell must emit `entryActivated(...)` when clicked or tapped.
+<a id="tests"></a>
+
+## 테스트
+- 현재 이 저장소에는 자동화된 테스트 파일이 없습니다.
+- 회귀 체크리스트:
+    - 선택한 날짜 셀은 오늘이 아닌 경우에도 강조 테두리로 렌더링되어야 합니다.
+    - 오늘도 선택되면 액센트 테두리가 부드러운 오늘 테두리보다 우선해야 합니다.
+    - 선택된 날짜가 아닌 경우 `dayModel.isToday === true` 에서 매핑된 일 셀은 가시적이지만 대비가 낮은 테두리로 여전히 렌더링되어야 합니다.
+    - 오늘이 아닌 인접한 날짜, 선택하지 않은 오버플로 날짜는 추가된 테두리 없이 계속 렌더링되어야 합니다.
+    - 셀 내부에 보이는 노트 칩은 클릭하거나 탭할 때 `entryActivated(...)`를 방출해야 합니다.

@@ -1,15 +1,18 @@
 # `src/app/models/clipboard/ClipboardResourceImport.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Implements clipboard import descriptor construction after file type capture has completed.
+## 책임
 
-## Notes
+파일 형식 캡처가 완료된 후 클립보드 가져오기 설명자 구성을 구현합니다.
 
-- Delegates MIME and file suffix detection to `FiletypeCapture`.
-- Applies type and bucket inference from `WhatSonResourcePackageSupport`, keeping clipboard imports aligned with the
-  rest of the resource hierarchy after the file format is known.
-- Provides default clipboard file names so in-memory payloads can be materialized before package creation.
+<a id="notes"></a>
+
+## 메모
+
+- MIME 및 파일 접미사 감지를 `FiletypeCapture`에 위임합니다.
+- `WhatSonResourcePackageSupport`에서 타입 및 버킷 추론을 적용하고, 파일 형식이 알려진 후에도 클립보드 가져오기를 리소스 계층의 나머지와 정렬합니다.
+- 패키지 생성 전에 메모리 내 페이로드가 구체화될 수 있도록 기본 클립보드 파일 이름을 제공합니다.
 
 ## 한국어
 

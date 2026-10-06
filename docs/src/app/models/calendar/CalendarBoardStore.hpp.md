@@ -1,19 +1,18 @@
 # `src/app/calendar/CalendarBoardStore.hpp`
 
-## Role
-`CalendarBoardStore` is the default in-memory implementation of `ICalendarBoardStore`.
+<a id="role"></a>
 
-## Interface Alignment
-- Inherits `ICalendarBoardStore`.
-- Keeps the same mutation/query surface while moving collaboration to the interface type.
-- Emits the shared board signals declared on the interface.
-- Maintains manual board entries and read-only projected note entries in the same query surface so calendar consumers do
-  not need separate note-specific wiring.
-- Maintains per-date entry indexes and per-date count caches for both manual board entries and projected note entries,
-  so `entriesForDate(...)` / `countsForDate(...)` do not have to rescan the full board on every query.
-- Exposes both snapshot-driven note projection refresh and `.wshub` reindex-based refresh so startup/runtime state can
-  populate calendar notes immediately while non-library mutations can still fall back to disk reloads.
-- Exposes single-note projected note upsert/remove entry points so library runtime mutations can update one calendar
-  note mount without replacing the whole projected snapshot.
-- Also accepts a live note provider so calendar queries can still resolve projected note items even if the explicit
-  projected-entry cache has not been populated yet.
+## 역할
+`CalendarBoardStore`는 `ICalendarBoardStore`의 기본 메모리 내 구현입니다.
+
+<a id="interface-alignment"></a>
+
+## 인터페이스 정렬
+- `ICalendarBoardStore`를 상속합니다.
+- 협업을 인터페이스 유형으로 이동하면서 동일한 변형/쿼리 표면을 유지합니다.
+- 인터페이스에 선언된 공유 보드 신호를 내보냅니다.
+- 수동 보드 항목과 읽기 전용 투사된 메모 항목을 동일한 쿼리 표면에 유지하여 캘린더 사용자가 별도의 메모 전용 배선을 필요로 하지 않도록 합니다.
+- 수동 보드 항목과 예상 노트 항목 모두에 대한 날짜별 입력 인덱스와 날짜별 카운트 캐시를 유지하므로 `entriesForDate(...)` / `countsForDate(...)`는 모든 쿼리에서 전체 보드를 다시 스캔할 필요가 없습니다.
+- 스냅샷 기반 노트 프로젝션 새로 고침과 `.wshub` 재인덱스 기반 새로 고침을 모두 노출하여 시작/ 런타임 상태가 즉시 캘린더 노트를 채울 수 있도록 하며, 비라이브러리 변이는 여전히 디스크 재로드로 돌아갈 수 있습니다.
+- 단일 음표에 대한 투사된 노트 업셋을 노출하거나 진입점을 제거하여 라이브러리 런타임 변이가 전체 투사 스냅샷을 교체하지 않고 하나의 캘린더 노트 마운트를 업데이트할 수 있도록 합니다.
+- 또한 실시간 노트 제공자를 받아 캘린더 쿼리가 명시적인 투사 항목 캐시가 아직 채워지지 않았더라도 투사된 메모 항목을 여전히 해결할 수 있습니다.

@@ -1,18 +1,18 @@
 # `src/app/models/clipboard/ClipboardResourceImport.h`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Declares the lightweight value object used to describe one importable clipboard resource.
+## 책임
 
-## Contract
+가져올 수 있는 클립보드 리소스 하나를 설명하는 데 사용되는 간단한 값 개체를 선언합니다.
 
-- Stores the source file name, optional local file path, MIME type, normalized resource format, type, bucket, and
-  optional in-memory payload.
-- Provides helpers to build imports from file names, local files, images, raw bytes, and text-backed payloads supplied
-  through `InAppClipboardManager`.
-- Consumes file type decisions from `FiletypeCapture`, then uses the resource package taxonomy so clipboard images,
-  PDFs, text/HTML documents, audio files, 3D models, archives, and other supported formats resolve to the same
-  type/bucket labels as imported files.
+<a id="contract"></a>
+
+## 계약
+
+- 소스 파일 이름, 선택적 로컬 파일 경로, MIME 유형, 정규화된 리소스 형식, 유형, 버킷 및 선택적 메모리 내 페이로드를 저장합니다.
+- `InAppClipboardManager`를 통해 제공되는 파일 이름, 로컬 파일, 이미지, 원시 바이트 및 텍스트 기반 페이로드에서 가져오기를 빌드할 수 있는 도우미를 제공합니다.
+- `FiletypeCapture`의 파일 형식 결정을 소비한 후, 리소스 패키지 분류 체계를 사용하여 클립보드 이미지, PDF, 텍스트/ HTML 문서, 오디오 파일, 3D 모델, 아카이브 및 기타 지원되는 형식이 가져온 파일과 동일한 유형/버킷 레이블로 변환됩니다.
 
 ## 한국어
 

@@ -1,17 +1,20 @@
 # `src/app/models/clipboard/FiletypeCapture.h`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Declares clipboard file type capture helpers used before a payload becomes a `ClipboardResourceImport`.
+## 책임
 
-## Contract
+페이로드가 `ClipboardResourceImport`가 되기 전에 사용되는 클립보드 파일 형식 캡처 도우미를 선언합니다.
 
-- Normalizes MIME type strings.
-- Maps MIME types to resource file formats.
-- Detects platform image-payload MIME names such as `application/x-qt-image` and `com.apple.tiff` before the payload is
-  materialized as a clipboard resource.
-- Resolves a file format from a file name first and MIME type second.
-- Produces default file names for in-memory clipboard payloads.
+<a id="contract"></a>
+
+## 계약
+
+- MIME 유형 문자열을 정규화합니다.
+- MIME 유형을 리소스 파일 형식에 매핑합니다.
+- 플랫폼 이미지 페이로드 MIME 이름(예: `application/x-qt-image` 및 `com.apple.tiff`)을 감지하고, 페이로드가 클립보드 리소스로 구체화되기 전에 이를 처리합니다.
+- 파일 이름을 먼저 확인하고 MIME 유형을 두 번째로 확인하여 파일 형식을 확인합니다.
+- 메모리 내 클립보드 페이로드에 대한 기본 파일 이름을 생성합니다.
 
 ## 한국어
 

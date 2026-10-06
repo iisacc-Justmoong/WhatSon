@@ -83,9 +83,11 @@ python3 scripts/runtime_smoke_matrix.py --tasks host
 
 These scripts are convenience utilities. Completion gates still use the CMake targets listed above.
 
-## 한국어
+<a id="한국어"></a>
 
-- 이 저장소는 LVRS 기반 데스크톱 WhatSon 애플리케이션을 소유한다.
-- 검증은 반드시 `build/` 기준으로 수행한다.
-- 기본 완료 게이트는 `whatson_regression`이다.
-- QML은 뷰 구성과 뷰 로컬 동작만 담당하고, 상태/파싱/저장/동기화 정책은 C++ 계층에 둔다.
+## Korean
+
+- This repository owns a  LVRS  based desktop  WhatSon  application.
+- Validation must be performed based on  `build/`  criteria.
+- The default completion gate is  `whatson_regression` .
+- QML is responsible only for view configuration and view local behavior, and the state/parsing/storage/synchronization policies are placed in the  C++  layer.

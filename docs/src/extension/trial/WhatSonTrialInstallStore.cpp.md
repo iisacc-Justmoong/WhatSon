@@ -1,17 +1,23 @@
 # `src/extension/trial/WhatSonTrialInstallStore.cpp`
 
-## Role
-Implements the install-date persistence path for the optional trial module.
+<a id="role"></a>
 
-## Behavior
-- Stored values are normalized to ISO `YYYY-MM-DD` text.
-- The persisted value is a signed JSON record in `QSettings`, not a plain ISO string.
-- The signature is derived from the secure-store-backed register-integrity secret, so local settings edits cannot extend the trial window silently.
-- Legacy plain `QSettings` dates and legacy secure-store mirrors are migrated into the signed record format when verification material is available.
-- Invalid or malformed unsigned values are deleted on read so future evaluations can recreate a clean install date.
-- `ensureInstallDate(...)` is the write-once path used by the activation policy on first evaluation.
+## 역할
+선택적 평가판 모듈에 대한 설치 날짜 지속 경로를 구현합니다.
 
-## Failure Model
-- Missing settings data is treated as a first-run condition, not as an error.
-- Invalid settings data is treated as recoverable local corruption and is cleared automatically.
-- If the signing secret cannot be loaded or persisted, the helper fails closed and returns an invalid install date instead of trusting an unsigned fallback.
+<a id="behavior"></a>
+
+## 행동
+- 저장된 값은 ISO `YYYY-MM-DD` 텍스트로 정규화됩니다.
+- 지속되는 값은 일반 ISO 문자열이 아닌 `QSettings`의 서명된 JSON 레코드입니다.
+- 서명은 보안 저장소 지원 등록 무결성 비밀에서 파생되므로 로컬 설정 편집으로 평가판 기간 아무런 알림 없이를 확장할 수 없습니다.
+- 레거시 일반 `QSettings` 날짜와 레거시 보안 저장소 미러는 확인 자료가 제공되면 서명된 레코드 형식으로 마이그레이션됩니다.
+- 유효하지 않거나 잘못된 형식의 서명되지 않은 값은 읽기 시 삭제되므로 향후 평가에서 새로 설치 날짜를 다시 생성할 수 있습니다.
+- `ensureInstallDate(...)`는 첫 번째 평가 시 활성화 정책에 사용되는 1회 쓰기 경로입니다.
+
+<a id="failure-model"></a>
+
+## 실패 모델
+- 누락된 설정 데이터는 오류가 아닌 최초 실행 조건으로 처리됩니다.
+- 잘못된 설정 데이터는 복구 가능한 로컬 손상으로 처리되어 자동으로 지워집니다.
+- 서명 비밀을 로드하거나 유지할 수 없는 경우 도우미 안전하게 거부한다는 서명되지 않은 대체 경로를 신뢰하는 대신 잘못된 설치 날짜를 반환합니다.

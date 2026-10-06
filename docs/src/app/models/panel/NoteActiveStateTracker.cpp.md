@@ -1,36 +1,33 @@
 # `src/app/models/panel/NoteActiveStateTracker.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Implements global active-note tracking by subscribing to the active hierarchy context and the currently active
-note-list model.
-It deliberately stops at selection and package-path publication; parsed editor-session mounting, projection, and
-rendering are not responsibilities of this object.
+## 책임
 
-## Behavior Summary
+활성 계층 컨텍스트와 현재 활성 노트 목록 모델을 구독하여 전역 활성 노트 추적을 구현합니다. 선택 및 패키지 경로 게시 시 의도적으로 중지됩니다. 구문 분석된 편집기 세션 마운트, 프로젝션 및 렌더링은 이 개체의 책임이 아닙니다.
 
-- `setHierarchyContextSource(...)` accepts the sidebar-level `IActiveHierarchyContextSource` before the architecture
-  policy lock and rejects rewiring after the lock.
-- `synchronizeActiveBindings()` refreshes the active hierarchy index, active hierarchy controller, and active note-list
-  model as one snapshot.
-- The active note-list model is observed for:
+<a id="behavior-summary"></a>
+
+## 행동 요약
+
+- `setHierarchyContextSource(...)`는 아키텍처 정책 잠금 전에 사이드바 수준의 `IActiveHierarchyContextSource`를 수락하고, 잠금 후에는 재배선을 거부합니다.
+- `synchronizeActiveBindings()`는 활성 계층 인덱스, 활성 계층 컨트롤러 및 활성 메모 목록 모델을 하나의 스냅샷으로 갱신합니다.
+- 활성 노트 목록 모델은 다음과 같이 관찰됩니다.
   - `currentIndexChanged()`
   - `currentNoteEntryChanged()`
   - `currentNoteIdChanged()`
   - `currentNoteDirectoryPathChanged()`
   - `noteBackedChanged()`
-  - relevant `QAbstractItemModel` row/reset/layout changes
-- Active note resolution prefers `currentNoteEntry`, then `currentNoteId/currentNoteDirectoryPath`, and only falls back
-  to current-row role snapshots when the model has no committed note-id contract.
-- `bodyText` row data is intentionally omitted from `activeNoteEntry`; the tracker no longer publishes body text or
-  body file paths.
-- `setActiveNoteState(...)` commits the next entry, note id, and note directory path before emitting any change signal.
-  Synchronous observers must never see a new `activeNoteId` paired with the previous note directory.
+  - 관련 `QAbstractItemModel` 행/재설정/레이아웃 변경
+- 활성 노트 해상도는 `currentNoteEntry`를 선호하고, 그 다음 `currentNoteId/currentNoteDirectoryPath`를 선호하며, 모델에 커밋된 노트 ID 계약이 없을 때만 현재 행 역할 스냅샷으로 되돌아갑니다.
+- `bodyText` 행 데이터는 `activeNoteEntry`에서 의도적으로 생략되었습니다; 트래커는 더 이상 본문 텍스트나 본문 파일 경로를 게시하지 않습니다.
+- `setActiveNoteState(...)` 다음 엔트리를, 노트 ID 를, 그리고 노트 디렉토리 경로를 다음 변경 신호를 방출하기 전에 기록합니다. 동기식 관찰자는 이전 노트 디렉토리와 새로운 `activeNoteId` 가 짝지어진 것을 결코 볼 수 없습니다.
 
-## Tests
+<a id="tests"></a>
 
-Covered by `test/cpp/suites/note_active_state_tracker_tests.cpp` and architecture-lock checks in
-`test/cpp/suites/architecture_policy_lock_tests.cpp`.
+## 테스트
+
+`test/cpp/suites/note_active_state_tracker_tests.cpp` 및 `test/cpp/suites/architecture_policy_lock_tests.cpp`의 아키텍처 잠금 검사에 포함됩니다.
 
 ## 한국어
 

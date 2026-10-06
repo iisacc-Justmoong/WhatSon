@@ -1,37 +1,39 @@
 # `src/app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This file owns the persisted `Folders.wsfolders` read/write boundary for generic folder hierarchies.
-Its main job after the UUID migration is to guarantee that every stored row carries a valid stable
-folder UUID.
+## 책임
 
-## UUID Handling
+이 파일은 일반 폴더 계층 구조에 대한 지속형 `Folders.wsfolders` 읽기/쓰기 경계를 소유합니다. UUID 마이그레이션 후 주요 작업은 저장된 모든 행에 유효한 안정적인 폴더 UUID가 포함되도록 보장하는 것입니다.
 
-- Rows loaded from disk are normalized before the caller sees them.
-- If a row has no UUID, or if the value is malformed, the store synthesizes a new 64-character
-  UUID before the data is persisted again.
-- The store does not treat path changes as identity changes. `id` may change during a rename, but
-  `uuid` is preserved.
+<a id="uuid-handling"></a>
 
-## Persistence Role
+## UUID 취급
 
-The store sits above the parser/creator pair:
+- 디스크에서 로드된 행은 호출자가 보기 전에 정규화됩니다.
+- 행에 UUID가 없거나 값이 오형인 경우, 스토어는 데이터가 다시 영구 저장되기 전에 새로운 64-character UUID를 합성합니다.
+- 스토어는 경로 변경을 신원 변경으로 간주하지 않습니다. `id`는 이름 변경 중에 변경될 수 있지만, `uuid`는 보존됩니다.
 
-1. Parse raw JSON-like `.wsfolders` content into `WhatSonFolderDepthEntry` rows.
-2. Sanitize each row, especially the `uuid` field.
-3. Serialize the sanitized list back when callers save the hierarchy.
+<a id="persistence-role"></a>
 
-## Path Normalization
+## 지속성 역할
 
-- `id` is normalized through the shared folder-path escape rules before the caller sees it.
-- If only `label` is available, the store synthesizes a canonical one-segment `id` from that label, escaping any
-  literal `/` so the folder still stays one node.
-- If only `id` is available, the store derives `label` from the decoded leaf segment instead of exposing persisted
-  escape markers directly.
+저장소는 파서/생성자 쌍 위에 위치합니다.
 
-## Why This Matters
+1. 원시 JSON와 유사한 `.wsfolders` 콘텐츠를 `WhatSonFolderDepthEntry` 행으로 구문 분석합니다.
+2. 각 행, 특히 `uuid` 필드를 삭제합니다.
+3. 호출자가 계층 구조를 저장할 때 정리된 목록을 다시 직렬화합니다.
 
-The rest of the library pipeline now depends on folder UUIDs to reconnect note headers to the
-renamed or moved folder tree. If the store allowed invalid or missing UUIDs to leak through,
-runtime filtering would fall back to path comparisons and reintroduce the original bug.
+<a id="path-normalization"></a>
+
+## 경로 정규화
+
+- `id`는 호출자가 보기 전에 공유 폴더 경로 이스케이프 규칙을 통해 정규화됩니다.
+- `label`만 사용 가능한 경우, 스토어는 해당 레이블에서 정규 1세그먼트 `id`를 합성하여 문자 그대로의 `/`를 벗어나 폴더가 여전히 하나의 노드를 유지하도록 합니다.
+- `id`만 사용 가능한 경우, 스토어는 지속된 이스케이프 마커를 직접 노출하는 대신 디코딩된 리프 세그먼트에서 `label`를 파생합니다.
+
+<a id="why-this-matters"></a>
+
+## 이것이 중요한 이유
+
+이제 라이브러리 파이프라인의 나머지 부분은 폴더 UUID에 의존하여 이름이 바뀌거나 이동된 폴더 트리에 노트 헤더를 다시 연결합니다. 저장소에서 유효하지 않거나 누락된 UUID가 누출되도록 허용한 경우 런타임 필터링은 경로 비교로 돌아가 원래 버그를 다시 도입합니다.

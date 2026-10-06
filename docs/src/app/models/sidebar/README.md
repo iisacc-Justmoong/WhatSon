@@ -35,15 +35,15 @@ provider/store-driven active-binding refresh for `HierarchyControllerProvider` a
 `SidebarHierarchyInteractionController` is covered there as well, so expansion preservation, key derivation, rollback,
 and activation suppression remain C++ model/controller behavior while footer action routing stays in sidebar QML.
 
-## 한국어
+<a id="한국어"></a>
 
-이 섹션은 위 README 내용을 한국어로 확인하기 위한 하단 요약이다.
+## Korean
 
-- 대상: ``src/app/models/sidebar`` (`docs/src/app/models/sidebar/README.md`)
-- 위치: `docs/src/app/models/sidebar`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
-- 최신 책임: hierarchy expansion preservation과 right-chevron stable-key derivation은
-  `SidebarHierarchyInteractionController` C++ 객체가 소유한다. footer action dispatch처럼 뷰 안에서 끝나는 동작은
-  `SidebarHierarchyView.qml`이 직접 소유한다.
-- 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
+This section is a bottom summary for checking the above  README  content in Korean.
+
+- Target:  ``src/app/models/sidebar``  ( `docs/src/app/models/sidebar/README.md` )
+- Location:  `docs/src/app/models/sidebar`
+- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.
+- Current responsibility: Hierarchy expansion preservation and right-chevron stable-key derivation are owned by `SidebarHierarchyInteractionController` C++ object. Actions that end within the view, like footer action dispatch, are directly owned by `SidebarHierarchyView.qml`.
+- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.
+- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.

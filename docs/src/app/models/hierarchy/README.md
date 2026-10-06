@@ -60,17 +60,16 @@
 - Bulk expand/collapse implementations should use `setAllHierarchyItemsExpanded(...)` when a domain exposes a dedicated
   bulk method. Domain code should only perform the follow-up sync/persistence callback.
 
-## 한국어
+<a id="한국어"></a>
 
-이 섹션은 위 README 내용을 한국어로 확인하기 위한 하단 요약이다.
+## Korean
 
-- 대상: ``src/app/models/hierarchy`` (`docs/src/app/models/hierarchy/README.md`)
-- 위치: `docs/src/app/models/hierarchy`
-- 역할: 이 파일은 독립 hierarchy model shard의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
-- 최신 책임: 모든 hierarchy domain은 표시용 item model로 `WhatSonHierarchyModel` 하나를 공유한다. right-chevron
-  expand/collapse의 공통 validation/state flip은 `IHierarchyController` protected helper가 소유하고, 단일 row
-  갱신은 `WhatSonHierarchyModel::setItemExpanded(...)`로 처리한다. `LV.Hierarchy`는 이 공유 모델에 직접 바인딩해야
-  하며, QML view-owned projection array를 중간에 두지 않는다.
-- 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 현재: hierarchy 구현은 `src/app/models/hierarchy`가 아니라 `src/app/models/hierarchy`에 둔다.
-- 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
+This section is a bottom summary for checking the above  README  content in Korean.
+
+- Target:  ``src/app/models/hierarchy``  ( `docs/src/app/models/hierarchy/README.md` )
+- Location:  `docs/src/app/models/hierarchy`
+- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the independent hierarchy model shard.
+- Current responsibility: All hierarchy domains share exactly one `WhatSonHierarchyModel` as the display item model. The common validation/state flip for right-chevron expand/collapse is owned by `IHierarchyController` protected helper, and single row update is processed by `WhatSonHierarchyModel::setItemExpanded(...)`. `LV.Hierarchy` must bind directly to this shared model, and does not place a QML view-owned projection array in between.
+- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.
+- Current: Hierarchy implementation is placed in  `src/app/models/hierarchy`  instead of  `src/app/models/hierarchy`
+- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.

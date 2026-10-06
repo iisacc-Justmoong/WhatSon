@@ -1,84 +1,63 @@
 # `src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This file implements the dedicated projects hierarchy controller. It parses and mutates
-`ProjectLists.wsproj`, builds the project sidebar rows, and keeps project selection stable across
-runtime snapshot updates.
+## 책임
 
-## Runtime Refresh Contract
+이 파일은 전용 프로젝트 계층 구조 컨트롤러를 구현합니다. `ProjectLists.wsproj`를 구문 분석 및 변경하고, 프로젝트 사이드바 행을 빌드하고, 런타임 스냅샷 업데이트 전반에 걸쳐 프로젝트 선택을 안정적으로 유지합니다.
 
-`applyRuntimeSnapshot(...)` now treats watcher-driven updates conservatively.
+<a id="runtime-refresh-contract"></a>
 
-- The current selection is captured by a stable project row key before any mutation.
-- The incoming folder-depth entries are compared with the currently rendered project hierarchy.
-- If the project hierarchy source changed, the controller rebuilds project rows and restores the
-  previous selection by key instead of dropping the user back to the implicit default state.
-- Regardless of whether the hierarchy rows changed, the function re-indexes project note
-  membership from live `.wsnhead` files so unchanged snapshots cannot keep stale note projection.
-- `requestControllerHook()` now also performs the same project note re-index path. This is used by
-  sidebar entry/event hooks to force synchronization when the user re-enters the projects view.
+## 런타임 갱신 계약
 
-Projects now exposes the same expansion hooks used by the shared sidebar footer. When a projects
-snapshot eventually contains expandable rows, single-row and bulk expansion both mutate the
-controller-owned `expanded` flags and then rebuild the model so the footer menu can drive
-`Expand All` / `Collapse All` without pushing that state into QML. If the current projects data is
-flat, the footer menu stays disabled because no row advertises `showChevron: true`.
+`applyRuntimeSnapshot(...)`는 이제 감시자 기반 업데이트를 보수적으로 처리합니다.
 
-## Mutation Flow
+- 현재 선택은 변형 이전에 안정적인 프로젝트 행 키로 캡처됩니다.
+- 들어오는 폴더 깊이 항목은 현재 렌더링된 프로젝트 계층 구조와 비교됩니다.
+- 프로젝트 계층 구조 소스가 변경된 경우, 컨트롤러는 프로젝트 행을 재구성하고 사용자를 암시적 기본 상태로 되돌리는 대신 키로 이전 선택을 복원합니다.
+- 계층 행이 변경되었는지 여부와 관계없이, 이 함수는 실시간 `.wsnhead` 파일에서 프로젝트 노트 멤버십을 재인덱싱하여, 변경되지 않은 스냅샷이 오래된 노트 투영을 유지할 수 없게 합니다.
+- `requestControllerHook()`는 이제 동일한 프로젝트 노트 재인덱싱 경로도 수행합니다. 이는 사용자가 프로젝트 보기로 다시 들어갈 때 동기화를 강제하기 위해 사이드바 진입/이벤트 훅에 의해 사용됩니다.
 
-- `loadFromWshub(...)` parses `ProjectLists.wsproj` into `WhatSonProjectsHierarchyStore` and also
-  indexes `Library.wslibrary` so the projects domain has its own note-list projection.
-- `renameItem(...)`, `createFolder()`, `deleteSelectedFolder()`, and reorder/move helpers mutate the
-  store-backed folder entries and then rebuild the model.
-- `applyHierarchyMove(...)` remains available for explicit targeted project-folder moves. The sidebar's ordinary LVRS
-  drag/drop commit persists the final `LV.Hierarchy.model` snapshot through full-node replay.
-- `setItemExpanded(...)` and `setAllItemsExpanded(...)` delegate shared chevron validation/state flips to
-  `IHierarchyController`'s protected helpers, then sync only the in-memory model. They do not rewrite
-  `Projects.wsproj`, because fold state is a sidebar presentation concern.
-- `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to
-  sidebar rows.
+프로젝트는 이제 공유 사이드바 푸터에 의해 사용되는 동일한 확장 후크를 노출합니다. 프로젝트 스냅샷이 결국 확장 가능한 행을 포함할 때, 단일 행 및 대량 확장은 모두 컨트롤러 소유의 `expanded` 플래그를 변경한 다음 모델을 재구성하여 푸터 메뉴가 `Expand All` / `Collapse All` 를 구동할 수 있도록 하고 해당 상태를 QML 로 푸시하지 않습니다. 현재 프로젝트 데이터가 평평하다면, 어떤 행도 `showChevron: true` 를 광고하지 않으므로 푸터 메뉴는 비활성화됩니다.
 
-## Note List Projection
+<a id="mutation-flow"></a>
 
-- `noteListModel()` now returns a `LibraryNoteListModel` owned by the projects controller instead of
-  the inherited null default.
-- Project-filtered note rows now keep the selected note's RAW/source snapshot in `LibraryNoteListItem::bodyText`.
-  The visible list surface still renders preview/search metadata, but the editor selection bridge can bootstrap RAW
-  body text immediately from the current project row before the async note-body refresh path completes.
-- The note list is rebuilt from indexed `LibraryNoteRecord` entries, but project membership is
-  synchronized again by reading each note header file before filtering.
-- This keeps `.wsnhead <project>` as the only source of truth for Projects filtering, even when
-  `index.wsnindex` still carries stale project labels.
-- The same header synchronization runs at each note-list refresh, so switching project selection
-  after an external `.wsnhead` edit cannot keep a stale project member visible.
-- A view-triggered hook (`requestControllerHook`) reuses the same refresh path, so projects note
-  projection can be re-synced on sidebar entry without waiting for a new runtime snapshot.
-- If an index row cannot be mapped to a readable note header, its project label is ignored for the
-  Projects projection so index-only ghost rows do not leak into a selected project.
-- When the hierarchy has visible rows, a negative or invalid selected index is normalized to the first visible row
-  before the note list is rebuilt. Projects therefore enter with the same first-project filter that the sidebar marks
-  as active, instead of falling back to an unfiltered list.
-- Project note projection now stays metadata-only. Body-state apply paths and editor-triggered statistic refresh APIs
-  were removed with the note editor/save boundary.
-- Full header synchronization remains enabled for ordinary selection changes and full snapshot refreshes where project
-  membership may actually have changed.
-- `noteDirectoryPathForNoteId(...)` now resolves directory paths canonically by falling back to the
-  readable `.wsnhead` location when the indexed directory path is missing or stale.
+## 돌연변이 흐름
 
-## Hierarchy Count Badge
+- `loadFromWshub(...)`는 `ProjectLists.wsproj`를 `WhatSonProjectsHierarchyStore`로 파싱하고, 또한 `Library.wslibrary`를 인덱싱하여 프로젝트 도메인에 자체적인 노트 리스트 프로젝션을 제공합니다.
+- `renameItem(...)` , `createFolder()` , `deleteSelectedFolder()` , 및 재배열/이동 헬퍼는 스토어 기반 폴더 항목을 변형한 뒤 모델을 재구성합니다.
+- `applyHierarchyMove(...)`는 명시적인 목표 프로젝트 폴더 이동에 대해 계속 사용할 수 있습니다. 사이드바의 일반적인 LVRS 드래그/드롭 커밋은 전체 노드 재생을 통해 최종 `LV.Hierarchy.model` 스냅샷을 지속합니다.
+- `setItemExpanded(...)`와 `setAllItemsExpanded(...)`는 공유 체브론 검증/상태 플립을 `IHierarchyController`의 보호된 헬퍼에 위임하고, 이후 메모리 내 모델만 동기화합니다. 그들은 `Projects.wsproj`를 다시 작성하지 않습니다, 왜냐하면 폴드 상태가 사이드바 프레젠테이션 문제이기 때문입니다.
+- `itemsFromProjectEntries(...)`는 지속된 폴더 깊이 레코드에서 사이드바 행으로의 변환 경계입니다.
 
-- `depthItems()` now includes a numeric `count` value for each project row.
-- The count is derived from the current in-memory indexed notes (`m_allNotes`) by case-insensitive
-  match against the project label.
-- Any runtime note reindex path (`refreshIndexedNotesFromWshub(...)`,
-  `refreshIndexedNotesFromProjectsFilePath(...)`) now emits
-  `hierarchyModelChanged()` after refreshing note membership so sidebar count badges refresh
-  without app restart.
+<a id="note-list-projection"></a>
 
-## Invariants
+## 노트 목록 투영
 
-- Selection is semantic and should survive runtime snapshot churn.
-- A project snapshot that does not change the rendered hierarchy must not reset the sidebar state.
-- If rows still exist after a rebuild, the effective selection must remain a visible row rather than an implicit
-  "no filter" state.
+- `noteListModel()`는 이제 프로젝트 컨트롤러가 소유한 `LibraryNoteListModel`를 반환하며, 상속된 null 기본값이 아닙니다.
+- 프로젝트 필터링된 노트 행은 이제 `LibraryNoteListItem::bodyText` 에서 선택된 노트의 RAW /source 스냅샷을 유지합니다. 가시적인 목록 표면은 여전히 미리보기/검색 메타데이터를 렌더링하지만, 비동기 노트 본문 새로고침 경로가 완료되기 전에 편집자 선택 브릿지는 현재 프로젝트 행에서 즉시 부트스트랩 RAW 본문을 가져올 수 있습니다.
+- 노트 목록은 인덱스된 `LibraryNoteRecord` 항목에서 재구성되지만, 필터링 전에 각 노트 헤더 파일을 읽어 프로젝트 멤버십이 다시 동기화됩니다.
+- 이는 기준 원본 가 프로젝트 필터링의 유일한 `.wsnhead <project>` 로 유지되도록 하며, `index.wsnindex` 가 여전히 오래된 프로젝트 라벨을 가지고 있더라도 마찬가지입니다.
+- 동일한 헤더 동기화가 각 노트 목록 새로 고침마다 실행되므로, 외부 `.wsnhead` 편집 후 프로젝트 선택을 전환하면 오래된 프로젝트 멤버가 보이지 않도록 유지할 수 없습니다.
+- 뷰 트리거 훅(`requestControllerHook`)은 동일한 새로 고침 경로를 재사용하므로, 프로젝트 노트 투영을 새로운 런타임 스냅샷을 기다리지 않고 사이드바 항목에서 다시 동기화할 수 있습니다.
+- 인덱스 행을 읽을 수 있는 노트 헤더에 매핑할 수 없는 경우, 프로젝트 투영에 대해 해당 프로젝트 레이블이 무시되어 인덱스 전용 고스트 행이 선택된 프로젝트에 새어나가지 않도록 합니다.
+- 계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택된 인덱스가 노트 목록이 재구성되기 전에 첫 번째 보이는 행으로 정규화됩니다. 따라서 프로젝트는 사이드바가 활성으로 표시한 동일한 첫 번째 프로젝트 필터로 입력되며, 필터링되지 않은 목록으로 되돌아가지 않습니다.
+- 프로젝트 노트 투영이 이제 메타데이터 전용으로 유지됩니다. 본문 상태 적용 경로와 편집기 트리거 통계 갱신 API는 노트 편집기/세이브 경계와 함께 제거되었습니다.
+- 전체 헤더 동기화는 일반 선택 변경 및 프로젝트 멤버십이 실제로 변경된 경우 전체 스냅샷 새로 고침에 대해 계속 활성화됩니다.
+- `noteDirectoryPathForNoteId(...)`는 이제 인덱스된 디렉터리 경로가 없거나 오래된 경우 읽을 수 있는 `.wsnhead` 위치로 되돌아가 디렉터리 경로를 정형화하여 해결합니다.
+
+<a id="hierarchy-count-badge"></a>
+
+## 계층 수 배지
+
+- 이제 `depthItems()`에는 각 프로젝트 행에 대한 숫자 `count` 값이 포함됩니다.
+- 카운트는 현재 메모리 내 색인된 지폐(`m_allNotes`)에서 프로젝트 라벨과 대소문자를 구분하지 않는 일치를 통해 도출됩니다.
+- 모든 런타임 노트 재인덱스 경로(`refreshIndexedNotesFromWshub(...)`, `refreshIndexedNotesFromProjectsFilePath(...)`)는 이제 노트 멤버십을 새로 고친 후 `hierarchyModelChanged()`를 발행하여 앱 재시작 없이 사이드바 카운트 배지가 새로 고침됩니다.
+
+<a id="invariants"></a>
+
+## 불변성
+
+- 선택은 의미론적이며 런타임 스냅샷 변동 후에도 유지되어야 합니다.
+- 렌더링된 계층 구조를 변경하지 않는 프로젝트 스냅샷은 사이드바 상태를 재설정하면 안 됩니다.
+- 재구성 후에도 행이 여전히 존재하는 경우, 유효 선택은 암묵적인 "no filter" 상태가 아니라 가시적인 행으로 유지되어야 합니다.

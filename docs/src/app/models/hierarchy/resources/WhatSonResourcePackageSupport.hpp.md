@@ -1,6 +1,8 @@
 # `src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp`
 
-## Responsibility
+<a id="responsibility"></a>
+
+## 책임
 
 이 헤더는 단수형 `.wsresource` 패키지 규약의 기준 구현이다.
 
@@ -9,7 +11,9 @@
 - 기본 주석 캔버스 파일 이름: `annotation.png`
 - 메타데이터 루트: `<wsresource ...><annotation path="annotation.png"/><asset path="..."/></wsresource>`
 
-## Metadata Contract
+<a id="metadata-contract"></a>
+
+## 메타데이터 계약
 
 `ResourcePackageMetadata`는 다음 값을 정규화한다.
 
@@ -25,7 +29,9 @@
 예를 들어 `Hub.wsresources/logo.wsresource` 형식을 유지한다.
 `annotationPath`는 패키지 내부 주석 오버레이 bitmap 경로를 가리키며, 기본값은 항상 `annotation.png`다.
 
-## Runtime Helpers
+<a id="runtime-helpers"></a>
+
+## 런타임 도우미
 
 이 헤더는 네 종류의 런타임 보조 함수를 제공한다.
 
@@ -57,7 +63,9 @@
 - 패키지 디렉터리면 `resource.xml`을 읽고 내부 에셋 파일 절대 경로로 변환하고
 - 기존 raw 파일/URL 참조면 그대로 호환 처리한다.
 
-## Hub Storage Rules
+<a id="hub-storage-rules"></a>
+
+## 허브 저장 규칙
 
 단일 루트 집계 함수와 함께 허브 단위 멀티 루트 집계 함수가 제공된다.
 

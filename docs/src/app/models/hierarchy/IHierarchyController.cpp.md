@@ -1,37 +1,51 @@
 # `src/app/models/hierarchy/IHierarchyController.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+<a id="status"></a>
 
-## Source Metadata
-- Source path: `src/app/models/hierarchy/IHierarchyController.cpp`
-- Source kind: C++ implementation
-- File name: `IHierarchyController.cpp`
-- Approximate line count: 1
+## 상태
+- 문서화 단계: 라이브 소스 트리에서 생성된 스캐폴드입니다.
+- 세부 수준: 이후 딥 패스를 위해 준비된 구조적 자리 표시자입니다.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+<a id="source-metadata"></a>
 
-### Classes and Structs
-- None detected during scaffold generation.
+## 소스 메타데이터
+- 소스 경로: `src/app/models/hierarchy/IHierarchyController.cpp`
+- 소스 종류: C++ 구현
+- 파일 이름: `IHierarchyController.cpp`
+- 대략적인 줄 수: 1
 
-### Enums
-- None detected during scaffold generation.
+<a id="extracted-symbols"></a>
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## 추출된 기호
+- 선언된 네임스페이스 존재: 아니요
+- QObject 매크로 존재: 아니요
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+<a id="classes-and-structs"></a>
+
+### 클래스와 구조체
+- 스캐폴드 생성 중에 감지된 항목이 없습니다.
+
+<a id="enums"></a>
+
+### 열거형
+- 스캐폴드 생성 중에 감지된 항목이 없습니다.
+
+<a id="intended-detailed-sections"></a>
+
+## 의도된 세부 섹션
+- 책임과 비즈니스 역할
+- 소유권 및 수명주기
+- 공개 API 또는 외부에서 관찰된 바인딩
+- 협력자 및 의존성 방향
+- 데이터 흐름 및 상태 전환
+- 오류 처리 및 복구 경로
+- 관련된 경우 스레딩, 스케줄링 또는 UI 선호도 제약 조건
+- 확장점, 불변성 및 알려진 복잡성 핫스팟
+- 테스트 적용 범위 및 검증 누락
+
+<a id="authoring-notes-for-next-pass"></a>
+
+## 다음 패스에 대한 작성 노트
+- 이 스캐폴드를 교체하기 전에 실제 구현과 인접한 헤더를 읽어보세요.
+- 해당하는 경우 구체적인 신호, 슬롯, 호출 가능 항목, 지속성 부작용 및 LVRS/QML 바인딩을 문서화합니다.
+- 세부 단계가 시작되면 이 파일을 동일한 디렉터리에 있는 피어 모듈과 상호 연결하세요.

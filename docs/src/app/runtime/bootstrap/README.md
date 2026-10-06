@@ -19,14 +19,15 @@ dedicated single-purpose helpers.
 policy. That startup is guarded by LVRS `ForegroundServiceGate` after `WhatSonQmlLaunchSupport` has produced and
 activated a visible workspace root.
 
-## 한국어
+<a id="한국어"></a>
 
-이 섹션은 위 README 내용을 한국어로 확인하기 위한 하단 요약이다.
+## Korean
 
-- 대상: ``src/app/runtime/bootstrap`` (`docs/src/app/runtime/bootstrap/README.md`)
-- 위치: `docs/src/app/runtime/bootstrap`
-- 역할: 이 파일은 해당 디렉터리나 모듈의 구조, 책임, 운영 규칙, 검증 기준을 설명한다.
-- 기준: 파일 경로, 명령, API 이름, 세부 변경 이력은 위 영어 본문을 원문 기준으로 유지한다.
-- 변경 시: 위 영어 본문을 수정하면 이 한국어 하단 섹션도 함께 최신 상태로 맞춘다.
-- 런타임 기준: `WhatSonQmlLaunchSupport`는 LVRS `QmlRootLoadResult`를 보존하고 lifecycle/foreground-service
-  부트스트랩에 같은 root/window 결과를 전달한다.
+This section is a bottom summary for checking the above  README  content in Korean.
+
+- Target:  ``src/app/runtime/bootstrap``  ( `docs/src/app/runtime/bootstrap/README.md` )
+- Location:  `docs/src/app/runtime/bootstrap`
+- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.
+- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.
+- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.
+- Runtime: `WhatSonQmlLaunchSupport` preserves LVRS `QmlRootLoadResult` and delivers the same root/window results to the lifecycle/foreground-service bootstrap.

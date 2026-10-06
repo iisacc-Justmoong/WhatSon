@@ -1,12 +1,16 @@
 # `src/app/models/hierarchy/event/EventHierarchyControllerSupport.hpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This header owns event-specific hierarchy parsing, serialization, and sanitization helpers.
+## 책임
 
-## Shared IO Delegation
+이 헤더는 이벤트별 계층 구조 구문 분석, 직렬화 및 삭제 도우미를 소유합니다.
 
-`EventSupport` now re-exports shared hub IO from `WhatSonHierarchyIoSupport.hpp`:
+<a id="shared-io-delegation"></a>
+
+## 공유 IO 위임
+
+`EventSupport`는 이제 `WhatSonHierarchyIoSupport.hpp`에서 공유 허브 IO를 다시 내보냅니다.
 
 - `normalizePath(...)`
 - `resolveContentsDirectories(...)`
@@ -14,11 +18,13 @@ This header owns event-specific hierarchy parsing, serialization, and sanitizati
 - `deduplicateStringsPreservingOrder(...)`
 - `extractDistinctLabelsFromItems(...)`
 
-The duplicated inline `.wshub` traversal and UTF-8 loading logic was removed from this file.
+중복된 인라인 `.wshub` 탐색 및 UTF-8 로딩 로직이 이 파일에서 제거되었습니다.
 
-## Shared Tree Delegation
+<a id="shared-tree-delegation"></a>
 
-`EventSupport` also re-exports shared tree mutation helpers from `WhatSonHierarchyTreeItemSupport.hpp`:
+## 공유 트리 위임
+
+`EventSupport`는 또한 `WhatSonHierarchyTreeItemSupport.hpp`에서 공유 트리 돌연변이 도우미를 다시 내보냅니다.
 
 - `applyChevronByDepth(...)`
 - `nextGeneratedFolderSequence(...)`
@@ -26,24 +32,25 @@ The duplicated inline `.wshub` traversal and UTF-8 loading logic was removed fro
 - `isBucketHeaderItem(...)`
 - `deleteHierarchySubtree(...)`
 
-`createHierarchyFolder(...)` remains as a thin wrapper around the nested insertion helper with parent expansion disabled.
-Folder creation must not change expansion state unless the user explicitly expands or collapses a row.
+`createHierarchyFolder(...)`는 상위 확장이 비활성화된 중첩 삽입 도우미 주변의 얇은 래퍼로 유지됩니다. 폴더 생성은 사용자가 명시적으로 행을 확장하거나 축소하지 않는 한 확장 상태를 변경해서는 안 됩니다.
 
-## Domain Logic That Stays Local
+<a id="domain-logic-that-stays-local"></a>
 
-The following helpers remain event-specific because they define how event rows are interpreted and rebuilt:
+## 로컬에 유지되는 도메인 로직
+
+다음 도우미는 이벤트 행이 해석되고 다시 작성되는 방법을 정의하므로 이벤트별로 유지됩니다.
 
 - `sanitizeStringList(...)`
 - `clampSelectionIndex(...)`
 - `parseItemEntry(...)`
 - `parseDepthItems(...)`
 - `serializeDepthItems(...)`
-- the equality and builder helpers defined later in the header
+- 헤더의 뒷부분에 정의된 같음 및 빌더 도우미
 
-`sanitizeStringList(...)` and `extractDomainLabelsFromItems(...)` now use the shared `QSet`-based
-ordered dedup helpers so event reloads no longer pay repeated `QStringList::contains(...)` scans.
+`sanitizeStringList(...)` 및 `extractDomainLabelsFromItems(...)`는 이제 공유 `QSet` 기반 순서 중복 제거 도우미를 사용하므로 이벤트 다시 로드 시 더 이상 반복적인 `QStringList::contains(...)` 스캔을 지불하지 않습니다.
 
-## Maintenance Rule
+<a id="maintenance-rule"></a>
 
-Keep shared filesystem behavior in `WhatSon::Hierarchy::IoSupport`.
-Only event-domain rules should be added to this support header.
+## 유지 관리 규칙
+
+`WhatSon::Hierarchy::IoSupport`에서 공유 파일 시스템 동작을 유지합니다. 이 지원 헤더에는 이벤트 도메인 규칙만 추가해야 합니다.

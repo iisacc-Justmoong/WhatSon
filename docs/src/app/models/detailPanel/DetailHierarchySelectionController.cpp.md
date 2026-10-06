@@ -1,17 +1,20 @@
 # `src/app/models/detailPanel/DetailHierarchySelectionController.cpp`
 
-## Responsibility
-This implementation keeps the detail panel decoupled from sidebar hierarchy selection churn.
-It snapshots incoming selector entries, mirrors file-backed selector selection changes from the injected detail source object, and preserves the detail-panel-local selection across option-list refreshes.
+<a id="responsibility"></a>
 
-## Synchronization Rules
-- `setSourceController(...)` performs an initial one-time import of source items and source selection.
-- After that handoff, source item-list refreshes are mirrored and source `selectedIndexChanged()` is accepted only from the injected detail selector source.
-- Local `setSelectedIndex(...)` never writes back to the source hierarchy controller.
-- Selection preservation prefers `key`, then `itemId`, then `label`.
-- Synthetic clear entries such as `No project`, `No bookmark`, and `No progress` are treated like ordinary keyed items, so a cleared selector state survives option-list refreshes without falling back to a domain entry.
+## 책임
+이 구현은 사이드바 계층 구조 선택 변동에서 세부 정보 패널을 분리된 상태로 유지합니다. 들어오는 선택기 항목의 스냅샷을 찍고, 삽입된 세부 소스 개체의 파일 지원 선택기 선택 변경 사항을 미러링하며, 옵션 목록 새로 고침 시 세부 패널 로컬 선택을 유지합니다.
 
-## Why It Exists
-The detail panel uses the same domain data as the hierarchy selectors, but it cannot share the same mutable selection object.
-Without this adapter, clicking a hierarchy row would also mutate the detail-panel combo state and vice versa.
-The file-backed detail selector source now uses this adapter to push `.wsnhead` reads and writes back into the combo state without re-coupling the combo to sidebar row clicks.
+<a id="synchronization-rules"></a>
+
+## 동기화 규칙
+- `setSourceController(...)`는 소스 항목 및 소스 선택의 초기 일회성 가져오기를 수행합니다.
+- 해당 핸드오프 후 소스 항목 목록 새로 고침이 미러링되고 소스 `selectedIndexChanged()`는 삽입된 세부 선택기 소스에서만 허용됩니다.
+- 로컬 `setSelectedIndex(...)`는 소스 계층 컨트롤러에 다시 쓰지 않습니다.
+- 선택 보존에서는 `key`, `itemId`, `label` 순으로 선호합니다.
+- `No project`, `No bookmark` 및 `No progress`와 같은 합성 지우기 항목은 일반 키 항목처럼 처리되므로 지워진 선택기 상태는 도메인 항목으로 돌아가지 않고 옵션 목록 새로 고침을 유지합니다.
+
+<a id="why-it-exists"></a>
+
+## 그것이 존재하는 이유
+상세 패널은 계층 선택자와 동일한 도메인 데이터를 사용하지만 동일한 변경 가능 선택 객체를 공유할 수 없습니다. 이 어댑터가 없으면 계층 행을 클릭하는 것이 상세 패널 콤보 상태를 변형시키게 되며 그 반대도 마찬가지입니다. 파일 기반 상세 선택기 소스는 이제 이 어댑터를 사용하여 콤보 상태를 `.wsnhead` 읽기와 쓰기로 푸시하며 콤보를 사이드바 행 클릭과 재결합하지 않습니다.

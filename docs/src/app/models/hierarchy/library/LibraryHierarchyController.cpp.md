@@ -1,103 +1,57 @@
 # `src/app/models/hierarchy/library/LibraryHierarchyController.cpp`
 
-## Implementation Notes
-- `setSystemCalendarStore(...)` now binds to `ISystemCalendarStore` and its `systemInfoChanged` signal.
-- Note-list date formatting behavior is unchanged.
-- Note-list `primaryText` now comes from the shared `src/app/models/hierarchy/library/LibraryNotePreviewText.hpp`
-  helper, so the library list and calendar note chips read from the same preview-text contract.
-- Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
-- `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
-  `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
-- Local note mutation paths now split into metadata/distribution paths, with note body persistence mutations removed:
-  - runtime-load / explicit full-snapshot paths still go through `setIndexedStateNotes(...)`,
-    `applyIndexedStateSnapshot(...)`, and `loadIndexedStateFromWshub(...)`
-  - metadata, folder-assign, note-create, note-delete, and folder-clear paths update note-list projection without
-    reintroducing body save hooks
-- Those note-distribution mutation paths now also route through
-  `refreshNoteListForSelectionAndNotifyHierarchyModel()`, which is the guard against stale sidebar `count` labels
-  when only the note-to-folder distribution changed and the hierarchy row vector stayed byte-for-byte identical.
-- `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)`, and successful direct index loads now emit
-  `indexedNotesSnapshotChanged()`, so calendar/runtime collaborators observe note-snapshot changes directly from the
-  controller instead of relying on a later page-open hook.
-- `upsertIndexedNote(...)` now invalidates only the affected note-list cache entry and emits `indexedNoteUpserted(...)`
-  when the underlying indexed-state mutation actually changed the note payload.
-- `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
-  library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
-  before selecting the requested note row.
-- Library note-list row projection is metadata-only. The controller derives `primaryText` / `searchableText` from indexed
-  note metadata and keeps `bodyText` empty.
-- The note-list row projection now also carries `noteDirectoryPath`, and the controller's internal note-list cache key
-  is no longer `noteId` alone.
-  Cache invalidation and row reuse now treat `noteId + noteDirectoryPath` as the stable row identity.
-- The library runtime snapshot no longer exposes body source text. Note body persistence and tracked-stat refresh remain
-  outside the controller boundary.
-- `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
-  computes the insertion point after that folder's subtree and increases depth by one, creating the new folder as a
-  child of the selected folder without forcing the selected parent open.
-- After persistence succeeds, `createFolder()` also moves the primary selected index to the inserted row so the QML
-  sidebar can immediately activate and rename the new folder.
-- `setDepthItems(...)` preserves expansion by stable hierarchy key before replacing the row vector. External folder
-  structure refreshes may add, remove, or reorder rows, but they must not change the expansion state of surviving
-  folders.
-- Library hierarchy always starts from the hub-independent in-app scaffold: `All Library`, `Drafts`, and `Today`.
-  These rows are app-owned system buckets, not hub-authored folder rows. Constructor setup, load-failure recovery,
-  empty depth input, and empty-folder runtime snapshots must keep those three fixed rows visible before reporting an
-  unchanged hierarchy source.
-- `setItemExpanded(...)` delegates the shared row validation/state flip to `IHierarchyController`'s protected expansion
-  helper and then updates the shared `WhatSonHierarchyModel` row through `setItemExpanded(...)`. Protected-root policy
-  remains a rename/delete guard; it must not block a visible chevron from folding or unfolding its descendants.
-- General selection writes still normalize a negative or invalid selected index to the first visible row before the
-  controller republishes state. This keeps the library note-list filter aligned with the row the sidebar already renders
-  as active.
-- `deleteSelectedFolder()` remains the authoritative delete path. It removes the selected folder together with its
-  descendant subtree and persists the updated folders store before refreshing sidebar state. Deleting the focused folder
-  is the explicit exception to selection normalization: the controller leaves `selectedIndex == -1` so no surviving
-  hierarchy row inherits focus just because it is adjacent or last.
-- The library sidebar right-click context menu now reuses those two existing methods through
-  `HierarchyInteractionBridge`; no separate library-specific CRUD implementation was added for the menu.
-- `applyHierarchyMove(...)` remains a targeted move helper. The sidebar drag/drop path normally persists the final
-  `LV.Hierarchy.model` snapshot through `applyHierarchyNodes(...)`, while explicit callers can still use the targeted
-  helper to resolve one source subtree and persist it through the same folder hierarchy commit path.
-- After a folder hierarchy mutation has been persisted, the controller reparses `Folders.wsfolders` and rebuilds the
-  live library rows from that file-backed tree. The staged drag/drop vector is only a mutation proposal; the view model
-  mirrors the persisted `.wsfolders` result so store-side normalization, migration, or filtered rows cannot leave a
-  stale sidebar shape.
-- Folder-path normalization now uses the shared escaped-segment semantics from `WhatSonNoteFolderSemantics.hpp`.
-  A folder label that literally contains `/` is persisted as one escaped segment (`\/`) and is no longer split into
-  fake parent/child hierarchy rows.
-- Note-list folder chips/search text now decode those escaped segments back into user-facing text, so the library list
-  does not expose persistence escape markers like `\/`.
+<a id="implementation-notes"></a>
 
-## Tests
-- The maintained C++ regression suite now also covers escaped-slash folder-path semantics and parser migration for
-  literal-slash library folder labels.
-- Regression checklist:
-  - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
-    before the user manually pokes the calendar surface.
-  - local single-note metadata and distribution mutations must not require copying/replacing the full `allNotes` vector
-  - note-list projection must stay metadata-only and must not rebuild body save paths
-  - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
-    snapshot replacement when the service result cannot resolve the target note
-  - library folder/system-bucket sidebar counters must refresh immediately after folder assignment, note create,
-    note delete, folder clear, or one-note metadata reload even when the hierarchy rows themselves did not rebuild
-  - folder-structure reloads and folder creation must not expand or collapse existing library rows unless the user
-    explicitly performed an expansion command
-  - constructor setup, load-failure recovery, empty depth input, and an empty-folder runtime snapshot from a new hub
-    must still publish `All Library`, `Drafts`, and `Today` before any user-authored folders exist
-  - accent root folders with visible chevrons must accept targeted `setItemExpanded(...)` changes even though the same
-    rows remain protected from rename/delete mutations
-  - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
-  - An active library search filter must be cleared automatically when it hides the requested note.
-  - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.
-  - Failed activation must not switch the current note to an unrelated item.
-  - The shared library note-list model must keep the selected note body available through `BodyTextRole` /
-    `currentBodyText` so editor selection never collapses to an empty document after runtime snapshot refreshes.
-  - The shared library note-list model must also export the selected row's `noteDirectoryPath` for identity
-    disambiguation.
-  - Direct note-package resolution is currently disabled, so editor bridges must not depend on it.
-  - A folder label such as `Marketing/Sales` must remain one hierarchy item after parse/load/save cycles.
-  - The same literal-slash folder label must not surface as `Marketing\\/Sales` in note-list folder presentation.
-  - Dragging one library folder onto another through the LVRS move event must persist exactly one nested subtree entry
-    and must not leave a duplicate top-level sibling in the controller model.
-  - After any hierarchy commit, the live library model must be rebuilt from the persisted `Folders.wsfolders` tree,
-    not from transient staged rows that the folder store did not serialize.
+## 구현 노트
+- `setSystemCalendarStore(...)`는 이제 `ISystemCalendarStore` 및 해당 `systemInfoChanged` 신호에 바인딩됩니다.
+- 메모 목록 날짜 형식 지정 동작은 변경되지 않습니다.
+- Note-list `primaryText`는 이제 공유된 `src/app/models/hierarchy/library/LibraryNotePreviewText.hpp` 헬퍼에서 가져오므로, 라이브러리 목록과 캘린더 노트 칩이 동일한 미리보기 텍스트 계약에서 읽게 됩니다.
+- 정적 `SystemCalendarStore::formatNoteDateForSystem(...)`는 주입되지 않은 대체 경로 도우미로 유지됩니다.
+- `indexedNotesSnapshot()`는 현재 `m_indexedState.allNotes()` 복사본을 반환하므로, `CalendarBoardStore`와 같은 다른 런타임 협업자들이 이미 로드된 라이브러리 스냅샷에서 노트 라이프사이클 메타데이터를 투사할 수 있습니다.
+- 이제 로컬 노트 변형 경로가 메타데이터/배포 경로로 분할되어 노트 본문 지속성 변형이 제거되었습니다.
+  - 런타임 -load / 명시적인 전체 스냅샷 경로는 여전히 `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)` 및 `loadIndexedStateFromWshub(...)`를 통과합니다.
+  - 메타데이터, 폴더 할당, 노트 생성, 노트 삭제 및 폴더 지우기 경로는 본문 저장 훅을 다시 도입하지 않고 노트 목록 투영을 업데이트합니다.
+- 그러한 노트 분포 변이 경로는 이제 `refreshNoteListForSelectionAndNotifyHierarchyModel()`를 통해서도 라우팅되며, 이는 노트‐폴더 분포만 변경되고 계층 행 벡터가 바이트 단위로 동일하게 유지될 때 오래된 사이드바 `count` 레이블을 방지하는 방어 수단입니다.
+- `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)` 및 성공적인 직접 인덱스 로드가 이제 `indexedNotesSnapshotChanged()`를 방출하므로, calendar/런타임 협업자는 나중에 페이지 열기 훅에 의존하지 않고 컨트롤러에서 직접 노트 스냅샷 변경을 관찰할 수 있습니다.
+- `upsertIndexedNote(...)`는 이제 영향을 받는 노트 목록 캐시 항목만 무효화하고, 기본 인덱스 상태 변이가 실제로 노트 페이로드를 변경했을 때 `indexedNoteUpserted(...)`를 방출합니다.
+- `activateNoteById(...)`는 이제 정식 교차표면 노트 오픈 경로입니다. 먼저 현재 보이는 라이브러리 노트 목록을 검색한 다음, 모든 활성 검색 필터를 해제하고, 암시된 `All Library` 선택으로 되돌아가 요청된 노트 행을 선택합니다.
+- 라이브러리 노트 목록 행 투영은 메타데이터 전용입니다. 컨트롤러는 인덱스된 메모 메타데이터에서 `primaryText` / `searchableText`를 도출하고 `bodyText`를 비워 둡니다.
+- 노트 목록 행 투영은 이제 `noteDirectoryPath`를 포함하며, 컨트롤러의 내부 노트 리스트 캐시 키는 더 이상 `noteId`만이 아닙니다. 캐시 무효화와 행 재사용이 이제 `noteId + noteDirectoryPath`를 안정적인 행 아이덴티티로 취급합니다.
+- 라이브러리 런타임 스냅샷은 더 이상 본문 원본 텍스트를 노출하지 않습니다. 본문 영속성과 추적-스탯 새로 고침이 컨트롤러 경계 밖에 남아 있음을 유의하십시오.
+- `createFolder()`는 여전히 권위 있는 라이브러리 폴더 생성 경로입니다. 보호되지 않은 폴더가 선택되면 해당 폴더의 서브트리 이후 삽입 지점을 계산하고 깊이를 1만큼 증가시켜, 선택된 폴더의 자식 폴더로 새 폴더를 생성하며 선택된 부모 폴더를 강제로 열도록 하지 않습니다.
+- 영속성이 성공한 후, `createFolder()`는 기본 선택된 인덱스를 삽입된 행으로 이동시켜 QML 사이드바가 즉시 활성화되고 새 폴더의 이름을 변경할 수 있습니다.
+- `setDepthItems(...)` 는 행 벡터를 교체하기 전에 안정적인 계층 키로 확장을 보존합니다. 외부 폴더 구조 새로 고침은 행을 추가하거나 제거하거나 재배열할 수 있지만, 살아남은 폴더의 확장 상태를 변경해서는 안 됩니다.
+- 라이브러리 계층은 항상 허브에 독립적인 인앱 스캐폴드인 `All Library`, `Drafts`, 및 `Today`에서 시작됩니다. 이 행들은 앱이 소유한 시스템 버킷이며, 허브가 작성한 폴더 행이 아닙니다. 생성자 설정, 로드 실패 복구, 빈 깊이 입력 및 빈 폴더 런타임 스냅샷은 변경되지 않은 계층 구조 소스를 보고하기 전에 해당 3 고정 행을 표시하도록 유지해야 합니다.
+- `setItemExpanded(...)`는 공유 행 검증/상태 플립을 `IHierarchyController`의 보호된 확장 도우미에 위임하고, 이후 `setItemExpanded(...)`를 통해 공유된 `WhatSonHierarchyModel` 행을 업데이트합니다. Protected-root 정책은 여전히 이름 바꾸기/삭제 가드이며, 눈에 보이는 체브론이 하위 요소를 접거나 펼치는 것을 차단해서는 안 됩니다.
+- 일반 선택 쓰기는 여전히 음수이거나 잘못된 선택된 인덱스를 컨트롤러가 상태를 다시 게시하기 전에 첫 번째 보이는 행으로 정규화합니다. 이렇게 하면 라이브러리 노트 목록 필터가 사이드바가 이미 활성 상태로 렌더링된 행과 정렬됩니다.
+- `deleteSelectedFolder()`는 여전히 권위 있는 삭제 경로입니다. 선택된 폴더와 그 하위 하위 트리를 함께 제거하고, 사이드바 상태를 새로 고치기 전에 업데이트된 폴더 저장소를 유지합니다. 포커스된 폴더를 삭제하는 것은 선택 정규화에 대한 명시적인 예외이며, 컨트롤러는 `selectedIndex == -1`를 남겨 두어 인접한 또는 마지막이라는 이유만으로 살아남은 계층 행이 포커스를 상속하지 않습니다.
+- 라이브러리 사이드바 오른쪽 클릭 컨텍스트 메뉴가 이제 `HierarchyInteractionBridge`를 통해 기존 2 메서드를 재사용합니다; 메뉴에 별도의 라이브러리 전용 CRUD 구현은 추가되지 않았습니다.
+- `applyHierarchyMove(...)`는 여전히 목표 이동 도우미입니다. 사이드바 드래그/드롭 경로는 일반적으로 `applyHierarchyNodes(...)`를 통해 최종 `LV.Hierarchy.model` 스냅샷을 지속하지만, 명시적인 호출자는 여전히 대상 헬퍼를 사용하여 하나의 소스 서브트리를 해결하고 동일한 폴더 계층 커밋 경로를 통해 이를 지속할 수 있습니다.
+- 폴더 계층 구조 변이가 지속된 후, 컨트롤러는 `Folders.wsfolders`를 재파서하고 해당 파일 기반 트리에서 라이브 라이브러리 행을 재구축합니다. 스테이징된 드래그/드롭 벡터는 단지 변이 제안일 뿐이며, 뷰 모델은 지속된 `.wsfolders` 결과를 반영하므로 스토어 측 정규화, 마이그레이션 또는 필터링된 행이 오래된 사이드바 형태를 남길 수 없습니다.
+- Folder-path 정규화는 이제 `WhatSonNoteFolderSemantics.hpp`의 공유 이스케이프 세그먼트 의미를 사용합니다. 문자 그대로 `/`를 포함하는 폴더 레이블은 하나의 이스케이프 세그먼트(`\/`)로 지속되며, 더 이상 가짜 부모/자식 계층 행으로 분할되지 않습니다.
+- Note-list 폴더 칩/검색 텍스트가 이제 이스케이프된 세그먼트를 다시 사용자용 텍스트로 디코딩하므로, 라이브러리 목록이 `\/`와 같은 지속성 이스케이프 마커를 노출하지 않습니다.
+
+<a id="tests"></a>
+
+## 테스트
+- 유지 관리된 C++ 회귀 스위트는 이제 이스케이프‐슬래시 폴더 경로 의미와 리터럴‐슬래시 라이브러리 폴더 레이블에 대한 파서 마이그레이션도 포함합니다.
+- 회귀 체크리스트:
+  - 시작/연기 런타임 메모 로드는 캘린더 표면이 사용자가 수동으로 캘린더 표면을 클릭하기 전에 캘린더 투영이 새로 고쳐지도록 `indexedNotesSnapshotChanged()` 를 방출해야 합니다.
+  - 로컬 단일 노트 메타데이터 및 배포 변형은 전체 `allNotes` 벡터를 복사/교체할 필요가 없어야 합니다.
+  - 노트 목록 프로젝션은 메타데이터로만 유지되어야 하며 본문 저장 경로를 다시 빌드해서는 안 됩니다.
+  - Create/delete/folder-clear 변이 흐름은 단일 노트 업서트/제거를 선호하고, 서비스 결과가 대상 노트를 해결할 수 없을 경우에만 전체 스냅샷 교체로 되돌아가야 합니다.
+  - 라이브러리 폴더/시스템 버킷 사이드바 카운터는 폴더 할당, 메모 생성, 메모 삭제, 폴더 초기화 또는 원노트 메타데이터 재로드 후 즉시 새로 고쳐져야 하며, 계층 행 자체가 재구성되지 않은 경우에도 적용됩니다.
+  - 폴더 구조 재로드 및 폴더 생성은 사용자가 명시적으로 확장 명령을 수행하지 않는 한 기존 라이브러리 행을 확장하거나 축소해서는 안 됩니다.
+  - 구성자 설정, 로드 실패 복구, 빈 깊이 입력 및 새 허브에서 빈 폴더 런타임 스냅샷은 사용자가 작성한 폴더가 존재하기 전에 `All Library`, `Drafts`, `Today` 를 모두 게시해야 합니다.
+  - 눈에 보이는 체브론이 있는 악센트 루트 폴더는 동일한 행이 이름 바꾸기/삭제 변이로부터 보호되고 있음에도 불구하고, 대상별 `setItemExpanded(...)` 변경을 허용해야 합니다.
+  - `activateNoteById(...)`는 현재 라이브러리 목록에 이미 표시되어 있는 경우 요청한 메모를 선택해야 합니다.
+  - 활성 라이브러리 검색 필터는 요청된 노트를 숨길 때 자동으로 지워져야 합니다.
+  - 폴더 범위 라이브러리 선택은 활성화 경로가 실패를 보고하기 전에 `All Library`로 대체되어야 합니다.
+  - 실패한 활성화는 현재 메모를 관련 없는 항목으로 전환해서는 안 됩니다.
+  - 공유 라이브러리 노트리스트 모델은 선택된 노트 본문을 `BodyTextRole` / `currentBodyText`를 통해 사용할 수 있도록 유지해야 하며, 이렇게 하면 런타임 스냅샷이 새로 고침된 후 편집기 선택이 빈 문서로 압축되지 않습니다.
+  - 공유 라이브러리 노트리스트 모델은 식별자 구분을 위해 선택된 행의 `noteDirectoryPath`를 내보내야 합니다.
+  - 직접적인 노트 패키지 해결은 현재 비활성화되어 있으므로 에디터 브리지는 이에 의존해서는 안 됩니다.
+  - `Marketing/Sales`와 같은 폴더 레이블은 구문 분석/로드/저장 주기 후에 하나의 계층 구조 항목으로 유지되어야 합니다.
+  - 동일한 문자-슬래시 폴더 레이블이 노트 목록 폴더 표시에서 `Marketing\\/Sales`로 표시되어서는 안 됩니다.
+  - LVRS 이동 이벤트를 통해 하나의 라이브러리 폴더를 다른 폴더에 드래그하는 것은 정확히 하나의 중첩 서브트리 항목을 영속화해야 하며 컨트롤러 모델에 중복 최상위 형제를 남겨서는 안 됩니다.
+  - 어떠한 계층 커밋 후에도, 라이브 라이브러리 모델은 폴더 스토어가 직렬화하지 않은 일시적인 스테이징 행이 아니라, 지속된 `Folders.wsfolders` 트리에서 재구성되어야 합니다.

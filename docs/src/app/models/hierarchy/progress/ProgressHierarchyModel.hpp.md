@@ -1,12 +1,15 @@
 # `src/app/models/hierarchy/progress/ProgressHierarchyModel.hpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This header keeps the typed `ProgressHierarchyItem` struct and icon helper used by `ProgressHierarchyController`
-internals.
+## 책임
 
-## Shared Model Contract
+이 헤더는 `ProgressHierarchyController` 내부에서 사용되는 형식화된 `ProgressHierarchyItem` 구조체 및 아이콘 도우미를 유지합니다.
 
-- It no longer declares a Qt item model class.
-- The QML/LVRS-facing model is the shared `WhatSonHierarchyModel`.
-- Progress state labels and values are serialized by the controller into `LV.Hierarchy` node maps.
+<a id="shared-model-contract"></a>
+
+## 공유 모델 계약
+
+- 더 이상 Qt 항목 모델 클래스를 선언하지 않습니다.
+- QML/LVRS 방향 모델은 공유 `WhatSonHierarchyModel`입니다.
+- 진행 상태 레이블과 값은 컨트롤러에 의해 `LV.Hierarchy` 노드 맵으로 직렬화됩니다.

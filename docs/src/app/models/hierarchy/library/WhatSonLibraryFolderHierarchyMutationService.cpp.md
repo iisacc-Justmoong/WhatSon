@@ -1,39 +1,41 @@
 # `src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This file applies persistent library-folder mutations for the folder tree only. Note-header binding rewrites were
-removed with the deleted note package persistence layer.
+## 책임
 
-## UUID Rewrite Strategy
+이 파일은 폴더 트리에만 영구 라이브러리 폴더 변형을 적용합니다. 삭제된 노트 패키지 지속성 레이어를 사용하면 노트 헤더 바인딩 재작성이 제거되었습니다.
 
-The service no longer depends on path remapping alone.
+<a id="uuid-rewrite-strategy"></a>
 
-1. Build a lookup from the original tree keyed by folder UUID.
-2. Build a second lookup from the staged tree keyed by the same UUIDs.
-3. Preserve note records as supplied by the caller.
+## UUID 재작성 전략
 
-This means a rename or reparent mutation preserves folder identity in the staged tree without mutating note headers.
+서비스는 더 이상 경로 재매핑에만 의존하지 않습니다.
 
-## Header Rewrite Logic
+1. UUID 폴더를 기준으로 원본 트리에서 조회를 작성합니다.
+2. 동일한 UUID로 구성된 단계적 트리에서 두 번째 조회를 빌드합니다.
+3. 발신자가 제공한 메모 기록을 보존합니다.
 
-- Stored note headers are not read or written by this service.
-- Existing `<folder uuid="...">path</folder>` bindings are preserved when they still resolve.
-- Legacy headers without UUIDs still work through a path fallback during migration.
-- Explicit UUID/full-path bindings are preserved even when one bound folder is the ancestor of
-  another. Only legacy leaf-only context tokens are collapsed when they simply identify a nested
-  descendant folder.
-- UUID equality alone is not treated as “already synchronized”. The serialized folder path must also
-  match the staged tree, otherwise the header is rewritten.
-- Header-only folder rewrites preserve existing `lastModified` and `modifiedBy` values.
-- Folder path comparisons now run through the shared escaped-segment semantics, so one folder label
-  containing a literal `/` is not mis-read as a parent/child path during note-header remapping.
+이는 이름 바꾸기 또는 상위 변경이 노트 헤더를 변경하지 않고 단계적 트리에서 폴더 ID를 유지함을 의미합니다.
 
-## Persistence Order
+<a id="header-rewrite-logic"></a>
 
-1. Calculate staged header rewrites from original-tree UUIDs to staged-tree UUID targets.
-2. Write the staged folder tree file.
-3. Return the caller-provided `LibraryNoteRecord` values unchanged.
+## 헤더 재작성 논리
 
-This order keeps the sidebar tree and note metadata aligned even when a folder subtree is renamed by
-changing one ancestor label.
+- 저장된 메모 헤더는 이 서비스에서 읽거나 쓸 수 없습니다.
+- 기존 `<folder uuid="...">path</folder>` 바인딩은 여전히 해결될 때 유지됩니다.
+- UUID가 없는 레거시 헤더는 마이그레이션 중에 대체 경로 경로를 통해 계속 작동합니다.
+- 명시적인 UUID /full-path 바인딩은 하나의 바인딩된 폴더가 다른 바인딩 폴더의 조상인 경우에도 유지됩니다. 레거시 리프 전용 컨텍스트 토큰은 단순히 중첩된 하위 폴더를 식별할 때만 압축됩니다.
+- UUID 동등성만으로는 “already synchronized”로 간주되지 않습니다. 직렬화된 폴더 경로는 스테이징된 트리와 일치해야 하며, 그렇지 않으면 헤더가 다시 작성됩니다.
+- 헤더 전용 폴더를 다시 작성하면 기존 `lastModified` 및 `modifiedBy` 값이 유지됩니다.
+- 폴더 경로 비교는 이제 공유된 이스케이프‐세그먼트 의미론을 통해 실행되므로, 문자 그대로 `/`가 포함된 하나의 폴더 라벨이 노트 헤더 재매핑 시 부모/자식 경로로 잘못 읽히는 일이 없습니다.
+
+<a id="persistence-order"></a>
+
+## 지속성 순서
+
+1. 원본 트리 UUID에서 스테이지 트리 UUID 대상으로 스테이지 헤더 재작성을 계산합니다.
+2. 준비된 폴더 트리 파일을 작성합니다.
+3. 호출자가 제공한 `LibraryNoteRecord` 값을 변경하지 않고 반환합니다.
+
+이 순서는 하나의 상위 레이블을 변경하여 폴더 하위 트리의 이름을 바꾸는 경우에도 사이드바 트리와 노트 메타데이터를 정렬된 상태로 유지합니다.

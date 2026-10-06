@@ -1,25 +1,31 @@
 # `src/app/qml/window/TrialStatus.qml`
 
-## Role
-`TrialStatus.qml` is the dedicated desktop trial window for the trial packaging tree. It appears on every launch of the trial app and makes the remaining trial time visible without forcing the user to infer state from other runtime behavior.
+<a id="role"></a>
 
-## Surface
-- Root type: `Window`
-- Input properties:
+## 역할
+`TrialStatus.qml`는 평가판 패키징 트리 전용 데스크탑 평가판 창입니다. 평가판 앱을 시작할 때마다 표시되며 사용자가 다른 런타임 동작에서 상태를 추론하지 않고도 남은 평가판 시간을 볼 수 있습니다.
+
+<a id="surface"></a>
+
+## 표면
+- 루트 유형: `Window`
+- 입력 속성:
   - `hostWindow`
   - `trialActivationPolicy`
-- Derived state:
-  - authenticated bypass state
-  - active or expired trial headline
-  - remaining days / elapsed days / install and last-active dates
+- 파생된 상태:
+  - 인증된 우회 상태
+  - 활성 또는 만료된 시험 헤드라인
+  - 남은 일수/경과 일수/설치 및 마지막 활성 날짜
 
-## Behavior
-- The window recenters itself against the host window when one is provided.
-- All displayed values are read directly from `WhatSonTrialActivationPolicy`, so the view stays read-only and does not mutate trial state.
-- Fixed window size, card radius, divider thickness, and headline/body typography now route through named `LV.Theme`
-  size, spacing, typography, and stroke tokens instead of local pixel literals, so the trial surface follows LVRS
-  density policy.
+<a id="behavior"></a>
 
-## Why This Exists
-- Trial builds previously had no explicit onboarding/status surface, so users could not tell whether the trial gate was active.
-- This window makes the trial lifecycle visible at startup and reduces ambiguity around expiry or authenticated bypass.
+## 행동
+- 호스트 창이 제공되면 창의 중심이 호스트 창에 맞춰집니다.
+- 표시된 모든 값은 `WhatSonTrialActivationPolicy`에서 직접 읽으므로 보기는 읽기 전용를 유지하고 평가판 상태를 변경하지 않습니다.
+- 윈도우 크기, 카드 반경, 구분자 두께 및 헤드라인/바디 타이포그래피가 이제 로컬 픽셀 리터럴 대신 명명된 `LV.Theme` 크기, 간격, 타이포그래피 및 스트로크 토큰을 통해 라우팅되므로, 시험 표면은 LVRS 밀도 정책을 따릅니다.
+
+<a id="why-this-exists"></a>
+
+## 이것이 존재하는 이유
+- 이전에는 평가판 빌드에 명시적인 온보딩/상태 표시 화면이 없었으므로 사용자는 평가판 게이트가 활성화되었는지 여부를 알 수 없었습니다.
+- 이 창은 시작 시 평가판 수명 주기를 표시하고 만료 또는 인증된 우회에 대한 모호성을 줄입니다.

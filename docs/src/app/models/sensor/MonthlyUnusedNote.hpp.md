@@ -1,10 +1,14 @@
 # `src/app/models/sensor/MonthlyUnusedNote.hpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-`MonthlyUnusedNote` is the fixed-window sensor object for notes that have not been opened for at least one month.
+## 책임
 
-## Surface
+`MonthlyUnusedNote`는 최소 한 달 동안 열리지 않은 노트에 대한 고정 창 센서 개체입니다.
 
-- Mirrors `WeeklyUnusedNote` so QML/C++ callers can swap only the period object.
-- Returns both the rich `unusedNotes` payload and the stripped `unusedNoteIds` list.
+<a id="surface"></a>
+
+## 표면
+
+- `WeeklyUnusedNote`를 미러링하여 QML/C++ 호출자가 기간 개체만 교환할 수 있도록 합니다.
+- 풍부한 `unusedNotes` 페이로드와 제거된 `unusedNoteIds` 목록을 모두 반환합니다.

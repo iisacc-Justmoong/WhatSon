@@ -57,14 +57,14 @@
 - 각 계층 타입은 `src/app/models/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.
 - 모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.
 - 표준 매핑:
-    - Library -> `LibraryHierarchyController`
-    - Projects -> `ProjectsHierarchyController`
-    - Bookmarks -> `BookmarksHierarchyController`
-    - Tags -> `TagsHierarchyController`
-    - Resources -> `ResourcesHierarchyController`
-    - Progress -> `ProgressHierarchyController`
-    - Event -> `EventHierarchyController`
-    - Preset -> `PresetHierarchyController`
+    - 라이브러리 -> `LibraryHierarchyController`
+    - 프로젝트 -> `ProjectsHierarchyController`
+    - 북마크 -> `BookmarksHierarchyController`
+    - 태그 -> `TagsHierarchyController`
+    - 자원 -> `ResourcesHierarchyController`
+    - 진행 -> `ProgressHierarchyController`
+    - 이벤트 -> `EventHierarchyController`
+    - 사전 설정 -> `PresetHierarchyController`
 - 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.
 - 런타임 계층 Controller wiring은 one-type/one-Controller contract를 유지하되, 표시용 item model은
   `src/app/models/hierarchy/WhatSonHierarchyModel.*` 하나를 공유해야 한다. 각 Controller는 자기 domain의 typed
@@ -221,7 +221,7 @@ import LVRS 1.0 as LV
 
 ## 현재 UI 레이아웃
 
-- Root shell: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
+- 루트 쉘: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)
 - Workspace route: `Main.qml`은 desktop layout shell을 유지한다. `BodyLayout.qml`의 content slot이
   `src/app/qml/view/panels/ContentViewLayout.qml`을 mount한다. 노트 선택 시 본문 editor를 열지 않고 빈 content
   placeholder를 유지한다. 리소스 하이어라키에서 이미지 리소스 list item을 선택하면 같은 content slot이
@@ -230,20 +230,20 @@ import LVRS 1.0 as LV
     - `src/app/qml/view/panels/StatusBarLayout.qml`
     - `src/app/qml/view/panels/NavigationBarLayout.qml`
     - `src/app/qml/view/panels/BodyLayout.qml`
-    - `src/app/qml/view/panels/ListBarLayout.qml`(Figma-driven list bar panel, node `73:2635`)
-    - `src/app/qml/view/panels/ListBarHeader.qml`(Figma-driven list bar header, node `134:3180`)
-        - `src/app/qml/view/panels/NoteListItem.qml`(Figma-driven note item card, node `119:3028`)
-        - `src/app/qml/view/panels/DetailPanelLayout.qml`(Figma-driven right panel wrapper, node `134:3212`)
-        - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma frame `PropertiesBar`, node `147:3876`)
-        - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma frame `InformationBar`, node `134:3138`)
-        - `src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma frame `NavigationMode`, node `147:3875`)
+    - `src/app/qml/view/panels/ListBarLayout.qml`(Figma 구동 목록 표시줄 패널, 노드 `73:2635`)
+    - `src/app/qml/view/panels/ListBarHeader.qml`(Figma 구동 목록 표시줄 헤더, 노드 `134:3180`)
+        - `src/app/qml/view/panels/NoteListItem.qml`(Figma 구동 메모 항목 카드, 노드 `119:3028`)
+        - `src/app/qml/view/panels/DetailPanelLayout.qml`(Figma 구동 오른쪽 패널 래퍼, 노드 `134:3212`)
+        - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma 프레임 `PropertiesBar`, 노드 `147:3876`)
+        - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma 프레임 `InformationBar`, 노드 `134:3138`)
+        - `src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma 프레임 `NavigationMode`, 노드 `147:3875`)
         - `src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`
         - `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
-            - `src/app/qml/view/panels/detail/RightPanel.qml`(Figma frame `RightPanel`, node `134:3212`)
-            - `src/app/qml/view/panels/detail/DetailPanel.qml`(Figma frame `DetailPanel`, node `134:3641`)
-            - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`(Figma frame `DetailPanelHeaderToolbar`, node `134:3642`)
-            - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma frame `DetailContents`, node `134:3649`)
+            - `src/app/qml/view/panels/detail/RightPanel.qml`(Figma 프레임 `RightPanel`, 노드 `134:3212`)
+            - `src/app/qml/view/panels/detail/DetailPanel.qml`(Figma 프레임 `DetailPanel`, 노드 `134:3641`)
+            - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`(Figma 프레임 `DetailPanelHeaderToolbar`, 노드 `134:3642`)
+            - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma 프레임 `DetailContents`, 노드 `134:3649`)
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
                     - `src/app/qml/view/contents/ImageEditor.qml`
@@ -256,14 +256,14 @@ import LVRS 1.0 as LV
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
-- Shared components:
+- 공유 구성요소:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`
     - `src/app/qml/components/InfoListCard.qml`
     - `src/app/qml/components/InsightPanel.qml`
-- Contents view namespace:
-    - `src/app/qml/view/contents` is the single contents-view namespace.
-    - Do not reintroduce `src/app/qml/contents` or `src/app/qml/view/content`.
+- 콘텐츠 뷰 네임스페이스:
+    - `src/app/qml/view/contents`는 단일 콘텐츠 뷰 네임스페이스입니다.
+    - `src/app/qml/contents` 또는 `src/app/qml/view/content`를 다시 도입하지 마십시오.
 
 ## 시작 체크리스트
 

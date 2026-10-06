@@ -1,30 +1,31 @@
 # `src/app/models/hierarchy/library/WhatSonLibraryIndexedState.cpp`
 
-## Implementation Summary
+<a id="implementation-summary"></a>
 
-The implementation wraps three lower-level storage helpers:
+## 구현 요약
+
+구현은  3 하위 레벨 저장 헬퍼를 감쌉니다.
 
 - `LibraryAll`
 - `LibraryDraft`
 - `LibraryToday`
 
-It keeps those helpers behind one backend API so higher layers can treat library note indexing as a
-single responsibility.
+하나의 백엔드 API 뒤에 이러한 도우미를 유지하므로 상위 계층에서 라이브러리 노트 인덱싱을 단일 책임으로 처리할 수 있습니다.
 
-## Derived Bucket Policy
+<a id="derived-bucket-policy"></a>
 
-`rebuildDerivedBuckets()` is the internal boundary that recomputes `draft` and `today` from the
-canonical `all` notes collection. Callers that mutate notes only need to replace the canonical note
-set once.
+## 파생 버킷 정책
 
-The implementation now also supports incremental mutation:
+`rebuildDerivedBuckets()`는 정식 `all` 노트 컬렉션에서 `draft` 및 `today`를 다시 계산하는 내부 경계입니다. 메모를 변경하는 호출자는 표준 메모 세트를 한 번만 교체하면 됩니다.
 
-- `setSourceWshubPath(...)` retargets the canonical hub identity without replacing the current notes
-- `upsertNote(...)` updates `LibraryAll`, `LibraryDraft`, and `LibraryToday` in place for one note
-- `removeNoteById(...)` removes one note from all three buckets without a full rebuild
+이제 구현에서는 증분 변형도 지원합니다.
 
-## Shared Reuse
+- `setSourceWshubPath(...)`는 현재 메모를 바꾸지 않고 표준 허브 ID를 다시 대상으로 지정합니다.
+- `upsertNote(...)`는 하나의 메모에 대해 `LibraryAll`, `LibraryDraft` 및 `LibraryToday`를 업데이트합니다.
+- `removeNoteById(...)` 는 전체 3 버킷에서 하나의 노트를 제거합니다
 
-`collectBookmarkedNotes(...)` provides the matching bookmark projection helper used by
-`WhatSonRuntimeDomainSnapshots` and `BookmarksHierarchyController`, which keeps bookmark derivation on
-the already indexed library data instead of reparsing the hub.
+<a id="shared-reuse"></a>
+
+## 공유 재사용
+
+`collectBookmarkedNotes(...)`는 `WhatSonRuntimeDomainSnapshots` 및 `BookmarksHierarchyController`에서 사용하는 일치하는 북마크 프로젝션 도우미를 제공합니다. 이는 허브를 다시 구문 분석하는 대신 이미 인덱싱된 라이브러리 데이터에 대한 북마크 파생을 유지합니다.

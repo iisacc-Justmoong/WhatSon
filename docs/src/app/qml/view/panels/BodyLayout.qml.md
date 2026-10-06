@@ -1,7 +1,7 @@
 # `src/app/qml/view/panels/BodyLayout.qml`
 
-`BodyLayout.qml` arranges the desktop workspace body: hierarchy sidebar, list/detail panels, and the central content surface.
+`BodyLayout.qml`는 데스크톱 작업 공간 본체(계층 구조 사이드바, 목록/세부 정보 패널 및 중앙 콘텐츠 화면)를 정렬합니다.
 
-It forwards hierarchy, note-list, clipboard import state, editor font provider, calendar controllers, and panel registry objects into `ContentViewLayout.qml`.
+계층 구조, 노트 목록, 클립보드 가져오기 상태, 편집기 글꼴 제공자, 달력 컨트롤러 및 패널 레지스트리 개체를 `ContentViewLayout.qml`로 전달합니다.
 
-The deleted editor document session, editor paste bridge, and native input command filter are no longer properties of this layout and must not be threaded through this shell.
+삭제된 편집기 문서 세션, 편집기 붙여넣기 브리지 및 네이티브 입력 명령 필터는 더 이상 이 레이아웃의 속성이 아니며 이 셸을 통해 스레드되어서는 안 됩니다.

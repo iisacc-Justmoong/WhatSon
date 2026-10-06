@@ -1,5 +1,5 @@
 # `src/app/main.cpp`
 
-The application entrypoint creates core runtime objects, configures LVRS, wires controllers, binds workspace context objects, and starts the Qt Quick shell.
+애플리케이션 진입점은 핵심 런타임 객체를 생성하고, LVRS를 구성하고, 컨트롤러를 연결하고, 작업 공간 컨텍스트 객체를 바인딩하고, Qt Quick Shell을 시작합니다.
 
-The active editor document session, editor paste bridge, and native editor input filter are no longer constructed or exported to QML.
+활성 편집기 문서 세션, 편집기 붙여넣기 브리지 및 네이티브 편집기 입력 필터는 더 이상 구성되거나 QML로 내보내지지 않습니다.

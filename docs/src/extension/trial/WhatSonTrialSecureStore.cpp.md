@@ -1,14 +1,20 @@
 # `src/extension/trial/WhatSonTrialSecureStore.cpp`
 
-## Role
-Implements the default host secure-store backend for the optional trial module.
+<a id="role"></a>
 
-## Behavior
-- macOS uses the system Keychain through `Security.framework` generic-password entries.
-- Linux uses `secret-tool` when the host provides a Secret Service bridge.
-- Unsupported platforms report the secure store as unavailable and let higher layers defer secret-backed verification or migration instead of trusting plain local settings.
+## 역할
+선택적 평가판 모듈에 대한 기본 호스트 보안 저장소 백엔드를 구현합니다.
 
-## Integration Intent
-- The secure store is deliberately kept behind a tiny interface so non-production flows can use an in-memory backend.
-- Trial persistence helpers treat secure-store-backed identity material as authoritative whenever it exists.
-- The install-date helper now uses the secure store only as a legacy migration source; the signed `QSettings` record is the long-term local source of truth for the date itself.
+<a id="behavior"></a>
+
+## 행동
+- macOS는 `Security.framework` 일반 비밀번호 항목을 통해 시스템 키체인을 사용합니다.
+- Linux는 호스트가 비밀 서비스 브리지를 제공할 때 `secret-tool`를 사용합니다.
+- 지원되지 않는 플랫폼은 보안 저장소를 사용할 수 없는 것으로 보고하고 상위 계층이 일반 로컬 설정을 신뢰하는 대신 비밀 지원 확인 또는 마이그레이션을 연기하도록 합니다.
+
+<a id="integration-intent"></a>
+
+## 통합 의도
+- 보안 저장소는 의도적으로 작은 인터페이스 뒤에 유지되므로 비프로덕션 흐름에서는 메모리 내 백엔드를 사용할 수 있습니다.
+- 평가판 지속성 도우미는 보안 저장소가 지원하는 ID 자료가 존재할 때마다 신뢰할 수 있는 자료로 처리합니다.
+- 설치 날짜 도우미는 이제 보안 저장소를 레거시 마이그레이션 소스로만 사용합니다. 서명된 `QSettings` 레코드는 날짜 자체에 대한 장기 로컬 기준 원본입니다.

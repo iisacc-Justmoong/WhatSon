@@ -1,32 +1,35 @@
 # `src/app/models/file/note/header/WhatSonNoteHeaderStore.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This implementation normalizes note-header metadata before it is consumed by the rest of the
-application.
+## 책임
 
-## Folder Binding Normalization
+이 구현은 애플리케이션의 나머지 부분에서 사용되기 전에 메모 헤더 메타데이터를 정규화합니다.
 
-The folder-related setters do more than plain assignment:
+<a id="folder-binding-normalization"></a>
 
-- trim incoming values,
-- normalize UUIDs through `WhatSon::FolderIdentity`,
-- keep folder paths and UUIDs aligned by index,
-- deduplicate equivalent bindings,
-- clear invalid UUIDs instead of storing malformed identifiers.
+## 폴더 바인딩 정규화
 
-`setFolders(...)` remains for legacy callers, but it routes through the shared binding logic so new
-invariants are not bypassed.
+폴더 관련 설정자는 일반 할당 이상의 작업을 수행합니다.
 
-## Why This Matters
+- 들어오는 값을 다듬고,
+- `WhatSon::FolderIdentity`를 통해 UUID를 정규화하고,
+- 폴더 경로와 UUID를 색인별로 정렬하고,
+- 동등한 바인딩을 중복 제거하고,
+- 잘못된 형식의 식별자를 저장하는 대신 잘못된 UUID를 삭제하세요.
 
-The library hierarchy now filters and rewrites notes by folder UUID. If the store allowed path and
-UUID arrays to drift apart, the application could silently reassign a note to the wrong folder after
-a rename or drag-and-drop mutation.
+`setFolders(...)`는 레거시 호출자를 위해 남아 있지만 공유 바인딩 논리를 통해 라우팅되므로 새로운 불변성이 우회되지 않습니다.
 
-## Progress State
+<a id="why-this-matters"></a>
 
-- The store still treats non-negative integers as concrete progress enum values.
-- `-1` is now a valid in-memory sentinel for “no progress selected”, so detail-panel clear actions can round-trip an empty progress field through `.wsnhead` without being forced back to `0`.
-- `setProgressEnums(...)` now preserves the raw enum-label list from `.wsnhead`, so later writes can
-  serialize the same progress taxonomy instead of falling back to the default product labels.
+## 이것이 중요한 이유
+
+이제 라이브러리 계층 구조는 UUID 폴더별로 메모를 필터링하고 다시 작성합니다. 저장소에서 경로와 UUID 배열이 분리되는 것을 허용한 경우 애플리케이션은 이름 바꾸기 또는 끌어서 놓기 변형 후 아무런 알림 없이가 잘못된 폴더에 메모를 다시 할당할 수 있습니다.
+
+<a id="progress-state"></a>
+
+## 진행 상태
+
+- 저장소는 여전히 음수가 아닌 정수를 구체적인 진행 열거형 값으로 처리합니다.
+- `-1`는 이제 “no progress selected”에 대한 유효한 메모리 내 센티널이므로 세부 정보 패널 지우기 작업을 통해 `0`로 다시 돌아가지 않고 `.wsnhead`를 통해 빈 진행 필드를 왕복 변환할 수 있습니다.
+- `setProgressEnums(...)`는 이제 `.wsnhead`의 원시 열거 라벨 목록을 보존하므로, 이후 쓰기 작업이 기본 제품 레이블로 되돌아가는 대신 동일한 진행 분류 체계를 직렬화할 수 있습니다.

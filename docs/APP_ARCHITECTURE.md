@@ -1,13 +1,19 @@
-# App Architecture
+<a id="app-architecture"></a>
 
-WhatSon is a Qt Quick and LVRS application with C++ model/controller ownership and QML view composition.
+# 앱 아키텍처
 
-## Current Editor Boundary
+WhatSon는 C++ 모델/컨트롤러 소유권 및 QML 뷰 구성을 갖춘 Qt Quick 및 LVRS 애플리케이션입니다.
 
-The previous active note document session model was removed. The workspace content surface keeps only image resource viewing and a blank placeholder for note or non-image selections. Active note body parsing, projection, formatting shortcuts, paste mutation, and editor persistence are no longer wired into the contents route.
+<a id="current-editor-boundary"></a>
 
-Image resource selection still routes through the resource list model into `ImageEditor.qml`.
+## 현재 편집자 경계
 
-## QML Rule
+이전 활성 메모 문서 세션 모델이 제거되었습니다. 워크스페이스 콘텐츠 표면은 이미지 리소스 보기와 메모 또는 비이미지 선택을 위한 빈 플레이스홀더만 유지하며, 활성 메모 본문 파싱, 투영, 포맷팅 단축키, 붙여넣기 변형 및 편집기 지속성은 더 이상 콘텐츠 라우트에 연결되지 않습니다.
 
-QML remains view-only. It must not parse note body source, mutate RAW source, own editor persistence, or recreate deleted document-session behavior through wrapper objects.
+이미지 리소스 선택은 여전히 리소스 목록 모델을 통해 `ImageEditor.qml`로 라우팅됩니다.
+
+<a id="qml-rule"></a>
+
+## QML 규칙
+
+QML는 보기 전용으로 유지됩니다. 노트 본문 소스를 구문 분석하거나, RAW 소스를 변경하거나, 편집기 지속성을 소유하거나, 래퍼 개체를 통해 삭제된 문서 세션 동작을 다시 생성해서는 안 됩니다.

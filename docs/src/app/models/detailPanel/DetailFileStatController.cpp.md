@@ -1,22 +1,25 @@
 # `src/app/models/detailPanel/DetailFileStatController.cpp`
 
-## Responsibility
-This implementation translates `WhatSonNoteHeaderStore` into two parallel view surfaces:
-- numeric counters for direct bindings
-- Figma-shaped text lines for the `description`-styled statistics panel
+<a id="responsibility"></a>
 
-## Figma Text Rules
-- `summaryLines` merges persisted header metadata and derived folder/tag totals:
-  - project
-  - total folders
-  - folders list
-  - total tags
-  - tags list
-  - created-at
-  - modified-at
-- The `project` summary line must render `No project` when the persisted header field is blank, matching the clear
-  option used by the detail-panel project selector.
-- `textMetricLines` exposes the textual count rows exactly in the singular labels used by Figma:
+## 책임
+이 구현은 `WhatSonNoteHeaderStore` 를 2 병렬 뷰 표면으로 변환합니다.
+- 직접 바인딩을 위한 숫자 카운터
+- `description` 스타일 통계 패널의 Figma 모양 텍스트 줄
+
+<a id="figma-text-rules"></a>
+
+## Figma 텍스트 규칙
+- `summaryLines`는 지속된 헤더 메타데이터와 파생된 폴더/태그 합계를 병합합니다.
+  - 프로젝트
+  - 총 폴더
+  - 폴더 목록
+  - 총 태그
+  - 태그 목록
+  - 생성 시간
+  - 수정된 시간
+- `project` 요약 라인은 지속된 헤더 필드가 비어 있을 때 `No project`를 렌더링해야 하며, 이는 detail-panel 프로젝트 선택기가 사용하는 clear 옵션과 일치합니다.
+- `textMetricLines`는 Figma에서 사용하는 단일 레이블에 정확히 텍스트 개수 행을 노출합니다.
   - `Letter`
   - `Word`
   - `Sentence`
@@ -24,17 +27,17 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - `Space`
   - `Indent`
   - `Line`
-- `activityLines` exposes:
+- `activityLines`는 다음을 노출합니다.
   - `Open count`
   - `Modified count`
   - `Backlink to`
   - `Backlink by`
   - `Include resources`
-- `Modified count` is backed by version-diff-gated note package commits. A note update must produce a serialized
-  header payload diff that is captured in `.wsnversion` before the counter can advance, so the detail surface does not
-  count timestamp-only or unchanged save turns.
+- `Modified count`는 버전 차이가 있는 노트 패키지 커밋에 의해 뒷받침됩니다. 노트 업데이트는 카운터가 진행되기 전에 `.wsnversion`에 캡처된 직렬화된 헤더 페이로드 차이를 생성해야 하며, 따라서 상세 표면은 타임스탬프만 카운트하거나 변경되지 않은 세이브 턴을 계산하지 않습니다.
 
-## Numeric Grouping Rules
+<a id="numeric-grouping-rules"></a>
+
+## 숫자 그룹화 규칙
 - `overviewItems`
   - `totalFolders`
   - `totalTags`
@@ -53,22 +56,24 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - `backlinkByCount`
   - `includedResourceCount`
 
-## QML Payload Shape
-Each metric row is exported as a compact map with:
+<a id="qml-payload-shape"></a>
+
+## QML 페이로드 형태
+각 측정항목 행은 다음을 사용하여 컴팩트 맵으로 내보내집니다.
 - `key`
 - `label`
 - `value`
 
-The numeric grouped payloads remain available for future reuse even though the current QML surface now follows the
-plain-text Figma layout.
+현재 QML 표면이 이제 일반 텍스트 Figma 레이아웃을 따르더라도 숫자로 그룹화된 페이로드는 향후 재사용을 위해 계속 사용할 수 있습니다.
 
-## Tests
+<a id="tests"></a>
 
-- Folder display now also decodes escaped folder-path segments before rendering fallback summary text, so detail stats
-  do not expose persistence markers such as `\/` when one folder label literally contains `/`.
-- The maintained C++ regression suite locks the shared folder-path escaping semantics that this view depends on.
-- Regression checklist:
-  - a note with an empty `.wsnhead <project>` field must render `Projects: No project` in the file-stat summary
-  - typing in the editor and waiting for a successful changed-body save must increase `modifiedCount`
-  - unchanged reconcile/save turns must not increase `modifiedCount`
-  - open-count writes must force-refresh the displayed `.wsnhead` metadata after the persisted header update succeeds
+## 테스트
+
+- 폴더 디스플레이는 이제 대체 경로 요약 텍스트를 렌더링하기 전에 이스케이프된 폴더 경로 세그먼트를 디코딩하므로, 하나의 폴더 라벨에 문자 그대로 `/`가 포함되어 있을 때 상세 통계는 `\/`와 같은 영속성 마커를 노출하지 않습니다.
+- 유지 관리되는 C++ 회귀 제품군은 이 보기가 의존하는 공유 폴더 경로 이스케이프 의미 체계를 잠급니다.
+- 회귀 체크리스트:
+  - 빈 `.wsnhead <project>` 필드가 있는 메모는 파일 통계 요약에서 `Projects: No project`를 렌더링해야 합니다.
+  - 편집기에 입력하고 성공적인 변경된 본문 저장을 기다리면 `modifiedCount`가 증가해야 합니다.
+  - 변경되지 않은 조정/저장 회전은 `modifiedCount`를 증가해서는 안 됩니다.
+  - 오픈 카운트 쓰기는 지속적인 헤더 업데이트가 성공한 후 표시된 `.wsnhead` 메타데이터를 강제로 새로 고쳐야 합니다.

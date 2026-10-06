@@ -1,50 +1,51 @@
 # `src/app/models/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This parser converts the persisted `Folders.wsfolders` structure into
-`WhatSonFolderDepthEntry` rows. It also performs compatibility upgrades for older folder trees that
-were saved before UUID support existed.
+## 책임
 
-## Accepted UUID Keys
+이 파서는 지속형 `Folders.wsfolders` 구조를 `WhatSonFolderDepthEntry` 행으로 변환합니다. 또한 UUID 지원이 존재하기 전에 저장된 이전 폴더 트리에 대한 호환성 업그레이드도 수행합니다.
 
-The parser accepts several field names when it reads a folder row:
+<a id="accepted-uuid-keys"></a>
+
+## 허용되는 UUID 키
+
+파서는 폴더 행을 읽을 때 여러 필드 이름을 허용합니다.
 
 - `uuid`
 - `UUID`
 - `folderUuid`
 
-This keeps older experiments and partially migrated files readable without a manual data-cleanup
-step.
+이렇게 하면 수동 데이터 정리 단계 없이 이전 실험과 부분적으로 마이그레이션된 파일을 읽을 수 있습니다.
 
-## Upgrade Behavior
+<a id="upgrade-behavior"></a>
 
-- If a folder row already carries a valid 64-character alphanumeric UUID, the parser preserves it.
-- If the row has no UUID, or the UUID is invalid, the parser synthesizes a new one.
-- Whenever that happens, `outUuidMigrationRequired` is set so the caller can persist the upgraded
-  file immediately.
+## 업그레이드 동작
 
-This makes UUID migration explicit instead of leaving the app with session-local random identities.
+- 폴더 행에 이미 유효한 64문자 영숫자 UUID가 포함된 경우 파서는 이를 유지합니다.
+- 행에 UUID가 없거나 UUID가 유효하지 않은 경우 파서는 새 행을 합성합니다.
+- 그럴 때마다 `outUuidMigrationRequired`가 설정되어 호출자가 업그레이드된 파일을 즉시 지속할 수 있습니다.
 
-## Structural Output
+이렇게 하면 세션 로컬 임의 ID를 사용하여 앱을 종료하는 대신 UUID 마이그레이션이 명시적으로 이루어집니다.
 
-Each parsed row returns:
+<a id="structural-output"></a>
 
-- the legacy path id,
-- the folder label,
-- the tree depth,
-- the stable UUID.
+## 구조적 출력
 
-The parser therefore remains path-aware for readability while producing the runtime identity needed
-for rename-safe mutations.
+구문 분석된 각 행은 다음을 반환합니다.
 
-## Escaped Slash Canonicalization
+- 레거시 경로 ID,
+- 폴더 라벨,
+- 나무 깊이,
+- 안정적인 UUID.
 
-- Parsed rows now treat `label` as the authoritative leaf name for one hierarchy level.
-- During normalization, the parser rebuilds `entry.id` from `depth + parentPath + label` using the shared
-  folder-path escaping rules.
-- A literal `/` inside one label is therefore persisted as `\/` inside `entry.id` instead of spawning an accidental
-  child hierarchy level.
-- This also upgrades already-saved folder rows whose JSON still contains raw slash labels such as
-  `"label": "Marketing/Sales"` with `"depth": 0`; they are re-emitted as one root node with canonical id
-  `Marketing\/Sales`.
+따라서 파서는 이름 변경이 안전한 돌연변이에 필요한 런타임 ID를 생성하는 동안 가독성을 위해 경로 인식을 유지합니다.
+
+<a id="escaped-slash-canonicalization"></a>
+
+## 이스케이프된 슬래시 정식화
+
+- 이제 구문 분석된 행은 `label`를 하나의 계층 구조 수준에 대한 신뢰할 수 있는 리프 이름으로 처리합니다.
+- 정규화 기간 동안 파서는 공유 폴더 경로 이스케이프 규칙을 사용하여 `entry.id` 를 `depth + parentPath + label` 에서 다시 구축합니다.
+- 따라서 하나의 레이블 내의 리터럴 `/` 는 `entry.id` 내부의 `\/` 로 영속화되어 우연한 하위 계층 수준을 생성하지 않습니다.
+- 이는 이미 저장된 폴더 행 중 JSON에 여전히 `"label": "Marketing/Sales"`와 `"depth": 0`와 같은 원시 슬래시 레이블이 포함되어 있는 경우, 해당 행은 정규 ID `Marketing\/Sales`를 가진 하나의 루트 노드로 다시 전송됩니다.

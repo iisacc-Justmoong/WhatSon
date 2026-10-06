@@ -1,15 +1,19 @@
 # `src/app/models/clipboard/InAppClipboardStore.h`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Declares the QObject store that owns the current in-app clipboard resource snapshot.
+## 책임
 
-## Contract
+현재 인앱 클립보드 리소스 스냅샷을 소유하는 QObject 저장소를 선언합니다.
 
-- Owns the `ClipboardResourceImport m_resourceImport` member.
-- Provides read-only accessors used by `InAppClipboardManager`.
-- Supports `setResourceImport(...)`, `takeResourceImport()`, and `clear()`.
-- Exposes `resourceChanged()` so the manager can forward state changes to QML.
+<a id="contract"></a>
+
+## 계약
+
+- `ClipboardResourceImport m_resourceImport` 멤버를 소유한다.
+- `InAppClipboardManager`에서 사용하는 읽기 전용 접근자를 제공합니다.
+- `setResourceImport(...)`, `takeResourceImport()` 및 `clear()`를 지원합니다.
+- 관리자가 상태 변경 사항을 QML에 전달할 수 있도록 `resourceChanged()`를 노출합니다.
 
 ## 한국어
 

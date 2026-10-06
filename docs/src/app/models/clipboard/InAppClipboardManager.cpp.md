@@ -1,28 +1,24 @@
 # `src/app/models/clipboard/InAppClipboardManager.cpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-Implements system clipboard capture, URL/file import orchestration, and resource package import for the QML
-`inAppClipboard` context object.
+## 책임
 
-## Notes
+QML `inAppClipboard` 컨텍스트 개체에 대한 시스템 클립보드 캡처, URL/파일 가져오기 오케스트레이션 및 리소스 패키지 가져오기를 구현합니다.
 
-- Reads local file URLs, supported MIME payloads, text/html payloads, images, pixmaps, and image data URLs from
-  `QClipboard`/`QMimeData`.
-- Extracts platform image MIME payloads and image data URLs before generic text/html resource capture, so screenshot
-  paste is imported as an image `.wsresource` instead of being skipped or stored as text/html.
-- Refreshes the resource availability snapshot from the current system clipboard instead of trusting a stale in-app
-  snapshot. If capture fails, the previous in-app resource snapshot is cleared and the editor paste path must fall
-  back to native paste.
-- Accepts app-internal local files, raw bytes, and text as resource payloads.
-- Delegates the single current clipboard resource snapshot to `InAppClipboardStore`.
-- Persists local files or materialized clipboard payloads into `.wsresources/<id>.wsresource`.
-- Materialized clipboard payloads that use the default `clipboard-resource.*` temporary file name are stored with a
-  fresh 32-character alphanumeric resource id and matching asset file name, so repeated screenshot paste does not hit
-  duplicate file-name conflicts. The default temporary file name is also excluded from duplicate preflight because
-  the final package and asset names are generated later from the random id.
-- Updates `Resources.wsresources`, handles duplicate import policy, and returns editor insertion metadata.
-- `ClipboardResourcePackageImport.cpp` must not be reintroduced; the package import pipeline is part of this object.
+<a id="notes"></a>
+
+## 메모
+
+- 로컬 파일 URL, 지원되는 MIME 페이로드, text/html 페이로드, 이미지, 픽맵, 및 이미지 데이터 URL 을 `QClipboard` / `QMimeData` 에서 읽습니다.
+- 플랫폼 이미지 MIME 페이로드와 이미지 데이터 URL을 일반 텍스트/html 리소스 캡처 전에 추출하므로, 스크린샷 붙여넣기가 텍스트/html로 건너뛰거나 저장되는 대신 이미지 `.wsresource`로 가져옵니다.
+- 현재 시스템 클립보드에서 리소스 가용성 스냅샷을 새로 고치며, 오래된 앱 내 스냅샷을 신뢰하지 않습니다. 캡처가 실패하면 이전 인앱 리소스 스냅샷이 삭제되고 편집기 붙여넣기 경로는 네이티브 붙여넣기로 되돌아가야 합니다.
+- 앱 내부 로컬 파일, 원시 바이트 및 텍스트를 리소스 페이로드로 허용합니다.
+- 단일 현재 클립보드 리소스 스냅샷을 `InAppClipboardStore`에 위임합니다.
+- 로컬 파일 또는 구체화된 클립보드 페이로드를 `.wsresources/<id>.wsresource`에 유지합니다.
+- 기본 `clipboard-resource.*` 임시 파일 이름을 사용하는 클립보드 페이로드가 32자리의 알파벳 숫자 리소스 ID 와 일치하는 자산 파일 이름으로 저장되므로, 반복적인 스크린샷 붙여넣기가 중복 파일 이름 충돌을 일으키지 않습니다. 기본 임시 파일 이름은 나중에 무작위 ID 로 최종 패키지 및 자산 이름이 생성되기 때문에 중복 사전 검사 에서 제외됩니다.
+- `Resources.wsresources`를 업데이트하고, 중복 가져오기 정책을 처리하고, 편집기 삽입 메타데이터를 반환합니다.
+- `ClipboardResourcePackageImport.cpp`를 다시 도입해서는 안 됩니다. 패키지 가져오기 파이프라인은 이 개체의 일부입니다.
 
 ## 한국어
 

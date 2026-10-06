@@ -1,11 +1,15 @@
 # `src/app/models/hierarchy/event/EventHierarchyModel.hpp`
 
-## Responsibility
+<a id="responsibility"></a>
 
-This header keeps the typed `EventHierarchyItem` struct used by `EventHierarchyController` internals.
+## 책임
 
-## Shared Model Contract
+이 헤더는 `EventHierarchyController` 내부에서 사용되는 형식화된 `EventHierarchyItem` 구조체를 유지합니다.
 
-- It no longer declares a Qt item model class.
-- The QML/LVRS-facing model is the shared `WhatSonHierarchyModel`.
-- Event names are transformed by the controller into named-string `LV.Hierarchy` node maps.
+<a id="shared-model-contract"></a>
+
+## 공유 모델 계약
+
+- 더 이상 Qt 항목 모델 클래스를 선언하지 않습니다.
+- QML/LVRS 방향 모델은 공유 `WhatSonHierarchyModel`입니다.
+- 이벤트 이름은 컨트롤러에 의해 명명된 문자열 `LV.Hierarchy` 노드 맵으로 변환됩니다.

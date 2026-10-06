@@ -1,34 +1,23 @@
 # `src/app/qml/window/OnboardingContent.qml`
 
-## Role
+<a id="role"></a>
 
-## Dialog Routing
-  derive their package name from the same user-editable source instead of hardcoding `Untitled.wshub`.
-  inline Hub name field. This keeps the native folder browser/sidebar navigation available while still routing the
-  final scaffold through `OnboardingHubController::createHubInDirectoryUrl(...)`.
-- Windows/Linux desktop hub creation still uses a lazily created `FileDialog` in `SaveFile` mode so the final `.wshub`
-  target path is not pre-instantiated before the user confirms creation, but the suggested save target now tracks the
-  current hub name field.
-- The Qt dialog start folder is now injected only when each dialog is opened instead of staying permanently bound to
-  the onboarding default directory during navigation.
-  preserving direct package-pick flows on platforms where the picker can return the package itself.
-- Other desktop platforms continue to keep the folder-based existing-hub picker path, preserving directory-style
-  `.wshub` selection where the package is represented as an ordinary folder.
-  Files document browser with provider-friendly content types and an app-owned `Open` action.
+## 역할
 
-  `.wshub` package directly or open it and choose any file or folder inside it before confirming with `Open`.
-  package path under that folder, and let `OnboardingHubController` invoke the shared `WhatSonHubCreator` callback
-  directly for the full `.wshub` scaffold.
-- Accepted URLs from the native picker are forwarded to
-  `OnboardingHubController::prepareHubSelectionFromUrl(...)`, which keeps the ancestor-remap/security-scoped restore
-  path centralized in the controller instead of duplicating it in QML.
-- Browser busy/error state is folded into the onboarding status label so the action links are disabled while the native
-  browser is open and browser failures surface through the same status text channel as controller failures.
+<a id="dialog-routing"></a>
 
-## Layout Note
-- Desktop now keeps the branding stack, hub-name editor, and action links on separate condensed spacing tracks so the
-  added creation field does not push the title block upward and the action block downward after the inline naming flow
-  was introduced.
-- Inline hub-name input backgrounds and vertical inset now use `LV.Theme.accentTransparent` and `LV.Theme.gapNone`
-  instead of raw transparent/zero literals.
-  `LV.Theme` token compositions instead of direct scaled pixel literals.
+## 대화 라우팅
+  `Untitled.wshub`를 하드코딩하는 대신 사용자가 편집할 수 있는 동일한 소스에서 패키지 이름을 파생시킵니다. 인라인 허브 이름 필드. 이렇게 하면 `OnboardingHubController::createHubInDirectoryUrl(...)`를 통해 최종 스캐폴드를 라우팅하는 동안 네이티브 폴더 브라우저/사이드바 탐색을 계속 사용할 수 있습니다.
+- Windows / Linux 데스크톱 허브 생성은 여전히 `SaveFile` 모드에서 지연된 `FileDialog`를 사용하므로 최종 `.wshub` 대상 경로가 사용자가 생성을 확인하기 전에 사전 설정되지 않지만, 제안된 저장 대상이 이제 현재 허브 이름 필드를 추적합니다.
+- Qt 대화 상자 시작 폴더는 이제 탐색 중에 온보딩 기본 디렉터리에 영구적으로 고정되는 대신 각 대화 상자가 열릴 때만 삽입됩니다. 이는 피커가 직접 패키지를 반환할 수 있는 플랫폼에서 직접 패키지‐픽 흐름을 유지합니다.
+- 다른 데스크톱 플랫폼은 폴더 기반 기존 허브 선택 경로를 계속 유지하면서, 패키지가 일반 폴더로 표시되는 디렉터리 스타일의 `.wshub` 선택을 보존합니다. 파일 문서 브라우저는 제공자 친화적인 콘텐츠 유형과 앱 소유 `Open` 액션을 제공합니다.
+
+  `.wshub` 패키지를 직접 열거나 `Open`로 확인하기 전에 패키지를 열고 그 안에 있는 파일이나 폴더를 선택하세요. 해당 폴더 아래의 패키지 경로를 지정하고 `OnboardingHubController`가 전체 `.wshub` 스캐폴드에 대해 공유 `WhatSonHubCreator` 콜백을 직접 호출하도록 합니다.
+- 네이티브 픽커에서 허용된 URL은 `OnboardingHubController::prepareHubSelectionFromUrl(...)` 로 전달되며, 이는 조상 리맵/보안 범위 복구 경로를 컨트롤러에 중앙 집중시켜 QML에서 복제하지 않게 합니다.
+- 브라우저의 바쁨/오류 상태가 온보딩 상태 라벨에 삽입되어, 네이티브 브라우저가 열려 있는 동안 작업 링크가 비활성화되고 브라우저 오류가 컨트롤러 오류와 동일한 상태 텍스트 채널을 통해 표시됩니다.
+
+<a id="layout-note"></a>
+
+## 레이아웃 노트
+- 데스크톱은 이제 브랜딩 스택, 허브 이름 편집기 및 액션 링크를 별도의 압축된 간격 트랙에 배치하여, 추가된 생성 필드가 인라인 명명 흐름이 도입된 후 제목 블록을 위로, 액션 블록을 아래로 밀어내지 않도록 합니다.
+- 인라인 허브 이름 입력 배경 및 수직 인셋은 이제 원시 투명/0 리터럴 대신 `LV.Theme.accentTransparent` 및 `LV.Theme.gapNone`를 사용합니다. 직접 스케일 픽셀 리터럴 대신 `LV.Theme` 토큰 구성을 사용합니다.

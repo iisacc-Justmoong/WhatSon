@@ -1,40 +1,31 @@
 # `src/app/calendar/CalendarBoardStore.cpp`
 
-## Implementation Notes
-- Constructor now initializes the `ICalendarBoardStore` base.
-- Manual event/task entries still remain mutable through `addEvent(...)`, `addTask(...)`, `removeEntry(...)`, and
-  `setTaskCompleted(...)`.
-- Manual board entries now maintain per-date entry and count indexes, and add/remove/complete paths update those
-  indexes incrementally instead of rebuilding the full manual board cache.
-- The store now keeps a second, read-only projection for library notes. That projection can be refreshed either from
-  the loaded library runtime snapshot or by reindexing the current `.wshub` package from disk.
-- Projected notes are now indexed twice: by `sourceId` for single-note mutation routing and by calendar date for fast
-  day/month/year queries.
-- `upsertProjectedNote(...)` and `removeProjectedNoteBySourceId(...)` now update one projected note mount without
-  forcing a full projection rebuild.
-- Calendar queries now also have a live-provider fallback, so `entriesForDate(...)` / `countsForDate(...)` can still
-  surface projected note items when the explicit projected cache is empty but the library runtime snapshot is already
-  available.
-- Each note now contributes exactly one projected calendar entry.
-- The projected date/time is chosen from whichever of `createdAt` or `lastModifiedAt` is more recent.
-- The projected title now uses the same top-line preview text rule as `NoteListItem.primaryText`, instead of adding
-  `Created note` / `Modified note` lifecycle prefixes to the chip label.
-- Projected note entries stay on the shared `entriesForDate(...)` / `countsForDate(...)` path, so day/week/month/year
+<a id="implementation-notes"></a>
 
-## Tests
-- Automated test files are not currently present in this repository.
-- Regression checklist:
-  - a startup-loaded library runtime snapshot containing a note whose `lastModifiedAt` is `2026-04-08-...` must
-    produce a projected entry for `entriesForDate("2026-04-08")` without requiring a second disk reindex
-  - if the projected cache is empty but the live library note provider returns notes for `2026-04-08`, month/day/week
-    calendar queries must still receive those projected note items
-  - adding, removing, or completing one manual calendar entry must update only that date bucket and must not require a
-    full manual-board scan
-  - a note whose `lastModifiedAt` is `2026-04-08-...` must appear in `entriesForDate("2026-04-08")`
-  - a single library note save/create/delete must be representable through `upsertProjectedNote(...)` /
-    `removeProjectedNoteBySourceId(...)` without forcing a full projected snapshot replacement
-  - manual event/task entries must remain queryable after note projection reloads
-  - deleting or completing a manual entry must not mutate read-only projected note entries
-  - a note with both `createdAt` and `lastModifiedAt` must contribute only one projected entry, using the more recent
-    timestamp
-  - the projected entry title for a note with body preview text must match the note-list top-line preview headline
+## 구현 노트
+- 생성자는 이제 `ICalendarBoardStore` 베이스를 초기화합니다.
+- 수동 이벤트/작업 항목은 여전히 `addEvent(...)`, `addTask(...)`, `removeEntry(...)` 및 `setTaskCompleted(...)`를 통해 변동이 가능합니다.
+- 수동 보드 항목은 이제 날짜별 항목 및 카운트 인덱스를 유지하고, 추가/제거/완성 경로를 통해 전체 수동 보드 캐시를 재구성하는 대신 해당 인덱스를 점진적으로 업데이트합니다.
+- 스토어는 이제 도서관 메모를 위한 두 번째 읽기 전용 프로젝션을 보관하고 있습니다. 그 투영은 로드된 라이브러리 런타임 스냅샷에서 새로 고칠 수 있거나 디스크에서 현재 `.wshub` 패키지를 재인덱싱하여 새로 고칠 수 있습니다.
+- 투사된 음표는 이제 두 번 색인됩니다: 단일 음표 변이 라우팅의 경우 `sourceId`로, 빠른 일/월/연도 쿼리의 경우 캘린더 날짜로 색인됩니다.
+- `upsertProjectedNote(...)` 및 `removeProjectedNoteBySourceId(...)`는 이제 전체 프로젝션 재구성을 강제하지 않고 하나의 투영 노트 마운트를 업데이트합니다.
+- 이제 캘린더 쿼리에도 라이브 제공자 대체 경로 가 있으므로 명시적 프로젝트 캐시가 비어있지만 라이브러리 런타임 스냅샷이 이미 사용 가능한 경우에도 `entriesForDate(...)` / `countsForDate(...)` 는 여전히 프로젝트된 노트 항목을 표시할 수 있습니다.
+- 이제 각 메모는 정확히 하나의 예상 캘린더 항목을 제공합니다.
+- 예상 날짜/시간은 `createdAt` 또는 `lastModifiedAt` 중 최신 날짜/시간으로 선택됩니다.
+- 예상된 타이틀은 이제 `NoteListItem.primaryText`와 동일한 최상위 미리보기 텍스트 규칙을 사용하며, 칩 라벨에 `Created note` / `Modified note` 라이프사이클 접두사를 추가하지 않습니다.
+- 예상 메모 항목은 공유 `entriesForDate(...)` / `countsForDate(...)` 경로에 유지되므로 일/주/월/년
+
+<a id="tests"></a>
+
+## 테스트
+- 현재 이 저장소에는 자동화된 테스트 파일이 없습니다.
+- 회귀 체크리스트:
+  - `lastModifiedAt` 가 `2026-04-08-...` 인 노트를 포함하는 시작 로딩 라이브러리 런타임 스냅샷은 두 번째 디스크 재인덱싱 없이 `entriesForDate("2026-04-08")` 에 대한 프로젝트된 항목을 생성해야 합니다.
+  - 예상 캐시가 비어 있지만 실시간 라이브러리 노트 제공자가 `2026-04-08`에 대한 메모를 반환하는 경우, 월/일/주 캘린더 쿼리는 여전히 해당 예상 노트 항목을 받아야 합니다.
+  - 하나의 수동 캘린더 항목을 추가하거나 삭제하거나 완료하려면 해당 날짜 버킷만 업데이트해야 하며, 전체 수동 보드 스캔이 필요하지 않아야 합니다.
+  - `lastModifiedAt`가 `2026-04-08-...`인 메모는 `entriesForDate("2026-04-08")`에 나타나야 합니다.
+  - 단일 라이브러리 노트 저장/생성/삭제는 `upsertProjectedNote(...)` / `removeProjectedNoteBySourceId(...)`를 통해 전체 프로젝션 스냅샷 교체를 강제하지 않고 표현될 수 있어야 합니다.
+  - 수동 이벤트/작업 항목은 노트 프로젝션을 다시 로드한 후에도 쿼리 가능한 상태로 유지되어야 합니다.
+  - 수동 입력을 삭제하거나 완료해도 읽기 전용 예상 메모 항목이 변경되어서는 안 됩니다.
+  - `createdAt`와 `lastModifiedAt`가 모두 포함된 메모는 보다 최신 타임스탬프를 사용하여 하나의 예상 항목만 기여해야 합니다.
+  - 본문 미리보기 텍스트가 있는 메모의 예상 항목 제목은 메모 목록 상단 미리보기 헤드라인과 일치해야 합니다.

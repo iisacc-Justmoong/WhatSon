@@ -1,13 +1,19 @@
 # `src/app/models/file/sync/WhatSonHubSyncScheduler.cpp`
 
-## Role
-Implements the hub sync scheduling policy.
+<a id="role"></a>
 
-## Behavior
-- Uses a default periodic interval of 5000 ms.
-- Uses a default debounce interval of 350 ms.
-- Periodic ticks request the same debounced sync check as watcher hints.
-- A non-positive debounce interval schedules the check on the next event-loop turn.
+## 역할
+허브 동기화 예약 정책을 구현합니다.
 
-## Boundary
-- The scheduler never inspects the hub and never invokes runtime reload callbacks.
+<a id="behavior"></a>
+
+## 행동
+- 5000 ms의 기본 주기 간격을 사용합니다.
+- 350 ms의 기본 디바운스 간격을 사용합니다.
+- 주기적 틱은 감시자 힌트와 동일한 디바운싱된 동기화 확인을 요청합니다.
+- 양수가 아닌 디바운스 간격은 다음 이벤트 루프 회전에 대한 검사를 예약합니다.
+
+<a id="boundary"></a>
+
+## 경계
+- 스케줄러는 허브를 검사하지 않으며 런타임 다시 로드 콜백을 호출하지 않습니다.
