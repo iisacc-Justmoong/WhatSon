@@ -5,7 +5,7 @@ project(WhatSon VERSION 0.1.0 LANGUAGES CXX)
 
 include(CTest)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -303,3 +303,8 @@ product_plain_executables("${CMAKE_SOURCE_DIR}" WhatSon)
 cmake_language(DEFER CALL product_single_app WhatSon "")
 
 product_deploy_app(WhatSon "src/app/qml")
+
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/whatson_qmltyperegistrations.cpp"
+        PROPERTIES COMPILE_OPTIONS "-fno-lto")
+endif()

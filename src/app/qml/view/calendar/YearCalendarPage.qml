@@ -28,6 +28,9 @@ Rectangle {
     readonly property var weekdayLabels: calendarController && calendarController.weekdayLabels ? calendarController.weekdayLabels : []
     property var yearCalendarController: null
 
+    signal overlayCloseRequested()
+    Keys.onEscapePressed: overlayCloseRequested()
+
     signal viewHookRequested(string reason)
     signal monthCalendarOpenRequested(int year, int month, string selectedDateIso)
 

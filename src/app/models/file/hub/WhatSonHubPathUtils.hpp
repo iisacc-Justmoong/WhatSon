@@ -15,6 +15,10 @@ namespace WhatSon::HubPath
             return false;
         }
 
+        const bool drivePath = trimmed.size() >= 3 && trimmed[0].isLetter()
+            && trimmed[1] == ':' && (trimmed[2] == '/' || trimmed[2] == '\\');
+        if (drivePath || QDir::isAbsolutePath(trimmed) || trimmed.startsWith(QStringLiteral("\\\\")))
+            return false;
         const QUrl url(trimmed);
         return url.isValid() && !url.scheme().isEmpty() && !url.isLocalFile();
     }

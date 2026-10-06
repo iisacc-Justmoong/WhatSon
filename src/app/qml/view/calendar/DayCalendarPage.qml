@@ -12,6 +12,9 @@ Rectangle {
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     property var dayCalendarController: null
 
+    signal overlayCloseRequested()
+    Keys.onEscapePressed: overlayCloseRequested()
+
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 

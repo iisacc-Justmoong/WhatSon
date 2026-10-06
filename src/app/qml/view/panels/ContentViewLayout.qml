@@ -223,7 +223,7 @@ Item {
                 yearCalendarController: contentViewLayout.yearCalendarController
                 visible: contentViewLayout.yearCalendarOverlayVisible
 
-                onMonthOpenRequested: function(year, month, selectedDateIso) {
+                onMonthCalendarOpenRequested: function(year, month, selectedDateIso) {
                     contentViewLayout.openMonthCalendarFromYear(year, month, selectedDateIso);
                 }
                 onOverlayCloseRequested: contentViewLayout.yearCalendarOverlayCloseRequested()

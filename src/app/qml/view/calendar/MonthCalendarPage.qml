@@ -22,6 +22,9 @@ Rectangle {
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
     readonly property int weekdayHeaderHeight: LV.Theme.controlHeightMd + LV.Theme.gap3
 
+    signal overlayCloseRequested()
+    Keys.onEscapePressed: overlayCloseRequested()
+
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 

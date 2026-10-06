@@ -65,11 +65,9 @@ set(WHATSON_CPP_REGRESSION_TEST_SOURCES
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsDepthFlattener.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsHierarchyCreator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsHierarchyParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsHierarchyStore.cpp"
-        "${CMAKE_SOURCE_DIR}/src/app/models/hierarchy/tags/WhatSonTagsJsonParser.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/models/file/hub/WhatSonHubMountValidator.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/runtime/startup/WhatSonStartupHubResolver.cpp"
         "${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp"
@@ -160,3 +158,8 @@ add_custom_target(whatson_cpp_regression
         USES_TERMINAL
         COMMENT "Run WhatSon C++ regression tests"
 )
+
+add_executable(whatson_calendar_runtime_test calendar_runtime_test.cpp)
+target_link_libraries(whatson_calendar_runtime_test PRIVATE Qt6::Test Qt6::Quick LVRS::LVRS)
+target_compile_definitions(whatson_calendar_runtime_test PRIVATE WHATSON_SOURCE_DIRECTORY="${CMAKE_SOURCE_DIR}" WHATSON_TEST_LVRS_IMPORT_PATH="${LVRS_QML_IMPORT_PATH}")
+add_test(NAME WhatSon.CalendarRuntime COMMAND whatson_calendar_runtime_test)

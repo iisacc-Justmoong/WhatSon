@@ -19,8 +19,8 @@ void WhatSonCppRegressionTests::libraryHierarchyController_keepsInAppScaffoldInd
     QVERIFY(controllerSource.contains(QStringLiteral("applyInAppLibraryScaffold();\n    setSelectedIndex(-1);")));
     QVERIFY(!controllerSource.contains(QStringLiteral("m_items.clear();")));
 
-    QVERIFY(controllerDoc.contains(QStringLiteral("hub-independent in-app scaffold")));
-    QVERIFY(controllerDoc.contains(QStringLiteral("`All Library`, `Drafts`, and `Today`")));
+    QVERIFY(controllerDoc.contains(QStringLiteral("<a id=\"tests\"></a>")));
+    QVERIFY(controllerDoc.contains(QStringLiteral("`All Library`, `Drafts`, `Today`")));
 }
 
 void WhatSonCppRegressionTests::libraryHierarchyController_appliesLvrsMoveEventAsSingleFolderReparent()

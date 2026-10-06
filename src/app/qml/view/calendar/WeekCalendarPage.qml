@@ -23,6 +23,9 @@ Rectangle {
     property bool suppressViewportSync: false
     property var weekCalendarController: null
 
+    signal overlayCloseRequested()
+    Keys.onEscapePressed: overlayCloseRequested()
+
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 

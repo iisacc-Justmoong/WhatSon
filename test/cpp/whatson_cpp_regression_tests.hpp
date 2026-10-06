@@ -1034,6 +1034,7 @@ class WhatSonCppRegressionTests final : public QObject
     Q_OBJECT
 
 private slots:
+    void tagsHierarchy_roundTripAndHubIsolation();
     void appLaunchSupport_requiresMountedHubForStartupWorkspace();
     void qmlLaunchSupport_routesRootLoadingThroughLvrsAppEntry();
     void qmlLaunchSupport_destroysRootObjectsBeforeGuiApplicationTeardown();
