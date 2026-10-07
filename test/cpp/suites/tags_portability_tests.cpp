@@ -41,4 +41,9 @@ void WhatSonCppRegressionTests::tagsHierarchy_roundTripAndHubIsolation()
     QVERIFY(!copy.contains(QStringLiteral("hub-a.wshub")));
     QVERIFY(copy.contains(QStringLiteral("hub-b.wshub")));
     QCOMPARE(state.entries(QStringLiteral("hub-a.wshub")).size(), expected.size());
+    // A failed reload must not replace the committed hub snapshot or another hub.
+    QVERIFY(!state.loadFromWshub(QStringLiteral("https://example.invalid/hub.wshub"), &error));
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(state.entries(QStringLiteral("hub-a.wshub")).size(), expected.size());
+    QVERIFY(state.contains(QStringLiteral("hub-b.wshub")));
 }
