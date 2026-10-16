@@ -1,16 +1,13 @@
+#include <iiFileProviderDevice.h>
 #pragma once
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/file/hub/WhatSonHubPathUtils.hpp"
-
-#include <QDir>
 #include <QDirIterator>
-#include <QFile>
 #include <QFileInfo>
 #include <QImage>
 #include <QImageReader>
 #include <QRegularExpression>
-#include <QSaveFile>
 #include <QSet>
 #include <QString>
 #include <QStringList>
@@ -416,12 +413,12 @@ namespace WhatSon::Resources
 
     inline QString metadataFilePathForPackage(const QString& packageDirectoryPath)
     {
-        return QDir(packageDirectoryPath).filePath(metadataFileName());
+        return iiFileProvider::Directory(packageDirectoryPath).filePath(metadataFileName());
     }
 
     inline QString annotationFilePathForPackage(const QString& packageDirectoryPath)
     {
-        return QDir(packageDirectoryPath).filePath(annotationFileName());
+        return iiFileProvider::Directory(packageDirectoryPath).filePath(annotationFileName());
     }
 
     inline QSize annotationBitmapSizeForAssetFile(const QString& assetFilePath)
@@ -497,7 +494,7 @@ namespace WhatSon::Resources
             return false;
         }
 
-        if (!QDir().mkpath(normalizedPackageDirectoryPath))
+        if (!iiFileProvider::Directory().mkpath(normalizedPackageDirectoryPath))
         {
             if (errorMessage != nullptr)
             {
@@ -517,7 +514,7 @@ namespace WhatSon::Resources
             return false;
         }
 
-        QSaveFile annotationFile(annotationFilePathForPackage(normalizedPackageDirectoryPath));
+        iiFileProvider::SaveFile annotationFile(annotationFilePathForPackage(normalizedPackageDirectoryPath));
         if (!annotationFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
         {
             if (errorMessage != nullptr)
@@ -549,11 +546,11 @@ namespace WhatSon::Resources
 
     inline QStringList directChildAssetCandidates(const QString& packageDirectoryPath)
     {
-        const QDir packageDir(packageDirectoryPath);
+        const iiFileProvider::Directory packageDir(packageDirectoryPath);
         QStringList assetPaths;
         const QFileInfoList children = packageDir.entryInfoList(
-            QDir::Files | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Files | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
         for (const QFileInfo& child : children)
         {
             if (child.fileName().compare(metadataFileName(), Qt::CaseInsensitive) == 0)
@@ -753,8 +750,8 @@ namespace WhatSon::Resources
             return {};
         }
 
-        const QDir packageDir(normalizedPackagePath);
-        QDir resourcesDir = packageDir;
+        const iiFileProvider::Directory packageDir(normalizedPackagePath);
+        iiFileProvider::Directory resourcesDir = packageDir;
         if (!resourcesDir.cdUp())
         {
             return packageInfo.fileName();
@@ -790,7 +787,7 @@ namespace WhatSon::Resources
         }
 
         const QString metadataPath = metadataFilePathForPackage(normalizedPackagePath);
-        QFile metadataFile(metadataPath);
+        iiFileProvider::FileDevice metadataFile(metadataPath);
         if (!metadataFile.open(QIODevice::ReadOnly | QIODevice::Text))
         {
             if (errorMessage != nullptr)
@@ -823,7 +820,7 @@ namespace WhatSon::Resources
         {
             return {};
         }
-        return QDir(packageDirectoryPath).absoluteFilePath(assetPath);
+        return iiFileProvider::Directory(packageDirectoryPath).absoluteFilePath(assetPath);
     }
 
     inline QStringList resourceReferenceBasePathsForContext(
@@ -864,7 +861,7 @@ namespace WhatSon::Resources
             candidates.push_back(contentsDirectory);
         }
 
-        QDir hubDir(contentsDirectory);
+        iiFileProvider::Directory hubDir(contentsDirectory);
         if (hubDir.cdUp())
         {
             candidates.push_back(normalizePath(hubDir.absolutePath()));
@@ -914,7 +911,7 @@ namespace WhatSon::Resources
 
         for (const QString& basePath : std::as_const(candidateBasePaths))
         {
-            const QString resolvedPath = normalizePackageCandidate(QDir(basePath).absoluteFilePath(referencePath));
+            const QString resolvedPath = normalizePackageCandidate(iiFileProvider::Directory(basePath).absoluteFilePath(referencePath));
             if (!resolvedPath.isEmpty())
             {
                 return resolvedPath;
@@ -979,7 +976,7 @@ namespace WhatSon::Resources
 
         for (const QString& basePath : std::as_const(candidateBasePaths))
         {
-            const QString candidatePath = QDir(basePath).absoluteFilePath(referencePath);
+            const QString candidatePath = iiFileProvider::Directory(basePath).absoluteFilePath(referencePath);
             const QString resolved = resolveCandidate(candidatePath);
             if (!resolved.isEmpty())
             {
@@ -1005,7 +1002,7 @@ namespace WhatSon::Resources
             return directories;
         }
 
-        const QDir hubDir(normalizedWshubPath);
+        const iiFileProvider::Directory hubDir(normalizedWshubPath);
         const QString fixedPath = hubDir.filePath(QStringLiteral(".wsresources"));
         if (QFileInfo(fixedPath).isDir())
         {
@@ -1014,8 +1011,8 @@ namespace WhatSon::Resources
 
         const QStringList wildcardDirectories = hubDir.entryList(
             QStringList{QStringLiteral("*.wsresources")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Dirs | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
         for (const QString& directoryName : wildcardDirectories)
         {
             directories.push_back(normalizePath(hubDir.filePath(directoryName)));
@@ -1035,11 +1032,11 @@ namespace WhatSon::Resources
             return values;
         }
 
-        const QDir resourcesDir(normalizedResourcesRootPath);
+        const iiFileProvider::Directory resourcesDir(normalizedResourcesRootPath);
         const QFileInfoList packageDirectories = resourcesDir.entryInfoList(
             QStringList{QStringLiteral("*.wsresource")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Dirs | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
         values.reserve(packageDirectories.size());
 
         for (const QFileInfo& packageInfo : packageDirectories)

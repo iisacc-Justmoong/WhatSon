@@ -1,3 +1,4 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/clipboard/InAppClipboardManager.h"
 
 #include "app/models/clipboard/FiletypeCapture.h"
@@ -9,8 +10,6 @@
 
 #include <QByteArray>
 #include <QClipboard>
-#include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QHash>
@@ -21,10 +20,8 @@
 #include <QPixmap>
 #include <QRandomGenerator>
 #include <QRegularExpression>
-#include <QSaveFile>
 #include <QSequentialIterable>
 #include <QSet>
-#include <QTemporaryDir>
 #include <QUrl>
 #include <QUuid>
 #include <QVariant>
@@ -543,7 +540,7 @@ namespace
             return {};
         }
 
-        const QDir hubDir(normalizedHubPath);
+        const iiFileProvider::Directory hubDir(normalizedHubPath);
         const QString fixedPath = hubDir.filePath(fixedDirectoryName);
         if (QFileInfo(fixedPath).isDir())
         {
@@ -552,8 +549,8 @@ namespace
 
         const QStringList candidates = hubDir.entryList(
             QStringList{wildcardPattern},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Dirs | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
         if (!candidates.isEmpty())
         {
             return WhatSon::Resources::normalizePath(hubDir.filePath(candidates.constFirst()));
@@ -652,10 +649,10 @@ namespace
 
     QSet<QString> existingResourceIdsForPackages(const QString& resourcesDirectoryPath)
     {
-        const QFileInfoList packageDirectories = QDir(resourcesDirectoryPath).entryInfoList(
+        const QFileInfoList packageDirectories = iiFileProvider::Directory(resourcesDirectoryPath).entryInfoList(
             QStringList{QStringLiteral("*.wsresource")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Dirs | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
 
         QSet<QString> existingIds;
         existingIds.reserve(packageDirectories.size());
@@ -767,10 +764,10 @@ namespace
         }
 
         outEntries->clear();
-        const QFileInfoList packageDirectories = QDir(resourcesDirectoryPath).entryInfoList(
+        const QFileInfoList packageDirectories = iiFileProvider::Directory(resourcesDirectoryPath).entryInfoList(
             QStringList{QStringLiteral("*.wsresource")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
+            iiFileProvider::Directory::Dirs | iiFileProvider::Directory::NoDotAndDotDot,
+            iiFileProvider::Directory::Name);
 
         for (const QFileInfo& packageDirectoryInfo : packageDirectories)
         {
@@ -887,7 +884,7 @@ namespace
     bool writeUtf8FileAtomically(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
         const QString directoryPath = QFileInfo(filePath).absolutePath();
-        if (!directoryPath.isEmpty() && !QDir().mkpath(directoryPath))
+        if (!directoryPath.isEmpty() && !iiFileProvider::Directory().mkpath(directoryPath))
         {
             if (errorMessage != nullptr)
             {
@@ -896,7 +893,7 @@ namespace
             return false;
         }
 
-        QSaveFile file(filePath);
+        iiFileProvider::SaveFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
         {
             if (errorMessage != nullptr)
@@ -950,7 +947,7 @@ namespace
         }
 
         outText->clear();
-        QFile file(filePath);
+        iiFileProvider::FileDevice file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
             if (errorMessage != nullptr)
@@ -1072,7 +1069,7 @@ namespace
             return true;
         }
 
-        QFile file(resourcesFilePath);
+        iiFileProvider::FileDevice file(resourcesFilePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
             if (errorMessage != nullptr)
@@ -1137,17 +1134,17 @@ namespace
         const QString resourceId = defaultClipboardResourceFile
             ? uniqueRandomClipboardResourceId(resourcesDirectoryPath)
             : uniqueResourceIdForFile(resourcesDirectoryPath, sourceFilePath);
-        const QString packageDirectoryPath = QDir(resourcesDirectoryPath).filePath(
+        const QString packageDirectoryPath = iiFileProvider::Directory(resourcesDirectoryPath).filePath(
             resourceId + WhatSon::Resources::packageDirectorySuffix());
         const QString destinationAssetFileName = defaultClipboardResourceFile
             ? clipboardAssetFileNameForResourceId(sourceFileInfo, resourceId)
             : sourceFileInfo.fileName();
-        const QString destinationAssetPath = QDir(packageDirectoryPath).filePath(destinationAssetFileName);
+        const QString destinationAssetPath = iiFileProvider::Directory(packageDirectoryPath).filePath(destinationAssetFileName);
         const QString resourcePath = WhatSon::Resources::normalizePath(
             QStringLiteral("%1/%2")
                 .arg(QFileInfo(resourcesDirectoryPath).fileName(), QFileInfo(packageDirectoryPath).fileName()));
 
-        if (!QDir().mkpath(packageDirectoryPath))
+        if (!iiFileProvider::Directory().mkpath(packageDirectoryPath))
         {
             if (errorMessage != nullptr)
             {
@@ -1157,9 +1154,9 @@ namespace
             return false;
         }
 
-        if (!QFile::copy(sourceFilePath, destinationAssetPath))
+        if (!iiFileProvider::FileDevice::copy(sourceFilePath, destinationAssetPath))
         {
-            QDir(packageDirectoryPath).removeRecursively();
+            iiFileProvider::Directory(packageDirectoryPath).removeRecursively();
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("Failed to copy dropped file into resource package: %1").arg(
@@ -1180,7 +1177,7 @@ namespace
             sourceFilePath,
             &writeError))
         {
-            QDir(packageDirectoryPath).removeRecursively();
+            iiFileProvider::Directory(packageDirectoryPath).removeRecursively();
             if (errorMessage != nullptr)
             {
                 *errorMessage = writeError;
@@ -1189,11 +1186,11 @@ namespace
         }
 
         if (!writeUtf8FileAtomically(
-            QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+            iiFileProvider::Directory(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
             WhatSon::Resources::createResourcePackageMetadataXml(metadata),
             &writeError))
         {
-            QDir(packageDirectoryPath).removeRecursively();
+            iiFileProvider::Directory(packageDirectoryPath).removeRecursively();
             if (errorMessage != nullptr)
             {
                 *errorMessage = writeError;
@@ -1255,9 +1252,9 @@ namespace
             return false;
         }
 
-        const QString backupDirectoryPath = QDir(resourcesDirectoryPath).filePath(
+        const QString backupDirectoryPath = iiFileProvider::Directory(resourcesDirectoryPath).filePath(
             QStringLiteral(".import-backup-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
-        if (!QDir().rename(packageDirectoryPath, backupDirectoryPath))
+        if (!iiFileProvider::Directory().rename(packageDirectoryPath, backupDirectoryPath))
         {
             if (errorMessage != nullptr)
             {
@@ -1271,9 +1268,9 @@ namespace
         {
             if (QFileInfo(packageDirectoryPath).exists())
             {
-                QDir(packageDirectoryPath).removeRecursively();
+                iiFileProvider::Directory(packageDirectoryPath).removeRecursively();
             }
-            QDir().rename(backupDirectoryPath, packageDirectoryPath);
+            iiFileProvider::Directory().rename(backupDirectoryPath, packageDirectoryPath);
             if (errorMessage != nullptr)
             {
                 *errorMessage = failureText;
@@ -1281,15 +1278,15 @@ namespace
             return false;
         };
 
-        if (!QDir().mkpath(packageDirectoryPath))
+        if (!iiFileProvider::Directory().mkpath(packageDirectoryPath))
         {
             return restoreBackupAndFail(
                 QStringLiteral("Failed to recreate overwritten resource package directory: %1").arg(
                     packageDirectoryPath));
         }
 
-        const QString destinationAssetPath = QDir(packageDirectoryPath).filePath(sourceFileInfo.fileName());
-        if (!QFile::copy(sourceFilePath, destinationAssetPath))
+        const QString destinationAssetPath = iiFileProvider::Directory(packageDirectoryPath).filePath(sourceFileInfo.fileName());
+        if (!iiFileProvider::FileDevice::copy(sourceFilePath, destinationAssetPath))
         {
             return restoreBackupAndFail(
                 QStringLiteral("Failed to copy dropped file into overwritten resource package: %1").arg(
@@ -1316,7 +1313,7 @@ namespace
         }
 
         if (!writeUtf8FileAtomically(
-            QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+            iiFileProvider::Directory(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
             WhatSon::Resources::createResourcePackageMetadataXml(metadata),
             &writeError))
         {
@@ -1369,7 +1366,7 @@ namespace
 
     bool materializeClipboardResourceImport(
         const WhatSon::Clipboard::ClipboardResourceImport& resourceImport,
-        QTemporaryDir* temporaryDirectory,
+        iiFileProvider::TemporaryDirectory* temporaryDirectory,
         QString* outLocalFilePath,
         QString* errorMessage = nullptr)
     {
@@ -1419,10 +1416,10 @@ namespace
         const QString fileName = resourceImport.fileName.trimmed().isEmpty()
             ? WhatSon::Clipboard::FiletypeCapture::defaultResourceFileName(resourceImport.format)
             : QFileInfo(resourceImport.fileName).fileName();
-        const QString localFilePath = QDir(temporaryDirectory->path()).filePath(fileName);
+        const QString localFilePath = iiFileProvider::Directory(temporaryDirectory->path()).filePath(fileName);
         if (!resourceImport.payloadBytes.isEmpty())
         {
-            QFile file(localFilePath);
+            iiFileProvider::FileDevice file(localFilePath);
             if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)
                 || file.write(resourceImport.payloadBytes) != resourceImport.payloadBytes.size())
             {
@@ -1526,7 +1523,7 @@ QVariantMap InAppClipboardManager::inspectImportConflictForUrls(const QVariantLi
         return emptyImportConflictMap();
     }
 
-    const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesFilePath = iiFileProvider::Directory(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
     if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
     {
         return emptyImportConflictMap();
@@ -1583,7 +1580,7 @@ bool InAppClipboardManager::importClipboardResourceInternal(
         return false;
     }
 
-    QTemporaryDir temporaryDirectory;
+    iiFileProvider::TemporaryDirectory temporaryDirectory;
     QString localFilePath;
     QString materializeError;
     if (!materializeClipboardResourceImport(
@@ -1658,7 +1655,7 @@ bool InAppClipboardManager::importUrlsInternal(
         return false;
     }
 
-    const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+    const QString resourcesFilePath = iiFileProvider::Directory(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
     const bool hadResourcesFile = QFileInfo(resourcesFilePath).isFile();
     QString previousResourcesFileText;
     if (hadResourcesFile && !readUtf8FileText(resourcesFilePath, &previousResourcesFileText, &resolveError))
@@ -1735,7 +1732,7 @@ bool InAppClipboardManager::importUrlsInternal(
                 continue;
             }
 
-            if (!QDir(createdPackagePath).removeRecursively())
+            if (!iiFileProvider::Directory(createdPackagePath).removeRecursively())
             {
                 rollbackErrors.push_back(
                     QStringLiteral("Failed to remove imported resource package: %1").arg(createdPackagePath));
@@ -1746,7 +1743,7 @@ bool InAppClipboardManager::importUrlsInternal(
         {
             if (!backup.packageDirectoryPath.trimmed().isEmpty()
                 && QFileInfo(backup.packageDirectoryPath).exists()
-                && !QDir(backup.packageDirectoryPath).removeRecursively())
+                && !iiFileProvider::Directory(backup.packageDirectoryPath).removeRecursively())
             {
                 rollbackErrors.push_back(
                     QStringLiteral("Failed to clear overwritten resource package: %1").arg(
@@ -1755,7 +1752,7 @@ bool InAppClipboardManager::importUrlsInternal(
 
             if (!backup.backupDirectoryPath.trimmed().isEmpty()
                 && QFileInfo(backup.backupDirectoryPath).exists()
-                && !QDir().rename(backup.backupDirectoryPath, backup.packageDirectoryPath))
+                && !iiFileProvider::Directory().rename(backup.backupDirectoryPath, backup.packageDirectoryPath))
             {
                 rollbackErrors.push_back(
                     QStringLiteral("Failed to restore overwritten resource package: %1").arg(
@@ -1773,7 +1770,7 @@ bool InAppClipboardManager::importUrlsInternal(
                     rollbackErrors.push_back(restoreError);
                 }
             }
-            else if (QFileInfo(resourcesFilePath).exists() && !QFile::remove(resourcesFilePath))
+            else if (QFileInfo(resourcesFilePath).exists() && !iiFileProvider::FileDevice::remove(resourcesFilePath))
             {
                 rollbackErrors.push_back(
                     QStringLiteral("Failed to remove restored Resources.wsresources file: %1").arg(resourcesFilePath));
@@ -1866,7 +1863,7 @@ bool InAppClipboardManager::importUrlsInternal(
             {
                 if (!backupDirectoryPath.trimmed().isEmpty() && QFileInfo(backupDirectoryPath).exists())
                 {
-                    QDir(backupDirectoryPath).removeRecursively();
+                    iiFileProvider::Directory(backupDirectoryPath).removeRecursively();
                 }
             }
             else
@@ -1952,7 +1949,7 @@ bool InAppClipboardManager::importUrlsInternal(
     {
         if (!backup.backupDirectoryPath.trimmed().isEmpty() && QFileInfo(backup.backupDirectoryPath).exists())
         {
-            QDir(backup.backupDirectoryPath).removeRecursively();
+            iiFileProvider::Directory(backup.backupDirectoryPath).removeRecursively();
         }
     }
     emit importCompleted(importedResourcePaths.size());

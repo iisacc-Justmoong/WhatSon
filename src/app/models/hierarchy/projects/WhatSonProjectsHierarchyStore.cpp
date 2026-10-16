@@ -1,9 +1,8 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/projects/WhatSonProjectsHierarchyCreator.hpp"
-
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QSet>
@@ -234,7 +233,7 @@ bool WhatSonProjectsHierarchyStore::writeToFile(const QString& filePath, QString
     const QString text = creator.createText(*this);
 
     const QFileInfo info(normalizedPath);
-    if (!QDir().mkpath(info.absolutePath()))
+    if (!iiFileProvider::Directory().mkpath(info.absolutePath()))
     {
         if (errorMessage != nullptr)
         {

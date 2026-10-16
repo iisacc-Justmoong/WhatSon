@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.24)
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/single-app/Defaults.cmake")
 
 project(WhatSon VERSION 0.1.0 LANGUAGES CXX)
+find_package(iiFileProvider 0.6 CONFIG REQUIRED HINTS "$ENV{IIFILEPROVIDER_PREFIX}" "$ENV{HOME}/.local/SDK/iiFileProvider")
+link_libraries(iiFileProvider::iiFileProvider)
+
 
 include(CTest)
 

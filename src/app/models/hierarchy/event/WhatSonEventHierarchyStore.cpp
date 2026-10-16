@@ -1,9 +1,8 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/event/WhatSonEventHierarchyCreator.hpp"
-
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <utility>
@@ -90,7 +89,7 @@ bool WhatSonEventHierarchyStore::writeToFile(const QString& filePath, QString* e
     const QString text = creator.createText(*this);
 
     const QFileInfo info(normalizedPath);
-    if (!QDir().mkpath(info.absolutePath()))
+    if (!iiFileProvider::Directory().mkpath(info.absolutePath()))
     {
         if (errorMessage != nullptr)
         {

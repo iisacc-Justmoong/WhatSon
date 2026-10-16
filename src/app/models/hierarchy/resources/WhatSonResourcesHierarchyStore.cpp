@@ -1,10 +1,9 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "app/models/hierarchy/resources/WhatSonResourcesHierarchyCreator.hpp"
-
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <utility>
@@ -91,7 +90,7 @@ bool WhatSonResourcesHierarchyStore::writeToFile(const QString& filePath, QStrin
     const QString text = creator.createText(*this);
 
     const QFileInfo info(normalizedPath);
-    if (!QDir().mkpath(info.absolutePath()))
+    if (!iiFileProvider::Directory().mkpath(info.absolutePath()))
     {
         if (errorMessage != nullptr)
         {

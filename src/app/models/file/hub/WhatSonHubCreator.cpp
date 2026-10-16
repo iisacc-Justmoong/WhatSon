@@ -1,3 +1,4 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/file/hub/WhatSonHubCreator.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
@@ -5,14 +6,11 @@
 
 #include <QDateTime>
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
-#include <QSaveFile>
-
 #include <utility>
 
 WhatSonHubCreator::WhatSonHubCreator(
@@ -224,7 +222,7 @@ bool WhatSonHubCreator::writeTextFile(
     const QByteArray bytes = content.toUtf8();
     if (WhatSon::HubPath::isNonLocalUrl(absolutePath))
     {
-        QFile file(absolutePath);
+        iiFileProvider::FileDevice file(absolutePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
         {
             if (errorMessage != nullptr)
@@ -247,7 +245,7 @@ bool WhatSonHubCreator::writeTextFile(
     }
     else
     {
-        QSaveFile file(absolutePath);
+        iiFileProvider::SaveFile file(absolutePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
         {
             if (errorMessage != nullptr)

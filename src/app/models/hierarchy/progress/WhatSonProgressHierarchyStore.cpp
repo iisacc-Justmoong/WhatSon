@@ -1,9 +1,8 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/progress/WhatSonProgressHierarchyCreator.hpp"
-
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <algorithm>
@@ -123,7 +122,7 @@ bool WhatSonProgressHierarchyStore::writeToFile(const QString& filePath, QString
     const QString text = creator.createText(*this);
 
     const QFileInfo info(normalizedPath);
-    if (!QDir().mkpath(info.absolutePath()))
+    if (!iiFileProvider::Directory().mkpath(info.absolutePath()))
     {
         if (errorMessage != nullptr)
         {

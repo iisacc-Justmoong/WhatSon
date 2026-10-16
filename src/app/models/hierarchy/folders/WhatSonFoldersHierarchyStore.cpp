@@ -1,11 +1,10 @@
+#include <iiFileProviderDevice.h>
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 
 #include "app/models/hierarchy/WhatSonFolderIdentity.hpp"
 #include "app/models/file/WhatSonDebugTrace.hpp"
 #include "app/models/hierarchy/folders/WhatSonFoldersHierarchyCreator.hpp"
 #include "app/models/file/note/folder/WhatSonNoteFolderSemantics.hpp"
-
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 
@@ -116,7 +115,7 @@ bool WhatSonFoldersHierarchyStore::writeToFile(const QString& filePath, QString*
     const QString text = creator.createText(*this);
 
     const QFileInfo info(normalizedPath);
-    if (!QDir().mkpath(info.absolutePath()))
+    if (!iiFileProvider::Directory().mkpath(info.absolutePath()))
     {
         if (errorMessage != nullptr)
         {

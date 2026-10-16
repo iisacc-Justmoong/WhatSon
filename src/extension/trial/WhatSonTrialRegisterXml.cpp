@@ -1,10 +1,8 @@
+#include <iiFileProviderDevice.h>
 #include "extension/trial/WhatSonTrialRegisterXml.hpp"
 
 #include <QCryptographicHash>
-#include <QDir>
-#include <QFile>
 #include <QFileInfo>
-#include <QSaveFile>
 #include <QUrl>
 #include <QXmlStreamReader>
 
@@ -110,7 +108,7 @@ QString WhatSonTrialRegisterXml::registerFilePath(const QString& hubRootPath) co
         return {};
     }
 
-    return QDir(normalizedHubRootPath).filePath(QStringLiteral(".whatson/%1").arg(registerFileName()));
+    return iiFileProvider::Directory(normalizedHubRootPath).filePath(QStringLiteral(".whatson/%1").arg(registerFileName()));
 }
 
 bool WhatSonTrialRegisterXml::exists(const QString& hubRootPath) const
@@ -131,7 +129,7 @@ WhatSonTrialRegisterLoadResult WhatSonTrialRegisterXml::loadRegister(const QStri
         };
     }
 
-    QFile file(path);
+    iiFileProvider::FileDevice file(path);
     if (!file.exists())
     {
         return {};
@@ -276,7 +274,7 @@ bool WhatSonTrialRegisterXml::writeRegister(
     }
 
     const QString directoryPath = QFileInfo(path).absolutePath();
-    if (!directoryPath.isEmpty() && !QDir().mkpath(directoryPath))
+    if (!directoryPath.isEmpty() && !iiFileProvider::Directory().mkpath(directoryPath))
     {
         if (errorMessage != nullptr)
         {
@@ -286,7 +284,7 @@ bool WhatSonTrialRegisterXml::writeRegister(
     }
 
     const QByteArray bytes = createRegisterXmlText(normalizedIdentity, signature).toUtf8();
-    QSaveFile file(path);
+    iiFileProvider::SaveFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
     {
         if (errorMessage != nullptr)
@@ -330,7 +328,7 @@ QString WhatSonTrialRegisterXml::normalizeHubRootPath(const QString& hubRootPath
     {
         if (hubRootUrl.isLocalFile())
         {
-            return QDir::cleanPath(hubRootUrl.toLocalFile());
+            return iiFileProvider::Directory::cleanPath(hubRootUrl.toLocalFile());
         }
 
         if (!hubRootUrl.scheme().isEmpty())
@@ -339,5 +337,5 @@ QString WhatSonTrialRegisterXml::normalizeHubRootPath(const QString& hubRootPath
         }
     }
 
-    return QDir::cleanPath(trimmedHubRootPath);
+    return iiFileProvider::Directory::cleanPath(trimmedHubRootPath);
 }
