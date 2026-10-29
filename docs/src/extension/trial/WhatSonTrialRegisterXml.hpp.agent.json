@@ -1,0 +1,246 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:c4fa8095dac56051b1820fb68fd528f9c3bb32a176d04ad98fe56e21aca23791",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialRegisterXml.hpp.md",
+    "sha256": "f4256def78b538d8245761f67278790f62e2ed90f6df058857d888d3ccba7c46",
+    "bytes": 1409,
+    "line_count": 24,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialRegisterXml.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialRegisterXml.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialRegisterXml.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "로컬 허브 등록 파일에 대한 평가판 전용 XML 리더 및 라이터를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- `registerFileName()`: 고정 시험 레지스터 파일 이름 `trial_register.xml`를 반환합니다.\n- `signatureAlgorithmName()`: 현재 XML 무결성 알고리즘 레이블을 반환합니다.\n- `registerFilePath(...)`: 로컬 `.wshub` 루트 아래에서 `.whatson/trial_register.xml`를 확인합니다.\n- `exists(...)`: 로컬 허브에 이미 평가판 레지스터 파일이 있는지 여부를 보고합니다.\n- `loadRegister(...)`: XML 파일에서 정규화된 `deviceUUID` 및 `key` 쌍을 읽고 무결성 서명이 확인되었는지 보고합니다.\n- `writeRegister(...)`: 정규화된 클라이언트 ID를 HMAC 서명과 함께 XML 파일에 저장합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`registerFileName()`: 고정 시험 레지스터 파일 이름 `trial_register.xml`를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`signatureAlgorithmName()`: 현재 XML 무결성 알고리즘 레이블을 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`registerFilePath(...)`: 로컬 `.wshub` 루트 아래에서 `.whatson/trial_register.xml`를 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`exists(...)`: 로컬 허브에 이미 평가판 레지스터 파일이 있는지 여부를 보고합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadRegister(...)`: XML 파일에서 정규화된 `deviceUUID` 및 `key` 쌍을 읽고 무결성 서명이 확인되었는지 보고합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`writeRegister(...)`: 정규화된 클라이언트 ID를 HMAC 서명과 함께 XML 파일에 저장합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"scope\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 범위\n",
+      "level": 2,
+      "title": "범위"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 24,
+      "raw": "- 도우미는 로컬 허브 경로만 허용합니다.\n- 제품 등록 파일 이름은 이 평가판 전용 모듈의 범위를 벗어납니다.\n- 평가판 생성 코드는 `WhatSonTrialClientIdentityStore::ensureIdentity()`의 지속적인 ID를 `writeRegister(...)`에 제공할 것으로 예상됩니다.\n- XML 서명은 로컬 등록 무결성 비밀과 비교하여 확인되므로 서명 확인은 현재 평가판 클라이언트 저장소에 따라 다릅니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "도우미는 로컬 허브 경로만 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "제품 등록 파일 이름은 이 평가판 전용 모듈의 범위를 벗어납니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "평가판 생성 코드는 `WhatSonTrialClientIdentityStore::ensureIdentity()`의 지속적인 ID를 `writeRegister(...)`에 제공할 것으로 예상됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "XML 서명은 로컬 등록 무결성 비밀과 비교하여 확인되므로 서명 확인은 현재 평가판 클라이언트 저장소에 따라 다릅니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialRegisterXml.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialregisterxmlhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "범위",
+      "anchor": "범위",
+      "start_line": 20
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

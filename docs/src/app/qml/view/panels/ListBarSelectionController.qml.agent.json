@@ -1,0 +1,340 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:c1a27de7bdc367d70ccc161620ae5c1af06772d17ed8cb2590ebfb8aee42de30",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/ListBarSelectionController.qml.md",
+    "sha256": "d5bf36308582221f7b01f0506794ff6d4016eed7a0ade6422d83f9d619ca090f",
+    "bytes": 1913,
+    "line_count": 35,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/ListBarSelectionController.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/ListBarSelectionController.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ListBarSelectionController.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`ListBarSelectionController.qml`는 `ListBarLayout.qml`에 대한 노트 목록 다중 선택 상태 및 수정자 해석을 소유합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "paragraph",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "컨트롤러는 선택 앵커 기록을 유지하고 수정자 페이로드를 정규화하며 포인터 활성화가 현재 노트 선택을 대체, 확장 또는 토글해야 하는지 결정합니다.\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 18,
+      "raw": "- `selectionAnchorIndex`: 클릭 시퀀스 전반에 걸쳐 범위 선택 앵커가 유지됩니다.\n- `selectedIndices`: 호스트 보기에서 사용되는 정규화된 시각적 다중 선택 세트입니다.\n- `requestNoteSelection(index, noteId, modifiers)`: 포인터 활성화를 위한 기본 선택 진입점입니다.\n- `syncSelectionFromCommittedState()`: 모델 인증 현재 인덱스에서 선택 항목을 다시 수화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`selectionAnchorIndex`: 클릭 시퀀스 전반에 걸쳐 범위 선택 앵커가 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selectedIndices`: 호스트 보기에서 사용되는 정규화된 시각적 다중 선택 세트입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestNoteSelection(index, noteId, modifiers)`: 포인터 활성화를 위한 기본 선택 진입점입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`syncSelectionFromCommittedState()`: 모델 인증 현재 인덱스에서 선택 항목을 다시 수화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"selection-rules\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 선택 규칙\n",
+      "level": 2,
+      "title": "선택 규칙"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 28,
+      "raw": "- `normalizedKeyboardModifiers(...)`는 이벤트 수정자를 `Qt.application.keyboardModifiers`와 병합합니다.\n- `Shift`는 `selectionAnchorIndex`에서 선택을 확장합니다.\n- `Cmd/Ctrl`는 모델 인증 현재 메모를 잃지 않고 멤버십을 전환합니다.\n- `Cmd/Ctrl + Shift`는 현재 선택 항목을 요청된 앵커 범위와 통합합니다.\n- 토글된 로우가 커밋된 현재 노트인 경우, 컨트롤러는 최신 생존 행을 대체 경로 기본 선택으로 활성화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`normalizedKeyboardModifiers(...)`는 이벤트 수정자를 `Qt.application.keyboardModifiers`와 병합합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Shift`는 `selectionAnchorIndex`에서 선택을 확장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Cmd/Ctrl`는 모델 인증 현재 메모를 잃지 않고 멤버십을 전환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Cmd/Ctrl + Shift`는 현재 선택 항목을 요청된 앵커 범위와 통합합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "토글된 로우가 커밋된 현재 노트인 경우, 컨트롤러는 최신 생존 행을 대체 경로 기본 선택으로 활성화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "<a id=\"host-dependency-direction\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 호스트 종속성 방향\n",
+      "level": 2,
+      "title": "호스트 종속성 방향"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 35,
+      "raw": "- 컨트롤러는 `view.normalizeCurrentIndex(...)`, `view.currentIndexFromModel()` 및 `view.activateNoteIndex(...)`에 의존합니다.\n- 호스트 뷰는 래퍼 함수를 유지하여 기존 델리게이트가 동일한 API 서피스를 호출할 수 있도록 하며, 선택 로직은 별도의 형제 객체에 존재합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "컨트롤러는 `view.normalizeCurrentIndex(...)`, `view.currentIndexFromModel()` 및 `view.activateNoteIndex(...)`에 의존합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호스트 뷰는 래퍼 함수를 유지하여 기존 델리게이트가 동일한 API 서피스를 호출할 수 있도록 하며, 선택 로직은 별도의 형제 객체에 존재합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ListBarSelectionController.qml`",
+      "anchor": "srcappqmlviewpanelslistbarselectioncontrollerqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 13
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "선택 규칙",
+      "anchor": "선택-규칙",
+      "start_line": 22
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호스트 종속성 방향",
+      "anchor": "호스트-종속성-방향",
+      "start_line": 32
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

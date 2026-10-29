@@ -1,0 +1,600 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:0abf242770518528aba2f5c6bac23eac3f5211b58fa82fa4cee29acb4d178e1a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailFileStatController.cpp.md",
+    "sha256": "42e36629bf6cb0ef78a3deb705280e7b58b1d8ea40f2cbfb29965a9c04c297a6",
+    "bytes": 3307,
+    "line_count": 79,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailFileStatController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailFileStatController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailFileStatController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 구현은 `WhatSonNoteHeaderStore` 를 2 병렬 뷰 표면으로 변환합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 8,
+      "raw": "- 직접 바인딩을 위한 숫자 카운터\n- `description` 스타일 통계 패널의 Figma 모양 텍스트 줄\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "직접 바인딩을 위한 숫자 카운터",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`description` 스타일 통계 패널의 Figma 모양 텍스트 줄",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "<a id=\"figma-text-rules\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## Figma 텍스트 규칙\n",
+      "level": 2,
+      "title": "Figma 텍스트 규칙"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 36,
+      "raw": "- `summaryLines`는 지속된 헤더 메타데이터와 파생된 폴더/태그 합계를 병합합니다.\n  - 프로젝트\n  - 총 폴더\n  - 폴더 목록\n  - 총 태그\n  - 태그 목록\n  - 생성 시간\n  - 수정된 시간\n- `project` 요약 라인은 지속된 헤더 필드가 비어 있을 때 `No project`를 렌더링해야 하며, 이는 detail-panel 프로젝트 선택기가 사용하는 clear 옵션과 일치합니다.\n- `textMetricLines`는 Figma에서 사용하는 단일 레이블에 정확히 텍스트 개수 행을 노출합니다.\n  - `Letter`\n  - `Word`\n  - `Sentence`\n  - `Paragraph`\n  - `Space`\n  - `Indent`\n  - `Line`\n- `activityLines`는 다음을 노출합니다.\n  - `Open count`\n  - `Modified count`\n  - `Backlink to`\n  - `Backlink by`\n  - `Include resources`\n- `Modified count`는 버전 차이가 있는 노트 패키지 커밋에 의해 뒷받침됩니다. 노트 업데이트는 카운터가 진행되기 전에 `.wsnversion`에 캡처된 직렬화된 헤더 페이로드 차이를 생성해야 하며, 따라서 상세 표면은 타임스탬프만 카운트하거나 변경되지 않은 세이브 턴을 계산하지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`summaryLines`는 지속된 헤더 메타데이터와 파생된 폴더/태그 합계를 병합합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "총 폴더",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "폴더 목록",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "총 태그",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "태그 목록",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "생성 시간",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "수정된 시간",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`project` 요약 라인은 지속된 헤더 필드가 비어 있을 때 `No project`를 렌더링해야 하며, 이는 detail-panel 프로젝트 선택기가 사용하는 clear 옵션과 일치합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`textMetricLines`는 Figma에서 사용하는 단일 레이블에 정확히 텍스트 개수 행을 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Letter`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Word`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Sentence`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Paragraph`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Space`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Indent`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Line`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activityLines`는 다음을 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Open count`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Modified count`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Backlink to`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Backlink by`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Include resources`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Modified count`는 버전 차이가 있는 노트 패키지 커밋에 의해 뒷받침됩니다. 노트 업데이트는 카운터가 진행되기 전에 `.wsnversion`에 캡처된 직렬화된 헤더 페이로드 차이를 생성해야 하며, 따라서 상세 표면은 타임스탬프만 카운트하거나 변경되지 않은 세이브 턴을 계산하지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "html",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "<a id=\"numeric-grouping-rules\"></a>\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "heading",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "## 숫자 그룹화 규칙\n",
+      "level": 2,
+      "title": "숫자 그룹화 규칙"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 41,
+      "end_line": 57,
+      "raw": "- `overviewItems`\n  - `totalFolders`\n  - `totalTags`\n  - `openCount`\n  - `modifiedCount`\n- `textItems`\n  - `letterCount`\n  - `wordCount`\n  - `sentenceCount`\n  - `paragraphCount`\n  - `spaceCount`\n  - `indentCount`\n  - `lineCount`\n- `relationItems`\n  - `backlinkToCount`\n  - `backlinkByCount`\n  - `includedResourceCount`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`overviewItems`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`totalFolders`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`totalTags`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`openCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`modifiedCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`textItems`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`letterCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`wordCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`sentenceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`paragraphCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`spaceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`indentCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lineCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`relationItems`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkToCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkByCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`includedResourceCount`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "<a id=\"qml-payload-shape\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "## QML 페이로드 형태\n",
+      "level": 2,
+      "title": "QML 페이로드 형태"
+    },
+    {
+      "id": "b000022",
+      "kind": "paragraph",
+      "start_line": 62,
+      "end_line": 62,
+      "raw": "각 측정항목 행은 다음을 사용하여 컴팩트 맵으로 내보내집니다.\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 63,
+      "end_line": 65,
+      "raw": "- `key`\n- `label`\n- `value`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`key`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`label`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`value`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 66,
+      "end_line": 66,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 67,
+      "end_line": 67,
+      "raw": "현재 QML 표면이 이제 일반 텍스트 Figma 레이아웃을 따르더라도 숫자로 그룹화된 페이로드는 향후 재사용을 위해 계속 사용할 수 있습니다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 68,
+      "end_line": 68,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 69,
+      "end_line": 69,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 70,
+      "end_line": 70,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 71,
+      "end_line": 71,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 72,
+      "end_line": 72,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 73,
+      "end_line": 79,
+      "raw": "- 폴더 디스플레이는 이제 대체 경로 요약 텍스트를 렌더링하기 전에 이스케이프된 폴더 경로 세그먼트를 디코딩하므로, 하나의 폴더 라벨에 문자 그대로 `/`가 포함되어 있을 때 상세 통계는 `\\/`와 같은 영속성 마커를 노출하지 않습니다.\n- 유지 관리되는 C++ 회귀 제품군은 이 보기가 의존하는 공유 폴더 경로 이스케이프 의미 체계를 잠급니다.\n- 회귀 체크리스트:\n  - 빈 `.wsnhead <project>` 필드가 있는 메모는 파일 통계 요약에서 `Projects: No project`를 렌더링해야 합니다.\n  - 편집기에 입력하고 성공적인 변경된 본문 저장을 기다리면 `modifiedCount`가 증가해야 합니다.\n  - 변경되지 않은 조정/저장 회전은 `modifiedCount`를 증가해서는 안 됩니다.\n  - 오픈 카운트 쓰기는 지속적인 헤더 업데이트가 성공한 후 표시된 `.wsnhead` 메타데이터를 강제로 새로 고쳐야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "폴더 디스플레이는 이제 대체 경로 요약 텍스트를 렌더링하기 전에 이스케이프된 폴더 경로 세그먼트를 디코딩하므로, 하나의 폴더 라벨에 문자 그대로 `/`가 포함되어 있을 때 상세 통계는 `\\/`와 같은 영속성 마커를 노출하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유지 관리되는 C++ 회귀 제품군은 이 보기가 의존하는 공유 폴더 경로 이스케이프 의미 체계를 잠급니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "빈 `.wsnhead <project>` 필드가 있는 메모는 파일 통계 요약에서 `Projects: No project`를 렌더링해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "편집기에 입력하고 성공적인 변경된 본문 저장을 기다리면 `modifiedCount`가 증가해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "변경되지 않은 조정/저장 회전은 `modifiedCount`를 증가해서는 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오픈 카운트 쓰기는 지속적인 헤더 업데이트가 성공한 후 표시된 `.wsnhead` 메타데이터를 강제로 새로 고쳐야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailFileStatController.cpp`",
+      "anchor": "srcappmodelsdetailpaneldetailfilestatcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Figma 텍스트 규칙",
+      "anchor": "figma-텍스트-규칙",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000016",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "숫자 그룹화 규칙",
+      "anchor": "숫자-그룹화-규칙",
+      "start_line": 40
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "QML 페이로드 형태",
+      "anchor": "qml-페이로드-형태",
+      "start_line": 61
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 71
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000031",
+        "line": 78,
+        "text": "- 변경되지 않은 조정/저장 회전은 `modifiedCount`를 증가해서는 안 됩니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

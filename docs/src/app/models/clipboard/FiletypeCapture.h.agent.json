@@ -1,0 +1,243 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e856c39a3dfc5add68017ed0846b36909cbb476cf49e5d83fc9fb678d5a622c6",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/FiletypeCapture.h.md",
+    "sha256": "6a50d171b699f74d758843f1b98dd03fa71f9d8a843b653f6ee9ddb57f318cd3",
+    "bytes": 1134,
+    "line_count": 24,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/FiletypeCapture.h`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/FiletypeCapture.h`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/FiletypeCapture.h`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "페이로드가 `ClipboardResourceImport`가 되기 전에 사용되는 클립보드 파일 형식 캡처 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 17,
+      "raw": "- MIME 유형 문자열을 정규화합니다.\n- MIME 유형을 리소스 파일 형식에 매핑합니다.\n- 플랫폼 이미지 페이로드 MIME 이름(예: `application/x-qt-image` 및 `com.apple.tiff`)을 감지하고, 페이로드가 클립보드 리소스로 구체화되기 전에 이를 처리합니다.\n- 파일 이름을 먼저 확인하고 MIME 유형을 두 번째로 확인하여 파일 형식을 확인합니다.\n- 메모리 내 클립보드 페이로드에 대한 기본 파일 이름을 생성합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "MIME 유형 문자열을 정규화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "MIME 유형을 리소스 파일 형식에 매핑합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "플랫폼 이미지 페이로드 MIME 이름(예: `application/x-qt-image` 및 `com.apple.tiff`)을 감지하고, 페이로드가 클립보드 리소스로 구체화되기 전에 이를 처리합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 이름을 먼저 확인하고 MIME 유형을 두 번째로 확인하여 파일 형식을 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "메모리 내 클립보드 페이로드에 대한 기본 파일 이름을 생성합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 24,
+      "raw": "- clipboard payload의 파일 형식 확인 책임은 이 객체에 있다.\n- macOS/Qt 스크린샷 clipboard가 쓰는 `application/x-qt-image`, `com.apple.tiff` 같은 platform image MIME 판별도\n  이 객체의 책임이다.\n- `ClipboardResourceImport`는 이 객체가 산출한 format을 받아 resource descriptor를 구성한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "clipboard payload의 파일 형식 확인 책임은 이 객체에 있다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "macOS/Qt 스크린샷 clipboard가 쓰는 `application/x-qt-image`, `com.apple.tiff` 같은 platform image MIME 판별도",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ClipboardResourceImport`는 이 객체가 산출한 format을 받아 resource descriptor를 구성한다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/FiletypeCapture.h`",
+      "anchor": "srcappmodelsclipboardfiletypecaptureh",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

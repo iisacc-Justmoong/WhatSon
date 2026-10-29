@@ -1,0 +1,262 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5229d5a710f900385d3fe6d3172eb30eeabc115d2453536b926aa529e46a65ac",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/progress/ProgressHierarchyController.hpp.md",
+    "sha256": "0c900fac56d4234dfa312161655fef7f68dd4b36fbb613ffbb598c51b2b9697e",
+    "bytes": 1856,
+    "line_count": 26,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/progress/ProgressHierarchyController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 진행 사이드바와 해당 노트 목록을 지원하는 진행 계층 컨트롤러를 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 17,
+      "raw": "- `itemModel`와 `noteListModel`를 모두 게시하므로, 진행 영역은 다른 도메인에서 사용하는 동일한 계층 인터페이스를 통해 사이드바 행과 필터링된 노트를 노출합니다.\n- 직접 상태 주입을 위해 `setProgressState(int, QStringList)`를 노출하고, 시작/런타임를 리프레시를 위해 `applyRuntimeSnapshot(...)`를 노출합니다.\n- 상세 패널 현재 노트 흐름을 위한 노트 디렉토리 조회를 노출합니다. 본문 지속성과 편집자 통계 새로고침 도구는 진행 컨트롤러 표면의 일부가 아닙니다.\n- `requestControllerHook()`를 파일 기반 리프레시 훅으로 노출하여 `Progress.wsprogress`를 재파싱하고 메모 메타데이터를 재인덱싱합니다.\n- 모든 상속된 기능 메서드를 명시적인 `override`와 함께 선언하고, 헤더를 `IHierarchyRenameCapability`, `IHierarchyCrudCapability` 및 `IHierarchyExpansionCapability`와 정렬하여 컴파일러 오버라이드 경고 없이 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`itemModel`와 `noteListModel`를 모두 게시하므로, 진행 영역은 다른 도메인에서 사용하는 동일한 계층 인터페이스를 통해 사이드바 행과 필터링된 노트를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "직접 상태 주입을 위해 `setProgressState(int, QStringList)`를 노출하고, 시작/런타임를 리프레시를 위해 `applyRuntimeSnapshot(...)`를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "상세 패널 현재 노트 흐름을 위한 노트 디렉토리 조회를 노출합니다. 본문 지속성과 편집자 통계 새로고침 도구는 진행 컨트롤러 표면의 일부가 아닙니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestControllerHook()`를 파일 기반 리프레시 훅으로 노출하여 `Progress.wsprogress`를 재파싱하고 메모 메타데이터를 재인덱싱합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 상속된 기능 메서드를 명시적인 `override`와 함께 선언하고, 헤더를 `IHierarchyRenameCapability`, `IHierarchyCrudCapability` 및 `IHierarchyExpansionCapability`와 정렬하여 컴파일러 오버라이드 경고 없이 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"stored-state\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 저장된 상태\n",
+      "level": 2,
+      "title": "저장된 상태"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 26,
+      "raw": "- `m_progressStates`는 런타임 동기화를 위해 지속형 `Progress.wsprogress` 페이로드를 저장합니다.\n- `m_items`는 사이드바에서 사용되는 고정된 10행 LVRS 방향 분류입니다.\n- `m_allNotes`는 필터링된 노트 목록을 작성하는 데 사용되는 색인화된 허브 노트를 저장합니다.\n- `m_progressFilePath` 는 런타임 새로고침 동안 소유하는 `.wshub` 를 해결하는 데 필요한 소스 파일 경로를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`m_progressStates`는 런타임 동기화를 위해 지속형 `Progress.wsprogress` 페이로드를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`m_items`는 사이드바에서 사용되는 고정된 10행 LVRS 방향 분류입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`m_allNotes`는 필터링된 노트 목록을 작성하는 데 사용되는 색인화된 허브 노트를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`m_progressFilePath` 는 런타임 새로고침 동안 소유하는 `.wshub` 를 해결하는 데 필요한 소스 파일 경로를 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.hpp`",
+      "anchor": "srcappmodelshierarchyprogressprogresshierarchycontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "저장된 상태",
+      "anchor": "저장된-상태",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:32070ecfe2f7fdc00c6b163261e8e024029deb7f2c7a0607acbcd92777be0dc5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/ResourceDetailPanelController.cpp.md",
+    "sha256": "fde87b53c2638c3d12e67bfd4d9ced0892c553dc0c306641842aa9768e758849",
+    "bytes": 625,
+    "line_count": 9,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/ResourceDetailPanelController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/ResourceDetailPanelController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/ResourceDetailPanelController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"runtime-behavior\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 런타임 동작\n",
+      "level": 2,
+      "title": "런타임 동작"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 9,
+      "raw": "- `setCurrentResourceListModel(QObject*)`를 통해서만 리소스 목록 모델을 허용합니다.\n- 주입된 개체가 `ResourcesListModel`인 경우에만 컨텍스트를 연결된 것으로 처리합니다.\n- `ResourcesListModel::currentResourceEntry()`를 내보낸 `currentResourceEntry` 스냅샷으로 미러링합니다.\n- 활성 리소스 행이 변경될 때 항목 변경 사항을 다시 내보내고, 리소스 목록 모델이 제거되거나 파괴될 때 스냅샷을 초기화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setCurrentResourceListModel(QObject*)`를 통해서만 리소스 목록 모델을 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주입된 개체가 `ResourcesListModel`인 경우에만 컨텍스트를 연결된 것으로 처리합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ResourcesListModel::currentResourceEntry()`를 내보낸 `currentResourceEntry` 스냅샷으로 미러링합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 리소스 행이 변경될 때 항목 변경 사항을 다시 내보내고, 리소스 목록 모델이 제거되거나 파괴될 때 스냅샷을 초기화합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/ResourceDetailPanelController.cpp`",
+      "anchor": "srcappmodelsdetailpanelresourcedetailpanelcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 동작",
+      "anchor": "런타임-동작",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

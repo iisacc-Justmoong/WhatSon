@@ -1,0 +1,596 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:f5dc315c7e0c1d1d4ff319410e4cf543f7f2734447ddda280e335e0b1196e11d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp.md",
+    "sha256": "0eef81647b0d3f87c08ed803d8dd203ec235fbe9c4fc07ffd903296546616c16",
+    "bytes": 3613,
+    "line_count": 77,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 단수형 `.wsresource` 패키지 규약의 기준 구현이다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 12,
+      "raw": "- 패키지 디렉터리 suffix: `.wsresource`\n- 메타데이터 파일 이름: `resource.xml`\n- 기본 주석 캔버스 파일 이름: `annotation.png`\n- 메타데이터 루트: `<wsresource ...><annotation path=\"annotation.png\"/><asset path=\"...\"/></wsresource>`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "패키지 디렉터리 suffix: `.wsresource`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "메타데이터 파일 이름: `resource.xml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 주석 캔버스 파일 이름: `annotation.png`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "메타데이터 루트: `<wsresource ...><annotation path=\"annotation.png\"/><asset path=\"...\"/></wsresource>`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"metadata-contract\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 메타데이터 계약\n",
+      "level": 2,
+      "title": "메타데이터 계약"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "`ResourcePackageMetadata`는 다음 값을 정규화한다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 26,
+      "raw": "- `resourceId`\n- `resourcePath`\n- `assetPath`\n- `annotationPath`\n- `bucket`\n- `type`\n- `format`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resourceId`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourcePath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assetPath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`annotationPath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bucket`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`type`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`format`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 28,
+      "end_line": 30,
+      "raw": "메타데이터의 `assetPath`는 패키지 내부의 실제 원본 에셋 파일을 가리키며, `resourcePath`는 허브 기준 경로\n예를 들어 `Hub.wsresources/logo.wsresource` 형식을 유지한다.\n`annotationPath`는 패키지 내부 주석 오버레이 bitmap 경로를 가리키며, 기본값은 항상 `annotation.png`다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "<a id=\"runtime-helpers\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## 런타임 도우미\n",
+      "level": 2,
+      "title": "런타임 도우미"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "이 헤더는 네 종류의 런타임 보조 함수를 제공한다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 38,
+      "end_line": 42,
+      "raw": "- `buildMetadataForAssetFile(...)`\n- `createEmptyAnnotationBitmap(...)` / `createEmptyAnnotationBitmapPngBytes(...)` / `writeResourcePackageAnnotationBitmap(...)`\n- `createResourcePackageMetadataXml(...)` / `parseResourcePackageMetadataXml(...)`\n- `loadResourcePackageMetadata(...)`\n- `resolveAssetLocationFromReference(...)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`buildMetadataForAssetFile(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createEmptyAnnotationBitmap(...)` / `createEmptyAnnotationBitmapPngBytes(...)` / `writeResourcePackageAnnotationBitmap(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createResourcePackageMetadataXml(...)` / `parseResourcePackageMetadataXml(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadResourcePackageMetadata(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resolveAssetLocationFromReference(...)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "`buildMetadataForAssetFile(...)`는 파일 경로 하나만 받아:\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 47,
+      "raw": "- `format`은 실제 파일명의 마지막 확장자(terminal suffix)만 사용하고\n- `type`과 `bucket`은 그 suffix를 case-insensitive로 해석해 자동 할당한다\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`format`은 실제 파일명의 마지막 확장자(terminal suffix)만 사용하고",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`type`과 `bucket`은 그 suffix를 case-insensitive로 해석해 자동 할당한다",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "paragraph",
+      "start_line": 49,
+      "end_line": 53,
+      "raw": "예를 들어 `VisualAsset.PNG`는 `format=\".PNG\"`, `type=\"image\"`, `bucket=\"Image\"`가 된다.\n같은 규칙으로 `Simulator Screenshot ... 11.25.16.png`처럼 파일명 중간에 날짜/버전 점이 더 있더라도\n`format`은 `.25.16.png`가 아니라 `.png`로 정규화된다. 패키지 로더도 기존 `resource.xml`의 오염된\n복합 포맷 값을 같은 terminal suffix 규칙으로 다시 해석한다.\n같은 호출은 새 패키지 주석 캔버스 경로도 `annotation.png`로 기본 설정한다.\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "paragraph",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "`createEmptyAnnotationBitmap(...)` 계열은 package-local 주석 캔버스를 생성한다.\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "list",
+      "start_line": 57,
+      "end_line": 59,
+      "raw": "- 원본 asset이 bitmap 이미지면 그 실제 픽셀 크기를 따라가는 투명 PNG를 만든다.\n- 이미지 크기를 알아낼 수 없으면 최소 `1x1` 투명 PNG로 fallback 한다.\n- `writeResourcePackageAnnotationBitmap(...)`는 그 PNG를 `annotation.png`로 패키지 내부에 원자적으로 기록한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "원본 asset이 bitmap 이미지면 그 실제 픽셀 크기를 따라가는 투명 PNG를 만든다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이미지 크기를 알아낼 수 없으면 최소 `1x1` 투명 PNG로 fallback 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`writeResourcePackageAnnotationBitmap(...)`는 그 PNG를 `annotation.png`로 패키지 내부에 원자적으로 기록한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "paragraph",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "마지막 함수는 persisted resource reference를 받아:\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 62,
+      "end_line": 62,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "list",
+      "start_line": 63,
+      "end_line": 64,
+      "raw": "- 패키지 디렉터리면 `resource.xml`을 읽고 내부 에셋 파일 절대 경로로 변환하고\n- 기존 raw 파일/URL 참조면 그대로 호환 처리한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "패키지 디렉터리면 `resource.xml`을 읽고 내부 에셋 파일 절대 경로로 변환하고",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 raw 파일/URL 참조면 그대로 호환 처리한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 65,
+      "end_line": 65,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "html",
+      "start_line": 66,
+      "end_line": 66,
+      "raw": "<a id=\"hub-storage-rules\"></a>\n"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 67,
+      "end_line": 67,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "heading",
+      "start_line": 68,
+      "end_line": 68,
+      "raw": "## 허브 저장 규칙\n",
+      "level": 2,
+      "title": "허브 저장 규칙"
+    },
+    {
+      "id": "b000046",
+      "kind": "blank",
+      "start_line": 69,
+      "end_line": 69,
+      "raw": "\n"
+    },
+    {
+      "id": "b000047",
+      "kind": "paragraph",
+      "start_line": 70,
+      "end_line": 70,
+      "raw": "단일 루트 집계 함수와 함께 허브 단위 멀티 루트 집계 함수가 제공된다.\n"
+    },
+    {
+      "id": "b000048",
+      "kind": "blank",
+      "start_line": 71,
+      "end_line": 71,
+      "raw": "\n"
+    },
+    {
+      "id": "b000049",
+      "kind": "list",
+      "start_line": 72,
+      "end_line": 75,
+      "raw": "- `resolveResourceRootDirectories(...)`: 허브 내부 `.wsresources` + `*.wsresources` 디렉터리를 모두 반환\n- `listRelativeResourcePackagePaths(...)`: 특정 리소스 루트 1개에서 `.wsresource`를 집계\n- `listRelativeResourcePackagePathsForHub(...)`: 허브의 모든 리소스 루트를 순회해 상대 경로를 중복 제거 후 집계\n- `countResourcePackages(...)`: 단일 루트 기준 개수 집계\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resolveResourceRootDirectories(...)`: 허브 내부 `.wsresources` + `*.wsresources` 디렉터리를 모두 반환",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`listRelativeResourcePackagePaths(...)`: 특정 리소스 루트 1개에서 `.wsresource`를 집계",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`listRelativeResourcePackagePathsForHub(...)`: 허브의 모든 리소스 루트를 순회해 상대 경로를 중복 제거 후 집계",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`countResourcePackages(...)`: 단일 루트 기준 개수 집계",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000050",
+      "kind": "blank",
+      "start_line": 76,
+      "end_line": 76,
+      "raw": "\n"
+    },
+    {
+      "id": "b000051",
+      "kind": "paragraph",
+      "start_line": 77,
+      "end_line": 77,
+      "raw": "이 규칙으로 리소스가 여러 루트로 분산된 허브에서도 런타임/뷰모델이 동일한 패키지 집합을 재구성할 수 있다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcePackageSupport.hpp`",
+      "anchor": "srcappmodelshierarchyresourceswhatsonresourcepackagesupporthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메타데이터 계약",
+      "anchor": "메타데이터-계약",
+      "start_line": 16
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 도우미",
+      "anchor": "런타임-도우미",
+      "start_line": 34
+    },
+    {
+      "block_id": "b000045",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "허브 저장 규칙",
+      "anchor": "허브-저장-규칙",
+      "start_line": 68
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

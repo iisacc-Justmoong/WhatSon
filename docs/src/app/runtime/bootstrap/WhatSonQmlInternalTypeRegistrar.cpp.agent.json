@@ -1,0 +1,225 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:845692d7cc331c2bca222fa3363584711ad41bafab1db6675573758b9def236e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp.md",
+    "sha256": "ff3927554a61cc30e0efbc15fccd8b373528793e46908d0ea1654799d3020b29",
+    "bytes": 1000,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "복원된 애플리케이션 셸에 필요한 QObject 지원 내부 QML 브리지 유형에 대한 매니페스트를 빌드한 다음 LVRS `QmlTypeRegistrar`를 통해 해당 매니페스트를 등록합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"current-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 현재 계약\n",
+      "level": 2,
+      "title": "현재 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "- 레지스트라는 더 이상 편집기 파서, 렌더러, 프로젝션, 세션, 입력 정책, 미니맵, 라인 번호, 태그, 디스플레이 백엔드, 리소스 뷰어 또는 페이퍼 헬퍼 유형을 내보내지 않습니다.\n- 콘텐츠 QML 경로는 더 이상 노트 텍스트 편집기를 마운트하지 않으며 C++ 편집기 백엔드 등록이 필요하지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "레지스트라는 더 이상 편집기 파서, 렌더러, 프로젝션, 세션, 입력 정책, 미니맵, 라인 번호, 태그, 디스플레이 백엔드, 리소스 뷰어 또는 페이퍼 헬퍼 유형을 내보내지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "콘텐츠 QML 경로는 더 이상 노트 텍스트 편집기를 마운트하지 않으며 C++ 편집기 백엔드 등록이 필요하지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"test-coverage\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 테스트 범위\n",
+      "level": 2,
+      "title": "테스트 범위"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "`test/cpp/suites/app_launch_support_tests.cpp`는 이 등록자를 LVRS 매니페스트 등록에 유지하고 직접 `qmlRegisterType<...>()` 블록이 반환되는 것을 방지합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.cpp`",
+      "anchor": "srcappruntimebootstrapwhatsonqmlinternaltyperegistrarcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 계약",
+      "anchor": "현재-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트 범위",
+      "anchor": "테스트-범위",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

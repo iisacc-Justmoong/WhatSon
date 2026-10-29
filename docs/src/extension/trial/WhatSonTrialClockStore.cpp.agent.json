@@ -1,0 +1,221 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:8cae64914c114cb828e3c360a388697a55a4135c3820de46bc901c2f404e9764",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialClockStore.cpp.md",
+    "sha256": "159f8efa48cea3b9ae498b9353e2d806159af5f6319d6d870b400cab4d67cdea",
+    "bytes": 869,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialClockStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialClockStore.cpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClockStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 모듈에 대한 타임스탬프 감사 지속성 경로를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- 종료 타임스탬프는 UTC로 정규화되고 밀리초 단위로 ISO-8601 텍스트로 유지됩니다.\n- 저장소는 원시 마지막 종료 타임스탬프와 단조로운 최고 수위 표시를 모두 유지합니다.\n- 현재 UTC 시간이 최고 워터마크보다 이전인 경우 `WhatSonTrialClockCheck`를 통해 롤백이 보고됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "종료 타임스탬프는 UTC로 정규화되고 밀리초 단위로 ISO-8601 텍스트로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "저장소는 원시 마지막 종료 타임스탬프와 단조로운 최고 수위 표시를 모두 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 UTC 시간이 최고 워터마크보다 이전인 경우 `WhatSonTrialClockCheck`를 통해 롤백이 보고됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"why-two-keys-exist\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 2 키가 존재하는 이유\n",
+      "level": 2,
+      "title": "2 키가 존재하는 이유"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 19,
+      "raw": "- `lastExitTimestampUtc`는 가장 최근 종료에 대해 기록된 원시 시간을 보존합니다.\n- `lastSeenTimestampUtc`는 롤백된 시스템 시계에 따라 나중에 종료가 발생하더라도 증거를 보존합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`lastExitTimestampUtc`는 가장 최근 종료에 대해 기록된 원시 시간을 보존합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lastSeenTimestampUtc`는 롤백된 시스템 시계에 따라 나중에 종료가 발생하더라도 증거를 보존합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClockStore.cpp`",
+      "anchor": "srcextensiontrialwhatsontrialclockstorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "2 키가 존재하는 이유",
+      "anchor": "2-키가-존재하는-이유",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

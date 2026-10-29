@@ -1,0 +1,374 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:a86c87222686064c787fa4642e1b84cc4161faa80f323c1be6cab163b30f86a0",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/policy/ArchitecturePolicyLock.hpp.md",
+    "sha256": "cc91ea25004d05bccf1069ba0ae88ef502bb030fdc9d205f16308b119a64014d",
+    "bytes": 2682,
+    "line_count": 41,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/policy/ArchitecturePolicyLock.hpp`",
+    "role": "reference",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/policy/ArchitecturePolicyLock.hpp`\n",
+      "level": 1,
+      "title": "`src/app/policy/ArchitecturePolicyLock.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 헤더는 애플리케이션 계층 종속성 제어에 대한 공개 어휘를 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "그것은 2 개의 별개 개념을 노출합니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 10,
+      "raw": "- `Layer` 열거형 및 도우미 함수를 통해 표현된 정적 종속성 정책입니다.\n- `ArchitecturePolicyLock`를 통해 표현되는 런타임 잠금은 루트 개체 그래프가 완료되면 시작 시간 배선을 고정하는 데 사용됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`Layer` 열거형 및 도우미 함수를 통해 표현된 정적 종속성 정책입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ArchitecturePolicyLock`를 통해 표현되는 런타임 잠금은 루트 개체 그래프가 완료되면 시작 시간 배선을 고정하는 데 사용됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000014",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 23,
+      "raw": "- `enum class Layer`: 런타임 종속성 확인 전반에 사용되는 정식 레이어 이름입니다.\n- `layerName(Layer)`: 로그 및 진단에 사용되는 문자열 형식입니다.\n- `isDependencyAllowed(Layer from, Layer to)`: 부작용이 없는 순수 정책 쿼리입니다.\n- `assertDependencyAllowed(...)`: 부울을 반환하고 선택적으로 오류 메시지 형식을 지정합니다.\n- `verifyDependencyAllowed(...)`: 동일한 규칙 확인이지만 잘못된 에지가 시도될 때 경고를 내보내야 하는 프로덕션 호출 사이트를 위한 것입니다.\n- `verifyMutableWiringAllowed(...)`: 사후 잠금 런타임 재배선 시도를 거부하고 발신자 측 이유를 형식화할 수 있습니다.\n- `verifyMutableDependencyAllowed(...)`: 하나의 공유 도우미에 잠금 후 변형 규칙과 레이어 종속성 규칙을 모두 적용합니다.\n- `ArchitecturePolicyLock::isLocked()` 및 `ArchitecturePolicyLock::lock()`: 글로벌 시작 정지.\n- `ArchitecturePolicyLock::unlockForTests()`: 회귀 케이스 간의 프로세스 전역 잠금 상태를 격리하는 데 사용되는 테스트 전용 탈출구입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`enum class Layer`: 런타임 종속성 확인 전반에 사용되는 정식 레이어 이름입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`layerName(Layer)`: 로그 및 진단에 사용되는 문자열 형식입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`isDependencyAllowed(Layer from, Layer to)`: 부작용이 없는 순수 정책 쿼리입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assertDependencyAllowed(...)`: 부울을 반환하고 선택적으로 오류 메시지 형식을 지정합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyDependencyAllowed(...)`: 동일한 규칙 확인이지만 잘못된 에지가 시도될 때 경고를 내보내야 하는 프로덕션 호출 사이트를 위한 것입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyMutableWiringAllowed(...)`: 사후 잠금 런타임 재배선 시도를 거부하고 발신자 측 이유를 형식화할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyMutableDependencyAllowed(...)`: 하나의 공유 도우미에 잠금 후 변형 규칙과 레이어 종속성 규칙을 모두 적용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ArchitecturePolicyLock::isLocked()` 및 `ArchitecturePolicyLock::lock()`: 글로벌 시작 정지.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ArchitecturePolicyLock::unlockForTests()`: 회귀 케이스 간의 프로세스 전역 잠금 상태를 격리하는 데 사용되는 테스트 전용 탈출구입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "<a id=\"usage-pattern\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "## 사용 패턴\n",
+      "level": 2,
+      "title": "사용 패턴"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "일반적인 소비자는 QML 방향 뷰를 QObject 기반 컨트롤러 또는 저장소에 연결하는 시작 시간 구성 코드 및 브리지와 같은 개체입니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "예상되는 순서는 이렇습니다.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "list",
+      "start_line": 31,
+      "end_line": 34,
+      "raw": "1. 개체 그래프를 작성합니다.\n2. 필요한 협력자를 주입합니다.\n3. `ArchitecturePolicyLock::lock()`에 전화하세요.\n4. 이후의 구조적 재배선 시도를 거부합니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "개체 그래프를 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "필요한 협력자를 주입합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "`ArchitecturePolicyLock::lock()`에 전화하세요.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "이후의 구조적 재배선 시도를 거부합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"important-constraint\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 중요한 제약\n",
+      "level": 2,
+      "title": "중요한 제약"
+    },
+    {
+      "id": "b000027",
+      "kind": "paragraph",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "이 헤더는 작은 정책 언어만 정의합니다. 아키텍처 자체를 자동으로 다시 작성하지 않습니다. 런타임 적용을 원하는 경우 프로덕션 코드는 확인 도우미를 호출해야 합니다.\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "현재 런타임 계약은 폴더 기반이 아닌 역할 기반입니다. 브리지/QML 방향 설정자 경로는 `View -> Controller`로 처리되고 컨트롤러 저장소 연결 경로는 `Controller -> Store`로 처리됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/policy/ArchitecturePolicyLock.hpp`",
+      "anchor": "srcapppolicyarchitecturepolicylockhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "사용 패턴",
+      "anchor": "사용-패턴",
+      "start_line": 27
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "중요한 제약",
+      "anchor": "중요한-제약",
+      "start_line": 38
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

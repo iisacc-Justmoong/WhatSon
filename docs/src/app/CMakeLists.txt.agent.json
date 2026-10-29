@@ -1,0 +1,504 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:bd832938c0f1cef1ad7c447acea5f53ed0e99bde54ed0120c513c566b1537b83",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/CMakeLists.txt.md",
+    "sha256": "03aa51f597a645ecc14f24f616ee4249f0fff4f36e59bf3eedc0d2fc6b01d1aa",
+    "bytes": 3293,
+    "line_count": 58,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/CMakeLists.txt`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/CMakeLists.txt`\n",
+      "level": 1,
+      "title": "`src/app/CMakeLists.txt`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 8,
+      "raw": "- 루트로 선언된 `WhatSon` 대상을 사용하고 Qt Quick, LVRS, 소스 및 QML 등록을 앱 진입점에 가깝게 유지합니다.\n- 하위 도메인이 소스를 등록하고 경로 및 QML 자산을 포함하는 데 사용하는 도우미 기능을 제공합니다.\n- 명시적인 `add_subdirectory(...)` 항목을 통해 도메인 소유권을 위임합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트로 선언된 `WhatSon` 대상을 사용하고 Qt Quick, LVRS, 소스 및 QML 등록을 앱 진입점에 가깝게 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하위 도메인이 소스를 등록하고 경로 및 QML 자산을 포함하는 데 사용하는 도우미 기능을 제공합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명시적인 `add_subdirectory(...)` 항목을 통해 도메인 소유권을 위임합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "<a id=\"current-directory-split\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## 현재 디렉터리 분할\n",
+      "level": 2,
+      "title": "현재 디렉터리 분할"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 28,
+      "raw": "- `src/app/models/calendar/CMakeLists.txt`\n- `src/app/models/content/CMakeLists.txt`\n- `src/app/models/detailPanel/CMakeLists.txt`\n- `src/app/models/file/CMakeLists.txt`\n- `src/app/models/navigationbar/CMakeLists.txt`\n- `src/app/models/onboarding/CMakeLists.txt`\n- `src/app/models/panel/CMakeLists.txt`\n- `src/app/models/sensor/CMakeLists.txt`\n- `src/app/models/sidebar/CMakeLists.txt`\n- `src/app/permissions/CMakeLists.txt`\n- `src/app/platform/CMakeLists.txt`\n- `src/app/policy/CMakeLists.txt`\n- `src/app/qml/CMakeLists.txt`\n- `src/app/register/CMakeLists.txt`\n- `src/app/runtime/CMakeLists.txt`\n- `src/app/store/CMakeLists.txt`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/models/calendar/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/content/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/detailPanel/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/file/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/navigationbar/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/onboarding/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/panel/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/sensor/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/sidebar/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/permissions/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/platform/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/policy/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/register/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/runtime/CMakeLists.txt`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/store/CMakeLists.txt`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "<a id=\"build-shards\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 샤드 구축\n",
+      "level": 2,
+      "title": "샤드 구축"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 33,
+      "end_line": 35,
+      "raw": "- `src/app/cmake/resources/CMakeLists.txt`: 데스크탑 앱 아이콘 리소스, 온보딩 일러스트레이션 리소스, Apple 번들 아이콘 스테이징 및 Windows 아이콘 RC 생성.\n- `src/app/cmake/defaults/CMakeLists.txt`: LVRS 기본값 및 데스크톱 Apple plist/자격 전달.\n- `src/app/cmake/runtime/CMakeLists.txt`: 링크 라이브러리, 출력 속성, 호스트 Apple 프레임워크 링크, LVRS 런타임 가져오기 오버레이 및 `lvrs_configure_qml_app(WhatSon)`.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/cmake/resources/CMakeLists.txt`: 데스크탑 앱 아이콘 리소스, 온보딩 일러스트레이션 리소스, Apple 번들 아이콘 스테이징 및 Windows 아이콘 RC 생성.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/cmake/defaults/CMakeLists.txt`: LVRS 기본값 및 데스크톱 Apple plist/자격 전달.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/cmake/runtime/CMakeLists.txt`: 링크 라이브러리, 출력 속성, 호스트 Apple 프레임워크 링크, LVRS 런타임 가져오기 오버레이 및 `lvrs_configure_qml_app(WhatSon)`.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "<a id=\"helper-surface\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "## 도우미 표면\n",
+      "level": 2,
+      "title": "도우미 표면"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 40,
+      "end_line": 43,
+      "raw": "- `whatson_app_register_sources(...)`: `WhatSon`에 소스를 첨부하기 전에 파일 존재 여부를 확인합니다.\n- `whatson_app_register_directory_sources(...)`: 하위 디렉터리에 대한 C/C++ 소스 및 헤더를 등록합니다.\n- `whatson_app_register_directory_include_directories(...)`: 재귀 헤더 소유자 디렉터리를 포함 경로로 확장합니다.\n- `whatson_app_register_qml_entries(...)` 및 `whatson_app_register_directory_qml(...)`: 루트 QML 모듈 마무리를 위해 `src/app` 상대 QML 및 JS 경로를 수집합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`whatson_app_register_sources(...)`: `WhatSon`에 소스를 첨부하기 전에 파일 존재 여부를 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_app_register_directory_sources(...)`: 하위 디렉터리에 대한 C/C++ 소스 및 헤더를 등록합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_app_register_directory_include_directories(...)`: 재귀 헤더 소유자 디렉터리를 포함 경로로 확장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_app_register_qml_entries(...)` 및 `whatson_app_register_directory_qml(...)`: 루트 QML 모듈 마무리를 위해 `src/app` 상대 QML 및 JS 경로를 수집합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "<a id=\"current-notes\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "## 현재 노트\n",
+      "level": 2,
+      "title": "현재 노트"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 48,
+      "end_line": 52,
+      "raw": "- QML 소유권은 `src/app/qml/CMakeLists.txt`로 격리됩니다.\n- 이전 노트 편집기와 본문 지속성 샤드는 새로운 문서 모델 계약이 도입될 때까지 제거된 상태로 유지됩니다.\n- 데스크탑 평가판 빌드는 `src/extension/trial`에서 전용 평가판 활성화 소스를 가져오고 `WHATSON_IS_TRIAL_BUILD=1`를 정의합니다.\n- 앱 대상은 `iiXml::iiXml` 및 `iiHtmlBlock::iiHtmlBlock`를 연결합니다. 루트 CMake는 패키지 검색을 소유합니다.\n- 이 저장소는 더 이상 분리된 플랫폼 앱 패키징, 실행 또는 내보내기 연결을 소유하지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "QML 소유권은 `src/app/qml/CMakeLists.txt`로 격리됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이전 노트 편집기와 본문 지속성 샤드는 새로운 문서 모델 계약이 도입될 때까지 제거된 상태로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데스크탑 평가판 빌드는 `src/extension/trial`에서 전용 평가판 활성화 소스를 가져오고 `WHATSON_IS_TRIAL_BUILD=1`를 정의합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "앱 대상은 `iiXml::iiXml` 및 `iiHtmlBlock::iiHtmlBlock`를 연결합니다. 루트 CMake는 패키지 검색을 소유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 저장소는 더 이상 분리된 플랫폼 앱 패키징, 실행 또는 내보내기 연결을 소유하지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "html",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "<a id=\"verification-notes\"></a>\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "blank",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "heading",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "## 확인 메모\n",
+      "level": 2,
+      "title": "확인 메모"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 57,
+      "end_line": 58,
+      "raw": "- 이 파일을 다루는 빌드 시스템 리팩터링은 `cmake --build build --target whatson_build_regression -j`를 실행해야 합니다.\n- 컴파일 연결 가능성이 변경되면 `cmake --build build --target whatson_regression -j`도 실행하세요.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 파일을 다루는 빌드 시스템 리팩터링은 `cmake --build build --target whatson_build_regression -j`를 실행해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴파일 연결 가능성이 변경되면 `cmake --build build --target whatson_regression -j`도 실행하세요.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/CMakeLists.txt`",
+      "anchor": "srcappcmakeliststxt",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 디렉터리 분할",
+      "anchor": "현재-디렉터리-분할",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "샤드 구축",
+      "anchor": "샤드-구축",
+      "start_line": 32
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "도우미 표면",
+      "anchor": "도우미-표면",
+      "start_line": 39
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 노트",
+      "anchor": "현재-노트",
+      "start_line": 47
+    },
+    {
+      "block_id": "b000030",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "확인 메모",
+      "anchor": "확인-메모",
+      "start_line": 56
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

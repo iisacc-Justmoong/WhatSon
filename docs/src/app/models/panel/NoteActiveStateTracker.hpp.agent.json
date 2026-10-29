@@ -1,0 +1,85 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:09c75ea65404fd4cbcce712370e35adc123a0900743223db87c4752df9332f86",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/NoteActiveStateTracker.hpp.md",
+    "sha256": "19e3a08856a8e974b1623cf54504c42fd8c10dd84749f55b24c8b7f7d24bfb61",
+    "bytes": 319,
+    "line_count": 5,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/NoteActiveStateTracker.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/NoteActiveStateTracker.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/NoteActiveStateTracker.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "`NoteActiveStateTracker`는 패널 조정을 위해 활성 노트 ID와 백업 저장 경로를 추적합니다.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "편집기 문서 세션 경로를 노출하지 않습니다. 현재 컨텐츠 편집기는 활성 노트 본문 파일을 마운트하지 않습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/NoteActiveStateTracker.hpp`",
+      "anchor": "srcappmodelspanelnoteactivestatetrackerhpp",
+      "start_line": 1
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

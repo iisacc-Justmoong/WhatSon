@@ -1,0 +1,277 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:834a67e34fdd6a83e4d42ab9bff5c0ba4f7a1bddd04592006d485d505d107fbb",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/DetailPanel.qml.md",
+    "sha256": "3f6437597ec4cf22dac2eb23296fcb84de0a7691e5a8999004bcbe65f5da46f4",
+    "bytes": 1518,
+    "line_count": 28,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/DetailPanel.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/DetailPanel.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailPanel.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailPanel.qml` 는 이제 오른쪽 세부 사항 열을 위한 라우트 인식 라우터입니다. 이제 직접 노트 세부 사항 폼을 렌더링하지 않습니다. 대신 캘린더 콘텐츠가 활성화되었는지, 활성 계층 구조가 전용 리소스 계층 구조인지 여부를 결정하고, 3 개의 구체적인 서페이스 중 하나를 마운트합니다:\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "list",
+      "start_line": 8,
+      "end_line": 10,
+      "raw": "- `CalendarDetailPanel.qml`\n- `NoteDetailPanel.qml`\n- `ResourceDetailPanel.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`CalendarDetailPanel.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NoteDetailPanel.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ResourceDetailPanel.qml`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"key-contracts\"></a>\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 주요 계약\n",
+      "level": 2,
+      "title": "주요 계약"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 19,
+      "raw": "- `noteDetailPanelController`\n- `resourceDetailPanelController`\n- `sidebarHierarchyController`\n- `resourcesHierarchyController`\n- `calendarDetailActive`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`noteDetailPanelController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourceDetailPanelController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`sidebarHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourcesHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`calendarDetailActive`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000018",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 28,
+      "raw": "- 달력 페이지가 콘텐츠 보기에 탑재되면 라우터에 `CalendarDetailPanel.qml`가 표시됩니다.\n- 활성 계층 제어기가 `resourcesHierarchyController`와 일치하면 라우터는 메모 상세 표면을 숨기고 `ResourceDetailPanel.qml`를 표시합니다.\n- 다른 모든 계층은 계속해서 `NoteDetailPanel.qml`를 마운트합니다.\n- 캘린더 상세 상태는 현재 콘텐츠 슬롯이 캘린더에 소유되어 있기 때문에 리소스 계층 상태보다 우선합니다.\n- 외부 `DetailPanel` 쉘은 `RightPanel.qml`와 페이지 레이아웃에 대해 안정적으로 유지되지만, 마운트된 뷰와 실제 상세 컨트롤러가 이제 계층 도메인에 따라 분기됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "달력 페이지가 콘텐츠 보기에 탑재되면 라우터에 `CalendarDetailPanel.qml`가 표시됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 계층 제어기가 `resourcesHierarchyController`와 일치하면 라우터는 메모 상세 표면을 숨기고 `ResourceDetailPanel.qml`를 표시합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다른 모든 계층은 계속해서 `NoteDetailPanel.qml`를 마운트합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "캘린더 상세 상태는 현재 콘텐츠 슬롯이 캘린더에 소유되어 있기 때문에 리소스 계층 상태보다 우선합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "외부 `DetailPanel` 쉘은 `RightPanel.qml`와 페이지 레이아웃에 대해 안정적으로 유지되지만, 마운트된 뷰와 실제 상세 컨트롤러가 이제 계층 도메인에 따라 분기됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailPanel.qml`",
+      "anchor": "srcappqmlviewpanelsdetaildetailpanelqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000012",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 계약",
+      "anchor": "주요-계약",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 23
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

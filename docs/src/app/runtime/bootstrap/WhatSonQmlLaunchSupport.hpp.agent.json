@@ -1,0 +1,233 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5867d135119977df6f8ac65a55585a91eabc4b5b6d8e39c50d8a51fb4a78b3c9",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp.md",
+    "sha256": "d336a3cabea6882f518c12e1c4cdc424122226427cb36d4225c168419d48ee73",
+    "bytes": 1427,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "LVRS `appentry` API가 지원하는 WhatSon 관련 QML 루트 로딩 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-helpers\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공공 도우미\n",
+      "level": 2,
+      "title": "공공 도우미"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `loadQmlRoot(...)`: 임의의 QML 모듈 루트를 로드하고 LVRS `QmlRootLoadResult`를 반환합니다.\n- `loadWhatSonAppRoot(...)` : `WhatSon.App` QML 모듈에서 루트 객체를 로드하고 LVRS 루트/윈도우 결과를 보존합니다.\n- `loadMainWindowRoot(...)`: 전체 LVRS 로드 결과가 포함된 기본 `Main` 루트에 대한 편의 래퍼입니다.\n- `lastRootObject(...)`: 여전히 `QObject*`가 필요한 레거시 호출 사이트에 대해 마지막으로 생성된 루트 개체를 추출합니다.\n- `loadQmlRootObject(...)`, `loadWhatSonAppRootObject(...)`, 및 `loadMainWindow(...)`: 결과 반환 헬퍼 주변의 호환성 래퍼.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadQmlRoot(...)`: 임의의 QML 모듈 루트를 로드하고 LVRS `QmlRootLoadResult`를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadWhatSonAppRoot(...)` : `WhatSon.App` QML 모듈에서 루트 객체를 로드하고 LVRS 루트/윈도우 결과를 보존합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadMainWindowRoot(...)`: 전체 LVRS 로드 결과가 포함된 기본 `Main` 루트에 대한 편의 래퍼입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lastRootObject(...)`: 여전히 `QObject*`가 필요한 레거시 호출 사이트에 대해 마지막으로 생성된 루트 개체를 추출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadQmlRootObject(...)`, `loadWhatSonAppRootObject(...)`, 및 `loadMainWindow(...)`: 결과 반환 헬퍼 주변의 호환성 래퍼.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"policy\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 정책\n",
+      "level": 2,
+      "title": "정책"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "호출자는 `show()`, `raise()` 또는 `requestActivate()`를 수동으로 호출하는 대신 `lvrs::QmlWindowActivationPolicy`를 전달합니다. 이렇게 하면 루트 생성 및 활성화가 LVRS 런타임 부트스트랩 계약에 맞춰 유지됩니다.\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "paragraph",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "새로운 런타임 경로는 원시 `QObject*`에서 루트/창 상태를 다시 작성하는 대신 `QmlRootLoadResult`를 유지하고 이를 LVRS 수명 주기/포그라운드 서비스 도우미에 공급해야 합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.hpp`",
+      "anchor": "srcappruntimebootstrapwhatsonqmllaunchsupporthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 도우미",
+      "anchor": "공공-도우미",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "정책",
+      "anchor": "정책",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

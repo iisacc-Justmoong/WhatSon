@@ -1,0 +1,219 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2c29f0c73ecb462bb1b0d8a685adf06735385941f1d537e65d3e1614474dc017",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.cpp.md",
+    "sha256": "3a79fb8e7d6c1257cad55f3ce6b4fb9c3b69940aab00e4eafe8ce3b8d07986b5",
+    "bytes": 1066,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "앱 구성 루트에 대한 QML 루트 로딩을 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- 요청된 루트당 단일 `lvrs::QmlRootLoadSpec`를 빌드합니다.\n- `lvrs::loadQmlRootObjects(...)`를 사용하므로 초기 속성과 창 활성화는 LVRS 동작을 따릅니다.\n- 수명 주기 인식 호출자에 대해 전체 LVRS `QmlRootLoadResult`를 반환합니다.\n- LVRS가 로드 실패를 보고하거나 루트 개체가 생성되지 않은 경우 경고를 기록합니다.\n- `QObject*` 래퍼는 `lastRootObject(...)` 위에 계층화된 호환성 도우미로만 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "요청된 루트당 단일 `lvrs::QmlRootLoadSpec`를 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lvrs::loadQmlRootObjects(...)`를 사용하므로 초기 속성과 창 활성화는 LVRS 동작을 따릅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "수명 주기 인식 호출자에 대해 전체 LVRS `QmlRootLoadResult`를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS가 로드 실패를 보고하거나 루트 개체가 생성되지 않은 경우 경고를 기록합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`QObject*` 래퍼는 `lastRootObject(...)` 위에 계층화된 호환성 도우미로만 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"test-coverage\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 테스트 범위\n",
+      "level": 2,
+      "title": "테스트 범위"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "`test/cpp/suites/app_launch_support_tests.cpp`는 이 도우미가 LVRS 앱 항목 API를 사용하고 `main.cpp`가 더 이상 임시 `QQmlApplicationEngine::loadFromModule(...)`, 수동 창 활성화 또는 수동 수명 주기 루트/창 재구성을 수행하지 않는지 확인합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlLaunchSupport.cpp`",
+      "anchor": "srcappruntimebootstrapwhatsonqmllaunchsupportcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트 범위",
+      "anchor": "테스트-범위",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

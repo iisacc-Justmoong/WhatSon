@@ -1,0 +1,577 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6e9c48c517538902dd581356dee4b0137a16264ea936516df8997dda67128b75",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/ResourceListItem.qml.md",
+    "sha256": "278ae6320c5cfb02f2cc2871bf9f20af18b519a82d587cdfaa2a66a1e6375d96",
+    "bytes": 2011,
+    "line_count": 63,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/ResourceListItem.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/ResourceListItem.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ResourceListItem.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`ResourceListItem.qml`는 리소스 목록 행을 위한 전용 오른쪽 패널 카드 구성 요소입니다. 의도적으로 `NoteListItem` 구조를 재사용하지 않고 Figma `232:7892` 형상 및 상태 색상을 격리된 계약으로 유지합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"source-metadata\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 소스 메타데이터\n",
+      "level": 2,
+      "title": "소스 메타데이터"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 12,
+      "end_line": 15,
+      "raw": "- 소스 경로: `src/app/qml/view/panels/ResourceListItem.qml`\n- 소스 종류: QML 뷰/컴포넌트\n- 파일 이름: `ResourceListItem.qml`\n- 대략적인 줄 수: 91\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "소스 경로: `src/app/qml/view/panels/ResourceListItem.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소스 종류: QML 뷰/컴포넌트",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 이름: `ResourceListItem.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대략적인 줄 수: 91",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"qml-surface-snapshot\"></a>\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## QML 표면 스냅샷\n",
+      "level": 2,
+      "title": "QML 표면 스냅샷"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "- 루트 유형: `Item`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 유형: `Item`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"object-ids\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "### 개체 ID\n",
+      "level": 3,
+      "title": "개체 ID"
+    },
+    {
+      "id": "b000022",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 26,
+      "raw": "- `resourceListItem`\n- `resourceHoverHandler`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resourceListItem`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourceHoverHandler`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "<a id=\"public-properties\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "### 공개 속성\n",
+      "level": 3,
+      "title": "공개 속성"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 31,
+      "end_line": 34,
+      "raw": "- `active`\n- `pressed`\n- `previewSource`\n- `titleText`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`active`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`pressed`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`previewSource`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`titleText`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"visual-contract\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 시각적 계약\n",
+      "level": 2,
+      "title": "시각적 계약"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "list",
+      "start_line": 40,
+      "end_line": 50,
+      "raw": "- 너비는 원시 고정 픽셀 리터럴 대신 `LV.Theme.inputMinWidth + LV.Theme.gap14`를 사용합니다.\n- 프레임 패딩은 `LV.Theme.gap8`를 사용합니다.\n- 다음이 포함된 단일 가로 행:\n  - `LV.Theme.gap24 + LV.Theme.gap24` 크기의 썸네일 프레임.\n  - `LV.Theme.gap10` 크기의 행 간격입니다.\n  - `LV.Theme.textBody` / `LV.Theme.textBodyLineHeight`가 포함된 세미볼드 제목 텍스트.\n- 배경 상태:\n  - 기본값: `LV.Theme.accentTransparent`\n  - 호버/눌림: `LV.Theme.panelBackground06`\n  - 활성: `LV.Theme.accentBlueMuted`\n- 썸네일 자리 표시자는 `LV.Theme.strokeSoft`를 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "너비는 원시 고정 픽셀 리터럴 대신 `LV.Theme.inputMinWidth + LV.Theme.gap14`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프레임 패딩은 `LV.Theme.gap8`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음이 포함된 단일 가로 행:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LV.Theme.gap24 + LV.Theme.gap24` 크기의 썸네일 프레임.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LV.Theme.gap10` 크기의 행 간격입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LV.Theme.textBody` / `LV.Theme.textBodyLineHeight`가 포함된 세미볼드 제목 텍스트.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "배경 상태:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본값: `LV.Theme.accentTransparent`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호버/눌림: `LV.Theme.panelBackground06`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성: `LV.Theme.accentBlueMuted`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "썸네일 자리 표시자는 `LV.Theme.strokeSoft`를 사용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "html",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "<a id=\"integration\"></a>\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "heading",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "## 통합\n",
+      "level": 2,
+      "title": "통합"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "list",
+      "start_line": 56,
+      "end_line": 57,
+      "raw": "- `ListBarLayout.qml` 스위치는 `resourceListMode`로 대표 구성을 전환합니다.\n- 리소스 행은 `ResourceListItem`를 렌더링합니다. 리소스 메모가 아닌 행은 `NoteListItem`를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ListBarLayout.qml` 스위치는 `resourceListMode`로 대표 구성을 전환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "리소스 행은 `ResourceListItem`를 렌더링합니다. 리소스 메모가 아닌 행은 `NoteListItem`를 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "html",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "heading",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 62,
+      "end_line": 62,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "paragraph",
+      "start_line": 63,
+      "end_line": 63,
+      "raw": "자동 테스트 파일이 이 저장소에서 제거되었습니다. 런타임 검사를 통해 구성요소 형상 및 위임 바인딩을 확인합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ResourceListItem.qml`",
+      "anchor": "srcappqmlviewpanelsresourcelistitemqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소스 메타데이터",
+      "anchor": "소스-메타데이터",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000016",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "QML 표면 스냅샷",
+      "anchor": "qml-표면-스냅샷",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000016",
+      "level": 3,
+      "title": "개체 ID",
+      "anchor": "개체-id",
+      "start_line": 24
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000016",
+      "level": 3,
+      "title": "공개 속성",
+      "anchor": "공개-속성",
+      "start_line": 30
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "시각적 계약",
+      "anchor": "시각적-계약",
+      "start_line": 38
+    },
+    {
+      "block_id": "b000037",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "통합",
+      "anchor": "통합",
+      "start_line": 54
+    },
+    {
+      "block_id": "b000043",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 61
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

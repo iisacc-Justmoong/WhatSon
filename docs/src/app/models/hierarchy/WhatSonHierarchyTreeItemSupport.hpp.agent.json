@@ -1,0 +1,429 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:a8b77e4fe0305e2524abbb7dd0bd42c2968a5c758eb1ca41c76f5c845fc7209c",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp.md",
+    "sha256": "d04e7c1943d0b69cb12d4876d8b89e49906c7c94c57aaae7ef9ccdd0b3ee9278",
+    "bytes": 1796,
+    "line_count": 49,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 계층 지원 모듈에서 사용되는 반복되는 트리 항목 돌연변이 도우미를 중앙 집중화합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 14,
+      "raw": "- 깊이 관계에서 `showChevron`를 다시 계산합니다.\n- 다음 `FolderN` 시퀀스 생성\n- 공유 유효성 검사를 사용하여 항목 라벨 이름 바꾸기\n- 버킷 헤더 행 감지\n- 단순 또는 중첩 폴더 행 생성\n- 선택한 하위 트리를 삭제하고 다음 선택 색인을 정규화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "깊이 관계에서 `showChevron`를 다시 계산합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음 `FolderN` 시퀀스 생성",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공유 유효성 검사를 사용하여 항목 라벨 이름 바꾸기",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "버킷 헤더 행 감지",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "단순 또는 중첩 폴더 행 생성",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택한 하위 트리를 삭제하고 다음 선택 색인을 정규화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"public-helpers\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 공공 도우미\n",
+      "level": 2,
+      "title": "공공 도우미"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 26,
+      "raw": "- `applyChevronByDepth(...)`\n- `nextGeneratedFolderSequence(...)`\n- `renameHierarchyItem(...)`\n- `isBucketHeaderItem(...)`\n- `createFlatHierarchyFolder(...)`\n- `createNestedHierarchyFolder(...)`\n- `deleteHierarchySubtree(...)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`applyChevronByDepth(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`nextGeneratedFolderSequence(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`renameHierarchyItem(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`isBucketHeaderItem(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createFlatHierarchyFolder(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createNestedHierarchyFolder(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`deleteHierarchySubtree(...)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "<a id=\"variants\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "## 변형\n",
+      "level": 2,
+      "title": "변형"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "2 삽입 전략은 의도적으로 분리됩니다:\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 35,
+      "raw": "- `createFlatHierarchyFolder(...)`: 선택한 행 뒤에 루트 수준 폴더를 추가하거나 삽입합니다.\n- `createNestedHierarchyFolder(...)` : 선택한 서브트리 뒤에 하위 폴더를 삽입합니다. 상위 확장은 레거시 옵트인 플래그이며, 도메인 래퍼는 사용자가 명시적으로 확장 명령을 요청하지 않는 한 이를 비활성화된 상태로 두어야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`createFlatHierarchyFolder(...)`: 선택한 행 뒤에 루트 수준 폴더를 추가하거나 삽입합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createNestedHierarchyFolder(...)` : 선택한 서브트리 뒤에 하위 폴더를 삽입합니다. 상위 확장은 레거시 옵트인 플래그이며, 도메인 래퍼는 사용자가 명시적으로 확장 명령을 요청하지 않는 한 이를 비활성화된 상태로 두어야 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "이렇게 하면 각 지원 헤더에서 중복된 변이 코드를 제거하는 동시에 도메인 래퍼를 작게 유지합니다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"consumers\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "## 소비자\n",
+      "level": 2,
+      "title": "소비자"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "paragraph",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "이 도우미는 다음에 의해 다시 내보내집니다.\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "list",
+      "start_line": 45,
+      "end_line": 49,
+      "raw": "- `ProjectsHierarchyControllerSupport.hpp`\n- `EventHierarchyControllerSupport.hpp`\n- `BookmarksHierarchyControllerSupport.hpp`\n- `ProgressHierarchyControllerSupport.hpp`\n- `PresetHierarchyControllerSupport.hpp`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ProjectsHierarchyControllerSupport.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`EventHierarchyControllerSupport.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`BookmarksHierarchyControllerSupport.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ProgressHierarchyControllerSupport.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`PresetHierarchyControllerSupport.hpp`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonHierarchyTreeItemSupport.hpp`",
+      "anchor": "srcappmodelshierarchywhatsonhierarchytreeitemsupporthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 도우미",
+      "anchor": "공공-도우미",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "변형",
+      "anchor": "변형",
+      "start_line": 30
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소비자",
+      "anchor": "소비자",
+      "start_line": 41
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

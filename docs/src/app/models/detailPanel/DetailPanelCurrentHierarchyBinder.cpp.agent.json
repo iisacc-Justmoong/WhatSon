@@ -1,0 +1,129 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:11f928a775edf5facb7b5ef0f08746361e7c71f455cb272fc392b7f318741d8a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp.md",
+    "sha256": "bb13e64cdd018af00f676defe447240d0de5e869d0e93fd5eed7196b1fbea4ff",
+    "bytes": 767,
+    "line_count": 10,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"runtime-behavior\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 런타임 동작\n",
+      "level": 2,
+      "title": "런타임 동작"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 10,
+      "raw": "- 삽입된 계층 구조 컨텍스트 소스에서 `activeBindingsChanged()`에 연결합니다.\n- 활성 노트 목록 모델과 계층 디렉터리 분석기를 `NoteDetailPanelController`로 동기화합니다.\n- 활성 계층 인덱스가 `Resources`일 때를 감지하고, 그때서야 활성 메모 목록 모델을 `ResourceDetailPanelController::setCurrentResourceListModel(...)`로 전달합니다.\n- 활성 계층이 노트 지원 도메인으로 다시 전환되면 리소스-세부 사항 바인딩을 다시 지웁니다.\n- 계층 구조 소스가 삭제되면 세부 패널 컨텍스트를 `nullptr` 모델로 재설정합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "삽입된 계층 구조 컨텍스트 소스에서 `activeBindingsChanged()`에 연결합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 노트 목록 모델과 계층 디렉터리 분석기를 `NoteDetailPanelController`로 동기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 계층 인덱스가 `Resources`일 때를 감지하고, 그때서야 활성 메모 목록 모델을 `ResourceDetailPanelController::setCurrentResourceListModel(...)`로 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 계층이 노트 지원 도메인으로 다시 전환되면 리소스-세부 사항 바인딩을 다시 지웁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 구조 소스가 삭제되면 세부 패널 컨텍스트를 `nullptr` 모델로 재설정합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.cpp`",
+      "anchor": "srcappmodelsdetailpaneldetailpanelcurrenthierarchybindercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 동작",
+      "anchor": "런타임-동작",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3d6ffde780ce55810ece325235f2f30a397fdd51e5a45be5a3fad37add26835d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/CalendarDetailPanel.qml.md",
+    "sha256": "51b0f0249605eca9dd2c590bd9df9c9a3945d12e9546e820770b856c43abf99b",
+    "bytes": 645,
+    "line_count": 18,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/CalendarDetailPanel.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/CalendarDetailPanel.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/CalendarDetailPanel.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`CalendarDetailPanel.qml`는 달력 페이지가 콘텐츠 보기에 마운트되는 동안 사용되는 전용 세부 열 표면입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"current-state\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 현재 상태\n",
+      "level": 2,
+      "title": "현재 상태"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- 지금은 뷰가 의도적으로 비어 있습니다.\n- 별도의 캘린더 상세 표면을 보유하고 있어 캘린더 전용 상세 UI를 나중에 추가해도 `NoteDetailPanel.qml` 또는 `ResourceDetailPanel.qml`로 다시 전환되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "지금은 뷰가 의도적으로 비어 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "별도의 캘린더 상세 표면을 보유하고 있어 캘린더 전용 상세 UI를 나중에 추가해도 `NoteDetailPanel.qml` 또는 `ResourceDetailPanel.qml`로 다시 전환되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 18,
+      "raw": "- `signal viewHookRequested`\n- `function requestViewHook(reason)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`signal viewHookRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`function requestViewHook(reason)`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/CalendarDetailPanel.qml`",
+      "anchor": "srcappqmlviewpanelsdetailcalendardetailpanelqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 상태",
+      "anchor": "현재-상태",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:d679bc9fec634d12c0a8542ce74e5d9da1b3201c15bd441761ebf8f345183cff",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/WhatSonHierarchyModel.hpp.md",
+    "sha256": "2c15f5d315e6c298567fe221c66684d1875ebaf241a86cc931d1422cbdfc8f48",
+    "bytes": 1414,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/WhatSonHierarchyModel.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/WhatSonHierarchyModel.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonHierarchyModel.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"purpose\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 목적\n",
+      "level": 2,
+      "title": "목적"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 모든 계층 도메인에서 사용되는 단일 LVRS 방향 계층 항목 모델을 선언합니다.\n- 도메인 컨트롤러는 여전히 타입이 있는 변이 상태, 파서/스토어 및 선택 정책을 보유하고 있지만, 공통 `LV.Hierarchy` 행 계약에 대해 `WhatSonHierarchyModel* itemModel`를 노출합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "모든 계층 도메인에서 사용되는 단일 LVRS 방향 계층 항목 모델을 선언합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "도메인 컨트롤러는 여전히 타입이 있는 변이 상태, 파서/스토어 및 선택 정책을 보유하고 있지만, 공통 `LV.Hierarchy` 행 계약에 대해 `WhatSonHierarchyModel* itemModel`를 노출합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 12,
+      "end_line": 14,
+      "raw": "- `setItems(...)`는 각 컨트롤러의 `depthItems()`에서 이미 반환한 `QVariantList` 노드 형태를 허용합니다.\n- 역할 이름은 `LV.Hierarchy`와 사이드바 브리지에서 사용되는 키를 그대로 반영합니다: `label`, `depth`, `expanded`, `showChevron`, `key`, `itemKey`, `iconName`, `count`, 드래그 플래그, 그리고 리소스/프로그레스 메타데이터.\n- `setItemExpanded(...)`는 변경된 행에 대해 `ExpandedRole`만 업데이트하고 `dataChanged`를 방출하여 단일 체브론 접기/펼침 변경에 대해 전체 모델 리셋을 방지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setItems(...)`는 각 컨트롤러의 `depthItems()`에서 이미 반환한 `QVariantList` 노드 형태를 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "역할 이름은 `LV.Hierarchy`와 사이드바 브리지에서 사용되는 키를 그대로 반영합니다: `label`, `depth`, `expanded`, `showChevron`, `key`, `itemKey`, `iconName`, `count`, 드래그 플래그, 그리고 리소스/프로그레스 메타데이터.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setItemExpanded(...)`는 변경된 행에 대해 `ExpandedRole`만 업데이트하고 `dataChanged`를 방출하여 단일 체브론 접기/펼침 변경에 대해 전체 모델 리셋을 방지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 20,
+      "raw": "- 도메인별 `*HierarchyModel.hpp` 파일은 이제 컨트롤러 내부에 대해 입력된 항목 구조체와 아이콘 도우미만 유지합니다.\n- 새로운 계층 도메인은 다른 `QAbstractListModel` 서브클래스를 도입하는 대신 LVRS 노드 직렬화에서 이 모델을 공급해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "도메인별 `*HierarchyModel.hpp` 파일은 이제 컨트롤러 내부에 대해 입력된 항목 구조체와 아이콘 도우미만 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새로운 계층 도메인은 다른 `QAbstractListModel` 서브클래스를 도입하는 대신 LVRS 노드 직렬화에서 이 모델을 공급해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonHierarchyModel.hpp`",
+      "anchor": "srcappmodelshierarchywhatsonhierarchymodelhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "목적",
+      "anchor": "목적",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:598e6e7ccc044de7488b0438fb529d42f490106c21c27f1fa24dbb687e2aa99e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryNoteMutationController.hpp.md",
+    "sha256": "5465b253e935d76d595a458daa65a383da77d5e1521490e86b9b644933dfa20f",
+    "bytes": 919,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryNoteMutationController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`LibraryNoteMutationController`는 라이브러리 노트 돌연변이 명령 및 관련 신호에 대한 좁은 외관입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"interface-alignment\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 인터페이스 정렬\n",
+      "level": 2,
+      "title": "인터페이스 정렬"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- 이제 소스 컨트롤러는 `QObject*`와 `ILibraryNoteMutationCapability`로 허용됩니다.\n- 이렇게 하면 돌연변이 호출자가 전체 `LibraryHierarchyController` 콘크리트 표면으로부터 독립된 상태로 유지됩니다.\n- 단일 음표 명령어(`deleteNoteById(...)`, `clearNoteFoldersById(...)`)는 여전히 포커스 노트 흐름에 대해 직접 노출됩니다.\n- 배치 노트 목록 작업은 이제 `deleteNotesByIds(...)`와 `clearNoteFoldersByIds(...)`를 통해 라우팅될 수 있으며, 이들은 QML 배열을 받아 하나의 노트 ID씩 소스 기능으로 다시 팬합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 소스 컨트롤러는 `QObject*`와 `ILibraryNoteMutationCapability`로 허용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이렇게 하면 돌연변이 호출자가 전체 `LibraryHierarchyController` 콘크리트 표면으로부터 독립된 상태로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "단일 음표 명령어(`deleteNoteById(...)`, `clearNoteFoldersById(...)`)는 여전히 포커스 노트 흐름에 대해 직접 노출됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "배치 노트 목록 작업은 이제 `deleteNotesByIds(...)`와 `clearNoteFoldersByIds(...)`를 통해 라우팅될 수 있으며, 이들은 QML 배열을 받아 하나의 노트 ID씩 소스 기능으로 다시 팬합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.hpp`",
+      "anchor": "srcappmodelshierarchylibrarylibrarynotemutationcontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "인터페이스 정렬",
+      "anchor": "인터페이스-정렬",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:d9fe4df85556a8881f45f9e9403535176320857c5daae5d6b0d23b8f38ec9df9",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/SystemCalendarStore.cpp.md",
+    "sha256": "5f0930c6761e86f43882882935f35c30024d61adfbd22e742b3b6327368054c5",
+    "bytes": 371,
+    "line_count": 8,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/calendar/SystemCalendarStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/calendar/SystemCalendarStore.cpp`\n",
+      "level": 1,
+      "title": "`src/app/calendar/SystemCalendarStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 8,
+      "raw": "- 생성자는 이제 `ISystemCalendarStore` 베이스를 초기화합니다.\n- 런타임 로캘 새로 고침 및 형식 지정 논리는 변경되지 않았습니다.\n- 패치는 콘크리트 유형 배선에서 인터페이스 배선으로만 협업을 이동합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "생성자는 이제 `ISystemCalendarStore` 베이스를 초기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 로캘 새로 고침 및 형식 지정 논리는 변경되지 않았습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "패치는 콘크리트 유형 배선에서 인터페이스 배선으로만 협업을 이동합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/calendar/SystemCalendarStore.cpp`",
+      "anchor": "srcappcalendarsystemcalendarstorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

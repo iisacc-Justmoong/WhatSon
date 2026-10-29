@@ -1,0 +1,258 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:9edc8bff52aa050d9f4ccb576699917024c6c453bbb15e6969c3af87e4d11fd8",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp.md",
+    "sha256": "6c6c772ec4fe193a0d10cb948a0e265d83a1af3b921129c13f62cd4607c6e4a9",
+    "bytes": 731,
+    "line_count": 26,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "리소스 목록 저장소는 이제 raw asset path가 아니라 `.wsresource` 패키지 경로를 보존한다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"normalization\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 정규화\n",
+      "level": 2,
+      "title": "정규화"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "`setResourcePaths(...)`는 입력값을 trim하는 것에서 끝나지 않고 경로 정규화도 수행한다.\n즉 저장소가 가지는 리스트는:\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 18,
+      "raw": "- 비어 있지 않고\n- 중복이 없고\n- slash form이 정리된 패키지 경로 목록\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "비어 있지 않고",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "중복이 없고",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "slash form이 정리된 패키지 경로 목록",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "이라는 조건을 유지한다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"persistence\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## 지속성\n",
+      "level": 2,
+      "title": "지속성"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "`writeToFile(...)`는 `WhatSonResourcesHierarchyCreator`를 통해 `Resources.wsresources`를 새 object-array 포맷으로 기록한다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`",
+      "anchor": "srcappmodelshierarchyresourceswhatsonresourceshierarchystorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "정규화",
+      "anchor": "정규화",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "지속성",
+      "anchor": "지속성",
+      "start_line": 24
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

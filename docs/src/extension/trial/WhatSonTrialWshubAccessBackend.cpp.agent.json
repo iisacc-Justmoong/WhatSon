@@ -1,0 +1,259 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b9269630547136c0532fadf623df9d64d5c80058aa4deb6a427e5b8ad0fa2b92",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialWshubAccessBackend.cpp.md",
+    "sha256": "b6b973b3ce854d4e68c33a2d80b6fd42540699bfa4c4a8135df41fc0a76c683e",
+    "bytes": 1720,
+    "line_count": 25,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialWshubAccessBackend.cpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 확장을 위해 `.wshub` 액세스 게이트를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 20,
+      "raw": "- 로컬 파일 시스템 경로는 `QDir::cleanPath(...)`로 정규화됩니다.\n- 백엔드는 로컬 `.wshub` 디렉터리와 `.wshub`로 끝나는 URI 경로를 모두 인식합니다.\n- `WhatSonRegisterManager::authenticated()`가 `true`인 경우 백엔드는 시험 등록 확인이 실행되기 전에 허용된 결정을 반환합니다.\n- 평가판이 만료되면 백엔드는 액세스를 거부하고 마지막 활성 날짜를 ISO 형식으로 보고합니다.\n- 로컬 `.wshub` 경로는 `.whatson/trial_register.xml`를 읽고, HMAC 서명을 확인한 다음, `key` 값을 유지된 인앱 평가판 키와 비교합니다.\n- `.whatson/trial_register.xml`가 누락된 경우 키 비교를 완료할 수 없기 때문에 로컬 `.wshub` 경로도 거부됩니다.\n- 누락되거나 잘못된 형식의 로컬 레지스터 파일 키는 파일이 존재할 때 액세스를 거부합니다.\n- 일반 텍스트 `key` 값이 유효한 것처럼 보이더라도 서명 불일치로 인해 액세스도 거부됩니다.\n- XML 페이로드는 로컬에서 읽을 수 없기 때문에 문서 URI는 만료 전용으로 유지됩니다.\n- 완전성을 위해 레지스터 `deviceUUID`가 로드되지만 액세스 결정에는 영향을 미치지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "로컬 파일 시스템 경로는 `QDir::cleanPath(...)`로 정규화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "백엔드는 로컬 `.wshub` 디렉터리와 `.wshub`로 끝나는 URI 경로를 모두 인식합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonRegisterManager::authenticated()`가 `true`인 경우 백엔드는 시험 등록 확인이 실행되기 전에 허용된 결정을 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "평가판이 만료되면 백엔드는 액세스를 거부하고 마지막 활성 날짜를 ISO 형식으로 보고합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 `.wshub` 경로는 `.whatson/trial_register.xml`를 읽고, HMAC 서명을 확인한 다음, `key` 값을 유지된 인앱 평가판 키와 비교합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.whatson/trial_register.xml`가 누락된 경우 키 비교를 완료할 수 없기 때문에 로컬 `.wshub` 경로도 거부됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "누락되거나 잘못된 형식의 로컬 레지스터 파일 키는 파일이 존재할 때 액세스를 거부합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "일반 텍스트 `key` 값이 유효한 것처럼 보이더라도 서명 불일치로 인해 액세스도 거부됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "XML 페이로드는 로컬에서 읽을 수 없기 때문에 문서 URI는 만료 전용으로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "완전성을 위해 레지스터 `deviceUUID`가 로드되지만 액세스 결정에는 영향을 미치지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"integration-intent\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## 통합 의도\n",
+      "level": 2,
+      "title": "통합 의도"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "- 모듈은 `src/extension/trial` 아래에 있으므로 하위 소비 측 시작/로드 흐름은 확장을 필수 코어 종속성으로 전환하지 않고도 선택할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "모듈은 `src/extension/trial` 아래에 있으므로 하위 소비 측 시작/로드 흐름은 확장을 필수 코어 종속성으로 전환하지 않고도 선택할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.cpp`",
+      "anchor": "srcextensiontrialwhatsontrialwshubaccessbackendcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "통합 의도",
+      "anchor": "통합-의도",
+      "start_line": 24
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000016",
+        "line": 25,
+        "text": "- 모듈은 `src/extension/trial` 아래에 있으므로 하위 소비 측 시작/로드 흐름은 확장을 필수 코어 종속성으로 전환하지 않고도 선택할 수 있습니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,379 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:405851b85b7965f4cfabea29aabe4631b47d710c07fe8ea4bbf8d719df3c0044",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "test/README.md",
+    "sha256": "77c488cf3116c52009fccd97cd12f89306a9bec17629f03c4b8bfb0fc7b04036",
+    "bytes": 1863,
+    "line_count": 52,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "Regression Tests",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# Regression Tests\n",
+      "level": 1,
+      "title": "Regression Tests"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "This directory owns the in-repo automated regression suite for WhatSon.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 6,
+      "raw": "The maintained regression surface combines root-level build gates with a Qt Test based C++ runtime suite under\n`test/cpp/`.\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "heading",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "## Entrypoints\n",
+      "level": 2,
+      "title": "Entrypoints"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 10,
+      "end_line": 12,
+      "raw": "- `whatson_build_regression` builds the maintained product binaries and the regression test executable in `build/`.\n- `whatson_cpp_regression` runs the runtime C++ regression assertions only.\n- `whatson_regression` is the default combined verification gate.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`whatson_build_regression` builds the maintained product binaries and the regression test executable in `build/`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_cpp_regression` runs the runtime C++ regression assertions only.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_regression` is the default combined verification gate.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## Commands\n",
+      "level": 2,
+      "title": "Commands"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "Configure the repository in the standard build tree:\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "fenced_code",
+      "start_line": 18,
+      "end_line": 20,
+      "raw": "```bash\ncmake -S . -B build\n```\n",
+      "language": "bash",
+      "code": "cmake -S . -B build\n",
+      "closed": true
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "Run the maintained build gate:\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "fenced_code",
+      "start_line": 24,
+      "end_line": 26,
+      "raw": "```bash\ncmake --build build --target whatson_build_regression -j\n```\n",
+      "language": "bash",
+      "code": "cmake --build build --target whatson_build_regression -j\n",
+      "closed": true
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "Run the default combined regression target:\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "fenced_code",
+      "start_line": 30,
+      "end_line": 32,
+      "raw": "```bash\ncmake --build build --target whatson_regression -j\n```\n",
+      "language": "bash",
+      "code": "cmake --build build --target whatson_regression -j\n",
+      "closed": true
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "Run the same suite through `ctest`:\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "fenced_code",
+      "start_line": 36,
+      "end_line": 38,
+      "raw": "```bash\nctest --test-dir build --output-on-failure -L cpp_regression\n```\n",
+      "language": "bash",
+      "code": "ctest --test-dir build --output-on-failure -L cpp_regression\n",
+      "closed": true
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "## Current Focus\n",
+      "level": 2,
+      "title": "Current Focus"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 52,
+      "raw": "- Runtime content QML coverage pins the center content route to `ImageEditor.qml` plus a blank placeholder for note and\n  non-image selections.\n- Source-tree policy coverage keeps the note editing, body persistence, raw sync, and editor view-mode object families\n  absent from CMake, QML, docs, and the regression source list.\n- Clipboard resource coverage verifies package import through `InAppClipboardManager` without editor paste wrappers or\n  body tag insertion paths.\n- The same coverage verifies that `Main.qml` keeps the desktop shell while removed editor and separated platform app\n  object families stay absent.\n- The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list\n  selection state, resource/package utilities, note file persistence, startup hub resolution, and scheduler support.\n- The suite avoids booting the full application shell or loading a hub package.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Runtime content QML coverage pins the center content route to `ImageEditor.qml` plus a blank placeholder for note and",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Source-tree policy coverage keeps the note editing, body persistence, raw sync, and editor view-mode object families",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Clipboard resource coverage verifies package import through `InAppClipboardManager` without editor paste wrappers or",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The same coverage verifies that `Main.qml` keeps the desktop shell while removed editor and separated platform app",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The remaining C++ suite covers app launch, LVRS context binding, hierarchy/navigation controllers, note-list",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The suite avoids booting the full application shell or loading a hub package.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "Regression Tests",
+      "anchor": "regression-tests",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000007",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Entrypoints",
+      "anchor": "entrypoints",
+      "start_line": 8
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Commands",
+      "anchor": "commands",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Current Focus",
+      "anchor": "current-focus",
+      "start_line": 40
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [
+      {
+        "block_id": "b000015",
+        "language": "bash",
+        "code": "cmake -S . -B build\n"
+      },
+      {
+        "block_id": "b000019",
+        "language": "bash",
+        "code": "cmake --build build --target whatson_build_regression -j\n"
+      },
+      {
+        "block_id": "b000023",
+        "language": "bash",
+        "code": "cmake --build build --target whatson_regression -j\n"
+      },
+      {
+        "block_id": "b000027",
+        "language": "bash",
+        "code": "ctest --test-dir build --output-on-failure -L cpp_regression\n"
+      }
+    ],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

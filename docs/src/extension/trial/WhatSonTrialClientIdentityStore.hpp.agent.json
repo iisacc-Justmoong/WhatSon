@@ -1,0 +1,246 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3b35c97e5b936a934edcc9f6cc0f7096df9dab4b38bfda20a0cc3b41a34445e5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialClientIdentityStore.hpp.md",
+    "sha256": "4b476a3c3bde24767cd6bf6935b9338f25148d87a8391cda52fc50d52032e679",
+    "bytes": 1493,
+    "line_count": 24,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialClientIdentityStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialClientIdentityStore.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClientIdentityStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "현재 설치에 대한 지속형 장치 UUID, 32문자 클라이언트 키 및 등록 무결성 비밀을 소유하는 평가판 전용 인앱 ID 저장소를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 17,
+      "raw": "- `loadDeviceUuid()` / `loadClientKey()`: 정규화된 지속 값을 반환하거나 유효하지 않은 저장된 데이터를 지웁니다.\n- `loadRegisterIntegritySecret()`: 현재 설치에 대해 정규화된 레지스터 서명 비밀을 반환합니다.\n- `loadIdentity()`: 대체를 생성하지 않고 정규화된 값 쌍을 반환합니다.\n- `ensureIdentity()`: 장치 UUID, 클라이언트 키 및 레지스터 무결성 비밀이 존재함을 보장합니다.\n- `ensureRegisterIntegritySecret()`: `trial_register.xml`에 사용되는 HMAC 비밀을 느리게 생성합니다.\n- `storeIdentity(...)`: 저장된 ID를 정규화된 값으로 바꿉니다.\n- `clear()`: 보안 저장소에서 평가판 전용 ID 및 등록 무결성 비밀을 제거하고 나머지 레거시 일반 설정을 모두 지웁니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadDeviceUuid()` / `loadClientKey()`: 정규화된 지속 값을 반환하거나 유효하지 않은 저장된 데이터를 지웁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadRegisterIntegritySecret()`: 현재 설치에 대해 정규화된 레지스터 서명 비밀을 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadIdentity()`: 대체를 생성하지 않고 정규화된 값 쌍을 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ensureIdentity()`: 장치 UUID, 클라이언트 키 및 레지스터 무결성 비밀이 존재함을 보장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ensureRegisterIntegritySecret()`: `trial_register.xml`에 사용되는 HMAC 비밀을 느리게 생성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`storeIdentity(...)`: 저장된 ID를 정규화된 값으로 바꿉니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`clear()`: 보안 저장소에서 평가판 전용 ID 및 등록 무결성 비밀을 제거하고 나머지 레거시 일반 설정을 모두 지웁니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"data-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 데이터 계약\n",
+      "level": 2,
+      "title": "데이터 계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 24,
+      "raw": "- `deviceUuid`는 클라이언트 키와 별도로 저장되므로 향후 평가판 흐름에서 XML를 구문 분석하지 않고도 검사할 수 있습니다.\n- `key`는 항상 32문자 영숫자 문자열이어야 합니다.\n- 레지스터 무결성 비밀은 64문자 소문자 16진수 문자열입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`deviceUuid`는 클라이언트 키와 별도로 저장되므로 향후 평가판 흐름에서 XML를 구문 분석하지 않고도 검사할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`key`는 항상 32문자 영숫자 문자열이어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레지스터 무결성 비밀은 64문자 소문자 16진수 문자열입니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClientIdentityStore.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialclientidentitystorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "데이터 계약",
+      "anchor": "데이터-계약",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,402 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6a0ed6bb37cadac943f840d9f1b57311f1e12b239e9209a9aaaa1fe32bb3c699",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/DetailContents.qml.md",
+    "sha256": "a0a9e7220416cdd1b2fc98369d7cd883738583c0d40e294d3f188219beada5e5",
+    "bytes": 1948,
+    "line_count": 39,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/DetailContents.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/DetailContents.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailContents.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailContents.qml`는 데스크탑 세부 패널의 상태 전환 본체를 소유합니다. 구현된 기본 양식은 Figma `Properties` 예제와 라이브 `fileStat` 통계 양식입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"root-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 루트 계약\n",
+      "level": 2,
+      "title": "루트 계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- 루트 `objectName`: `DetailContents`\n- 입력에는 활성 콘텐츠 컨트롤러, 세부 패널 컨트롤러, 파일 상태 컨트롤러 및 계층 선택기 컨트롤러가 포함됩니다.\n- 정식 상태는 `detached`, `properties`, `fileStat`, `insert`, `fileHistory`, `layer` 및 `help`입니다.\n- 레거시 별칭은 허용되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 `objectName`: `DetailContents`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "입력에는 활성 콘텐츠 컨트롤러, 세부 패널 컨트롤러, 파일 상태 컨트롤러 및 계층 선택기 컨트롤러가 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정식 상태는 `detached`, `properties`, `fileStat`, `insert`, `fileHistory`, `layer` 및 `help`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레거시 별칭은 허용되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"implemented-properties-form\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 구현된 속성 양식\n",
+      "level": 2,
+      "title": "구현된 속성 양식"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 21,
+      "raw": "- `Projects`, `Bookmark` 및 `Progress` 선택기는 전용 세부 패널 로컬 선택기 컨트롤러에서 읽습니다.\n- `FoldersList` 및 `TagsList` 미러는 `.wsnhead` 메타데이터를 유지하고 `DetailPanelController`를 통해 씁니다.\n- 공유 `DetailMetadataHierarchyPicker.qml`는 LVRS 상황에 맞는 메뉴를 통해 할당 가능한 계층 구조 항목을 렌더링합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`Projects`, `Bookmark` 및 `Progress` 선택기는 전용 세부 패널 로컬 선택기 컨트롤러에서 읽습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FoldersList` 및 `TagsList` 미러는 `.wsnhead` 메타데이터를 유지하고 `DetailPanelController`를 통해 씁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공유 `DetailMetadataHierarchyPicker.qml`는 LVRS 상황에 맞는 메뉴를 통해 할당 가능한 계층 구조 항목을 렌더링합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"lvrs-reuse\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## LVRS 재사용\n",
+      "level": 2,
+      "title": "LVRS 재사용"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 28,
+      "raw": "- `LV.ComboBox`, `LV.ContextMenu`, `LV.HierarchyItem` 및 `LV.ListFooter`를 사용합니다.\n- 임시 색상이나 글꼴 대신 LVRS 타이포그래피와 패널 토큰을 사용합니다.\n- 컴팩트 행, 목록 카드, 바닥글 막대 및 양식 삽입은 LVRS 테마 토큰에서 크기를 가져옵니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LV.ComboBox`, `LV.ContextMenu`, `LV.HierarchyItem` 및 `LV.ListFooter`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "임시 색상이나 글꼴 대신 LVRS 타이포그래피와 패널 토큰을 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 행, 목록 카드, 바닥글 막대 및 양식 삽입은 LVRS 테마 토큰에서 크기를 가져옵니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "<a id=\"file-statistics-state\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 파일 통계 상태\n",
+      "level": 2,
+      "title": "파일 통계 상태"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 33,
+      "end_line": 34,
+      "raw": "- `fileStat` 상태는 `DetailFileStatForm.qml`를 마운트합니다.\n- 통계 화면은 지속된 `.wsnhead <fileStat>` 값과 현재 헤더 메타데이터를 렌더링합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`fileStat` 상태는 `DetailFileStatForm.qml`를 마운트합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "통계 화면은 지속된 `.wsnhead <fileStat>` 값과 현재 헤더 메타데이터를 렌더링합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"detached-state\"></a>\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 분리된 상태\n",
+      "level": 2,
+      "title": "분리된 상태"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "- `detached`는 메타데이터 선택기와 인라인 폴더 편집을 닫은 다음 양식 콘텐츠를 렌더링하지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`detached`는 메타데이터 선택기와 인라인 폴더 편집을 닫은 다음 양식 콘텐츠를 렌더링하지 않습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailContents.qml`",
+      "anchor": "srcappqmlviewpanelsdetaildetailcontentsqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "루트 계약",
+      "anchor": "루트-계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현된 속성 양식",
+      "anchor": "구현된-속성-양식",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "LVRS 재사용",
+      "anchor": "lvrs-재사용",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "파일 통계 상태",
+      "anchor": "파일-통계-상태",
+      "start_line": 32
+    },
+    {
+      "block_id": "b000030",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "분리된 상태",
+      "anchor": "분리된-상태",
+      "start_line": 38
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

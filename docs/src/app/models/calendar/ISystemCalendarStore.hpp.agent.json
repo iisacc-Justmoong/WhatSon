@@ -1,0 +1,226 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:8edaab03ccbf33f8fdd8207b4685ee0a6026bdf397af70b187267cd722c73931",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/ISystemCalendarStore.hpp.md",
+    "sha256": "24eba464ae6f7dd615183090b47e6e8eb29006d29ffb47d2cab4515f6851a8b7",
+    "bytes": 726,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/calendar/ISystemCalendarStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/calendar/ISystemCalendarStore.hpp`\n",
+      "level": 1,
+      "title": "`src/app/calendar/ISystemCalendarStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`ISystemCalendarStore`는 인터페이스 경계를 통해 로케일 및 날짜 형식 상태를 노출합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- 로케일 스냅샷 접근자: 로케일 이름, UI 언어, 시간대, 날짜 형식, 첫 번째 요일\n- 포맷: `snapshot`, `formatShortDate`, `formatNoteDate`\n- 후크: `refreshFromSystem`, `requestStoreHook`\n- 신호: `systemInfoChanged`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "로케일 스냅샷 접근자: 로케일 이름, UI 언어, 시간대, 날짜 형식, 첫 번째 요일",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "포맷: `snapshot`, `formatShortDate`, `formatNoteDate`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후크: `refreshFromSystem`, `requestStoreHook`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "신호: `systemInfoChanged`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 20,
+      "raw": "- 이제 계층 컨트롤러는 구체적인 저장소 대신 이 인터페이스를 관찰합니다.\n- 정적 대체 경로 도우미는 개체 통신이 아닌 유틸리티 논리로 `SystemCalendarStore`에 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 계층 컨트롤러는 구체적인 저장소 대신 이 인터페이스를 관찰합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정적 대체 경로 도우미는 개체 통신이 아닌 유틸리티 논리로 `SystemCalendarStore`에 유지됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/calendar/ISystemCalendarStore.hpp`",
+      "anchor": "srcappcalendarisystemcalendarstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

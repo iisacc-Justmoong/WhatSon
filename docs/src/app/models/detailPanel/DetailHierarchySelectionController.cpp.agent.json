@@ -1,0 +1,219 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6181c70965f3195fd6ab9d8035757026049be3ebea31049af2a783d84991363e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailHierarchySelectionController.cpp.md",
+    "sha256": "f8df7a9cf21a2677f98e0d5a262dd152d955648e87975f7cb545fd776cf561ad",
+    "bytes": 1806,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailHierarchySelectionController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailHierarchySelectionController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailHierarchySelectionController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 구현은 사이드바 계층 구조 선택 변동에서 세부 정보 패널을 분리된 상태로 유지합니다. 들어오는 선택기 항목의 스냅샷을 찍고, 삽입된 세부 소스 개체의 파일 지원 선택기 선택 변경 사항을 미러링하며, 옵션 목록 새로 고침 시 세부 패널 로컬 선택을 유지합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"synchronization-rules\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 동기화 규칙\n",
+      "level": 2,
+      "title": "동기화 규칙"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `setSourceController(...)`는 소스 항목 및 소스 선택의 초기 일회성 가져오기를 수행합니다.\n- 해당 핸드오프 후 소스 항목 목록 새로 고침이 미러링되고 소스 `selectedIndexChanged()`는 삽입된 세부 선택기 소스에서만 허용됩니다.\n- 로컬 `setSelectedIndex(...)`는 소스 계층 컨트롤러에 다시 쓰지 않습니다.\n- 선택 보존에서는 `key`, `itemId`, `label` 순으로 선호합니다.\n- `No project`, `No bookmark` 및 `No progress`와 같은 합성 지우기 항목은 일반 키 항목처럼 처리되므로 지워진 선택기 상태는 도메인 항목으로 돌아가지 않고 옵션 목록 새로 고침을 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setSourceController(...)`는 소스 항목 및 소스 선택의 초기 일회성 가져오기를 수행합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "해당 핸드오프 후 소스 항목 목록 새로 고침이 미러링되고 소스 `selectedIndexChanged()`는 삽입된 세부 선택기 소스에서만 허용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 `setSelectedIndex(...)`는 소스 계층 컨트롤러에 다시 쓰지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택 보존에서는 `key`, `itemId`, `label` 순으로 선호합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`No project`, `No bookmark` 및 `No progress`와 같은 합성 지우기 항목은 일반 키 항목처럼 처리되므로 지워진 선택기 상태는 도메인 항목으로 돌아가지 않고 옵션 목록 새로 고침을 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"why-it-exists\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 그것이 존재하는 이유\n",
+      "level": 2,
+      "title": "그것이 존재하는 이유"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "상세 패널은 계층 선택자와 동일한 도메인 데이터를 사용하지만 동일한 변경 가능 선택 객체를 공유할 수 없습니다. 이 어댑터가 없으면 계층 행을 클릭하는 것이 상세 패널 콤보 상태를 변형시키게 되며 그 반대도 마찬가지입니다. 파일 기반 상세 선택기 소스는 이제 이 어댑터를 사용하여 콤보 상태를 `.wsnhead` 읽기와 쓰기로 푸시하며 콤보를 사이드바 행 클릭과 재결합하지 않습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailHierarchySelectionController.cpp`",
+      "anchor": "srcappmodelsdetailpaneldetailhierarchyselectioncontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "동기화 규칙",
+      "anchor": "동기화-규칙",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "그것이 존재하는 이유",
+      "anchor": "그것이-존재하는-이유",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

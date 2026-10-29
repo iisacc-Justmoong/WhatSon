@@ -1,0 +1,353 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:350e9a55ad5dc02a174905327f15baf3ff94f7941f6297da215bf44dd9c5a9b6",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp.md",
+    "sha256": "7c7b180d693d2389e3fa169aa71e61a0250acd517acd5a75bd89cfb4413aafa7",
+    "bytes": 2240,
+    "line_count": 36,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`WhatSonRuntimeParallelLoader.cpp`는 요청된 도메인 스냅샷 작업에 대해 LVRS `BootstrapParallelTask` 항목을 빌드하고 `lvrs::runBootstrapParallelTasks(...)`를 통해 실행한 다음 요청된 도메인 세트가 성공한 후 변경할 수 없는 스냅샷 페이로드를 기본 스레드 컨트롤러에 다시 적용합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"requested-domain-selection\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 요청된 도메인 선택\n",
+      "level": 2,
+      "title": "요청된 도메인 선택"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "이제 로더는 명시적인 요청 도메인 마스크를 허용합니다. 따라서 시작 시 중요한 첫 번째 프레임 도메인만 로드하고 지연된 후속 작업을 위해 우선 순위가 낮은 계층만 남겨 둘 수 있습니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"shared-library-snapshot-rule\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 공유 라이브러리 스냅샷 규칙\n",
+      "level": 2,
+      "title": "공유 라이브러리 스냅샷 규칙"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "라이브러리와 북마크 도메인이 모두 존재하는 경우 이제 로더는 라이브러리 도메인을 한 번 인덱싱하고 해당 공유 라이브러리 스냅샷에서 북마크를 파생합니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "이는 북마크 작업이 동일한 라이브러리 노트 세트를 독립적으로 다시 분석한 이전 중복 `.wshub` 순회를 제거합니다.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"failure-behavior\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 실패 행동\n",
+      "level": 2,
+      "title": "실패 행동"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 27,
+      "end_line": 30,
+      "raw": "- 라이브러리 스냅샷이 실패하면 파생된 책갈피 결과도 동일한 오류와 함께 실패합니다.\n- 라이브러리 도메인이 없으면 로더는 독립형 북마크 스냅샷 경로로 대체됩니다.\n- 로더는 이제 `hub.runtime`를 포함한 모든 요청된 도메인을 LVRS `BootstrapParallel`를 통해 스테이지하며, 모든 요청된 도메인이 성공한 경우에만 스냅샷을 라이브 컨트롤러/런타임 저장소에 다시 적용합니다.\n- 요청된 도메인 중 하나라도 실패하면, 로더는 현재 런타임 상태를 부분적으로 변형시키지 않고 실패를 반환합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "라이브러리 스냅샷이 실패하면 파생된 책갈피 결과도 동일한 오류와 함께 실패합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리 도메인이 없으면 로더는 독립형 북마크 스냅샷 경로로 대체됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로더는 이제 `hub.runtime`를 포함한 모든 요청된 도메인을 LVRS `BootstrapParallel`를 통해 스테이지하며, 모든 요청된 도메인이 성공한 경우에만 스냅샷을 라이브 컨트롤러/런타임 저장소에 다시 적용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "요청된 도메인 중 하나라도 실패하면, 로더는 현재 런타임 상태를 부분적으로 변형시키지 않고 실패를 반환합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "<a id=\"test-coverage\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## 테스트 범위\n",
+      "level": 2,
+      "title": "테스트 범위"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "paragraph",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "`test/cpp/suites/runtime_parallel_loader_tests.cpp`는 이 로더를 LVRS `BootstrapParallel`에 유지하고 직접 `QThread`/`QEventLoop` 작업자 관리가 반환되는 것을 방지하며 전부 아니면 전무 적용 게이트를 보존합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`",
+      "anchor": "srcappruntimethreadingwhatsonruntimeparallelloadercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "요청된 도메인 선택",
+      "anchor": "요청된-도메인-선택",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공유 라이브러리 스냅샷 규칙",
+      "anchor": "공유-라이브러리-스냅샷-규칙",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "실패 행동",
+      "anchor": "실패-행동",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트 범위",
+      "anchor": "테스트-범위",
+      "start_line": 34
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

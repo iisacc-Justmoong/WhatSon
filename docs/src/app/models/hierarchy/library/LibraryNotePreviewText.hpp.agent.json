@@ -1,0 +1,272 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:bdf537130a070f52d3f8149f2fe9359d446e416c7e78e31e82090952027f6e86",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryNotePreviewText.hpp.md",
+    "sha256": "c2fdc4a93665da9911015e6421307178c3056e71c837a87f9778e873a99290d9",
+    "bytes": 1594,
+    "line_count": 28,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryNotePreviewText.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryNotePreviewText.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNotePreviewText.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 보기 계층에서 메모 저장소를 다시 열지 않고 메타데이터 기반 레이블이 필요한 라이브러리 도메인 소비자를 위한 공유 메모 미리 보기 텍스트 규칙을 제공합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"shared-preview-rules\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공유 미리보기 규칙\n",
+      "level": 2,
+      "title": "공유 미리보기 규칙"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 18,
+      "raw": "- `notePrimaryText(...)`는 노트 목록 `primaryText` 계약과 일치합니다.\n  - `noteId`를 선호합니다\n  - `project`로 대체\n  - 비어 있지 않은 첫 번째 폴더 레이블로 대체\n- `notePrimaryHeadline(...)`는 동일한 메타데이터 페이로드에서 첫 번째 비어 있지 않은 줄을 추출하여 캘린더 이벤트 칩과 같은 컴팩트한 소비자들이 두 번째 레이블 규칙을 고안하는 대신 노트 리스트 헤드라인 텍스트를 재사용할 수 있도록 합니다.\n- 호출자는 완전히 정규화된 `LibraryNoteRecord` 데이터를 전달해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`notePrimaryText(...)`는 노트 목록 `primaryText` 계약과 일치합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteId`를 선호합니다",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`project`로 대체",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "비어 있지 않은 첫 번째 폴더 레이블로 대체",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`notePrimaryHeadline(...)`는 동일한 메타데이터 페이로드에서 첫 번째 비어 있지 않은 줄을 추출하여 캘린더 이벤트 칩과 같은 컴팩트한 소비자들이 두 번째 레이블 규칙을 고안하는 대신 노트 리스트 헤드라인 텍스트를 재사용할 수 있도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호출자는 완전히 정규화된 `LibraryNoteRecord` 데이터를 전달해야 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 28,
+      "raw": "- `test/cpp/suites/library_note_list_model_tests.cpp`는 메타데이터 미리보기 경로를 다룹니다.\n- 회귀 체크리스트:\n  - `noteId`가 포함된 메모는 프로젝트/폴더 대체 경로보다 해당 ID를 선호해야 합니다.\n  - `notePrimaryHeadline(...)`는 동일한 미리보기 텍스트의 보이는 맨 윗줄을 반환해야 합니다.\n  - 빈 미리보기 페이로드는 하위 소비 측 호출자가 자신의 대체 경로를 결정할 수 있도록 빈 문자열을 계속 반환해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/library_note_list_model_tests.cpp`는 메타데이터 미리보기 경로를 다룹니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteId`가 포함된 메모는 프로젝트/폴더 대체 경로보다 해당 ID를 선호해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`notePrimaryHeadline(...)`는 동일한 미리보기 텍스트의 보이는 맨 윗줄을 반환해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "빈 미리보기 페이로드는 하위 소비 측 호출자가 자신의 대체 경로를 결정할 수 있도록 빈 문자열을 계속 반환해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNotePreviewText.hpp`",
+      "anchor": "srcappmodelshierarchylibrarylibrarynotepreviewtexthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공유 미리보기 규칙",
+      "anchor": "공유-미리보기-규칙",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 22
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

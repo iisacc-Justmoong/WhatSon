@@ -1,0 +1,333 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:9026d5648dc75232c0ec951147195b2dd4d0fc73c6bc80a80524fd58bd4b7256",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sensor/UnusedResourcesSensor.cpp.md",
+    "sha256": "086017954da44c491bad04fca613f9baecdb420323ffed2feab340bf0ffa5d6b",
+    "bytes": 1297,
+    "line_count": 36,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sensor/UnusedResourcesSensor.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sensor/UnusedResourcesSensor.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sensor/UnusedResourcesSensor.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "압축이 풀린 허브 파일에 대해 사용되지 않은 리소스 검색을 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"scan-strategy\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 스캔 전략\n",
+      "level": 2,
+      "title": "스캔 전략"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "1. `hubPath`가 압축이 풀린 `.wshub` 디렉터리를 가리키는지 확인합니다.\n2. 각 허브 리소스 루트 아래의 모든 `.wsresource` 패키지를 열거합니다.\n3. 패키지 인벤토리에 대한 패키지 설명자를 반환합니다. 노트 본문 소스는 스캔되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`hubPath`가 압축이 풀린 `.wshub` 디렉터리를 가리키는지 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "각 허브 리소스 루트 아래의 모든 `.wsresource` 패키지를 열거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "패키지 인벤토리에 대한 패키지 설명자를 반환합니다. 노트 본문 소스는 스캔되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"returned-entry-shape\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 반환된 항목 모양\n",
+      "level": 2,
+      "title": "반환된 항목 모양"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 30,
+      "raw": "- `resourcePath`\n- `packageDirectoryPath`\n- `packageName`\n- `resourceId`\n- `assetPath`\n- `assetAbsolutePath`\n- `annotationPath`\n- `annotationAbsolutePath`\n- `bucket`\n- `type`\n- `format`\n- `metadataValid`\n- `metadataError`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resourcePath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`packageDirectoryPath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`packageName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourceId`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assetPath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assetAbsolutePath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`annotationPath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`annotationAbsolutePath`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bucket`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`type`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`format`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`metadataValid`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`metadataError`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "<a id=\"error-handling\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## 오류 처리\n",
+      "level": 2,
+      "title": "오류 처리"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 35,
+      "end_line": 36,
+      "raw": "- 잘못된 허브 루트 및 읽을 수 없는 메모 본문 파일은 `lastError`를 설정하고 사용되지 않은 리소스 목록을 지웁니다.\n- 손상된 `resource.xml` 메타데이터는 센서에서 패키지를 숨기지 않습니다. 구현은 패키지 경로 추론으로 되돌아가 손상된 패키지가 사라지는 대신 사용되지 않은 리소스로 표시됩니다 아무런 알림 없이\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "잘못된 허브 루트 및 읽을 수 없는 메모 본문 파일은 `lastError`를 설정하고 사용되지 않은 리소스 목록을 지웁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "손상된 `resource.xml` 메타데이터는 센서에서 패키지를 숨기지 않습니다. 구현은 패키지 경로 추론으로 되돌아가 손상된 패키지가 사라지는 대신 사용되지 않은 리소스로 표시됩니다 아무런 알림 없이",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sensor/UnusedResourcesSensor.cpp`",
+      "anchor": "srcappmodelssensorunusedresourcessensorcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "스캔 전략",
+      "anchor": "스캔-전략",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "반환된 항목 모양",
+      "anchor": "반환된-항목-모양",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "오류 처리",
+      "anchor": "오류-처리",
+      "start_line": 34
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

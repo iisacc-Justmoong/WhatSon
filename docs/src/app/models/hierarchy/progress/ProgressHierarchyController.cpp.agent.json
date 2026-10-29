@@ -1,0 +1,547 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:fc9ac59e0e4a168e3a5aaf45e8f560cc1f78467a3540801d74c7ad06757b7ed5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/progress/ProgressHierarchyController.cpp.md",
+    "sha256": "94c1390296db749713b37a99084dbe6af7ed912a50cb79911292409106bb7077",
+    "bytes": 4757,
+    "line_count": 59,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/progress/ProgressHierarchyController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 구현은 고정된 10행 LVRS 분류법에 진행 사이드바를 유지하는 동시에 `.wsnhead` 메타데이터에서 일치하는 메모 목록을 구체화합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"runtime-data-flow\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 런타임 데이터 흐름\n",
+      "level": 2,
+      "title": "런타임 데이터 흐름"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- `loadFromWshub(...)`는 활성 `Progress.wsprogress`를 해석하고, 그 페이로드를 보존한 뒤, 허브 라이브러리를 `LibraryAll`를 통해 인덱싱합니다.\n- `applyRuntimeSnapshot(...)`는 시작 스냅샷에서 동일한 페이로드를 새로 고침하고, 스냅샷 파일 경로에서 해당 `.wshub`를 해석하여 메모를 재인덱싱합니다.\n- `setProgressState(...)`는 고정된 10-행 사이드바 분류 체계를 재구성하는 동안 지속된 페이로드를 동기화 상태로 유지하고 즉시 노트 필터링을 다시 적용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadFromWshub(...)`는 활성 `Progress.wsprogress`를 해석하고, 그 페이로드를 보존한 뒤, 허브 라이브러리를 `LibraryAll`를 통해 인덱싱합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applyRuntimeSnapshot(...)`는 시작 스냅샷에서 동일한 페이로드를 새로 고침하고, 스냅샷 파일 경로에서 해당 `.wshub`를 해석하여 메모를 재인덱싱합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setProgressState(...)`는 고정된 10-행 사이드바 분류 체계를 재구성하는 동안 지속된 페이로드를 동기화 상태로 유지하고 즉시 노트 필터링을 다시 적용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"controller-hook-contract\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 컨트롤러 후크 계약\n",
+      "level": 2,
+      "title": "컨트롤러 후크 계약"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "`requestControllerHook()`는 이제 진행 파일 경로가 알려지면 실제 자체 새로 고침을 수행합니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 25,
+      "raw": "- `reloadFromProgressFilePath(...)`는 `Progress.wsprogress`를 재검증하고 `setProgressState(...)`를 다시 적용합니다.\n- 동일한 훅을 다시 로드하면 `refreshIndexedNotesFromProgressFilePath(...)`를 통해 라이브러리 노트를 재인덱싱하여 진행 상황과 필터링된 노트 행이 함께 업데이트됩니다.\n- 재로드 오류는 로드 상태 실패와 동시에 `controllerHookRequested()`를 방출하여 훅 알림 시퀀싱을 보존합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`reloadFromProgressFilePath(...)`는 `Progress.wsprogress`를 재검증하고 `setProgressState(...)`를 다시 적용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "동일한 훅을 다시 로드하면 `refreshIndexedNotesFromProgressFilePath(...)`를 통해 라이브러리 노트를 재인덱싱하여 진행 상황과 필터링된 노트 행이 함께 업데이트됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "재로드 오류는 로드 상태 실패와 동시에 `controllerHookRequested()`를 방출하여 훅 알림 시퀀싱을 보존합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "<a id=\"note-list-semantics\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "## 노트 목록 의미\n",
+      "level": 2,
+      "title": "노트 목록 의미"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 31,
+      "end_line": 37,
+      "raw": "- `noteListModel()`는 `LibraryNoteListModel`를 노출하여 진행 영역이 공유 노트 목록 및 편집기 선택 브리지를 구동할 수 있도록 합니다.\n- 진행 상황 필터링된 노트 행은 이제 선택된 노트의 RAW /source 스냅샷을 `LibraryNoteListItem::bodyText`에 보관합니다. 목록은 여전히 미리보기/검색 메타데이터만 렌더링하지만, 편집기 선택 브리지는 이제 진행 메모 목록 행 자체에서 현재 노트 본문을 부트스트랩 할 수 있으며, 비동기 재로드가 필요하기 전에 가능합니다.\n- `selectedIndex`는 사이드바 행이 현재 10항목 제품 분류 체계에 고정되어 있기 때문에 정규 진행 열거값으로 간주됩니다.\n- 계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택은 필터링하기 전에 첫 번째 보이는 행으로 정규화됩니다. 현재 첫 번째 진행 버킷은 `First draft`입니다.\n- `refreshNoteListForSelection()` 은 선택된 진행 값과 일치하는 `.wsnhead`   `progress` 정수 값을 가진 메모만 유지하므로, 초기 진행 상태는 이제 모든 인덱스된 메모를 표시하는 대신 첫 번째 버킷으로 필터링됩니다.\n- `noteDirectoryPathForNoteId(...)`는 세부 패널 전류 노트 배선과 호환되는 진행 도메인을 유지합니다.\n- 본문 저장, 본문 상태 적용, 편집기 상태 새로 고침 및 단일 노트 메타데이터 재로드 API가 노트 편집기/저장 경계와 함께 제거되었습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`noteListModel()`는 `LibraryNoteListModel`를 노출하여 진행 영역이 공유 노트 목록 및 편집기 선택 브리지를 구동할 수 있도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "진행 상황 필터링된 노트 행은 이제 선택된 노트의 RAW /source 스냅샷을 `LibraryNoteListItem::bodyText`에 보관합니다. 목록은 여전히 미리보기/검색 메타데이터만 렌더링하지만, 편집기 선택 브리지는 이제 진행 메모 목록 행 자체에서 현재 노트 본문을 부트스트랩 할 수 있으며, 비동기 재로드가 필요하기 전에 가능합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selectedIndex`는 사이드바 행이 현재 10항목 제품 분류 체계에 고정되어 있기 때문에 정규 진행 열거값으로 간주됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택은 필터링하기 전에 첫 번째 보이는 행으로 정규화됩니다. 현재 첫 번째 진행 버킷은 `First draft`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`refreshNoteListForSelection()` 은 선택된 진행 값과 일치하는 `.wsnhead`   `progress` 정수 값을 가진 메모만 유지하므로, 초기 진행 상태는 이제 모든 인덱스된 메모를 표시하는 대신 첫 번째 버킷으로 필터링됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteDirectoryPathForNoteId(...)`는 세부 패널 전류 노트 배선과 호환되는 진행 도메인을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "본문 저장, 본문 상태 적용, 편집기 상태 새로 고침 및 단일 노트 메타데이터 재로드 API가 노트 편집기/저장 경계와 함께 제거되었습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"hierarchy-count-badge\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "## 계층 수 배지\n",
+      "level": 2,
+      "title": "계층 수 배지"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "list",
+      "start_line": 43,
+      "end_line": 45,
+      "raw": "- 이제 `depthItems()`에는 진행 행당 `count` 값이 포함됩니다.\n- 배지 값은 인덱스된 노트 메타데이터에서 `progress` 정수가 행 인덱스와 동일한 노트를 계산하여 계산됩니다.\n- 런타임 메타데이터 새로 고침 경로(`refreshIndexedNotesFromWshub(...)`, `refreshIndexedNotesFromProgressFilePath(...)`)는 이제 노트 새로 고침 후 `hierarchyModelChanged()`를 발행하여 재시작 전까지 진행 상황이 오래되지 않도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 `depthItems()`에는 진행 행당 `count` 값이 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "배지 값은 인덱스된 노트 메타데이터에서 `progress` 정수가 행 인덱스와 동일한 노트를 계산하여 계산됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 메타데이터 새로 고침 경로(`refreshIndexedNotesFromWshub(...)`, `refreshIndexedNotesFromProgressFilePath(...)`)는 이제 노트 새로 고침 후 `hierarchyModelChanged()`를 발행하여 재시작 전까지 진행 상황이 오래되지 않도록 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "html",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "<a id=\"intentional-constraints\"></a>\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "heading",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "## 의도적인 제약\n",
+      "level": 2,
+      "title": "의도적인 제약"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "list",
+      "start_line": 51,
+      "end_line": 52,
+      "raw": "- 진행 행은 사용자가 편집할 수 있는 폴더가 아니라 제품 정의 지원 버킷이므로 이름 변경, 생성 및 삭제가 비활성화된 상태로 유지됩니다.\n- 첫 번째 4 행은 여전히 체브론을 노출하므로, 아직 자식 노드가 구현되지 않았음에도 불구하고 컨트롤러가 Figma 정렬된 확장 상태를 유지할 수 있습니다. `setItemExpanded(...)`는 이 투영을 동기화하기 전에 공유 행 검증/상태 전환을 `IHierarchyController`에 위임합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "진행 행은 사용자가 편집할 수 있는 폴더가 아니라 제품 정의 지원 버킷이므로 이름 변경, 생성 및 삭제가 비활성화된 상태로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "첫 번째 4 행은 여전히 체브론을 노출하므로, 아직 자식 노드가 구현되지 않았음에도 불구하고 컨트롤러가 Figma 정렬된 확장 상태를 유지할 수 있습니다. `setItemExpanded(...)`는 이 투영을 동기화하기 전에 공유 행 검증/상태 전환을 `IHierarchyController`에 위임합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "html",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "<a id=\"regression-checks\"></a>\n"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "heading",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "## 회귀 수표\n",
+      "level": 2,
+      "title": "회귀 수표"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "list",
+      "start_line": 58,
+      "end_line": 59,
+      "raw": "- 진행 계층 구조에 진입하려면 활성 사이드바 행과 메모 목록 필터가 첫 번째 보이는 버킷에 정렬된 상태로 유지되어야 합니다.\n- 런타임 페이로드 새로 고침은 행이 여전히 존재할 때마다 정규화된 첫 번째 행 대체 경로를 유지해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "진행 계층 구조에 진입하려면 활성 사이드바 행과 메모 목록 필터가 첫 번째 보이는 버킷에 정렬된 상태로 유지되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 페이로드 새로 고침은 행이 여전히 존재할 때마다 정규화된 첫 번째 행 대체 경로를 유지해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/progress/ProgressHierarchyController.cpp`",
+      "anchor": "srcappmodelshierarchyprogressprogresshierarchycontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 데이터 흐름",
+      "anchor": "런타임-데이터-흐름",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "컨트롤러 후크 계약",
+      "anchor": "컨트롤러-후크-계약",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "노트 목록 의미",
+      "anchor": "노트-목록-의미",
+      "start_line": 29
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계층 수 배지",
+      "anchor": "계층-수-배지",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000037",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의도적인 제약",
+      "anchor": "의도적인-제약",
+      "start_line": 49
+    },
+    {
+      "block_id": "b000043",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "회귀 수표",
+      "anchor": "회귀-수표",
+      "start_line": 56
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

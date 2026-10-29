@@ -1,0 +1,236 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:307df9afd3441b8258b335e086a8179a127fd06793d264d377d62c46510be79d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialInstallStore.hpp.md",
+    "sha256": "6f9f8691f48cb4116cd188043d706f161694fb7b37b157be7ae5305f3145be0c",
+    "bytes": 1226,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialInstallStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialInstallStore.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialInstallStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 확장에 대한 로컬 설치 날짜 키를 소유하는 지속성 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `defaultInstallDateSettingsKey()`: 평가판 모듈에서 사용하는 정식 `QSettings` 키를 반환합니다.\n- `loadInstallDate()`: 유효한 날짜가 저장되지 않은 경우 지속된 날짜를 읽고 잘못된 `QDate`를 반환합니다.\n- `ensureInstallDate(...)`: 처음 사용할 때 설치 날짜를 느리게 생성합니다.\n- `storeInstallDate(...)`: ISO 형식으로 명시적인 설치 날짜를 기록합니다.\n- `clear()`: 저장된 값을 제거합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`defaultInstallDateSettingsKey()`: 평가판 모듈에서 사용하는 정식 `QSettings` 키를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadInstallDate()`: 유효한 날짜가 저장되지 않은 경우 지속된 날짜를 읽고 잘못된 `QDate`를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ensureInstallDate(...)`: 처음 사용할 때 설치 날짜를 느리게 생성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`storeInstallDate(...)`: ISO 형식으로 명시적인 설치 날짜를 기록합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`clear()`: 저장된 값을 제거합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- 저장소는 보안 저장소 지원 레지스터 무결성 비밀을 사용하여 지속형 `QSettings` 페이로드에 서명합니다.\n- 레거시 보안 저장소 설치 날짜는 계속해서 마이그레이션될 수 있지만 보안 저장소는 마이그레이션 후에 더 이상 미러 복사본으로 사용되지 않습니다.\n- 소비자는 `QSettings`를 사용하기 전에 일반적인 Qt 조직 및 애플리케이션 이름을 설정해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "저장소는 보안 저장소 지원 레지스터 무결성 비밀을 사용하여 지속형 `QSettings` 페이로드에 서명합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레거시 보안 저장소 설치 날짜는 계속해서 마이그레이션될 수 있지만 보안 저장소는 마이그레이션 후에 더 이상 미러 복사본으로 사용되지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소비자는 `QSettings`를 사용하기 전에 일반적인 Qt 조직 및 애플리케이션 이름을 설정해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialInstallStore.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialinstallstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

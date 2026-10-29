@@ -1,0 +1,272 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:779089c2146cf5da1e5958bd4db1886c526f529f5f276b5f589c61b284505725",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml.md",
+    "sha256": "47e472243cd6a541a3f39fca8760b865d1788787d9d1d6052756baa42cc5b808",
+    "bytes": 1232,
+    "line_count": 28,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailPanelHeaderToolbar.qml`는 Figma 프레임 `155:4575`에 대한 6개 버튼 세부 도구 모음을 렌더링합니다. 도구 모음 사양을 정규화하고 확인된 버튼 행에서 크기를 조정하며 버튼이 활성화되면 `detailStateChangeRequested(int)`를 내보냅니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"visual-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 시각적 계약\n",
+      "level": 2,
+      "title": "시각적 계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- 루트 `objectName`: `DetailPanelHeaderToolbar`\n- Figma 노드 ID: `155:4575`\n- 프레임 크기: 내부 `Row` 암시적 크기에서 파생됨\n- Inter 버튼 간격: `LV.Theme.gap5`\n- 파일은 루트 범위에서 `LV.Theme`를 읽기 때문에 `LVRS 1.0 as LV`를 직접 가져와야 합니다.\n- 도구 모음은 상위 패널의 중앙에 위치하지만 이 파일은 내부 행 형상만 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 `objectName`: `DetailPanelHeaderToolbar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Figma 노드 ID: `155:4575`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프레임 크기: 내부 `Row` 암시적 크기에서 파생됨",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Inter 버튼 간격: `LV.Theme.gap5`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일은 루트 범위에서 `LV.Theme`를 읽기 때문에 `LVRS 1.0 as LV`를 직접 가져와야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "도구 모음은 상위 패널의 중앙에 위치하지만 이 파일은 내부 행 형상만 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"delegate-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 계약위임\n",
+      "level": 2,
+      "title": "계약위임"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "각 대리자는 다음을 포함하는 정규화된 사양 개체를 받습니다.\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 26,
+      "raw": "- `figmaNodeId`\n- `iconName`\n- `objectName`\n- `stateValue`\n- `selected`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`figmaNodeId`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`iconName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`objectName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`stateValue`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selected`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "도구 모음 자체는 데이터 기반으로 유지되며 선택한 상태 값을 내보내는 것 이상의 상태 전환을 하드코딩하지 않습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`",
+      "anchor": "srcappqmlviewpanelsdetaildetailpanelheadertoolbarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "시각적 계약",
+      "anchor": "시각적-계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약위임",
+      "anchor": "계약위임",
+      "start_line": 20
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

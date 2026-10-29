@@ -1,0 +1,293 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:c5bce98921333ce0e4172212698a3a7cefedbad51941f091d15ea12f74622ea5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/navigation/view/NavigationApplicationViewModeBar.qml.md",
+    "sha256": "d7d15e4552e7802ec04e2890d43ae4e874f610a3fe77dd98509bb4cc47634817",
+    "bytes": 1135,
+    "line_count": 28,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/navigation/view/NavigationApplicationViewModeBar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/navigation/view/NavigationApplicationViewModeBar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/view/NavigationApplicationViewModeBar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NavigationApplicationViewModeBar.qml`는 보기 모드 응용 프로그램 도구 모음에 대한 Figma `258:7849` `ModeBar` 슬라이스를 소유합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"figma-mapping\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## Figma 매핑\n",
+      "level": 2,
+      "title": "Figma 매핑"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- 프레임: `258:7849` `ModeBar`\n- 버튼 순서:\n  - `258:7852` `CenterView` -> `singleRecordView`\n  - `258:7853` `FocusMode` -> `imagefitContent`\n  - `258:7854` `Presentation` -> `runshowCurrentFrame`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "프레임: `258:7849` `ModeBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "버튼 순서:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`258:7852` `CenterView` -> `singleRecordView`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`258:7853` `FocusMode` -> `imagefitContent`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`258:7854` `Presentation` -> `runshowCurrentFrame`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"interaction-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 상호작용 계약\n",
+      "level": 2,
+      "title": "상호작용 계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- 루트 유형: `LV.HStack`\n- `viewHookRequested(string reason)` 및 `requestViewHook(reason)`를 노출합니다.\n- 모든 3 작업은 테두리 없는 톤과 `gap2` 패딩이 적용된 기본 `LV.IconButton` 컨트롤이며, 따라서 메타데이터 수준 아이콘 계약이 QML에서 명시적으로 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 유형: `LV.HStack`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`viewHookRequested(string reason)` 및 `requestViewHook(reason)`를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 3 작업은 테두리 없는 톤과 `gap2` 패딩이 적용된 기본 `LV.IconButton` 컨트롤이며, 따라서 메타데이터 수준 아이콘 계약이 QML에서 명시적으로 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "<a id=\"regression-checklist\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "## 회귀 체크리스트\n",
+      "level": 2,
+      "title": "회귀 체크리스트"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 27,
+      "end_line": 28,
+      "raw": "- 모드 버튼 순서 `CenterView -> FocusMode -> Presentation`를 유지하세요.\n- `FocusMode` 아이콘을 `imagefitContent`에서 바꾸지 마십시오.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "모드 버튼 순서 `CenterView -> FocusMode -> Presentation`를 유지하세요.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FocusMode` 아이콘을 `imagefitContent`에서 바꾸지 마십시오.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/view/NavigationApplicationViewModeBar.qml`",
+      "anchor": "srcappqmlviewpanelsnavigationviewnavigationapplicationviewmodebarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Figma 매핑",
+      "anchor": "figma-매핑",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용 계약",
+      "anchor": "상호작용-계약",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "회귀 체크리스트",
+      "anchor": "회귀-체크리스트",
+      "start_line": 26
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:37650e9b05c21b309ef2f0177ee9e48dc899d44f550aa981b0863a0f66594624",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sensor/UnusedNoteSensorSupport.hpp.md",
+    "sha256": "d1b2ea86c43b419eeed4c834e7694463ba1aaaa05410e18861b68bbe1f833103",
+    "bytes": 647,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sensor/UnusedNoteSensorSupport.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sensor/UnusedNoteSensorSupport.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sensor/UnusedNoteSensorSupport.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "고정 기간 미사용 메모 센서 개체에서 사용하는 공유 RAW 메모 비활성 스캔을 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "- `collectUnusedNoteEntries(...)`는 압축 해제된 허브를 워킹하고, `.wsnhead`를 파싱하며, `WeeklyUnusedNote`와 `MonthlyUnusedNote`가 소비한 노트‐entry 페이로드를 반환합니다.\n- `noteIdsFromEntries(...)`는 필터링된 식별자만 필요한 UI 호출자를 위해 해당 엔트리 페이로드에서 안정적인 `noteId` 목록을 추출합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`collectUnusedNoteEntries(...)`는 압축 해제된 허브를 워킹하고, `.wsnhead`를 파싱하며, `WeeklyUnusedNote`와 `MonthlyUnusedNote`가 소비한 노트‐entry 페이로드를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteIdsFromEntries(...)`는 필터링된 식별자만 필요한 UI 호출자를 위해 해당 엔트리 페이로드에서 안정적인 `noteId` 목록을 추출합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sensor/UnusedNoteSensorSupport.hpp`",
+      "anchor": "srcappmodelssensorunusednotesensorsupporthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

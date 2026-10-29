@@ -1,0 +1,238 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:60a5f5501e9f333079ed6099ffd1a2960cd36f6b53b400ba93742c038148e9c2",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/ClipboardResourceImport.h.md",
+    "sha256": "8f6c5a074e1e04cba70fcf28a3d8e2bef4a32f5516c7728028297cb6c5cef20d",
+    "bytes": 1489,
+    "line_count": 23,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/ClipboardResourceImport.h`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/ClipboardResourceImport.h`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/ClipboardResourceImport.h`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "가져올 수 있는 클립보드 리소스 하나를 설명하는 데 사용되는 간단한 값 개체를 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 소스 파일 이름, 선택적 로컬 파일 경로, MIME 유형, 정규화된 리소스 형식, 유형, 버킷 및 선택적 메모리 내 페이로드를 저장합니다.\n- `InAppClipboardManager`를 통해 제공되는 파일 이름, 로컬 파일, 이미지, 원시 바이트 및 텍스트 기반 페이로드에서 가져오기를 빌드할 수 있는 도우미를 제공합니다.\n- `FiletypeCapture`의 파일 형식 결정을 소비한 후, 리소스 패키지 분류 체계를 사용하여 클립보드 이미지, PDF, 텍스트/ HTML 문서, 오디오 파일, 3D 모델, 아카이브 및 기타 지원되는 형식이 가져온 파일과 동일한 유형/버킷 레이블로 변환됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "소스 파일 이름, 선택적 로컬 파일 경로, MIME 유형, 정규화된 리소스 형식, 유형, 버킷 및 선택적 메모리 내 페이로드를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`InAppClipboardManager`를 통해 제공되는 파일 이름, 로컬 파일, 이미지, 원시 바이트 및 텍스트 기반 페이로드에서 가져오기를 빌드할 수 있는 도우미를 제공합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FiletypeCapture`의 파일 형식 결정을 소비한 후, 리소스 패키지 분류 체계를 사용하여 클립보드 이미지, PDF, 텍스트/ HTML 문서, 오디오 파일, 3D 모델, 아카이브 및 기타 지원되는 형식이 가져온 파일과 동일한 유형/버킷 레이블로 변환됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 23,
+      "raw": "- clipboard에서 얻은 단일 리소스를 설명하는 값 객체다.\n- 파일명과 MIME type 확인은 `FiletypeCapture`가 맡고, 이 값 객체는 그 결과를 resource format/type/bucket\n  목록에 맞춰 보관한다.\n- 이미지뿐 아니라 문서, 텍스트/HTML, 오디오, 비디오, 3D 모델, 압축 파일 payload도 같은 값 객체로 표현한다.\n- payload 자체를 본문에 넣지 않고, 이후 import 단계가 `.wsresource` package로 materialize할 수 있는 정보만 담는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "clipboard에서 얻은 단일 리소스를 설명하는 값 객체다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일명과 MIME type 확인은 `FiletypeCapture`가 맡고, 이 값 객체는 그 결과를 resource format/type/bucket",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이미지뿐 아니라 문서, 텍스트/HTML, 오디오, 비디오, 3D 모델, 압축 파일 payload도 같은 값 객체로 표현한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "payload 자체를 본문에 넣지 않고, 이후 import 단계가 `.wsresource` package로 materialize할 수 있는 정보만 담는다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/ClipboardResourceImport.h`",
+      "anchor": "srcappmodelsclipboardclipboardresourceimporth",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

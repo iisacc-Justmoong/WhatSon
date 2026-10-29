@@ -1,0 +1,250 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:98f34fac0ed504b00f897c966918c2e917af05d10f085f824a34be971619d6da",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp.md",
+    "sha256": "9bb04a452c3400c104d9026bb42174b41f97f30529bbd84df34a4ab19459a26e",
+    "bytes": 1588,
+    "line_count": 25,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`WhatSonLibraryIndexedState`는 정식 인덱싱된 라이브러리 노트 세트와 파생된 `draft` 및 `today` 스마트 버킷을 소유하는 백엔드 상태 개체를 정의합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 19,
+      "raw": "- `indexFromWshub(...)`: 마운트된 허브를 한 번 인덱싱하고 파생된 모든 버킷을 다시 빌드합니다.\n- `applySnapshot(...)`: 이미 계산된 런타임 스냅샷 컬렉션을 허용합니다.\n- `setIndexedNotes(...)`: 표준 노트 세트를 교체하고 파생 버킷을 다시 빌드합니다.\n- `setSourceWshubPath(...)`: 현재 노트 버킷을 건드리지 않고 소스 허브 경로의 대상을 변경합니다.\n- `upsertNote(...)` / `removeNoteById(...)` : 하나의 정규 음표를 업데이트하고 해당 변화를 파생된 `draft` / `today` 버킷으로 전파하며 전체 상태 교체를 강제하지 않습니다.\n- `noteById(...)`: 돌연변이 및 프로젝션 공동 작업자에 대한 단일 노트 조회를 노출합니다.\n- `collectBookmarkedNotes(...)` : 기존 라이브러리 노트 벡터에서 추가 허브 파싱을 강제하지 않고 북마크 후보를 도출합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`indexFromWshub(...)`: 마운트된 허브를 한 번 인덱싱하고 파생된 모든 버킷을 다시 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applySnapshot(...)`: 이미 계산된 런타임 스냅샷 컬렉션을 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setIndexedNotes(...)`: 표준 노트 세트를 교체하고 파생 버킷을 다시 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setSourceWshubPath(...)`: 현재 노트 버킷을 건드리지 않고 소스 허브 경로의 대상을 변경합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`upsertNote(...)` / `removeNoteById(...)` : 하나의 정규 음표를 업데이트하고 해당 변화를 파생된 `draft` / `today` 버킷으로 전파하며 전체 상태 교체를 강제하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteById(...)`: 돌연변이 및 프로젝션 공동 작업자에 대한 단일 노트 조회를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`collectBookmarkedNotes(...)` : 기존 라이브러리 노트 벡터에서 추가 허브 파싱을 강제하지 않고 북마크 후보를 도출합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"architectural-role\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 아키텍처 역할\n",
+      "level": 2,
+      "title": "아키텍처 역할"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "이 헤더는 `LibraryHierarchyController`에서 노트 색인 장부를 이동하고 런타임 로딩, 라이브러리 컨트롤러 및 북마크 컨트롤러에서 사용되는 공유 프로젝션 백엔드를 제공하기 위해 존재합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/WhatSonLibraryIndexedState.hpp`",
+      "anchor": "srcappmodelshierarchylibrarywhatsonlibraryindexedstatehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "아키텍처 역할",
+      "anchor": "아키텍처-역할",
+      "start_line": 23
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2c71ba9b97377921ee0d2b99767f6b48dda2ea0d08be349d3bbcf1a107986a65",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp.md",
+    "sha256": "95a52ca8a1f26965a9b3a71514871251ce789fde2e4e1b75e33e0e1c783d5a2d",
+    "bytes": 1171,
+    "line_count": 17,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"runtime-behavior\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 런타임 동작\n",
+      "level": 2,
+      "title": "런타임 동작"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 11,
+      "raw": "- 로컬 노트 타임스탬프 형식 `yyyy-MM-dd-hh-mm-ss` 및 Qt ISO 타임스탬프 변형을 구문 분석합니다.\n- `mergeBodyByTimestamp(...)`는 기본 풀 타임스탬프 이후의 파일 시스템 발전을 충돌 트리거로 처리합니다.\n- 충돌이 발생하면 파일 시스템과 수신 타임스탬프를 비교하고 최신 본문의 소스 텍스트를 반환합니다.\n- 동일한 타임스탬프는 수신 본문을 유지하여 활성 편집기를 타이 브레이커로 저장합니다.\n- `isTimestampNewer(...)`는 읽기 측 동기화 결정에 대해 동일한 엄격한 타임스탬프 비교를 제공하며, 예를 들어 유휴 파일 시스템 풀이 열린 편집기 세션을 대체할지 여부를 결정합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "로컬 노트 타임스탬프 형식 `yyyy-MM-dd-hh-mm-ss` 및 Qt ISO 타임스탬프 변형을 구문 분석합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`mergeBodyByTimestamp(...)`는 기본 풀 타임스탬프 이후의 파일 시스템 발전을 충돌 트리거로 처리합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "충돌이 발생하면 파일 시스템과 수신 타임스탬프를 비교하고 최신 본문의 소스 텍스트를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "동일한 타임스탬프는 수신 본문을 유지하여 활성 편집기를 타이 브레이커로 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`isTimestampNewer(...)`는 읽기 측 동기화 결정에 대해 동일한 엄격한 타임스탬프 비교를 제공하며, 예를 들어 유휴 파일 시스템 풀이 열린 편집기 세션을 대체할지 여부를 결정합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "- `test/cpp/suites/timestamp_conflict_resolver_tests.cpp`는 resolver 전용 승자 선택, 엄격한 최신 타임스탬프 검사, 그리고 파일 시스템 최신 사례와 신규 수신 사례 모두에 대한 파일 저장소 통합을 포함합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/timestamp_conflict_resolver_tests.cpp`는 resolver 전용 승자 선택, 엄격한 최신 타임스탬프 검사, 그리고 파일 시스템 최신 사례와 신규 수신 사례 모두에 대한 파일 저장소 통합을 포함합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/conflict/WhatSonTimestampConflictResolver.cpp`",
+      "anchor": "srcappmodelsfileconflictwhatsontimestampconflictresolvercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 동작",
+      "anchor": "런타임-동작",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 15
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

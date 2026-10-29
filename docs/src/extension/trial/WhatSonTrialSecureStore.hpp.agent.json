@@ -1,0 +1,231 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:221541221cd386a9bc40135572c2660426f123a72ab910ab8e2feae374fcdc5a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialSecureStore.hpp.md",
+    "sha256": "bffa4b51ab5e0233240213fdf2e35b3191f46bd863c6e9c1bdd53540e056db11",
+    "bytes": 1282,
+    "line_count": 21,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialSecureStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialSecureStore.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialSecureStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "재설치 방지 로컬 상태를 유지하기 위해 평가판 모듈에서 사용하는 선택적 OS 보안 저장소 브리지를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- `WhatSonTrialSecureStoreStatus`: 보안 저장소 읽기 또는 쓰기의 성공, 누락, 사용할 수 없음 또는 실패 여부를 설명합니다.\n- `WhatSonTrialSecureStoreReadResult` / `WhatSonTrialSecureStoreWriteResult`: 저장 작업을 위한 작은 결과 구조체입니다.\n- `WhatSonTrialSecureStoreBackend`: 플랫폼별 어댑터로 교체할 수 있는 백엔드 인터페이스.\n- `WhatSonTrialSecureStore`: 하나의 서비스 이름 아래 비밀 항목의 범위를 지정하는 값 유형 래퍼입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialSecureStoreStatus`: 보안 저장소 읽기 또는 쓰기의 성공, 누락, 사용할 수 없음 또는 실패 여부를 설명합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialSecureStoreReadResult` / `WhatSonTrialSecureStoreWriteResult`: 저장 작업을 위한 작은 결과 구조체입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialSecureStoreBackend`: 플랫폼별 어댑터로 교체할 수 있는 백엔드 인터페이스.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialSecureStore`: 하나의 서비스 이름 아래 비밀 항목의 범위를 지정하는 값 유형 래퍼입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 21,
+      "raw": "- 평가판 모듈은 클라이언트 ID 및 등록 무결성 비밀을 위해 보안 저장소를 사용합니다.\n- 레거시 보안 저장소 설치 날짜는 계속해서 이전될 수 있지만 새 설치 날짜 쓰기는 더 이상 미러링된 보안 저장소 복사본을 유지하지 않습니다.\n- 비프로덕션 흐름은 실제 호스트 보안 저장소를 건드리는 대신 메모리 내 백엔드를 주입할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "평가판 모듈은 클라이언트 ID 및 등록 무결성 비밀을 위해 보안 저장소를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레거시 보안 저장소 설치 날짜는 계속해서 이전될 수 있지만 새 설치 날짜 쓰기는 더 이상 미러링된 보안 저장소 복사본을 유지하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "비프로덕션 흐름은 실제 호스트 보안 저장소를 건드리는 대신 메모리 내 백엔드를 주입할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialSecureStore.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialsecurestorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

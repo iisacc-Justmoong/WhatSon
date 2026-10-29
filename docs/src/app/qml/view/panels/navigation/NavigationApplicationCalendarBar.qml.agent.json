@@ -1,0 +1,173 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:93998ebc491d30c618c83c929cb4412ab7f87ec2157f7007c25ec9ef5bd8cd13",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/navigation/NavigationApplicationCalendarBar.qml.md",
+    "sha256": "dd4e1a08783b229dd8f0d8da4d7bb15e86a882620343960a655edd19d1a318b4",
+    "bytes": 574,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/navigation/NavigationApplicationCalendarBar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/navigation/NavigationApplicationCalendarBar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/NavigationApplicationCalendarBar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NavigationApplicationCalendarBar.qml`는 공유 애플리케이션 수준 달력 세그먼트 래퍼입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "`NavigationApplicationViewBar.qml` 및 `NavigationApplicationEditBar.qml` 모두 이 단일 래퍼를 사용하므로 달력 컨트롤이 모드 디렉터리별로 중복되지 않습니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "html",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "<a id=\"composition\"></a>\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## 구성\n",
+      "level": 2,
+      "title": "구성"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "- 루트: `NavigationCalendarBar`\n- 소스 종속성: `src/app/qml/view/panels/navigation/NavigationCalendarBar.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트: `NavigationCalendarBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소스 종속성: `src/app/qml/view/panels/navigation/NavigationCalendarBar.qml`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/NavigationApplicationCalendarBar.qml`",
+      "anchor": "srcappqmlviewpanelsnavigationnavigationapplicationcalendarbarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000012",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구성",
+      "anchor": "구성",
+      "start_line": 12
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

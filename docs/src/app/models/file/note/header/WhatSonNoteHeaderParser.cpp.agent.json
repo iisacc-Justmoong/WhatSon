@@ -1,0 +1,521 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:c1a4b90d6a8c08d8ab9be035fa6431267544610b44241b4ce820c236bfd1cfe4",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp.md",
+    "sha256": "7c1897f4cf9d8bdaa3ff03caaeb96f405d4a0ad084a59839861247492b5333c4",
+    "bytes": 3638,
+    "line_count": 56,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파서는 `.wsnhead` XML를 읽고 `WhatSonNoteHeaderStore`를 채웁니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"parser-backend\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 파서 백엔드\n",
+      "level": 2,
+      "title": "파서 백엔드"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- `.wsnhead` 파싱은 이제 로컬 `iiXml::Parser::TagParser` 경계를 소유하고 태그 텍스트와 인라인 속성에 대한 파싱된 문서 트리 헬퍼를 노출하는 `WhatSonIiXmlDocumentSupport`를 통해 라우팅됩니다.\n- XML 선언과 `<!DOCTYPE WHATSONNOTE>` 서문은 해당 공유 지원 계층에 의해 제거된 후 헤더 본문을 iiXml에 전달합니다. 이는 트리 파서가 최상위 선언 처리 대신 요소 계층 구조를 소유하기 때문입니다.\n- 정규 표현식은 헤더 태그 또는 속성 추출에 대한 권한으로 더 이상 사용되지 않으며, iiXml 노드와 필드 탐색으로 대체됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.wsnhead` 파싱은 이제 로컬 `iiXml::Parser::TagParser` 경계를 소유하고 태그 텍스트와 인라인 속성에 대한 파싱된 문서 트리 헬퍼를 노출하는 `WhatSonIiXmlDocumentSupport`를 통해 라우팅됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "XML 선언과 `<!DOCTYPE WHATSONNOTE>` 서문은 해당 공유 지원 계층에 의해 제거된 후 헤더 본문을 iiXml에 전달합니다. 이는 트리 파서가 최상위 선언 처리 대신 요소 계층 구조를 소유하기 때문입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정규 표현식은 헤더 태그 또는 속성 추출에 대한 권한으로 더 이상 사용되지 않으며, iiXml 노드와 필드 탐색으로 대체됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"folder-parsing-rules\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 폴더 구문 분석 규칙\n",
+      "level": 2,
+      "title": "폴더 구문 분석 규칙"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 24,
+      "raw": "- `<folder>Path</folder>`는 유효한 레거시 입력으로 유지됩니다.\n- `<folder uuid=\"...\">Path</folder>`는 현대적인 형태입니다.\n- 폴더 UUID는 iiXml 속성 필드에서 추출되어 표시되는 폴더 경로와 함께 정규화됩니다.\n- 파싱된 바인딩은 `setFolderBindings(...)`를 통해 저장되며, 경로와 UUID 목록을 별도로 변형하여 저장되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`<folder>Path</folder>`는 유효한 레거시 입력으로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`<folder uuid=\"...\">Path</folder>`는 현대적인 형태입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "폴더 UUID는 iiXml 속성 필드에서 추출되어 표시되는 폴더 경로와 함께 정규화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파싱된 바인딩은 `setFolderBindings(...)`를 통해 저장되며, 경로와 UUID 목록을 별도로 변형하여 저장되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"migration-behavior\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 마이그레이션 동작\n",
+      "level": 2,
+      "title": "마이그레이션 동작"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "파서가 경로를 읽을 수 있는 바인딩으로 처리하고 UUID를 비워두기 때문에 폴더 UUID가 없는 이전 노트는 계속 로드됩니다. 폴더 이름 바꾸기 또는 메모 재지정과 같은 나중에 다시 쓰기 경로를 통해 메모 헤더를 새로운 속성 기반 형식으로 업그레이드할 수 있습니다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "<a id=\"progress-parsing-rules\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## 진행률 구문 분석 규칙\n",
+      "level": 2,
+      "title": "진행률 구문 분석 규칙"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 36,
+      "end_line": 40,
+      "raw": "- 숫자 `<progress>` 콘텐츠는 여전히 저장된 열거형 정수에 직접 매핑됩니다.\n- Enum-label 진행 내용은 여전히 `enums={...}` 속성을 통해 확인됩니다.\n- `enums={...}` 속성은 이제 `setProgressEnums(...)`를 통해 `WhatSonNoteHeaderStore`에 저장되며, 정수 해석 후에는 폐기되지 않습니다.\n- 빈 `<progress>` 요소는 이제 명시적으로 지워진 상태로 처리되며 아무런 알림 없이가 `0`로 대체되는 대신 `-1`로 구문 분석됩니다.\n- 해석할 수 없는 `<progress>` 텍스트는 이제 숫자 값이나 열거형 레이블로 해석되지 않는 경우 `-1` ( `No progress` ) 으로 해석되며 `0` ( `First draft` ) 로 강제로 변환되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "숫자 `<progress>` 콘텐츠는 여전히 저장된 열거형 정수에 직접 매핑됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Enum-label 진행 내용은 여전히 `enums={...}` 속성을 통해 확인됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`enums={...}` 속성은 이제 `setProgressEnums(...)`를 통해 `WhatSonNoteHeaderStore`에 저장되며, 정수 해석 후에는 폐기되지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "빈 `<progress>` 요소는 이제 명시적으로 지워진 상태로 처리되며 아무런 알림 없이가 `0`로 대체되는 대신 `-1`로 구문 분석됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "해석할 수 없는 `<progress>` 텍스트는 이제 숫자 값이나 열거형 레이블로 해석되지 않는 경우 `-1` ( `No progress` ) 으로 해석되며 `0` ( `First draft` ) 로 강제로 변환되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"file-statistics-parsing-rules\"></a>\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## 파일 통계 구문 분석 규칙\n",
+      "level": 2,
+      "title": "파일 통계 구문 분석 규칙"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 49,
+      "raw": "- 이제 파서는 `.wsnhead <fileStat>...</fileStat>` 블록을 읽습니다.\n- 누락된 통계 태그는 이전 노트 헤더와의 하위 호환성을 위해 기본적으로 `0`로 설정됩니다.\n- 음수 또는 유효하지 않은 숫자 페이로드는 `0`로 다시 정규화됩니다.\n- 기존 최상위 메타데이터( `project` , `folders` , `tags` , `created` , `lastModified` , `lastOpened` )는 숫자가 아닌 Figma 행에 대해 기준 원본를 유지합니다; `fileStat` 블록은 명시적인 숫자 카운터만 저장합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 파서는 `.wsnhead <fileStat>...</fileStat>` 블록을 읽습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "누락된 통계 태그는 이전 노트 헤더와의 하위 호환성을 위해 기본적으로 `0`로 설정됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "음수 또는 유효하지 않은 숫자 페이로드는 `0`로 다시 정규화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 최상위 메타데이터( `project` , `folders` , `tags` , `created` , `lastModified` , `lastOpened` )는 숫자가 아닌 Figma 행에 대해 기준 원본를 유지합니다; `fileStat` 블록은 명시적인 숫자 카운터만 저장합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "html",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "<a id=\"activity-parsing-rules\"></a>\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "heading",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "## 활동 구문 분석 규칙\n",
+      "level": 2,
+      "title": "활동 구문 분석 규칙"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "list",
+      "start_line": 55,
+      "end_line": 56,
+      "raw": "- `<lastOpened>`는 선택 사항이며 이전 메모 헤더의 경우 빈 문자열로 구문 분석됩니다.\n- 파서는 `lastOpened`를 `WhatSonNoteHeaderStore`에 저장하여 비활성 센서가 본문/편집자 프로젝션을 로드하지 않고 RAW 노트 헤더로부터 추론할 수 있도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`<lastOpened>`는 선택 사항이며 이전 메모 헤더의 경우 빈 문자열로 구문 분석됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파서는 `lastOpened`를 `WhatSonNoteHeaderStore`에 저장하여 비활성 센서가 본문/편집자 프로젝션을 로드하지 않고 RAW 노트 헤더로부터 추론할 수 있도록 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/note/header/WhatSonNoteHeaderParser.cpp`",
+      "anchor": "srcappmodelsfilenoteheaderwhatsonnoteheaderparsercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "파서 백엔드",
+      "anchor": "파서-백엔드",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "폴더 구문 분석 규칙",
+      "anchor": "폴더-구문-분석-규칙",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "마이그레이션 동작",
+      "anchor": "마이그레이션-동작",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "진행률 구문 분석 규칙",
+      "anchor": "진행률-구문-분석-규칙",
+      "start_line": 34
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "파일 통계 구문 분석 규칙",
+      "anchor": "파일-통계-구문-분석-규칙",
+      "start_line": 44
+    },
+    {
+      "block_id": "b000041",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "활동 구문 분석 규칙",
+      "anchor": "활동-구문-분석-규칙",
+      "start_line": 53
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

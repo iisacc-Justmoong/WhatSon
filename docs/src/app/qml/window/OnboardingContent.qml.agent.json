@@ -1,0 +1,254 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:674a0e20f4b2bb1834390887ee946d89d9a33914ab9d15e999e0f6046810db52",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/window/OnboardingContent.qml.md",
+    "sha256": "fe32f47c4d800dc027a146a3a0f594c627b590d0cc6cad19333cb9b8f0a822eb",
+    "bytes": 2939,
+    "line_count": 23,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/window/OnboardingContent.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/window/OnboardingContent.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/window/OnboardingContent.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "html",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "<a id=\"dialog-routing\"></a>\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "## 대화 라우팅\n",
+      "level": 2,
+      "title": "대화 라우팅"
+    },
+    {
+      "id": "b000010",
+      "kind": "paragraph",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "  `Untitled.wshub`를 하드코딩하는 대신 사용자가 편집할 수 있는 동일한 소스에서 패키지 이름을 파생시킵니다. 인라인 허브 이름 필드. 이렇게 하면 `OnboardingHubController::createHubInDirectoryUrl(...)`를 통해 최종 스캐폴드를 라우팅하는 동안 네이티브 폴더 브라우저/사이드바 탐색을 계속 사용할 수 있습니다.\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- Windows / Linux 데스크톱 허브 생성은 여전히 `SaveFile` 모드에서 지연된 `FileDialog`를 사용하므로 최종 `.wshub` 대상 경로가 사용자가 생성을 확인하기 전에 사전 설정되지 않지만, 제안된 저장 대상이 이제 현재 허브 이름 필드를 추적합니다.\n- Qt 대화 상자 시작 폴더는 이제 탐색 중에 온보딩 기본 디렉터리에 영구적으로 고정되는 대신 각 대화 상자가 열릴 때만 삽입됩니다. 이는 피커가 직접 패키지를 반환할 수 있는 플랫폼에서 직접 패키지‐픽 흐름을 유지합니다.\n- 다른 데스크톱 플랫폼은 폴더 기반 기존 허브 선택 경로를 계속 유지하면서, 패키지가 일반 폴더로 표시되는 디렉터리 스타일의 `.wshub` 선택을 보존합니다. 파일 문서 브라우저는 제공자 친화적인 콘텐츠 유형과 앱 소유 `Open` 액션을 제공합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Windows / Linux 데스크톱 허브 생성은 여전히 `SaveFile` 모드에서 지연된 `FileDialog`를 사용하므로 최종 `.wshub` 대상 경로가 사용자가 생성을 확인하기 전에 사전 설정되지 않지만, 제안된 저장 대상이 이제 현재 허브 이름 필드를 추적합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Qt 대화 상자 시작 폴더는 이제 탐색 중에 온보딩 기본 디렉터리에 영구적으로 고정되는 대신 각 대화 상자가 열릴 때만 삽입됩니다. 이는 피커가 직접 패키지를 반환할 수 있는 플랫폼에서 직접 패키지‐픽 흐름을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다른 데스크톱 플랫폼은 폴더 기반 기존 허브 선택 경로를 계속 유지하면서, 패키지가 일반 폴더로 표시되는 디렉터리 스타일의 `.wshub` 선택을 보존합니다. 파일 문서 브라우저는 제공자 친화적인 콘텐츠 유형과 앱 소유 `Open` 액션을 제공합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "  `.wshub` 패키지를 직접 열거나 `Open`로 확인하기 전에 패키지를 열고 그 안에 있는 파일이나 폴더를 선택하세요. 해당 폴더 아래의 패키지 경로를 지정하고 `OnboardingHubController`가 전체 `.wshub` 스캐폴드에 대해 공유 `WhatSonHubCreator` 콜백을 직접 호출하도록 합니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 17,
+      "raw": "- 네이티브 픽커에서 허용된 URL은 `OnboardingHubController::prepareHubSelectionFromUrl(...)` 로 전달되며, 이는 조상 리맵/보안 범위 복구 경로를 컨트롤러에 중앙 집중시켜 QML에서 복제하지 않게 합니다.\n- 브라우저의 바쁨/오류 상태가 온보딩 상태 라벨에 삽입되어, 네이티브 브라우저가 열려 있는 동안 작업 링크가 비활성화되고 브라우저 오류가 컨트롤러 오류와 동일한 상태 텍스트 채널을 통해 표시됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "네이티브 픽커에서 허용된 URL은 `OnboardingHubController::prepareHubSelectionFromUrl(...)` 로 전달되며, 이는 조상 리맵/보안 범위 복구 경로를 컨트롤러에 중앙 집중시켜 QML에서 복제하지 않게 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "브라우저의 바쁨/오류 상태가 온보딩 상태 라벨에 삽입되어, 네이티브 브라우저가 열려 있는 동안 작업 링크가 비활성화되고 브라우저 오류가 컨트롤러 오류와 동일한 상태 텍스트 채널을 통해 표시됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"layout-note\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 레이아웃 노트\n",
+      "level": 2,
+      "title": "레이아웃 노트"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 23,
+      "raw": "- 데스크톱은 이제 브랜딩 스택, 허브 이름 편집기 및 액션 링크를 별도의 압축된 간격 트랙에 배치하여, 추가된 생성 필드가 인라인 명명 흐름이 도입된 후 제목 블록을 위로, 액션 블록을 아래로 밀어내지 않도록 합니다.\n- 인라인 허브 이름 입력 배경 및 수직 인셋은 이제 원시 투명/0 리터럴 대신 `LV.Theme.accentTransparent` 및 `LV.Theme.gapNone`를 사용합니다. 직접 스케일 픽셀 리터럴 대신 `LV.Theme` 토큰 구성을 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "데스크톱은 이제 브랜딩 스택, 허브 이름 편집기 및 액션 링크를 별도의 압축된 간격 트랙에 배치하여, 추가된 생성 필드가 인라인 명명 흐름이 도입된 후 제목 블록을 위로, 액션 블록을 아래로 밀어내지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "인라인 허브 이름 입력 배경 및 수직 인셋은 이제 원시 투명/0 리터럴 대신 `LV.Theme.accentTransparent` 및 `LV.Theme.gapNone`를 사용합니다. 직접 스케일 픽셀 리터럴 대신 `LV.Theme` 토큰 구성을 사용합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/window/OnboardingContent.qml`",
+      "anchor": "srcappqmlwindowonboardingcontentqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "대화 라우팅",
+      "anchor": "대화-라우팅",
+      "start_line": 9
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "레이아웃 노트",
+      "anchor": "레이아웃-노트",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

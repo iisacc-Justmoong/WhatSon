@@ -1,0 +1,93 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:4d36118510f9c0bb1a4a21ad68d552b4ebd993375b197d53d81b0a192ee25a6f",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/README.md",
+    "sha256": "8bea98ff073a9041101b2ec20853e1b45983ec7216b87eb062b4ef143f07e60a",
+    "bytes": 328,
+    "line_count": 5,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "`src/app/models`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models`\n",
+      "level": 1,
+      "title": "`src/app/models`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "The model tree owns C++ state, controllers, persistence helpers, and parser/mutation code.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "The active editor document model was deleted. QML must not replace it with backend logic, and model shards should not expose compatibility wrappers for the removed editor session, paste bridge, or native key filter.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models`",
+      "anchor": "srcappmodels",
+      "start_line": 1
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000005",
+        "line": 5,
+        "text": "The active editor document model was deleted. QML must not replace it with backend logic, and model shards should not expose compatibility wrappers for the removed editor session, paste bridge, or native key filter.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:a912820daa5f78b4f43b0c0374eb3b5f724b089f123a84242d5a0732ce8db23b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/InAppClipboardStore.h.md",
+    "sha256": "2bdf64347b8d5c91a4d1af542d31f92c00e71a3b74c7b7319708fb8da86408de",
+    "bytes": 852,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/InAppClipboardStore.h`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/InAppClipboardStore.h`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardStore.h`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "현재 인앱 클립보드 리소스 스냅샷을 소유하는 QObject 저장소를 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- `ClipboardResourceImport m_resourceImport` 멤버를 소유한다.\n- `InAppClipboardManager`에서 사용하는 읽기 전용 접근자를 제공합니다.\n- `setResourceImport(...)`, `takeResourceImport()` 및 `clear()`를 지원합니다.\n- 관리자가 상태 변경 사항을 QML에 전달할 수 있도록 `resourceChanged()`를 노출합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ClipboardResourceImport m_resourceImport` 멤버를 소유한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`InAppClipboardManager`에서 사용하는 읽기 전용 접근자를 제공합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setResourceImport(...)`, `takeResourceImport()` 및 `clear()`를 지원합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "관리자가 상태 변경 사항을 QML에 전달할 수 있도록 `resourceChanged()`를 노출합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- `InAppClipboardManager`의 store 책임은 이 객체에 있다.\n- `ClipboardResourceImport` 멤버는 manager가 아니라 이 store에만 남아야 한다.\n- import orchestration, hub path, busy/error 상태는 store가 아니라 manager에 남는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`InAppClipboardManager`의 store 책임은 이 객체에 있다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ClipboardResourceImport` 멤버는 manager가 아니라 이 store에만 남아야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "import orchestration, hub path, busy/error 상태는 store가 아니라 manager에 남는다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardStore.h`",
+      "anchor": "srcappmodelsclipboardinappclipboardstoreh",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:056724c2399f286bfa1c4cfaefc9bd9df2f45d0edde3c320b76c88e8ae20c345",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp.md",
+    "sha256": "2e935eaf112249fd534429e14a575e44836718cddb1fe3ad853d3b33e2a5da7f",
+    "bytes": 874,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailPanelCurrentHierarchyBinder`는 활성 사이드바 계층 구조 컨텍스트를 `DetailPanelController`에 바인딩하는 컴포지션 루트 코디네이터입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"responsibilities\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- `IActiveHierarchyContextSource`를 관찰합니다.\n- 현재 노트 목록 모델과 현재 계층 구조 디렉터리 확인자를 `DetailPanelController`에 푸시합니다.\n- 활성 계층 컨텍스트가 사라지면 해당 바인딩을 완전히 지웁니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`IActiveHierarchyContextSource`를 관찰합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 노트 목록 모델과 현재 계층 구조 디렉터리 확인자를 `DetailPanelController`에 푸시합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 계층 컨텍스트가 사라지면 해당 바인딩을 완전히 지웁니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"dependency-direction\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 의존성 방향\n",
+      "level": 2,
+      "title": "의존성 방향"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 19,
+      "raw": "- `SidebarHierarchyController`가 아닌 사이드바 측 추상화 `IActiveHierarchyContextSource`에 따라 다릅니다.\n- 세부 패널 컨텍스트 동기화를 위해 임시 람다 배선 없이 `main.cpp`를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`SidebarHierarchyController`가 아닌 사이드바 측 추상화 `IActiveHierarchyContextSource`에 따라 다릅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "세부 패널 컨텍스트 동기화를 위해 임시 람다 배선 없이 `main.cpp`를 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelCurrentHierarchyBinder.hpp`",
+      "anchor": "srcappmodelsdetailpaneldetailpanelcurrenthierarchybinderhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의존성 방향",
+      "anchor": "의존성-방향",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

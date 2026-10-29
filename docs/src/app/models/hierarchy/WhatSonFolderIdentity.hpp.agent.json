@@ -1,0 +1,321 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6c475fdc92f4764d66af0704dcb6b98c62bc0b59835bac3134e303d7dd2c48cd",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/WhatSonFolderIdentity.hpp.md",
+    "sha256": "c6f6ee3b25544abcd960b59bf8ba3c4d7ea5325e00a13e18a926d2e5e95f0c9c",
+    "bytes": 1689,
+    "line_count": 32,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/WhatSonFolderIdentity.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/WhatSonFolderIdentity.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonFolderIdentity.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 구문 분석, 지속성 및 런타임 계층 구조 논리에 사용되는 공유 폴더-UUID 규칙을 정의합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- `kUuidLength`는 `64`로 고정되어 있습니다.\n- `normalizeFolderUuid(...)`는 입력을 트리밍하고 정확히 64와 일치하지 않는 영숫자 값을 거부합니다.\n- `isValidFolderUuid(...)`는 정규화에 대한 부울 편의 래퍼입니다.\n- `createFolderUuid()`는 대문자, 소문자 및 숫자를 사용하여 무작위 64문자 식별자를 생성합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`kUuidLength`는 `64`로 고정되어 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`normalizeFolderUuid(...)`는 입력을 트리밍하고 정확히 64와 일치하지 않는 영숫자 값을 거부합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`isValidFolderUuid(...)`는 정규화에 대한 부울 편의 래퍼입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createFolderUuid()`는 대문자, 소문자 및 숫자를 사용하여 무작위 64문자 식별자를 생성합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"design-notes\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 디자인 노트\n",
+      "level": 2,
+      "title": "디자인 노트"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 24,
+      "raw": "- 이 형식은 의도적으로 파일 시스템에 안전하고 XML‐안전하도록 구성되어 있어, 추가 이스케이프 규칙 없이 `.wsfolders`, `.wsnhead` 및 메모리 내 Qt 문자열 사이를 이동할 수 있습니다.\n- 도우미는 외부 상태가 없고 많은 하위 수준 파일에 필요하기 때문에 헤더 전용입니다.\n- 생성된 UUID는 RFC-4122 값이 아닙니다. 프로젝트별 안정적인 폴더 키입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 형식은 의도적으로 파일 시스템에 안전하고 XML‐안전하도록 구성되어 있어, 추가 이스케이프 규칙 없이 `.wsfolders`, `.wsnhead` 및 메모리 내 Qt 문자열 사이를 이동할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "도우미는 외부 상태가 없고 많은 하위 수준 파일에 필요하기 때문에 헤더 전용입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "생성된 UUID는 RFC-4122 값이 아닙니다. 프로젝트별 안정적인 폴더 키입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"main-call-sites\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 주요 통화 사이트\n",
+      "level": 2,
+      "title": "주요 통화 사이트"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 32,
+      "raw": "- `WhatSonFoldersHierarchyParser.cpp` 및 `WhatSonFoldersHierarchyStore.cpp`는 누락된 UUID를 정화하거나 대체합니다.\n- `WhatSonNoteHeaderStore.cpp`는 노트 헤더에 기록된 폴더 바인딩을 정규화합니다.\n- `LibraryHierarchyController.cpp`와 `WhatSonLibraryFolderHierarchyMutationService.cpp`는 헬퍼를 사용하여 이름 변경 및 이동 작업 전반에 걸쳐 런타임 아이덴티티를 안정적으로 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonFoldersHierarchyParser.cpp` 및 `WhatSonFoldersHierarchyStore.cpp`는 누락된 UUID를 정화하거나 대체합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonNoteHeaderStore.cpp`는 노트 헤더에 기록된 폴더 바인딩을 정규화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController.cpp`와 `WhatSonLibraryFolderHierarchyMutationService.cpp`는 헬퍼를 사용하여 이름 변경 및 이동 작업 전반에 걸쳐 런타임 아이덴티티를 안정적으로 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonFolderIdentity.hpp`",
+      "anchor": "srcappmodelshierarchywhatsonfolderidentityhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "디자인 노트",
+      "anchor": "디자인-노트",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 통화 사이트",
+      "anchor": "주요-통화-사이트",
+      "start_line": 28
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

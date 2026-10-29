@@ -1,0 +1,262 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2a46e5454b0d1f3bdf2d2c4ccb6c3d0ce339cf1e3fc332927a862636ca621b07",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/contents/ImageEditor.qml.md",
+    "sha256": "d05484601d645cb3d7c3e8e6a158265bf72f1987676e8689f365f700ce8d9133",
+    "bytes": 1660,
+    "line_count": 26,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/contents/ImageEditor.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/contents/ImageEditor.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/contents/ImageEditor.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`ImageEditor.qml`는 활성 목록 모델이 유형이나 형식이 이미지 지원되는 리소스 항목을 노출할 때 `ContentViewLayout.qml`에 의해 마운트되는 이미지 리소스 뷰어입니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "paragraph",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "프리젠테이션 전용 LVRS 내용 보기입니다. 선택한 리소스 항목 맵을 사용하고 `source`, `resolvedPath` 또는 `resourcePath`에서 QML 이미지 URL를 확인하고 `Image.PreserveAspectFit`를 사용하여 이미지를 렌더링합니다.\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "<a id=\"boundary\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "## 경계\n",
+      "level": 2,
+      "title": "경계"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 19,
+      "raw": "- 보기는 WhatSon 내부 C++ 모듈을 가져오지 않습니다.\n- 보기는 `.wsresource` 메타데이터를 읽거나 구문 분석하거나 변경하거나 유지하지 않습니다.\n- 보기는 일반 리소스 편집기 계약을 생성하지 않습니다. 이미지가 아닌 리소스 처리는 이 파일 외부에 유지됩니다.\n- 선택한 리소스 항목은 `ResourcesListModel.currentResourceEntry`에서 나와야 합니다.\n- 파일 경로 정규화는 이미 확인된 절대 로컬 경로를 `file://` 이미지 소스로 변환하는 것으로 제한됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "보기는 WhatSon 내부 C++ 모듈을 가져오지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "보기는 `.wsresource` 메타데이터를 읽거나 구문 분석하거나 변경하거나 유지하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "보기는 일반 리소스 편집기 계약을 생성하지 않습니다. 이미지가 아닌 리소스 처리는 이 파일 외부에 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택한 리소스 항목은 `ResourcesListModel.currentResourceEntry`에서 나와야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 경로 정규화는 이미 확인된 절대 로컬 경로를 `file://` 이미지 소스로 변환하는 것으로 제한됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 26,
+      "raw": "- 이 파일은 리소스 하이어라키에서 이미지 리소스를 선택했을 때 콘텐츠 영역에 표시되는 이미지 viewer다.\n- 입력은 `ResourcesListModel.currentResourceEntry`에서 온 선택 리소스 entry뿐이다.\n- `.wsresource` package 해석, resource metadata persistence, generic resource editor 정책은 맡지 않는다.\n- `source`, `resolvedPath`, `resourcePath` 중 이미 모델이 제공한 경로만 이미지 source로 사용한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 파일은 리소스 하이어라키에서 이미지 리소스를 선택했을 때 콘텐츠 영역에 표시되는 이미지 viewer다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "입력은 `ResourcesListModel.currentResourceEntry`에서 온 선택 리소스 entry뿐이다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.wsresource` package 해석, resource metadata persistence, generic resource editor 정책은 맡지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`source`, `resolvedPath`, `resourcePath` 중 이미 모델이 제공한 경로만 이미지 source로 사용한다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/contents/ImageEditor.qml`",
+      "anchor": "srcappqmlviewcontentsimageeditorqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "경계",
+      "anchor": "경계",
+      "start_line": 13
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

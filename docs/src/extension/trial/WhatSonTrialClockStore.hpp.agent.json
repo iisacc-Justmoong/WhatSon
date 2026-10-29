@@ -1,0 +1,231 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5ea98d7b6375417a0d844a6cd74d3825bb85877fe043b88372187c41bc30e7ac",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialClockStore.hpp.md",
+    "sha256": "29ad94a588eebe27813d4ed8faca3ef522d3ec43114d88c085e61a11b6c4ce6a",
+    "bytes": 1012,
+    "line_count": 21,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialClockStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialClockStore.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClockStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "시스템 시계가 앱 세션 간에 뒤로 이동했는지 여부를 감지하는 데 사용되는 로컬 타임스탬프 감사 저장소를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `loadLastExitTimestampUtc()`: 가장 최근에 스탬프가 찍힌 앱 종료 UTC 타임스탬프를 반환합니다.\n- `loadLastSeenTimestampUtc()`: 지금까지 관찰된 모든 종료 타임스탬프의 단조 높은 워터 마크를 반환합니다.\n- `inspect(...)`: 제공된 UTC 시간을 최고 워터마크와 비교하고 롤백 메타데이터를 보고합니다.\n- `stampExitTimestamp(...)`: 현재 종료 타임스탬프를 기록하고 기존 최고 워터마크와 새 값 중 더 큰 값을 유지합니다.\n- `clear()`: 지속되는 타임스탬프 키를 모두 제거합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadLastExitTimestampUtc()`: 가장 최근에 스탬프가 찍힌 앱 종료 UTC 타임스탬프를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadLastSeenTimestampUtc()`: 지금까지 관찰된 모든 종료 타임스탬프의 단조 높은 워터 마크를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`inspect(...)`: 제공된 UTC 시간을 최고 워터마크와 비교하고 롤백 메타데이터를 보고합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`stampExitTimestamp(...)`: 현재 종료 타임스탬프를 기록하고 기존 최고 워터마크와 새 값 중 더 큰 값을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`clear()`: 지속되는 타임스탬프 키를 모두 제거합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"persistence-keys\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 지속성 키\n",
+      "level": 2,
+      "title": "지속성 키"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 21,
+      "raw": "- `extension/trial/lastExitTimestampUtc`\n- `extension/trial/lastSeenTimestampUtc`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`extension/trial/lastExitTimestampUtc`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`extension/trial/lastSeenTimestampUtc`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialClockStore.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialclockstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "지속성 키",
+      "anchor": "지속성-키",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:8f1920c8e63817ef3cbe9ee3abe4da837324e6c5c9742d91e362bf93f05e8b11",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialWshubAccessBackend.hpp.md",
+    "sha256": "4f629b632c8a6dc64a5c2bd33a1a6d14bf204f9dd0704ab71cd52e70aee33c67",
+    "bytes": 1588,
+    "line_count": 25,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialWshubAccessBackend.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "로컬 90평가판이 만료된 후 `.wshub` 액세스를 차단하는 선택적 백엔드를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- `evaluateAccess(...)`: 로컬 `.wshub` 경로 또는 `.wshub` 패키지를 가리키는 문서 URI에 대한 구조화된 결정을 반환합니다.\n- `canAccess(...)`: 거부 메시지도 노출하는 편리한 부울 래퍼입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`evaluateAccess(...)`: 로컬 `.wshub` 경로 또는 `.wshub` 패키지를 가리키는 문서 URI에 대한 구조화된 결정을 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`canAccess(...)`: 거부 메시지도 노출하는 편리한 부울 래퍼입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"decision-model\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 의사결정 모델\n",
+      "level": 2,
+      "title": "의사결정 모델"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 25,
+      "raw": "- `.wshub`가 아닌 대상은 무시되고 허용된 상태로 유지됩니다.\n- `WhatSonRegisterManager::authenticated()`가 `true`인 경우 백엔드는 모든 평가판별 제한 사항을 우회합니다.\n- `.wshub` 대상은 `WhatSonTrialActivationPolicy`가 활성 평가판 상태를 보고하는 동안에만 허용됩니다.\n- 만료된 결정에는 설치에서 파생된 평가판 상태와 사용자에게 표시되는 거부 문자열이 포함됩니다.\n- 로컬 `.wshub` 대상도 `.whatson/trial_register.xml`를 검사합니다.\n- 평가판 레지스터 파일이 누락되면 로컬 `.wshub` 대상이 거부됩니다.\n- 레지스터 페이로드는 `key` 값을 신뢰하기 전에 먼저 무결성 확인을 통과해야 합니다.\n- 레지스터 페이로드는 `deviceUUID` 및 `key`를 모두 읽지만 무결성 확인이 성공한 후에는 `key` 비교만 액세스를 제어합니다.\n- 로컬 허브 키가 유지된 인앱 평가판 키와 다른 경우 장치 UUID가 여전히 일치하더라도 결정이 거부됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.wshub`가 아닌 대상은 무시되고 허용된 상태로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonRegisterManager::authenticated()`가 `true`인 경우 백엔드는 모든 평가판별 제한 사항을 우회합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.wshub` 대상은 `WhatSonTrialActivationPolicy`가 활성 평가판 상태를 보고하는 동안에만 허용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "만료된 결정에는 설치에서 파생된 평가판 상태와 사용자에게 표시되는 거부 문자열이 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 `.wshub` 대상도 `.whatson/trial_register.xml`를 검사합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "평가판 레지스터 파일이 누락되면 로컬 `.wshub` 대상이 거부됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레지스터 페이로드는 `key` 값을 신뢰하기 전에 먼저 무결성 확인을 통과해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레지스터 페이로드는 `deviceUUID` 및 `key`를 모두 읽지만 무결성 확인이 성공한 후에는 `key` 비교만 액세스를 제어합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 허브 키가 유지된 인앱 평가판 키와 다른 경우 장치 UUID가 여전히 일치하더라도 결정이 거부됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialWshubAccessBackend.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialwshubaccessbackendhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의사결정 모델",
+      "anchor": "의사결정-모델",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

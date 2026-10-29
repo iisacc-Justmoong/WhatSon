@@ -1,0 +1,129 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6455929eadddb8ce27455ac65fbc328514ccaebf82e31e00065d80ba59578822",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp.md",
+    "sha256": "9882aa7c6a4bc91738f37708c24ac82f1b92f017b8f3c56f8f0d525b9f6d2532",
+    "bytes": 1101,
+    "line_count": 10,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 10,
+      "raw": "- `setSystemCalendarStore(...)`는 이제 `ISystemCalendarStore`를 통해 바인딩됩니다.\n- 로캘/날짜 형식 상태가 변경되면 책갈피 메모 목록 새로 고침이 계속 발생합니다.\n- 계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택된 인덱스는 북마크 노트 목록이 새로 고쳐지기 전에 첫 번째 보이는 행으로 정규화되어 필터가 사이드바의 활성 행과 정렬됩니다.\n- 북마크 행 투영은 메타데이터 전용입니다. 본문 상태 적용 및 편집기 stat-리프레시 훅은 노트 편집기/세이브 경계와 함께 제거되었습니다.\n- `setItemExpanded(...)`는 공유된 체브론 검증/상태 플립을 `IHierarchyController`에 위임한 다음, `syncModel()`를 통해 북마크 프로젝션을 다시 게시합니다. 이렇게 하면 북마크 버킷 행이 다른 계층 도메인과 동일한 단일 행 체브론 확장 계약에 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setSystemCalendarStore(...)`는 이제 `ISystemCalendarStore`를 통해 바인딩됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로캘/날짜 형식 상태가 변경되면 책갈피 메모 목록 새로 고침이 계속 발생합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택된 인덱스는 북마크 노트 목록이 새로 고쳐지기 전에 첫 번째 보이는 행으로 정규화되어 필터가 사이드바의 활성 행과 정렬됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "북마크 행 투영은 메타데이터 전용입니다. 본문 상태 적용 및 편집기 stat-리프레시 훅은 노트 편집기/세이브 경계와 함께 제거되었습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setItemExpanded(...)`는 공유된 체브론 검증/상태 플립을 `IHierarchyController`에 위임한 다음, `syncModel()`를 통해 북마크 프로젝션을 다시 게시합니다. 이렇게 하면 북마크 버킷 행이 다른 계층 도메인과 동일한 단일 행 체브론 확장 계약에 유지됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/bookmarks/BookmarksHierarchyController.cpp`",
+      "anchor": "srcappmodelshierarchybookmarksbookmarkshierarchycontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

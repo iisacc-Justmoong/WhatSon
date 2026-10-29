@@ -1,0 +1,448 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:57e12674af6cd654499b61c2df8579be43058a128a7d9bf52e08d867ff3ff50a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml.md",
+    "sha256": "030de68789105033195e60f25540b43a73e4f9ab7b52000e951ecdb8d034a0ec",
+    "bytes": 3263,
+    "line_count": 51,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NavigationApplicationEditBar.qml`는 탐색 모드가 `Edit`일 때 오른쪽 응용 프로그램 도구 모음 클러스터를 렌더링합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "Figma 노드 매핑은 다음과 같습니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 10,
+      "raw": "- `149:4102` `ApplicationEditBar`\n- 하위 주문: `CalendarBar -> AddNewBar -> PreferenceBar`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`149:4102` `ApplicationEditBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하위 주문: `CalendarBar -> AddNewBar -> PreferenceBar`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"layout-contract\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 레이아웃 계약\n",
+      "level": 2,
+      "title": "레이아웃 계약"
+    },
+    {
+      "id": "b000014",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 24,
+      "raw": "- 루트 개체: `Item`\n- 공개 모드 스위치: `property bool compactMode`\n- 전체 모드(`compactMode: false`):\n  - `NavigationApplicationCalendarBar`\n  - `NavigationApplicationAddNewBar`\n  - `NavigationApplicationPreferenceBar`\n- 컴팩트 모드(`compactMode: true`):\n  - `LV.IconMenuButton` 트리거 1개\n  - `compactDetailPanelVisible == true`인 경우 선택적 `LV.IconButton` 세부 패널 트리거 1개\n  - `Controls.Overlay.overlay`에 렌더링된 `LV.ContextMenu` 1개\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 개체: `Item`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공개 모드 스위치: `property bool compactMode`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전체 모드(`compactMode: false`):",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationCalendarBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationAddNewBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationPreferenceBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 모드(`compactMode: true`):",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LV.IconMenuButton` 트리거 1개",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`compactDetailPanelVisible == true`인 경우 선택적 `LV.IconButton` 세부 패널 트리거 1개",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Controls.Overlay.overlay`에 렌더링된 `LV.ContextMenu` 1개",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"interaction-contract\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 상호작용 계약\n",
+      "level": 2,
+      "title": "상호작용 계약"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 29,
+      "end_line": 35,
+      "raw": "- `toggleDetailPanelRequested`를 노출하고 `NavigationPreferenceBar`에서 전달합니다.\n- `viewHookRequested`를 노출하고 `panelController.requestControllerHook(reason)`를 통해 모드 수준의 훅 사유를 전달합니다.\n- 전체 모드 `NavigationApplicationCalendarBar` 훅이 이제 `requestViewHook(reason)` 로 다시 전달되므로, 아이콘 모드와 컴팩트 메뉴 모드에서 연도 캘린더 클릭은 동일한 이유 파이프라인을 공유합니다.\n- 컴팩트 메뉴는 전체 모드 기본 도구를 반영합니다.\n  - 작업 및 달력 항목(`Task`, `Daily Calendar`, `Weekly Calendar`, `Monthly Calendar`, `Yearly Calendar`)\n  - 새 파일\n  - 환경설정\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`toggleDetailPanelRequested`를 노출하고 `NavigationPreferenceBar`에서 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`viewHookRequested`를 노출하고 `panelController.requestControllerHook(reason)`를 통해 모드 수준의 훅 사유를 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전체 모드 `NavigationApplicationCalendarBar` 훅이 이제 `requestViewHook(reason)` 로 다시 전달되므로, 아이콘 모드와 컴팩트 메뉴 모드에서 연도 캘린더 클릭은 동일한 이유 파이프라인을 공유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 메뉴는 전체 모드 기본 도구를 반영합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "작업 및 달력 항목(`Task`, `Daily Calendar`, `Weekly Calendar`, `Monthly Calendar`, `Yearly Calendar`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새 파일",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "환경설정",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "<a id=\"panel-controller-binding\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "## 패널 컨트롤러 바인딩\n",
+      "level": 2,
+      "title": "패널 컨트롤러 바인딩"
+    },
+    {
+      "id": "b000024",
+      "kind": "list",
+      "start_line": 40,
+      "end_line": 41,
+      "raw": "- 패널 키: `navigation.NavigationApplicationEditBar`\n- 바인딩: `panelControllerRegistry.panelController(\"navigation.NavigationApplicationEditBar\")`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "패널 키: `navigation.NavigationApplicationEditBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "바인딩: `panelControllerRegistry.panelController(\"navigation.NavigationApplicationEditBar\")`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "html",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "heading",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 51,
+      "raw": "- 전체 모드 자식 프레임은 `navigation/`의 공유 래퍼를 재사용하여 보기 및 편집 모드에서 중복된 모드 로컬 래퍼 파일을 방지합니다. `nodesnewFolder`는 `NavigationBarLayout.qml`의 폴더 추가 버튼입니다. 일관된 메뉴 어포던스 패턴입니다.\n- 컴팩트 트리거는 제어 모드에서 사용되는 공유 메뉴 버튼 패딩 계약을 따릅니다: `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.\n- 컴팩트 메뉴 너비/y-오프셋은 이제 `LV.Theme.inputMinWidth + LV.Theme.gap16` 및 `LV.Theme.gap2`를 통해 라우팅됩니다.\n- 콤팩트 편집기 라우트는 이제 Figma 노드 `193:6606`에서 전용 오른쪽 가장자리 `columnIndex` 상세 버튼을 렌더링하며, 데스크톱 환경설정 바에서 동일한 `toggleDetailPanelRequested` 신호 경로를 사용합니다. 컨텍스트 메뉴 항목입니다.\n- 콤팩트 디테일 버튼이 이제 훅 사유 `open-detail-page`를 발생시켜, 이전의 접기/확대 오버레이 문구 대신 라우팅된 페이지 동작과 일치합니다.\n- `pragma ComponentBehavior: Bound`가 활성화되어 컴팩트/전체 중첩된 `Component` 브랜치가 `applicationEditBar` id 멤버에 대한 비정격 경고 없이 접근할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "전체 모드 자식 프레임은 `navigation/`의 공유 래퍼를 재사용하여 보기 및 편집 모드에서 중복된 모드 로컬 래퍼 파일을 방지합니다. `nodesnewFolder`는 `NavigationBarLayout.qml`의 폴더 추가 버튼입니다. 일관된 메뉴 어포던스 패턴입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 트리거는 제어 모드에서 사용되는 공유 메뉴 버튼 패딩 계약을 따릅니다: `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 메뉴 너비/y-오프셋은 이제 `LV.Theme.inputMinWidth + LV.Theme.gap16` 및 `LV.Theme.gap2`를 통해 라우팅됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "콤팩트 편집기 라우트는 이제 Figma 노드 `193:6606`에서 전용 오른쪽 가장자리 `columnIndex` 상세 버튼을 렌더링하며, 데스크톱 환경설정 바에서 동일한 `toggleDetailPanelRequested` 신호 경로를 사용합니다. 컨텍스트 메뉴 항목입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "콤팩트 디테일 버튼이 이제 훅 사유 `open-detail-page`를 발생시켜, 이전의 접기/확대 오버레이 문구 대신 라우팅된 페이지 동작과 일치합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`pragma ComponentBehavior: Bound`가 활성화되어 컴팩트/전체 중첩된 `Component` 브랜치가 `applicationEditBar` id 멤버에 대한 비정격 경고 없이 접근할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`",
+      "anchor": "srcappqmlviewpanelsnavigationeditnavigationapplicationeditbarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "레이아웃 계약",
+      "anchor": "레이아웃-계약",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용 계약",
+      "anchor": "상호작용-계약",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "패널 컨트롤러 바인딩",
+      "anchor": "패널-컨트롤러-바인딩",
+      "start_line": 39
+    },
+    {
+      "block_id": "b000028",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 45
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

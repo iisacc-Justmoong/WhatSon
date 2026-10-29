@@ -1,0 +1,335 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e4c454afe347909844e223e77bb1fb151ac6e56f948f4fed224410315c08b64e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/sidebar/SidebarHierarchySelectionController.qml.md",
+    "sha256": "146f55f3438f4c17fab18cbbeb5646624f58570ac88cede79c4091b33fdf17ae",
+    "bytes": 2003,
+    "line_count": 34,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/sidebar/SidebarHierarchySelectionController.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/sidebar/SidebarHierarchySelectionController.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/sidebar/SidebarHierarchySelectionController.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`SidebarHierarchySelectionController.qml`는 `SidebarHierarchyView.qml`에 대한 계층 다중 선택 동작을 소유합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "paragraph",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "포인터 수정자 캡처, 범위/토글 선택 의미 체계 및 기본 행 활성화를 중앙 집중화하므로 루트 사이드바 보기가 LVRS 구성 및 오버레이 렌더링에 계속 집중할 수 있습니다.\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 19,
+      "raw": "- `selectionAnchorIndex`: 계층 범위 선택 앵커.\n- `selectedIndices`: 시각적으로 선택된 계층 구조 행의 정규화된 집합입니다.\n- `pointerSelectionModifiers` / `pointerSelectionModifiersCapturedAtMs`: 수정자 복구를 위한 단기 프레스 캐시.\n- `requestHierarchySelection(item, resolvedIndex, modifiers)`: 기본 계층 선택 진입점.\n- `syncHierarchySelectionFromSelectedFolder()`: 라우팅된 폴더 인덱스에서 시각적 선택 항목을 다시 수화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`selectionAnchorIndex`: 계층 범위 선택 앵커.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selectedIndices`: 시각적으로 선택된 계층 구조 행의 정규화된 집합입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`pointerSelectionModifiers` / `pointerSelectionModifiersCapturedAtMs`: 수정자 복구를 위한 단기 프레스 캐시.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestHierarchySelection(item, resolvedIndex, modifiers)`: 기본 계층 선택 진입점.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`syncHierarchySelectionFromSelectedFolder()`: 라우팅된 폴더 인덱스에서 시각적 선택 항목을 다시 수화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"modifier-recovery\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 수정자 회복\n",
+      "level": 2,
+      "title": "수정자 회복"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 27,
+      "raw": "- `captureHierarchyPointerSelectionModifiers(...)`는 프레스 타임 `Cmd/Ctrl` 또는 `Shift` 상태를 저장합니다.\n- `resolveHierarchySelectionModifiers(...)`는 활성화 콜백이 수정 비트 없이 도착하면 캐시된 수정자 스냅샷으로 대체됩니다.\n- 이렇게 하면 `Cmd/Ctrl` 토글 선택과 `Shift` 범위 선택이 LVRS/platform 콜백 타이밍 차이 전반에 걸쳐 안정적으로 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`captureHierarchyPointerSelectionModifiers(...)`는 프레스 타임 `Cmd/Ctrl` 또는 `Shift` 상태를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resolveHierarchySelectionModifiers(...)`는 활성화 콜백이 수정 비트 없이 도착하면 캐시된 수정자 스냅샷으로 대체됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이렇게 하면 `Cmd/Ctrl` 토글 선택과 `Shift` 범위 선택이 LVRS/platform 콜백 타이밍 차이 전반에 걸쳐 안정적으로 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "<a id=\"host-dependency-direction\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "## 호스트 종속성 방향\n",
+      "level": 2,
+      "title": "호스트 종속성 방향"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 33,
+      "end_line": 34,
+      "raw": "- 컨트롤러는 `SidebarHierarchyView` 헬퍼(예: `normalizedInteger(...)`, `invalidateHierarchySelectionVisuals()`, `resolveVisibleHierarchyItem(...)`, `hierarchyController.setHierarchySelectedIndex(...)`)에 의존합니다.\n- 호스트 뷰는 래퍼 함수를 유지하여 외부 호출자는 안정적인 인터페이스를 유지하고, 선택 상태 머신은 전용 형제 파일에 저장됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "컨트롤러는 `SidebarHierarchyView` 헬퍼(예: `normalizedInteger(...)`, `invalidateHierarchySelectionVisuals()`, `resolveVisibleHierarchyItem(...)`, `hierarchyController.setHierarchySelectedIndex(...)`)에 의존합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호스트 뷰는 래퍼 함수를 유지하여 외부 호출자는 안정적인 인터페이스를 유지하고, 선택 상태 머신은 전용 형제 파일에 저장됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/sidebar/SidebarHierarchySelectionController.qml`",
+      "anchor": "srcappqmlviewpanelssidebarsidebarhierarchyselectioncontrollerqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 13
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "수정자 회복",
+      "anchor": "수정자-회복",
+      "start_line": 23
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호스트 종속성 방향",
+      "anchor": "호스트-종속성-방향",
+      "start_line": 31
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

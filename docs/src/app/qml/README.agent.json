@@ -1,0 +1,152 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:14531058ae6724bf83fb5ce496f97231a8d8f1105e90f39771623eb5e03496c8",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/README.md",
+    "sha256": "35ff22c6c75c374250f6bcf5e7c09d65f178aca1b6be5435f66de0081113e18f",
+    "bytes": 508,
+    "line_count": 11,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "`src/app/qml`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml`\n",
+      "level": 1,
+      "title": "`src/app/qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "The QML tree owns view composition only. Backend logic, persistence, parsing, source mutation, and document-model state stay out of QML.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## Current Contents Surface\n",
+      "level": 2,
+      "title": "Current Contents Surface"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`view/panels/ContentViewLayout.qml` composes the workspace content area with:\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "- `view/contents/ImageEditor.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`view/contents/ImageEditor.qml`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "The active editor document model was deleted. QML no longer receives a document session, editor paste bridge, or native key filter, and it must not reconstruct those responsibilities as compatibility wrappers.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml`",
+      "anchor": "srcappqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Current Contents Surface",
+      "anchor": "current-contents-surface",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 11,
+        "text": "The active editor document model was deleted. QML no longer receives a document session, editor paste bridge, or native key filter, and it must not reconstruct those responsibilities as compatibility wrappers.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

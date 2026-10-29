@@ -1,0 +1,233 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:bf661c4614bb83bf99c45f9ae07024152180230a4dca0a54af57afcbf0f8943b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/ClipboardResourceImport.cpp.md",
+    "sha256": "76d58571c3c1ba4cdc7b2f1f24ff9bafa90d9a757a852eee1a8a58b0e997b987",
+    "bytes": 1011,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/ClipboardResourceImport.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/ClipboardResourceImport.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/ClipboardResourceImport.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "파일 형식 캡처가 완료된 후 클립보드 가져오기 설명자 구성을 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- MIME 및 파일 접미사 감지를 `FiletypeCapture`에 위임합니다.\n- `WhatSonResourcePackageSupport`에서 타입 및 버킷 추론을 적용하고, 파일 형식이 알려진 후에도 클립보드 가져오기를 리소스 계층의 나머지와 정렬합니다.\n- 패키지 생성 전에 메모리 내 페이로드가 구체화될 수 있도록 기본 클립보드 파일 이름을 제공합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "MIME 및 파일 접미사 감지를 `FiletypeCapture`에 위임합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonResourcePackageSupport`에서 타입 및 버킷 추론을 적용하고, 파일 형식이 알려진 후에도 클립보드 가져오기를 리소스 계층의 나머지와 정렬합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "패키지 생성 전에 메모리 내 페이로드가 구체화될 수 있도록 기본 클립보드 파일 이름을 제공합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 22,
+      "raw": "- clipboard 후보의 파일 형식 확인은 `FiletypeCapture`에 맡긴다.\n- 이 파일은 확인된 format을 앱이 지원하는 resource type/bucket으로 연결해 import descriptor를 만든다.\n- `.mp3`, `.m4a`, `.flac` 같은 음악 파일 확장자도 별도 `music` type으로 나누지 않고 canonical\n  `audio`/`Audio`로 정규화한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "clipboard 후보의 파일 형식 확인은 `FiletypeCapture`에 맡긴다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 파일은 확인된 format을 앱이 지원하는 resource type/bucket으로 연결해 import descriptor를 만든다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.mp3`, `.m4a`, `.flac` 같은 음악 파일 확장자도 별도 `music` type으로 나누지 않고 canonical",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/ClipboardResourceImport.cpp`",
+      "anchor": "srcappmodelsclipboardclipboardresourceimportcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

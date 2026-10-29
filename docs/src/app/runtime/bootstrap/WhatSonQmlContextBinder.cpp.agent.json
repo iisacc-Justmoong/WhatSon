@@ -1,0 +1,85 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b294664408005d7fdc1a9c1af810a5f49e5f23e5aade2c506e807611f111cca6",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp.md",
+    "sha256": "74900176551edfda85a2df7d5a2360e19012e024626ec14a3c625ebac7464741",
+    "bytes": 580,
+    "line_count": 5,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "`bindWorkspaceContextObjects(...)`는 작업공간 런타임 개체에 대한 LVRS QML 컨텍스트 바인딩 계획을 빌드합니다.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "바인딩 목록은 이제 삭제된 활성 편집기 문서 세션·편집기 붙여넣기 브리지·네이티브 편집기 입력 명령 필터를 제외한다. 남은 바인딩은 계층 컨트롤러·상세 패널 컨트롤러·탐색 상태·클립보드 가져오기 상태·캘린더 컨트롤러·비동기 스케줄링·패널 컨트롤러 레지스트리를 포함한다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp`",
+      "anchor": "srcappruntimebootstrapwhatsonqmlcontextbindercpp",
+      "start_line": 1
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

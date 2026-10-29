@@ -1,0 +1,178 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:f8cd333746fe48e01eb5f0daf30bcadb3424d69664b162307a3fe4205ba9f864",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryHierarchyModel.hpp.md",
+    "sha256": "c1f387bc2e677812cec2a6702aa584c14a40f65a5f999ce113df339a4da7483e",
+    "bytes": 785,
+    "line_count": 15,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 헤더는 `LibraryHierarchyController` 내부에서 사용되는 형식화된 `LibraryHierarchyItem` 구조체와 `libraryHierarchyIconName(...)` 도우미를 유지합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"shared-model-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공유 모델 계약\n",
+      "level": 2,
+      "title": "공유 모델 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 더 이상 Qt 항목 모델 클래스를 선언하지 않습니다.\n- QML/LVRS 방향 모델은 공유 `WhatSonHierarchyModel`입니다.\n- 라이브러리별 행 아이덴티티는 구조체에 남아 있습니다: 시스템 버킷은 예약된 아이덴티티를 유지하고 일반 폴더는 `folderUuid` / `folderPath`를 전달하므로 컨트롤러 직렬화는 안정적인 `LV.Hierarchy` 노드 키를 생성할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "더 이상 Qt 항목 모델 클래스를 선언하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML/LVRS 방향 모델은 공유 `WhatSonHierarchyModel`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리별 행 아이덴티티는 구조체에 남아 있습니다: 시스템 버킷은 예약된 아이덴티티를 유지하고 일반 폴더는 `folderUuid` / `folderPath`를 전달하므로 컨트롤러 직렬화는 안정적인 `LV.Hierarchy` 노드 키를 생성할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`",
+      "anchor": "srcappmodelshierarchylibrarylibraryhierarchymodelhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공유 모델 계약",
+      "anchor": "공유-모델-계약",
+      "start_line": 11
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

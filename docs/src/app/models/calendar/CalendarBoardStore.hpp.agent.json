@@ -1,0 +1,189 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:31646e9388ff55ad0e913acd574de607bbdfd710c6bc7d377a5f0f0e3e923805",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/CalendarBoardStore.hpp.md",
+    "sha256": "1cc79db97e2c52ae71e3d3351c0c0b1abef1b695f3279d81590f20afcc192627",
+    "bytes": 1673,
+    "line_count": 18,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/calendar/CalendarBoardStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/calendar/CalendarBoardStore.hpp`\n",
+      "level": 1,
+      "title": "`src/app/calendar/CalendarBoardStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`CalendarBoardStore`는 `ICalendarBoardStore`의 기본 메모리 내 구현입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"interface-alignment\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 인터페이스 정렬\n",
+      "level": 2,
+      "title": "인터페이스 정렬"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 18,
+      "raw": "- `ICalendarBoardStore`를 상속합니다.\n- 협업을 인터페이스 유형으로 이동하면서 동일한 변형/쿼리 표면을 유지합니다.\n- 인터페이스에 선언된 공유 보드 신호를 내보냅니다.\n- 수동 보드 항목과 읽기 전용 투사된 메모 항목을 동일한 쿼리 표면에 유지하여 캘린더 사용자가 별도의 메모 전용 배선을 필요로 하지 않도록 합니다.\n- 수동 보드 항목과 예상 노트 항목 모두에 대한 날짜별 입력 인덱스와 날짜별 카운트 캐시를 유지하므로 `entriesForDate(...)` / `countsForDate(...)`는 모든 쿼리에서 전체 보드를 다시 스캔할 필요가 없습니다.\n- 스냅샷 기반 노트 프로젝션 새로 고침과 `.wshub` 재인덱스 기반 새로 고침을 모두 노출하여 시작/ 런타임 상태가 즉시 캘린더 노트를 채울 수 있도록 하며, 비라이브러리 변이는 여전히 디스크 재로드로 돌아갈 수 있습니다.\n- 단일 음표에 대한 투사된 노트 업셋을 노출하거나 진입점을 제거하여 라이브러리 런타임 변이가 전체 투사 스냅샷을 교체하지 않고 하나의 캘린더 노트 마운트를 업데이트할 수 있도록 합니다.\n- 또한 실시간 노트 제공자를 받아 캘린더 쿼리가 명시적인 투사 항목 캐시가 아직 채워지지 않았더라도 투사된 메모 항목을 여전히 해결할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ICalendarBoardStore`를 상속합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "협업을 인터페이스 유형으로 이동하면서 동일한 변형/쿼리 표면을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "인터페이스에 선언된 공유 보드 신호를 내보냅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "수동 보드 항목과 읽기 전용 투사된 메모 항목을 동일한 쿼리 표면에 유지하여 캘린더 사용자가 별도의 메모 전용 배선을 필요로 하지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "수동 보드 항목과 예상 노트 항목 모두에 대한 날짜별 입력 인덱스와 날짜별 카운트 캐시를 유지하므로 `entriesForDate(...)` / `countsForDate(...)`는 모든 쿼리에서 전체 보드를 다시 스캔할 필요가 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "스냅샷 기반 노트 프로젝션 새로 고침과 `.wshub` 재인덱스 기반 새로 고침을 모두 노출하여 시작/ 런타임 상태가 즉시 캘린더 노트를 채울 수 있도록 하며, 비라이브러리 변이는 여전히 디스크 재로드로 돌아갈 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "단일 음표에 대한 투사된 노트 업셋을 노출하거나 진입점을 제거하여 라이브러리 런타임 변이가 전체 투사 스냅샷을 교체하지 않고 하나의 캘린더 노트 마운트를 업데이트할 수 있도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "또한 실시간 노트 제공자를 받아 캘린더 쿼리가 명시적인 투사 항목 캐시가 아직 채워지지 않았더라도 투사된 메모 항목을 여전히 해결할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/calendar/CalendarBoardStore.hpp`",
+      "anchor": "srcappcalendarcalendarboardstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "인터페이스 정렬",
+      "anchor": "인터페이스-정렬",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

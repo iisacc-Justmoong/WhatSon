@@ -1,0 +1,542 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b7acffc693ba3ce6dbefa364ff84112a6815ca4ff347b986559810e27854e789",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp.md",
+    "sha256": "e621708fa1e8c0a1b0d263b388d134b456fb671d6ba03204d999678058a4fd01",
+    "bytes": 7202,
+    "line_count": 63,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 전용 프로젝트 계층 구조 컨트롤러를 구현합니다. `ProjectLists.wsproj`를 구문 분석 및 변경하고, 프로젝트 사이드바 행을 빌드하고, 런타임 스냅샷 업데이트 전반에 걸쳐 프로젝트 선택을 안정적으로 유지합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"runtime-refresh-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 런타임 갱신 계약\n",
+      "level": 2,
+      "title": "런타임 갱신 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "`applyRuntimeSnapshot(...)`는 이제 감시자 기반 업데이트를 보수적으로 처리합니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 19,
+      "raw": "- 현재 선택은 변형 이전에 안정적인 프로젝트 행 키로 캡처됩니다.\n- 들어오는 폴더 깊이 항목은 현재 렌더링된 프로젝트 계층 구조와 비교됩니다.\n- 프로젝트 계층 구조 소스가 변경된 경우, 컨트롤러는 프로젝트 행을 재구성하고 사용자를 암시적 기본 상태로 되돌리는 대신 키로 이전 선택을 복원합니다.\n- 계층 행이 변경되었는지 여부와 관계없이, 이 함수는 실시간 `.wsnhead` 파일에서 프로젝트 노트 멤버십을 재인덱싱하여, 변경되지 않은 스냅샷이 오래된 노트 투영을 유지할 수 없게 합니다.\n- `requestControllerHook()`는 이제 동일한 프로젝트 노트 재인덱싱 경로도 수행합니다. 이는 사용자가 프로젝트 보기로 다시 들어갈 때 동기화를 강제하기 위해 사이드바 진입/이벤트 훅에 의해 사용됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 선택은 변형 이전에 안정적인 프로젝트 행 키로 캡처됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "들어오는 폴더 깊이 항목은 현재 렌더링된 프로젝트 계층 구조와 비교됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 계층 구조 소스가 변경된 경우, 컨트롤러는 프로젝트 행을 재구성하고 사용자를 암시적 기본 상태로 되돌리는 대신 키로 이전 선택을 복원합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 행이 변경되었는지 여부와 관계없이, 이 함수는 실시간 `.wsnhead` 파일에서 프로젝트 노트 멤버십을 재인덱싱하여, 변경되지 않은 스냅샷이 오래된 노트 투영을 유지할 수 없게 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestControllerHook()`는 이제 동일한 프로젝트 노트 재인덱싱 경로도 수행합니다. 이는 사용자가 프로젝트 보기로 다시 들어갈 때 동기화를 강제하기 위해 사이드바 진입/이벤트 훅에 의해 사용됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "프로젝트는 이제 공유 사이드바 푸터에 의해 사용되는 동일한 확장 후크를 노출합니다. 프로젝트 스냅샷이 결국 확장 가능한 행을 포함할 때, 단일 행 및 대량 확장은 모두 컨트롤러 소유의 `expanded` 플래그를 변경한 다음 모델을 재구성하여 푸터 메뉴가 `Expand All` / `Collapse All` 를 구동할 수 있도록 하고 해당 상태를 QML 로 푸시하지 않습니다. 현재 프로젝트 데이터가 평평하다면, 어떤 행도 `showChevron: true` 를 광고하지 않으므로 푸터 메뉴는 비활성화됩니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"mutation-flow\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 돌연변이 흐름\n",
+      "level": 2,
+      "title": "돌연변이 흐름"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 27,
+      "end_line": 31,
+      "raw": "- `loadFromWshub(...)`는 `ProjectLists.wsproj`를 `WhatSonProjectsHierarchyStore`로 파싱하고, 또한 `Library.wslibrary`를 인덱싱하여 프로젝트 도메인에 자체적인 노트 리스트 프로젝션을 제공합니다.\n- `renameItem(...)` , `createFolder()` , `deleteSelectedFolder()` , 및 재배열/이동 헬퍼는 스토어 기반 폴더 항목을 변형한 뒤 모델을 재구성합니다.\n- `applyHierarchyMove(...)`는 명시적인 목표 프로젝트 폴더 이동에 대해 계속 사용할 수 있습니다. 사이드바의 일반적인 LVRS 드래그/드롭 커밋은 전체 노드 재생을 통해 최종 `LV.Hierarchy.model` 스냅샷을 지속합니다.\n- `setItemExpanded(...)`와 `setAllItemsExpanded(...)`는 공유 체브론 검증/상태 플립을 `IHierarchyController`의 보호된 헬퍼에 위임하고, 이후 메모리 내 모델만 동기화합니다. 그들은 `Projects.wsproj`를 다시 작성하지 않습니다, 왜냐하면 폴드 상태가 사이드바 프레젠테이션 문제이기 때문입니다.\n- `itemsFromProjectEntries(...)`는 지속된 폴더 깊이 레코드에서 사이드바 행으로의 변환 경계입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadFromWshub(...)`는 `ProjectLists.wsproj`를 `WhatSonProjectsHierarchyStore`로 파싱하고, 또한 `Library.wslibrary`를 인덱싱하여 프로젝트 도메인에 자체적인 노트 리스트 프로젝션을 제공합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`renameItem(...)` , `createFolder()` , `deleteSelectedFolder()` , 및 재배열/이동 헬퍼는 스토어 기반 폴더 항목을 변형한 뒤 모델을 재구성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applyHierarchyMove(...)`는 명시적인 목표 프로젝트 폴더 이동에 대해 계속 사용할 수 있습니다. 사이드바의 일반적인 LVRS 드래그/드롭 커밋은 전체 노드 재생을 통해 최종 `LV.Hierarchy.model` 스냅샷을 지속합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setItemExpanded(...)`와 `setAllItemsExpanded(...)`는 공유 체브론 검증/상태 플립을 `IHierarchyController`의 보호된 헬퍼에 위임하고, 이후 메모리 내 모델만 동기화합니다. 그들은 `Projects.wsproj`를 다시 작성하지 않습니다, 왜냐하면 폴드 상태가 사이드바 프레젠테이션 문제이기 때문입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`itemsFromProjectEntries(...)`는 지속된 폴더 깊이 레코드에서 사이드바 행으로의 변환 경계입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "html",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "<a id=\"note-list-projection\"></a>\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "## 노트 목록 투영\n",
+      "level": 2,
+      "title": "노트 목록 투영"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 37,
+      "end_line": 47,
+      "raw": "- `noteListModel()`는 이제 프로젝트 컨트롤러가 소유한 `LibraryNoteListModel`를 반환하며, 상속된 null 기본값이 아닙니다.\n- 프로젝트 필터링된 노트 행은 이제 `LibraryNoteListItem::bodyText` 에서 선택된 노트의 RAW /source 스냅샷을 유지합니다. 가시적인 목록 표면은 여전히 미리보기/검색 메타데이터를 렌더링하지만, 비동기 노트 본문 새로고침 경로가 완료되기 전에 편집자 선택 브릿지는 현재 프로젝트 행에서 즉시 부트스트랩 RAW 본문을 가져올 수 있습니다.\n- 노트 목록은 인덱스된 `LibraryNoteRecord` 항목에서 재구성되지만, 필터링 전에 각 노트 헤더 파일을 읽어 프로젝트 멤버십이 다시 동기화됩니다.\n- 이는 기준 원본 가 프로젝트 필터링의 유일한 `.wsnhead <project>` 로 유지되도록 하며, `index.wsnindex` 가 여전히 오래된 프로젝트 라벨을 가지고 있더라도 마찬가지입니다.\n- 동일한 헤더 동기화가 각 노트 목록 새로 고침마다 실행되므로, 외부 `.wsnhead` 편집 후 프로젝트 선택을 전환하면 오래된 프로젝트 멤버가 보이지 않도록 유지할 수 없습니다.\n- 뷰 트리거 훅(`requestControllerHook`)은 동일한 새로 고침 경로를 재사용하므로, 프로젝트 노트 투영을 새로운 런타임 스냅샷을 기다리지 않고 사이드바 항목에서 다시 동기화할 수 있습니다.\n- 인덱스 행을 읽을 수 있는 노트 헤더에 매핑할 수 없는 경우, 프로젝트 투영에 대해 해당 프로젝트 레이블이 무시되어 인덱스 전용 고스트 행이 선택된 프로젝트에 새어나가지 않도록 합니다.\n- 계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택된 인덱스가 노트 목록이 재구성되기 전에 첫 번째 보이는 행으로 정규화됩니다. 따라서 프로젝트는 사이드바가 활성으로 표시한 동일한 첫 번째 프로젝트 필터로 입력되며, 필터링되지 않은 목록으로 되돌아가지 않습니다.\n- 프로젝트 노트 투영이 이제 메타데이터 전용으로 유지됩니다. 본문 상태 적용 경로와 편집기 트리거 통계 갱신 API는 노트 편집기/세이브 경계와 함께 제거되었습니다.\n- 전체 헤더 동기화는 일반 선택 변경 및 프로젝트 멤버십이 실제로 변경된 경우 전체 스냅샷 새로 고침에 대해 계속 활성화됩니다.\n- `noteDirectoryPathForNoteId(...)`는 이제 인덱스된 디렉터리 경로가 없거나 오래된 경우 읽을 수 있는 `.wsnhead` 위치로 되돌아가 디렉터리 경로를 정형화하여 해결합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`noteListModel()`는 이제 프로젝트 컨트롤러가 소유한 `LibraryNoteListModel`를 반환하며, 상속된 null 기본값이 아닙니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 필터링된 노트 행은 이제 `LibraryNoteListItem::bodyText` 에서 선택된 노트의 RAW /source 스냅샷을 유지합니다. 가시적인 목록 표면은 여전히 미리보기/검색 메타데이터를 렌더링하지만, 비동기 노트 본문 새로고침 경로가 완료되기 전에 편집자 선택 브릿지는 현재 프로젝트 행에서 즉시 부트스트랩 RAW 본문을 가져올 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 목록은 인덱스된 `LibraryNoteRecord` 항목에서 재구성되지만, 필터링 전에 각 노트 헤더 파일을 읽어 프로젝트 멤버십이 다시 동기화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이는 기준 원본 가 프로젝트 필터링의 유일한 `.wsnhead <project>` 로 유지되도록 하며, `index.wsnindex` 가 여전히 오래된 프로젝트 라벨을 가지고 있더라도 마찬가지입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "동일한 헤더 동기화가 각 노트 목록 새로 고침마다 실행되므로, 외부 `.wsnhead` 편집 후 프로젝트 선택을 전환하면 오래된 프로젝트 멤버가 보이지 않도록 유지할 수 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "뷰 트리거 훅(`requestControllerHook`)은 동일한 새로 고침 경로를 재사용하므로, 프로젝트 노트 투영을 새로운 런타임 스냅샷을 기다리지 않고 사이드바 항목에서 다시 동기화할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "인덱스 행을 읽을 수 있는 노트 헤더에 매핑할 수 없는 경우, 프로젝트 투영에 대해 해당 프로젝트 레이블이 무시되어 인덱스 전용 고스트 행이 선택된 프로젝트에 새어나가지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 구조에 보이는 행이 있는 경우, 부정적이거나 잘못된 선택된 인덱스가 노트 목록이 재구성되기 전에 첫 번째 보이는 행으로 정규화됩니다. 따라서 프로젝트는 사이드바가 활성으로 표시한 동일한 첫 번째 프로젝트 필터로 입력되며, 필터링되지 않은 목록으로 되돌아가지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 노트 투영이 이제 메타데이터 전용으로 유지됩니다. 본문 상태 적용 경로와 편집기 트리거 통계 갱신 API는 노트 편집기/세이브 경계와 함께 제거되었습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전체 헤더 동기화는 일반 선택 변경 및 프로젝트 멤버십이 실제로 변경된 경우 전체 스냅샷 새로 고침에 대해 계속 활성화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteDirectoryPathForNoteId(...)`는 이제 인덱스된 디렉터리 경로가 없거나 오래된 경우 읽을 수 있는 `.wsnhead` 위치로 되돌아가 디렉터리 경로를 정형화하여 해결합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "html",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "<a id=\"hierarchy-count-badge\"></a>\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "heading",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "## 계층 수 배지\n",
+      "level": 2,
+      "title": "계층 수 배지"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 53,
+      "end_line": 55,
+      "raw": "- 이제 `depthItems()`에는 각 프로젝트 행에 대한 숫자 `count` 값이 포함됩니다.\n- 카운트는 현재 메모리 내 색인된 지폐(`m_allNotes`)에서 프로젝트 라벨과 대소문자를 구분하지 않는 일치를 통해 도출됩니다.\n- 모든 런타임 노트 재인덱스 경로(`refreshIndexedNotesFromWshub(...)`, `refreshIndexedNotesFromProjectsFilePath(...)`)는 이제 노트 멤버십을 새로 고친 후 `hierarchyModelChanged()`를 발행하여 앱 재시작 없이 사이드바 카운트 배지가 새로 고침됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 `depthItems()`에는 각 프로젝트 행에 대한 숫자 `count` 값이 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "카운트는 현재 메모리 내 색인된 지폐(`m_allNotes`)에서 프로젝트 라벨과 대소문자를 구분하지 않는 일치를 통해 도출됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 런타임 노트 재인덱스 경로(`refreshIndexedNotesFromWshub(...)`, `refreshIndexedNotesFromProjectsFilePath(...)`)는 이제 노트 멤버십을 새로 고친 후 `hierarchyModelChanged()`를 발행하여 앱 재시작 없이 사이드바 카운트 배지가 새로 고침됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "html",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "<a id=\"invariants\"></a>\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "heading",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "## 불변성\n",
+      "level": 2,
+      "title": "불변성"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "list",
+      "start_line": 61,
+      "end_line": 63,
+      "raw": "- 선택은 의미론적이며 런타임 스냅샷 변동 후에도 유지되어야 합니다.\n- 렌더링된 계층 구조를 변경하지 않는 프로젝트 스냅샷은 사이드바 상태를 재설정하면 안 됩니다.\n- 재구성 후에도 행이 여전히 존재하는 경우, 유효 선택은 암묵적인 \"no filter\" 상태가 아니라 가시적인 행으로 유지되어야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "선택은 의미론적이며 런타임 스냅샷 변동 후에도 유지되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "렌더링된 계층 구조를 변경하지 않는 프로젝트 스냅샷은 사이드바 상태를 재설정하면 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "재구성 후에도 행이 여전히 존재하는 경우, 유효 선택은 암묵적인 \"no filter\" 상태가 아니라 가시적인 행으로 유지되어야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/projects/ProjectsHierarchyController.cpp`",
+      "anchor": "srcappmodelshierarchyprojectsprojectshierarchycontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 갱신 계약",
+      "anchor": "런타임-갱신-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "돌연변이 흐름",
+      "anchor": "돌연변이-흐름",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "노트 목록 투영",
+      "anchor": "노트-목록-투영",
+      "start_line": 35
+    },
+    {
+      "block_id": "b000033",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계층 수 배지",
+      "anchor": "계층-수-배지",
+      "start_line": 51
+    },
+    {
+      "block_id": "b000039",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "불변성",
+      "anchor": "불변성",
+      "start_line": 59
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

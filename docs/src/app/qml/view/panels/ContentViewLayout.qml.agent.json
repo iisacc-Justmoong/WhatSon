@@ -1,0 +1,219 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:1d9374f501a27bc1c9f206bf9c8f777b41c2e04ef2914eb5eedda6bde5e1ffcd",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/ContentViewLayout.qml.md",
+    "sha256": "83782aeaf070aef0936506249c26c4cd2fee159abf262278c053197323c17909",
+    "bytes": 1266,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/ContentViewLayout.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/ContentViewLayout.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ContentViewLayout.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "`ContentViewLayout.qml`는 중앙 작업 공간 콘텐츠 표면을 구성합니다.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "html",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "<a id=\"current-contract\"></a>\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "heading",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "## 현재 계약\n",
+      "level": 2,
+      "title": "현재 계약"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 12,
+      "raw": "- `src/app/qml/view/contents`에서 `ImageEditor.qml`만 마운트합니다.\n- `noteListModel.currentResourceEntry`를 통해 선택된 이미지 리소스는 `ImageEditor.qml`로 라우팅됩니다.\n- 이미지가 아닌 경로나 메모 경로에는 레이아웃 연속성을 위해 빈 콘텐츠 자리 표시자가 표시됩니다.\n- 캘린더 오버레이는 일시적으로 편집기 표면을 대체하고 라이브러리 계층 컨트롤러를 통해 노트 열기 요청을 다시 라우팅합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/contents`에서 `ImageEditor.qml`만 마운트합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteListModel.currentResourceEntry`를 통해 선택된 이미지 리소스는 `ImageEditor.qml`로 라우팅됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이미지가 아닌 경로나 메모 경로에는 레이아웃 연속성을 위해 빈 콘텐츠 자리 표시자가 표시됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "캘린더 오버레이는 일시적으로 편집기 표면을 대체하고 라이브러리 계층 컨트롤러를 통해 노트 열기 요청을 다시 라우팅합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"deleted-document-model-boundary\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 삭제된 문서 모델 경계\n",
+      "level": 2,
+      "title": "삭제된 문서 모델 경계"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "활성 노트 문서 모델이 제거되었습니다. 이 레이아웃은 더 이상 편집기 문서 세션 개체, 편집기 붙여넣기 브리지, 네이티브 키 필터, RAW 푸시/풀 후크, 인라인 서식 바로가기 또는 선택 컨텍스트 메뉴를 수신하거나 전달하지 않습니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "이 파일의 QML는 활성 노트 본문 파일을 마운트하거나, 소스 태그를 변경하거나, 문서 세션 호환성 래퍼를 다시 도입해서는 안 됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ContentViewLayout.qml`",
+      "anchor": "srcappqmlviewpanelscontentviewlayoutqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000007",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 계약",
+      "anchor": "현재-계약",
+      "start_line": 7
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "삭제된 문서 모델 경계",
+      "anchor": "삭제된-문서-모델-경계",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000017",
+        "line": 20,
+        "text": "이 파일의 QML는 활성 노트 본문 파일을 마운트하거나, 소스 태그를 변경하거나, 문서 세션 호환성 래퍼를 다시 도입해서는 안 됩니다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,842 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:0ec429907a62e25b75e3b2f2db4acfd3d09a1663c04ec0ba15a1a044be48fa5a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "README.md",
+    "sha256": "e18f2aa8cb2a88f0a29922f944ed126fb4fb7c4eb5168d2abd646d57b5d42729",
+    "bytes": 4584,
+    "line_count": 102,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "WhatSon",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# WhatSon\n",
+      "level": 1,
+      "title": "WhatSon"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "WhatSon is an LVRS-based Qt Quick desktop application for creative, branding, information, and knowledge text workflows.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## Structure\n",
+      "level": 2,
+      "title": "Structure"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 12,
+      "raw": "- `src/app`: LVRS-based desktop UI application.\n- `src/daemon`: background daemon entrypoint.\n- `src/extension`: optional extension and trial-support code.\n- `test/cpp`: maintained Qt Test regression suite.\n- `cmake/root`: grouped root custom targets.\n- `scripts`: optional developer automation for host build and smoke flows.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app`: LVRS-based desktop UI application.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/daemon`: background daemon entrypoint.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/extension`: optional extension and trial-support code.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`test/cpp`: maintained Qt Test regression suite.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`cmake/root`: grouped root custom targets.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`scripts`: optional developer automation for host build and smoke flows.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## Build Dependencies\n",
+      "level": 2,
+      "title": "Build Dependencies"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 22,
+      "raw": "- Qt 6.5+ is the baseline Qt requirement. The local maintained kit currently resolves through the configured Qt prefix.\n- LVRS is discovered from `~/.local/SDK/LVRS` unless a cache override is provided.\n- `iiXml` and `iiHtmlBlock` are required local libraries for app and regression builds. Their CMake package prefixes\n  default to `~/.local/SDK/iiXml` and `~/.local/SDK/iiHtmlBlock`.\n- CMake, the bootstrap script, and Python developer tools share these SDK installation defaults. The developer tools\n  discover the LVRS source checkout under an ancestor workspace's `SDK/LVRS`, including when WhatSon is under\n  `Product/.Deprecated`. Explicit prefix overrides remain supported.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Qt 6.5+ is the baseline Qt requirement. The local maintained kit currently resolves through the configured Qt prefix.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS is discovered from `~/.local/SDK/LVRS` unless a cache override is provided.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`iiXml` and `iiHtmlBlock` are required local libraries for app and regression builds. Their CMake package prefixes",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "CMake, the bootstrap script, and Python developer tools share these SDK installation defaults. The developer tools",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## Build\n",
+      "level": 2,
+      "title": "Build"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "Configure and build through the repository-owned `build/` tree:\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "fenced_code",
+      "start_line": 28,
+      "end_line": 31,
+      "raw": "```bash\ncmake -S . -B build\ncmake --build build --target whatson_build_regression -j\n```\n",
+      "language": "bash",
+      "code": "cmake -S . -B build\ncmake --build build --target whatson_build_regression -j\n",
+      "closed": true
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 33,
+      "end_line": 35,
+      "raw": "After moving the checkout or SDK installation, regenerate the existing `build/` cache with\n`cmake --fresh -S . -B build` before building. The maintained C++ dependency-wiring regression checks the SDK defaults\nin CMake and both developer entrypoints.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "Run the desktop application:\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "fenced_code",
+      "start_line": 39,
+      "end_line": 41,
+      "raw": "```bash\ncmake --build build --target whatson_run_app\n```\n",
+      "language": "bash",
+      "code": "cmake --build build --target whatson_run_app\n",
+      "closed": true
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "The host desktop app artifact is emitted at the build root:\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 45,
+      "end_line": 47,
+      "raw": "- macOS: `build/WhatSon.app`\n- Windows: `build/WhatSon.exe`\n- Linux and other non-bundle desktop targets: `build/WhatSon`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "macOS: `build/WhatSon.app`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Windows: `build/WhatSon.exe`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Linux and other non-bundle desktop targets: `build/WhatSon`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "## Verification Policy\n",
+      "level": 2,
+      "title": "Verification Policy"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 51,
+      "end_line": 56,
+      "raw": "- `whatson_build_regression` builds maintained product binaries plus the regression test executable inside `build/`.\n- `whatson_cpp_regression` runs the runtime C++ Qt Test suite.\n- `whatson_regression` is the default combined verification gate.\n- `whatson_qmllint` is the maintained QML lint target for UI refactors.\n- Python test scripts under `scripts/test_*.py` are intentionally absent; automated regression coverage lives under CTest and `test/cpp`.\n- `build/` must remain the only verification build directory.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`whatson_build_regression` builds maintained product binaries plus the regression test executable inside `build/`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_cpp_regression` runs the runtime C++ Qt Test suite.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_regression` is the default combined verification gate.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson_qmllint` is the maintained QML lint target for UI refactors.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Python test scripts under `scripts/test_*.py` are intentionally absent; automated regression coverage lives under CTest and `test/cpp`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`build/` must remain the only verification build directory.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "heading",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "## Current Application Contract\n",
+      "level": 2,
+      "title": "Current Application Contract"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 60,
+      "end_line": 65,
+      "raw": "- The workspace shell is desktop-only and is rooted in `src/app/qml/Main.qml`.\n- The shell composes status bar, navigation bar, hierarchy sidebar, list bar, content slot, detail panel, and calendar overlays.\n- The content slot uses the constrained contents namespace under `src/app/qml/view/contents`.\n- Note body editing, body persistence, raw editor sync, and editor command surfaces remain removed until a new document model contract is introduced.\n- Resource viewing stays available through `ImageEditor.qml` when the selected resource entry is an image.\n- QML owns view construction and view-local behavior only; durable state, parsing, persistence, scheduling, and mutation policy stay in C++ model/controller layers.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "The workspace shell is desktop-only and is rooted in `src/app/qml/Main.qml`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The shell composes status bar, navigation bar, hierarchy sidebar, list bar, content slot, detail panel, and calendar overlays.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The content slot uses the constrained contents namespace under `src/app/qml/view/contents`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Note body editing, body persistence, raw editor sync, and editor command surfaces remain removed until a new document model contract is introduced.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Resource viewing stays available through `ImageEditor.qml` when the selected resource entry is an image.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML owns view construction and view-local behavior only; durable state, parsing, persistence, scheduling, and mutation policy stay in C++ model/controller layers.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 66,
+      "end_line": 66,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "heading",
+      "start_line": 67,
+      "end_line": 67,
+      "raw": "## Architecture Rules\n",
+      "level": 2,
+      "title": "Architecture Rules"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 68,
+      "end_line": 68,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "list",
+      "start_line": 69,
+      "end_line": 73,
+      "raw": "- QML files live under `src/app/qml/**`.\n- `src/app/models/**` must not contain QML files.\n- Project-local includes should use repository-absolute include roots such as `app/...`, `extension/...`, and `test/...`.\n- Each hierarchy domain keeps its dedicated controller while sharing `WhatSonHierarchyModel` for display projection.\n- Platform app packaging, launch, and export flows are not part of this repository scope.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "QML files live under `src/app/qml/**`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/**` must not contain QML files.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Project-local includes should use repository-absolute include roots such as `app/...`, `extension/...`, and `test/...`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Each hierarchy domain keeps its dedicated controller while sharing `WhatSonHierarchyModel` for display projection.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Platform app packaging, launch, and export flows are not part of this repository scope.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 74,
+      "end_line": 74,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "heading",
+      "start_line": 75,
+      "end_line": 75,
+      "raw": "## Developer Automation\n",
+      "level": 2,
+      "title": "Developer Automation"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 76,
+      "end_line": 76,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "paragraph",
+      "start_line": 77,
+      "end_line": 77,
+      "raw": "Optional host automation:\n"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 78,
+      "end_line": 78,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "fenced_code",
+      "start_line": 79,
+      "end_line": 82,
+      "raw": "```bash\npython3 scripts/build_all.py --tasks host\npython3 scripts/runtime_smoke_matrix.py --tasks host\n```\n",
+      "language": "bash",
+      "code": "python3 scripts/build_all.py --tasks host\npython3 scripts/runtime_smoke_matrix.py --tasks host\n",
+      "closed": true
+    },
+    {
+      "id": "b000046",
+      "kind": "blank",
+      "start_line": 83,
+      "end_line": 83,
+      "raw": "\n"
+    },
+    {
+      "id": "b000047",
+      "kind": "paragraph",
+      "start_line": 84,
+      "end_line": 84,
+      "raw": "These scripts are convenience utilities. Completion gates still use the CMake targets listed above.\n"
+    },
+    {
+      "id": "b000048",
+      "kind": "blank",
+      "start_line": 85,
+      "end_line": 85,
+      "raw": "\n"
+    },
+    {
+      "id": "b000049",
+      "kind": "html",
+      "start_line": 86,
+      "end_line": 86,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000050",
+      "kind": "blank",
+      "start_line": 87,
+      "end_line": 87,
+      "raw": "\n"
+    },
+    {
+      "id": "b000051",
+      "kind": "heading",
+      "start_line": 88,
+      "end_line": 88,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000052",
+      "kind": "blank",
+      "start_line": 89,
+      "end_line": 89,
+      "raw": "\n"
+    },
+    {
+      "id": "b000053",
+      "kind": "list",
+      "start_line": 90,
+      "end_line": 93,
+      "raw": "- This repository owns a  LVRS  based desktop  WhatSon  application.\n- Validation must be performed based on  `build/`  criteria.\n- The default completion gate is  `whatson_regression` .\n- QML is responsible only for view configuration and view local behavior, and the state/parsing/storage/synchronization policies are placed in the  C++  layer.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "This repository owns a  LVRS  based desktop  WhatSon  application.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Validation must be performed based on  `build/`  criteria.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The default completion gate is  `whatson_regression` .",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML is responsible only for view configuration and view local behavior, and the state/parsing/storage/synchronization policies are placed in the  C++  layer.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000054",
+      "kind": "blank",
+      "start_line": 94,
+      "end_line": 94,
+      "raw": "\n"
+    },
+    {
+      "id": "b000055",
+      "kind": "html",
+      "start_line": 95,
+      "end_line": 95,
+      "raw": "<!-- workspace-docs:readme:start -->\n"
+    },
+    {
+      "id": "b000056",
+      "kind": "heading",
+      "start_line": 96,
+      "end_line": 96,
+      "raw": "## Documentation entry points\n",
+      "level": 2,
+      "title": "Documentation entry points"
+    },
+    {
+      "id": "b000057",
+      "kind": "blank",
+      "start_line": 97,
+      "end_line": 97,
+      "raw": "\n"
+    },
+    {
+      "id": "b000058",
+      "kind": "list",
+      "start_line": 98,
+      "end_line": 101,
+      "raw": "- Human overview: this English `README.md`.\n- Agent instructions: [AGENT.md](AGENT.md).\n- Human documentation: [documentation index](docs/README.md).\n- Structured agent documentation: [agent index](docs/agent-index.json).\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Human overview: this English `README.md`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Agent instructions: [AGENT.md](AGENT.md).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Human documentation: [documentation index](docs/README.md).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Structured agent documentation: [agent index](docs/agent-index.json).",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000059",
+      "kind": "html",
+      "start_line": 102,
+      "end_line": 102,
+      "raw": "<!-- workspace-docs:readme:end -->\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "WhatSon",
+      "anchor": "whatson",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Structure",
+      "anchor": "structure",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Build Dependencies",
+      "anchor": "build-dependencies",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Build",
+      "anchor": "build",
+      "start_line": 24
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Verification Policy",
+      "anchor": "verification-policy",
+      "start_line": 49
+    },
+    {
+      "block_id": "b000033",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Current Application Contract",
+      "anchor": "current-application-contract",
+      "start_line": 58
+    },
+    {
+      "block_id": "b000037",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Architecture Rules",
+      "anchor": "architecture-rules",
+      "start_line": 67
+    },
+    {
+      "block_id": "b000041",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Developer Automation",
+      "anchor": "developer-automation",
+      "start_line": 75
+    },
+    {
+      "block_id": "b000051",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 88
+    },
+    {
+      "block_id": "b000056",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Documentation entry points",
+      "anchor": "documentation-entry-points",
+      "start_line": 96
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 18,
+        "text": "- `iiXml` and `iiHtmlBlock` are required local libraries for app and regression builds. Their CMake package prefixes",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000031",
+        "line": 56,
+        "text": "- `build/` must remain the only verification build directory.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000039",
+        "line": 70,
+        "text": "- `src/app/models/**` must not contain QML files.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000039",
+        "line": 71,
+        "text": "- Project-local includes should use repository-absolute include roots such as `app/...`, `extension/...`, and `test/...`.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000053",
+        "line": 91,
+        "text": "- Validation must be performed based on  `build/`  criteria.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [
+      {
+        "block_id": "b000017",
+        "language": "bash",
+        "code": "cmake -S . -B build\ncmake --build build --target whatson_build_regression -j\n"
+      },
+      {
+        "block_id": "b000023",
+        "language": "bash",
+        "code": "cmake --build build --target whatson_run_app\n"
+      },
+      {
+        "block_id": "b000045",
+        "language": "bash",
+        "code": "python3 scripts/build_all.py --tasks host\npython3 scripts/runtime_smoke_matrix.py --tasks host\n"
+      }
+    ],
+    "links": [
+      {
+        "block_id": "b000058",
+        "label": "AGENT.md",
+        "target": "AGENT.md",
+        "kind": "relative",
+        "line": 99
+      },
+      {
+        "block_id": "b000058",
+        "label": "documentation index",
+        "target": "docs/README.md",
+        "kind": "relative",
+        "line": 100
+      },
+      {
+        "block_id": "b000058",
+        "label": "agent index",
+        "target": "docs/agent-index.json",
+        "kind": "relative",
+        "line": 101
+      }
+    ],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2ec765f20671cca22bbab1d67730485e12228e0f5a84ac06d60722c5dfad1717",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sidebar/IActiveHierarchyContextSource.hpp.md",
+    "sha256": "b9208f72f97f062caec03581dbb11f204f8d562232e3b0f28d240296d29cdebb",
+    "bytes": 866,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sidebar/IActiveHierarchyContextSource.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sidebar/IActiveHierarchyContextSource.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sidebar/IActiveHierarchyContextSource.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`IActiveHierarchyContextSource`는 활성 계층 컨트롤러 및 활성 노트 목록 모델을 사용하여 `IActiveHierarchySource`를 확장합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"why-it-exists\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 그것이 존재하는 이유\n",
+      "level": 2,
+      "title": "그것이 존재하는 이유"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- 시작/ 런타임 코드는 활성 인덱스만 필요할 경우 더 작은 `IActiveHierarchySource` 계약에 계속 의존할 수 있습니다.\n- 디테일 패널 바인더와 같은 소비자는 구체적인 `SidebarHierarchyController` 유형 대신 이보다 풍부한 인터페이스에 의존할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "시작/ 런타임 코드는 활성 인덱스만 필요할 경우 더 작은 `IActiveHierarchySource` 계약에 계속 의존할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "디테일 패널 바인더와 같은 소비자는 구체적인 `SidebarHierarchyController` 유형 대신 이보다 풍부한 인터페이스에 의존할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"exposed-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 노출된 계약\n",
+      "level": 2,
+      "title": "노출된 계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 20,
+      "raw": "- `activeHierarchyIndex()`\n- `activeHierarchyController()`\n- `activeNoteListModel()`\n- `activeBindingsChanged()`, `activeHierarchyControllerChanged()`, `activeNoteListModelChanged()`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`activeHierarchyIndex()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeHierarchyController()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeNoteListModel()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeBindingsChanged()`, `activeHierarchyControllerChanged()`, `activeNoteListModelChanged()`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sidebar/IActiveHierarchyContextSource.hpp`",
+      "anchor": "srcappmodelssidebariactivehierarchycontextsourcehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "그것이 존재하는 이유",
+      "anchor": "그것이-존재하는-이유",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "노출된 계약",
+      "anchor": "노출된-계약",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

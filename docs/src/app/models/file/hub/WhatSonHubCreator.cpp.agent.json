@@ -1,0 +1,291 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:04d51962f5f46a76d0fd374a6503d0399b98b750f49d8258689316b256c9aef2",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/hub/WhatSonHubCreator.cpp.md",
+    "sha256": "8a78c4f3cb4c34a92901a49fa5153b98e10d293bbd30ef489021f3e5036d5c05",
+    "bytes": 1334,
+    "line_count": 26,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/hub/WhatSonHubCreator.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/hub/WhatSonHubCreator.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubCreator.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "패키지 루트가 구체화된 후 새로운 `.wshub` 패키지에 대한 온디스크 스캐폴드를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"scaffold-output\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 비계 출력\n",
+      "level": 2,
+      "title": "비계 출력"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- `.whatson`, `.wscontents` 및 `.wsresources` 아래에 필수 루트를 생성합니다.\n- `.whatson/hub.json`를 기본 패키지 매니페스트로 작성합니다.\n- 초기 통계, 라이브러리 인덱스, 태그, 폴더, 북마크, 진행 상황 및 프로젝트 목록 파일을 작성합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.whatson`, `.wscontents` 및 `.wsresources` 아래에 필수 루트를 생성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.whatson/hub.json`를 기본 패키지 매니페스트로 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "초기 통계, 라이브러리 인덱스, 태그, 폴더, 북마크, 진행 상황 및 프로젝트 목록 파일을 작성합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"behavior-notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 행동 참고 사항\n",
+      "level": 2,
+      "title": "행동 참고 사항"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 21,
+      "raw": "- 경로가 구체화되기 전에 허브 이름이 삭제됩니다.\n- 패키지 루트 생성 및 파일과 유사한 패키지 프레젠테이션은 `WhatSonHubPackager`에 위임됩니다.\n- 패키지 루트가 존재한 후 스캐폴드 생성이 실패하면 생성자는 부분적으로 생성된 패키지 디렉터리를 제거합니다.\n- 파일 쓰기는 로컬 경로에 대해 `QSaveFile`를 통과하므로 매니페스트 및 스캐폴드 업데이트는 지원되는 파일 시스템에서 원자성을 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "경로가 구체화되기 전에 허브 이름이 삭제됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "패키지 루트 생성 및 파일과 유사한 패키지 프레젠테이션은 `WhatSonHubPackager`에 위임됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "패키지 루트가 존재한 후 스캐폴드 생성이 실패하면 생성자는 부분적으로 생성된 패키지 디렉터리를 제거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 쓰기는 로컬 경로에 대해 `QSaveFile`를 통과하므로 매니페스트 및 스캐폴드 업데이트는 지원되는 파일 시스템에서 원자성을 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "- `test/cpp/whatson_cpp_regression_tests.cpp`는 패키지 물리화와 스캐폴드 쓰기 사이의 분할과 패키지 루트 롤백을 포함합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/whatson_cpp_regression_tests.cpp`는 패키지 물리화와 스캐폴드 쓰기 사이의 분할과 패키지 루트 롤백을 포함합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubCreator.cpp`",
+      "anchor": "srcappmodelsfilehubwhatsonhubcreatorcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "비계 출력",
+      "anchor": "비계-출력",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동 참고 사항",
+      "anchor": "행동-참고-사항",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 25
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 11,
+        "text": "- `.whatson`, `.wscontents` 및 `.wsresources` 아래에 필수 루트를 생성합니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

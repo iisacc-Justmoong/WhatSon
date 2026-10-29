@@ -1,0 +1,378 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e74ad3b599f4021bf755da800cbf4555cf34b141aff94a746bddc8913e43aa48",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp.md",
+    "sha256": "a854a6134e410e5e32acd68d1ad0acce9e35308a4e64a6a7488b9345ce7a8ada",
+    "bytes": 2587,
+    "line_count": 41,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 폴더 트리에만 영구 라이브러리 폴더 변형을 적용합니다. 삭제된 노트 패키지 지속성 레이어를 사용하면 노트 헤더 바인딩 재작성이 제거되었습니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"uuid-rewrite-strategy\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## UUID 재작성 전략\n",
+      "level": 2,
+      "title": "UUID 재작성 전략"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "서비스는 더 이상 경로 재매핑에만 의존하지 않습니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 17,
+      "raw": "1. UUID 폴더를 기준으로 원본 트리에서 조회를 작성합니다.\n2. 동일한 UUID로 구성된 단계적 트리에서 두 번째 조회를 빌드합니다.\n3. 발신자가 제공한 메모 기록을 보존합니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "UUID 폴더를 기준으로 원본 트리에서 조회를 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "동일한 UUID로 구성된 단계적 트리에서 두 번째 조회를 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "발신자가 제공한 메모 기록을 보존합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "이는 이름 바꾸기 또는 상위 변경이 노트 헤더를 변경하지 않고 단계적 트리에서 폴더 ID를 유지함을 의미합니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"header-rewrite-logic\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 헤더 재작성 논리\n",
+      "level": 2,
+      "title": "헤더 재작성 논리"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 31,
+      "raw": "- 저장된 메모 헤더는 이 서비스에서 읽거나 쓸 수 없습니다.\n- 기존 `<folder uuid=\"...\">path</folder>` 바인딩은 여전히 해결될 때 유지됩니다.\n- UUID가 없는 레거시 헤더는 마이그레이션 중에 대체 경로 경로를 통해 계속 작동합니다.\n- 명시적인 UUID /full-path 바인딩은 하나의 바인딩된 폴더가 다른 바인딩 폴더의 조상인 경우에도 유지됩니다. 레거시 리프 전용 컨텍스트 토큰은 단순히 중첩된 하위 폴더를 식별할 때만 압축됩니다.\n- UUID 동등성만으로는 “already synchronized”로 간주되지 않습니다. 직렬화된 폴더 경로는 스테이징된 트리와 일치해야 하며, 그렇지 않으면 헤더가 다시 작성됩니다.\n- 헤더 전용 폴더를 다시 작성하면 기존 `lastModified` 및 `modifiedBy` 값이 유지됩니다.\n- 폴더 경로 비교는 이제 공유된 이스케이프‐세그먼트 의미론을 통해 실행되므로, 문자 그대로 `/`가 포함된 하나의 폴더 라벨이 노트 헤더 재매핑 시 부모/자식 경로로 잘못 읽히는 일이 없습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "저장된 메모 헤더는 이 서비스에서 읽거나 쓸 수 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 `<folder uuid=\"...\">path</folder>` 바인딩은 여전히 해결될 때 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "UUID가 없는 레거시 헤더는 마이그레이션 중에 대체 경로 경로를 통해 계속 작동합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명시적인 UUID /full-path 바인딩은 하나의 바인딩된 폴더가 다른 바인딩 폴더의 조상인 경우에도 유지됩니다. 레거시 리프 전용 컨텍스트 토큰은 단순히 중첩된 하위 폴더를 식별할 때만 압축됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "UUID 동등성만으로는 “already synchronized”로 간주되지 않습니다. 직렬화된 폴더 경로는 스테이징된 트리와 일치해야 하며, 그렇지 않으면 헤더가 다시 작성됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더 전용 폴더를 다시 작성하면 기존 `lastModified` 및 `modifiedBy` 값이 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "폴더 경로 비교는 이제 공유된 이스케이프‐세그먼트 의미론을 통해 실행되므로, 문자 그대로 `/`가 포함된 하나의 폴더 라벨이 노트 헤더 재매핑 시 부모/자식 경로로 잘못 읽히는 일이 없습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "html",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "<a id=\"persistence-order\"></a>\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "## 지속성 순서\n",
+      "level": 2,
+      "title": "지속성 순서"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 37,
+      "end_line": 39,
+      "raw": "1. 원본 트리 UUID에서 스테이지 트리 UUID 대상으로 스테이지 헤더 재작성을 계산합니다.\n2. 준비된 폴더 트리 파일을 작성합니다.\n3. 호출자가 제공한 `LibraryNoteRecord` 값을 변경하지 않고 반환합니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "원본 트리 UUID에서 스테이지 트리 UUID 대상으로 스테이지 헤더 재작성을 계산합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "준비된 폴더 트리 파일을 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "호출자가 제공한 `LibraryNoteRecord` 값을 변경하지 않고 반환합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "paragraph",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "이 순서는 하나의 상위 레이블을 변경하여 폴더 하위 트리의 이름을 바꾸는 경우에도 사이드바 트리와 노트 메타데이터를 정렬된 상태로 유지합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp`",
+      "anchor": "srcappmodelshierarchylibrarywhatsonlibraryfolderhierarchymutationservicecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "UUID 재작성 전략",
+      "anchor": "uuid-재작성-전략",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "헤더 재작성 논리",
+      "anchor": "헤더-재작성-논리",
+      "start_line": 23
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "지속성 순서",
+      "anchor": "지속성-순서",
+      "start_line": 35
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

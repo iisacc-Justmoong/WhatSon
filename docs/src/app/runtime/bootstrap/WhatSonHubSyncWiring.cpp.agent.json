@@ -1,0 +1,226 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5ae4be7826b6ecb5b1c1313b6434c108bc66d23f8fee63ec58af68443b4a8be9",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp.md",
+    "sha256": "036af5d781ce4c4b6dd26c09b3e540ec6556b2beb8f1ad4bdbad2b149a3c34c4",
+    "bytes": 1050,
+    "line_count": 21,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`main.cpp`에서 추출한 허브 동기화 배선을 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `syncFailed`에서 경고 출력까지 하나의 로깅 연결을 구축합니다.\n- `hubFilesystemMutated() -> acknowledgeLocalMutation()`를 사용하여 제공된 소스 객체당 로컬 변이 연결을 하나 생성합니다.\n- `HubSyncWiringResult`를 통해 집계 유효성을 보고합니다.\n- 동기화 도메인 통합 후 `src/app/models/file/sync`의 `WhatSonHubSyncController`를 포함합니다.\n- `main.cpp`는 이제 해당 소스 목록에 프로젝트 계층 구조 컨트롤러를 제공하므로, 프로젝트 계층 구조 쓰기는 외래 변경 재로드 경로를 트리거하는 대신 로컬 변이로 간주됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`syncFailed`에서 경고 출력까지 하나의 로깅 연결을 구축합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hubFilesystemMutated() -> acknowledgeLocalMutation()`를 사용하여 제공된 소스 객체당 로컬 변이 연결을 하나 생성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`HubSyncWiringResult`를 통해 집계 유효성을 보고합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "동기화 도메인 통합 후 `src/app/models/file/sync`의 `WhatSonHubSyncController`를 포함합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`main.cpp`는 이제 해당 소스 목록에 프로젝트 계층 구조 컨트롤러를 제공하므로, 프로젝트 계층 구조 쓰기는 외래 변경 재로드 경로를 트리거하는 대신 로컬 변이로 간주됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"test-coverage\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 테스트 범위\n",
+      "level": 2,
+      "title": "테스트 범위"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "자동 테스트 파일이 이 저장소에서 제거되었습니다. 시동/런타임 연기 실행을 통해 배선 유효성을 확인하십시오.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp`",
+      "anchor": "srcappruntimebootstrapwhatsonhubsyncwiringcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트 범위",
+      "anchor": "테스트-범위",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

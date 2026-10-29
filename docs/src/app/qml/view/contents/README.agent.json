@@ -1,0 +1,162 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5dd9e20a62694baaaf4d710c969bcd48648075ba8f6cf5e2128700e2e42d2c4a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/contents/README.md",
+    "sha256": "789cd5982831edb3d36a7c5c78f13116d110797adc33b6e468d287ef66cd6ea9",
+    "bytes": 406,
+    "line_count": 11,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "Contents View QML",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# Contents View QML\n",
+      "level": 1,
+      "title": "Contents View QML"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "This directory contains the only QML files allowed inside the contents-view namespace.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## Files\n",
+      "level": 2,
+      "title": "Files"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "- `ImageEditor.qml`: image resource viewer surface.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ImageEditor.qml`: image resource viewer surface.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "## Contract\n",
+      "level": 2,
+      "title": "Contract"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "Do not reintroduce text editor surfaces, gutter/minimap rails, placeholder resource editors, nested `editor/` directories, renderer wrappers, projection caches, or active note document-session adapters in this namespace.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "Contents View QML",
+      "anchor": "contents-view-qml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Files",
+      "anchor": "files",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Contract",
+      "anchor": "contract",
+      "start_line": 9
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 11,
+        "text": "Do not reintroduce text editor surfaces, gutter/minimap rails, placeholder resource editors, nested `editor/` directories, renderer wrappers, projection caches, or active note document-session adapters in this namespace.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

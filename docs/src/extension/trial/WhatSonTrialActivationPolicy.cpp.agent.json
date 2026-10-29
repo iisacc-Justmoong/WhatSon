@@ -1,0 +1,236 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2b64fcac2f9dfecd90e63d37f1bc368a49dd226dcb9c2e0dc1a9123140ead7ae",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialActivationPolicy.cpp.md",
+    "sha256": "c12de5c3ccb63d2b5631a3a227c666691ae8c2ef4909dbe0bb877a1356e1a0f4",
+    "bytes": 1149,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialActivationPolicy.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialActivationPolicy.cpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialActivationPolicy.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WhatSonTrialInstallStore` 위에 기본 로컬 평가판 기간 계산을 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"evaluation-rules\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 평가 규칙\n",
+      "level": 2,
+      "title": "평가 규칙"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- 저장된 값이 없으면 첫 번째 새로 고침 시 설치 날짜가 느리게 생성됩니다.\n- `lastActiveDate`는 `installDate + 89 days`입니다.\n- `elapsedDays`는 더 큰 자격 창을 생성하는 대신 네거티브 클럭 드리프트를 `0`로 고정합니다.\n- `active`는 `true`이고 `elapsedDays < 90`입니다.\n- 활성 상태에서는 `remainingDays`가 `90 - elapsedDays`이고, 그렇지 않으면 `0`입니다.\n- `WhatSonRegisterManager::authenticated()`가 `true`인 경우 정책은 서명된 인증 마커가 성공적으로 확인된 후에만 인증 우회 상태를 보고합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "저장된 값이 없으면 첫 번째 새로 고침 시 설치 날짜가 느리게 생성됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lastActiveDate`는 `installDate + 89 days`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`elapsedDays`는 더 큰 자격 창을 생성하는 대신 네거티브 클럭 드리프트를 `0`로 고정합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`active`는 `true`이고 `elapsedDays < 90`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 상태에서는 `remainingDays`가 `90 - elapsedDays`이고, 그렇지 않으면 `0`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonRegisterManager::authenticated()`가 `true`인 경우 정책은 서명된 인증 마커가 성공적으로 확인된 후에만 인증 우회 상태를 보고합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"change-signaling\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 신호 변경\n",
+      "level": 2,
+      "title": "신호 변경"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 22,
+      "raw": "- `stateChanged()`는 새로 계산된 스냅샷이 캐시된 스냅샷과 다른 경우에만 생성됩니다.\n- 이는 향후 UI 바인딩을 안정적으로 유지하고 같은 날 반복되는 새로 고침에 대한 중복 반응을 방지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`stateChanged()`는 새로 계산된 스냅샷이 캐시된 스냅샷과 다른 경우에만 생성됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이는 향후 UI 바인딩을 안정적으로 유지하고 같은 날 반복되는 새로 고침에 대한 중복 반응을 방지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialActivationPolicy.cpp`",
+      "anchor": "srcextensiontrialwhatsontrialactivationpolicycpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "평가 규칙",
+      "anchor": "평가-규칙",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "신호 변경",
+      "anchor": "신호-변경",
+      "start_line": 20
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

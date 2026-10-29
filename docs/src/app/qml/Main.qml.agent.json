@@ -1,0 +1,287 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3532a2866c161b07afe96c298e665c611017c03bd4061a89211c5023e9fe37a5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/Main.qml.md",
+    "sha256": "724693adfd7af4c7cbad61493e190b09c6b0793d6ecfa5e4d0abedea1c32fec4",
+    "bytes": 1526,
+    "line_count": 26,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/Main.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/Main.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/Main.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`Main.qml`는 루트 LVRS `ApplicationWindow`이며 데스크탑 작업 공간에 대한 시작 라우팅의 소유자입니다. 작업 공간 경로는 상태 표시줄, 탐색 표시줄, 사이드바, 목록 표시줄, 콘텐츠 슬롯, 세부 정보 패널 및 달력 오버레이 상태를 유지합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"kept-root-responsibilities\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 루트 책임 유지\n",
+      "level": 2,
+      "title": "루트 책임 유지"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `LV.ApplicationWindow`를 인스턴스화합니다.\n- LVRS 패딩 호환성 속성을 유지합니다.\n- LVRS 페이지 스택을 통해 온보딩 및 작업 공간 상태를 라우팅합니다.\n- 렌더링 품질 크기 조정 정책을 창 루트에 중앙 집중화합니다.\n- 데스크탑 시작에 마운트된 허브가 없을 때 독립 실행형 온보딩 하위 창을 표시합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LV.ApplicationWindow`를 인스턴스화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS 패딩 호환성 속성을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS 페이지 스택을 통해 온보딩 및 작업 공간 상태를 라우팅합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "렌더링 품질 크기 조정 정책을 창 루트에 중앙 집중화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데스크탑 시작에 마운트된 허브가 없을 때 독립 실행형 온보딩 하위 창을 표시합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 21,
+      "raw": "- `test/cpp/suites/qml_contents_view_tests.cpp`는 `Main.qml`가 삭제된 노트 편집기 화면을 재구성하지 않고 데스크탑 셸을 유지하는지 확인합니다.\n- `test/cpp/suites/include_path_policy_tests.cpp`는 제거된 편집기와 소스, 문서, QML 및 C++ 회귀 테스트에서 분리된 플랫폼 앱 개체 제품군을 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/qml_contents_view_tests.cpp`는 `Main.qml`가 삭제된 노트 편집기 화면을 재구성하지 않고 데스크탑 셸을 유지하는지 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/include_path_policy_tests.cpp`는 제거된 편집기와 소스, 문서, QML 및 C++ 회귀 테스트에서 분리된 플랫폼 앱 개체 제품군을 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 26,
+      "raw": "- workspace 인터페이스는 데스크톱 shell/layout을 유지한다.\n- `Main.qml`은 데스크톱 온보딩/라우팅과 workspace branch를 소유한다.\n- 삭제된 editor view-mode controller, font provider, 모바일 route 객체는 root context로 전달하지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "workspace 인터페이스는 데스크톱 shell/layout을 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Main.qml`은 데스크톱 온보딩/라우팅과 workspace branch를 소유한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "삭제된 editor view-mode controller, font provider, 모바일 route 객체는 root context로 전달하지 않는다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/Main.qml`",
+      "anchor": "srcappqmlmainqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "루트 책임 유지",
+      "anchor": "루트-책임-유지",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 23
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000019",
+        "line": 26,
+        "text": "- 삭제된 editor view-mode controller, font provider, 모바일 route 객체는 root context로 전달하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

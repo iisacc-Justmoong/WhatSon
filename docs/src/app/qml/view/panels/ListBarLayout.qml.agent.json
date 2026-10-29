@@ -1,0 +1,345 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:25190fbd781cb607df40c514c3f4addcbb9b58f60bb563d3f3280d43ddc037d2",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/ListBarLayout.qml.md",
+    "sha256": "b097bb60ac15d4492fffeeb045df67b16e6a1c848b630b80351e8c7ff7b956d9",
+    "bytes": 1985,
+    "line_count": 33,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/ListBarLayout.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/ListBarLayout.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ListBarLayout.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`ListBarLayout.qml`는 메모 및 리소스 행에 대한 데스크탑 목록 화면입니다. 탭, 드래그, 컨텍스트 메뉴 및 뷰포트 상호 작용을 소유하고 노트 목록 검색은 C++ 브리지 개체에 위임된 상태로 유지됩니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"composition-model\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 구성 모델\n",
+      "level": 2,
+      "title": "구성 모델"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- 루트 뷰는 다중 선택 상태 및 수정자 해석을 `noteSelectionController`에 위임합니다.\n- 대리인 및 피어 패널은 `requestNoteSelection(...)` 및 `syncSelectionFromCommittedState()`와 같은 래퍼 기능을 사용합니다.\n- 시각적 대리인은 모델 계약에 따라 `NoteListItem`와 `ResourceListItem` 사이를 전환합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 뷰는 다중 선택 상태 및 수정자 해석을 `noteSelectionController`에 위임합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대리인 및 피어 패널은 `requestNoteSelection(...)` 및 `syncSelectionFromCommittedState()`와 같은 래퍼 기능을 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "시각적 대리인은 모델 계약에 따라 `NoteListItem`와 `ResourceListItem` 사이를 전환합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"viewport-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 뷰포트 계약\n",
+      "level": 2,
+      "title": "뷰포트 계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 21,
+      "raw": "- 표시되는 `ListView`는 `resolvedNoteListModel`에 직접 바인딩됩니다.\n- 상위 쉘은 `noteListModel`를 제공합니다. 이 보기는 계층 구조 도구 모음 인덱스를 통해 재발견되지 않습니다.\n- 뷰포트 모션은 `Flickable.StopAtBounds`, `LV.WheelScrollGuard` 및 재설정 후 복원 처리와 함께 데스크톱 좁은 단계 계약을 사용합니다.\n- 드래그 미리보기 배지 텍스트, 행 간격 및 도구 모음 높이에서는 원시 시각적 리터럴 대신 LVRS 테마 토큰을 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "표시되는 `ListView`는 `resolvedNoteListModel`에 직접 바인딩됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "상위 쉘은 `noteListModel`를 제공합니다. 이 보기는 계층 구조 도구 모음 인덱스를 통해 재발견되지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "뷰포트 모션은 `Flickable.StopAtBounds`, `LV.WheelScrollGuard` 및 재설정 후 복원 처리와 함께 데스크톱 좁은 단계 계약을 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "드래그 미리보기 배지 텍스트, 행 간격 및 도구 모음 높이에서는 원시 시각적 리터럴 대신 LVRS 테마 토큰을 사용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"interaction-contract\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 상호작용 계약\n",
+      "level": 2,
+      "title": "상호작용 계약"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 28,
+      "raw": "- `activateNoteIndex(index, noteId)`는 유일한 즉시 노트 활성화 경로입니다.\n- 포인터 선택은 `requestNoteSelection(index, noteId, modifiers)`를 통해 라우팅됩니다.\n- 데스크탑 내부 드래그는 즉각적입니다. 행 할당과 컨텍스트 작업은 동일한 대상 선택 규칙을 공유합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`activateNoteIndex(index, noteId)`는 유일한 즉시 노트 활성화 경로입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "포인터 선택은 `requestNoteSelection(index, noteId, modifiers)`를 통해 라우팅됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데스크탑 내부 드래그는 즉각적입니다. 행 할당과 컨텍스트 작업은 동일한 대상 선택 규칙을 공유합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "- `test/cpp/suites/qml_contents_view_tests.cpp` 및 선택 관련 C++ 회귀 테스트는 데스크탑 작업 공간 셸을 통해 목록 계약에 접근할 수 있도록 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/qml_contents_view_tests.cpp` 및 선택 관련 C++ 회귀 테스트는 데스크탑 작업 공간 셸을 통해 목록 계약에 접근할 수 있도록 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/ListBarLayout.qml`",
+      "anchor": "srcappqmlviewpanelslistbarlayoutqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구성 모델",
+      "anchor": "구성-모델",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "뷰포트 계약",
+      "anchor": "뷰포트-계약",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용 계약",
+      "anchor": "상호작용-계약",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 32
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

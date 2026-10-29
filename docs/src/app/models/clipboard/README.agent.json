@@ -1,0 +1,177 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:4c00f4e4a95dbbe51e1c669dc663fad9825eb1185acae51d13ec32bdaa58d420",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/README.md",
+    "sha256": "08ee7cfe3ec8a577776d5c42fde3f44802af2527554f2a6a0067294a37fd9376",
+    "bytes": 685,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "Clipboard Model",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# Clipboard Model\n",
+      "level": 1,
+      "title": "Clipboard Model"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "The clipboard model shard owns app clipboard resource state and resource-package import.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## Files\n",
+      "level": 2,
+      "title": "Files"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 10,
+      "raw": "- `InAppClipboardStore.*`: stores the current in-app resource snapshot.\n- `InAppClipboardManager.*`: imports clipboard or URL resources into `.wsresource` packages.\n- `ClipboardResourceImport.*`: builds import descriptors from captured formats.\n- `FiletypeCapture.*`: detects file type and MIME hints.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`InAppClipboardStore.*`: stores the current in-app resource snapshot.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`InAppClipboardManager.*`: imports clipboard or URL resources into `.wsresource` packages.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ClipboardResourceImport.*`: builds import descriptors from captured formats.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FiletypeCapture.*`: detects file type and MIME hints.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## Current Boundary\n",
+      "level": 2,
+      "title": "Current Boundary"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "Clipboard import stops at persisted resource packages and resource list updates. The editor document paste bridge was deleted, so this shard must not insert RAW body tags, mutate active editor text, or expose editor item key-filter behavior.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "Clipboard Model",
+      "anchor": "clipboard-model",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Files",
+      "anchor": "files",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Current Boundary",
+      "anchor": "current-boundary",
+      "start_line": 12
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 14,
+        "text": "Clipboard import stops at persisted resource packages and resource list updates. The editor document paste bridge was deleted, so this shard must not insert RAW body tags, mutate active editor text, or expose editor item key-filter behavior.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

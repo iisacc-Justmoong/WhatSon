@@ -1,0 +1,226 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:1ab56ff247a8e47718401390c3caea6c06a060403c3ef3aff6d1d4da4b2726e3",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/hub/WhatSonHubPackager.hpp.md",
+    "sha256": "cc8c1e78f67f8e09dfb1ae8cb78ccd8061aa0c92f4b4ceb747393c5c86b39b23",
+    "bytes": 861,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/hub/WhatSonHubPackager.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/hub/WhatSonHubPackager.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubPackager.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`.wshub` 생성을 위한 패키지 루트 서비스를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- `packageExtension()`: 정식 `.wshub` 접미사를 반환합니다.\n- `normalizePackagePath(...)`: 요청된 허브 경로를 절대 `.wshub` 패키지 경로로 변환합니다.\n- `createPackageRoot(...)`: 패키지 디렉터리를 생성하고 플랫폼별 패키지 표시 규칙을 적용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`packageExtension()`: 정식 `.wshub` 접미사를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`normalizePackagePath(...)`: 요청된 허브 경로를 절대 `.wshub` 패키지 경로로 변환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createPackageRoot(...)`: 패키지 디렉터리를 생성하고 플랫폼별 패키지 표시 규칙을 적용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"packaging-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 포장계약\n",
+      "level": 2,
+      "title": "포장계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 20,
+      "raw": "- 패키지 루트 생성은 허브 스캐폴드 생성과 별개입니다.\n- 기존 패키지 디렉터리는 심각한 오류로 처리되며 절대 덮어쓰여지지 않습니다.\n- Apple 특정 패키지 프레젠테이션은 `WhatSonHubCreator`에 포함되지 않고 이 경계 뒤에서 위임됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "패키지 루트 생성은 허브 스캐폴드 생성과 별개입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 패키지 디렉터리는 심각한 오류로 처리되며 절대 덮어쓰여지지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Apple 특정 패키지 프레젠테이션은 `WhatSonHubCreator`에 포함되지 않고 이 경계 뒤에서 위임됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubPackager.hpp`",
+      "anchor": "srcappmodelsfilehubwhatsonhubpackagerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "포장계약",
+      "anchor": "포장계약",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

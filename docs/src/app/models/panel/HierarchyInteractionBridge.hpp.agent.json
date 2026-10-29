@@ -1,0 +1,347 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:457e88a5a5ccc2b6759b6a89d9d9e5a6bf1b2ac4d7a2131640fe6404b1211969",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/HierarchyInteractionBridge.hpp.md",
+    "sha256": "58a38f98bde26accbb155de3cb05298faca926b37b41e572d61e8e06e249da30",
+    "bytes": 1421,
+    "line_count": 39,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/HierarchyInteractionBridge.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/HierarchyInteractionBridge.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyInteractionBridge.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 헤더는 드래그가 아닌 상호 작용 명령에 대해 QML 계층 구조 보기에서 사용되는 브리지를 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "이는 다음과 같은 질문에 답하는 기능 인식 표면에 일반 `QObject*` 계층 컨트롤러 입력을 적용합니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 12,
+      "raw": "- 이 행의 이름을 바꿀 수 있나요?\n- 이 계층 구조에서 폴더를 만들 수 있나요?\n- 선택한 폴더를 삭제할 수 있나요?\n- 행이 확장되거나 축소될 수 있나요?\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 행의 이름을 바꿀 수 있나요?",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 계층 구조에서 폴더를 만들 수 있나요?",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택한 폴더를 삭제할 수 있나요?",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "행이 확장되거나 축소될 수 있나요?",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"why-it-accepts-qobject\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## `QObject*`를 허용하는 이유\n",
+      "level": 2,
+      "title": "`QObject*`를 허용하는 이유"
+    },
+    {
+      "id": "b000014",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "QML는 객체 참조를 쉽게 전달할 수 있지만 C++ 인터페이스 상속에 대해서는 알지 못합니다. 따라서 브리지는 원시 `QObject*`를 받아들이고 이를 `IHierarchyController`로 캐스팅한 다음 런타임에서 기능 인터페이스를 검색합니다.\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 34,
+      "raw": "- 속성:\n  - `hierarchyController`\n  - `renameContractAvailable`\n  - `createFolderEnabled`\n  - `deleteFolderEnabled`\n  - `viewOptionsEnabled`\n- 호출 가능 항목:\n  - `canRenameItem(...)`\n  - `renameItem(...)`\n  - `createFolder()`\n  - `deleteSelectedFolder()`\n  - `setItemExpanded(...)`\n  - `setAllItemsExpanded(...)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "속성:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`renameContractAvailable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createFolderEnabled`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`deleteFolderEnabled`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`viewOptionsEnabled`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호출 가능 항목:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`canRenameItem(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`renameItem(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createFolder()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`deleteSelectedFolder()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setItemExpanded(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setAllItemsExpanded(...)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"expected-consumer\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 예상 소비자\n",
+      "level": 2,
+      "title": "예상 소비자"
+    },
+    {
+      "id": "b000024",
+      "kind": "paragraph",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "`SidebarHierarchyView.qml`는 이 브리지의 주요 소비자입니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyInteractionBridge.hpp`",
+      "anchor": "srcappmodelspanelhierarchyinteractionbridgehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "`QObject*`를 허용하는 이유",
+      "anchor": "qobject를-허용하는-이유",
+      "start_line": 16
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 21
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "예상 소비자",
+      "anchor": "예상-소비자",
+      "start_line": 38
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

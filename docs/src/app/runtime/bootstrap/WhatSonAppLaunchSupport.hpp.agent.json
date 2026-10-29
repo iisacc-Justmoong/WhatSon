@@ -1,0 +1,164 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:171a33c805a76c7257b340c54cd2fad84eba7d6e1a1687ddbc57e8907a5c4a6b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp.md",
+    "sha256": "bf3d2ce2265e822011e16ab3b2434a88c941d9780d5bd3414121e7e2bc1122d4",
+    "bytes": 856,
+    "line_count": 13,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`main.cpp`가 시작 정책을 인라인으로 다시 인코딩하지 않고도 사용할 수 있는 부트스트랩 시간 시작 옵션 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- `startupWorkspaceReady(...)`는 이제 지속된 허브가 성공적으로 마운트되면 시작 시 온보딩을 건너뛸 수 있는 규칙을 중앙 집중화합니다.\n- 첫 번째 런타임 로드는 작업 공간 루트가 LVRS `AfterFirstIdle`에 도달한 후에 예약되며, 따라서 도메인 I/O 및 스냅샷 애플리케이션이 초기 창 생성을 차단하지 않습니다.\n- 도우미는 `main.cpp`에 의존하지 않고 C++ 회귀 제품군에서 시작 대체 경로 정책을 테스트할 수 있도록 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`startupWorkspaceReady(...)`는 이제 지속된 허브가 성공적으로 마운트되면 시작 시 온보딩을 건너뛸 수 있는 규칙을 중앙 집중화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "첫 번째 런타임 로드는 작업 공간 루트가 LVRS `AfterFirstIdle`에 도달한 후에 예약되며, 따라서 도메인 I/O 및 스냅샷 애플리케이션이 초기 창 생성을 차단하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "도우미는 `main.cpp`에 의존하지 않고 C++ 회귀 제품군에서 시작 대체 경로 정책을 테스트할 수 있도록 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonAppLaunchSupport.hpp`",
+      "anchor": "srcappruntimebootstrapwhatsonapplaunchsupporthpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,241 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:9f22c1c21f29534218d9d7d5c48cdcd1cb67b3cec6c4ec5580aad4be39b177fc",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialInstallStore.cpp.md",
+    "sha256": "999edf9f168de95a4ab30ab1e4b6d6f9121c7a61a7a9fde04797546ff5ef7cfc",
+    "bytes": 1471,
+    "line_count": 23,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialInstallStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialInstallStore.cpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialInstallStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 모듈에 대한 설치 날짜 지속 경로를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- 저장된 값은 ISO `YYYY-MM-DD` 텍스트로 정규화됩니다.\n- 지속되는 값은 일반 ISO 문자열이 아닌 `QSettings`의 서명된 JSON 레코드입니다.\n- 서명은 보안 저장소 지원 등록 무결성 비밀에서 파생되므로 로컬 설정 편집으로 평가판 기간 아무런 알림 없이를 확장할 수 없습니다.\n- 레거시 일반 `QSettings` 날짜와 레거시 보안 저장소 미러는 확인 자료가 제공되면 서명된 레코드 형식으로 마이그레이션됩니다.\n- 유효하지 않거나 잘못된 형식의 서명되지 않은 값은 읽기 시 삭제되므로 향후 평가에서 새로 설치 날짜를 다시 생성할 수 있습니다.\n- `ensureInstallDate(...)`는 첫 번째 평가 시 활성화 정책에 사용되는 1회 쓰기 경로입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "저장된 값은 ISO `YYYY-MM-DD` 텍스트로 정규화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지속되는 값은 일반 ISO 문자열이 아닌 `QSettings`의 서명된 JSON 레코드입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "서명은 보안 저장소 지원 등록 무결성 비밀에서 파생되므로 로컬 설정 편집으로 평가판 기간 아무런 알림 없이를 확장할 수 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레거시 일반 `QSettings` 날짜와 레거시 보안 저장소 미러는 확인 자료가 제공되면 서명된 레코드 형식으로 마이그레이션됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유효하지 않거나 잘못된 형식의 서명되지 않은 값은 읽기 시 삭제되므로 향후 평가에서 새로 설치 날짜를 다시 생성할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ensureInstallDate(...)`는 첫 번째 평가 시 활성화 정책에 사용되는 1회 쓰기 경로입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"failure-model\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 실패 모델\n",
+      "level": 2,
+      "title": "실패 모델"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 23,
+      "raw": "- 누락된 설정 데이터는 오류가 아닌 최초 실행 조건으로 처리됩니다.\n- 잘못된 설정 데이터는 복구 가능한 로컬 손상으로 처리되어 자동으로 지워집니다.\n- 서명 비밀을 로드하거나 유지할 수 없는 경우 도우미 안전하게 거부한다는 서명되지 않은 대체 경로를 신뢰하는 대신 잘못된 설치 날짜를 반환합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "누락된 설정 데이터는 오류가 아닌 최초 실행 조건으로 처리됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "잘못된 설정 데이터는 복구 가능한 로컬 손상으로 처리되어 자동으로 지워집니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "서명 비밀을 로드하거나 유지할 수 없는 경우 도우미 안전하게 거부한다는 서명되지 않은 대체 경로를 신뢰하는 대신 잘못된 설치 날짜를 반환합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialInstallStore.cpp`",
+      "anchor": "srcextensiontrialwhatsontrialinstallstorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "실패 모델",
+      "anchor": "실패-모델",
+      "start_line": 20
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

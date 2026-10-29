@@ -1,0 +1,300 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:f0c1e7971f5b26e1206241e4259bd2c11c974c48aae9e96f0193e22eabcbde18",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/HierarchyDragDropBridge.hpp.md",
+    "sha256": "753ab287faaea1c284ec9cf4706441551fbb3a90ee4e68b0267c43bb6ce824bc",
+    "bytes": 1368,
+    "line_count": 32,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/HierarchyDragDropBridge.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/HierarchyDragDropBridge.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyDragDropBridge.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 헤더는 드래그/드롭 관련 작업을 위해 QML 계층 구조 보기에서 사용되는 브리지를 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "그것은 3 아이디어를 QML 에 노출합니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 11,
+      "raw": "- 재정렬 지원 여부.\n- 노트 드롭 지정이 지원되는지 여부입니다.\n- 현재 선택된 계층 구조 항목 키입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "재정렬 지원 여부.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 드롭 지정이 지원되는지 여부입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 선택된 계층 구조 항목 키입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000014",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 27,
+      "raw": "- 속성:\n  - `hierarchyController`\n  - `reorderContractAvailable`\n  - `noteDropContractAvailable`\n  - `selectedItemKey`\n- 호출 가능 항목:\n  - `applyHierarchyReorder(...)` , C++ `QVariantList` 또는 QML 가 LVRS 를 적용한 후 반환한 JS -형식의 `var` 모델을 받아들이는.\n  - `applyHierarchyMove(...)`, LVRS `listItemMoved` 이벤트 페이로드 ( `fromIndex`, `toIndex`, `depth` 및 활성 항목 키) 를 직접 활성 재순환 가능 컨트롤러로 전달합니다.\n  - `canAcceptNoteDrop(...)`\n  - `canAcceptNoteDropList(...)`\n  - `assignNoteToFolder(...)`\n  - `assignNotesToFolder(...)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "속성:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`reorderContractAvailable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteDropContractAvailable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selectedItemKey`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "호출 가능 항목:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applyHierarchyReorder(...)` , C++ `QVariantList` 또는 QML 가 LVRS 를 적용한 후 반환한 JS -형식의 `var` 모델을 받아들이는.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applyHierarchyMove(...)`, LVRS `listItemMoved` 이벤트 페이로드 ( `fromIndex`, `toIndex`, `depth` 및 활성 항목 키) 를 직접 활성 재순환 가능 컨트롤러로 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`canAcceptNoteDrop(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`canAcceptNoteDropList(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignNoteToFolder(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignNotesToFolder(...)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "<a id=\"design-constraint\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "## 설계 제약\n",
+      "level": 2,
+      "title": "설계 제약"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "이 브리지는 일반 계층 인터페이스와 기능 인터페이스만 이해합니다. 도메인별 정책을 확장해서는 안 됩니다. 도메인별 승인/거부 논리는 구체적인 계층 컨트롤러 기능 구현에 속합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyDragDropBridge.hpp`",
+      "anchor": "srcappmodelspanelhierarchydragdropbridgehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 15
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "설계 제약",
+      "anchor": "설계-제약",
+      "start_line": 31
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000019",
+        "line": 32,
+        "text": "이 브리지는 일반 계층 인터페이스와 기능 인터페이스만 이해합니다. 도메인별 정책을 확장해서는 안 됩니다. 도메인별 승인/거부 논리는 구체적인 계층 컨트롤러 기능 구현에 속합니다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

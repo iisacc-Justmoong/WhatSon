@@ -1,0 +1,204 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3db58f0cd2b50b983ccceff79e9119098e014e77a607cd82f4a0b637709f14cd",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp.md",
+    "sha256": "a6e44ff77261f9fcbba29d4b0e0ffd7babbb4aef552465b95219784e7eefbcb7",
+    "bytes": 940,
+    "line_count": 17,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WhatSon.App.Internal` 아래에 QML 내부 브리지 유형을 등록하는 부트스트랩 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- `internalQmlTypeRegistrationManifest()` : 남은 쉘 수준 `WhatSon.App.Internal` 유형 등록을 LVRS 매니페스트로 선언합니다.\n- `registerInternalQmlTypes()`: `main.cpp`가 LVRS 베이스라인 타입 등록 후 호출한 원샷 등록 엔트리포인트이며, LVRS 등록 보고서를 반환합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`internalQmlTypeRegistrationManifest()` : 남은 쉘 수준 `WhatSon.App.Internal` 유형 등록을 LVRS 매니페스트로 선언합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`registerInternalQmlTypes()`: `main.cpp`가 LVRS 베이스라인 타입 등록 후 호출한 원샷 등록 엔트리포인트이며, LVRS 등록 보고서를 반환합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"rationale\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 이론적 근거\n",
+      "level": 2,
+      "title": "이론적 근거"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "QML 유형 등록은 런타임 도메인 동작이 아닌 구성 인프라입니다. `main.cpp` 외부에 유지하면 컴포지션 루트 표면이 줄어들고, LVRS 매니페스트 결과는 내부 브리지 유형을 등록할 수 없는 경우 구체적인 진단으로 시작이 실패하도록 합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp`",
+      "anchor": "srcappruntimebootstrapwhatsonqmlinternaltyperegistrarhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이론적 근거",
+      "anchor": "이론적-근거",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

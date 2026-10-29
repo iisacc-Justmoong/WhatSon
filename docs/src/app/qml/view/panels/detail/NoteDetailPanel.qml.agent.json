@@ -1,0 +1,266 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:0f52487a2f15570a49cab0a3cbedceb9ac33991a8c04ff31d7d08b5bab3b867d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/NoteDetailPanel.qml.md",
+    "sha256": "f9e68850b39f29246639b026defa7ec4662187d735a7d2e0b9094d93dddd8d0d",
+    "bytes": 1363,
+    "line_count": 28,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/NoteDetailPanel.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/NoteDetailPanel.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/NoteDetailPanel.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NoteDetailPanel.qml`는 `DetailPanel.qml` 내부에 직접 거주하던 콘크리트 노트 디테일 표면입니다. 노트 세부 정보 도구 모음, 활성 상태/컨텐츠 해상도 및 공유 `DetailContents.qml` 양식 마운트를 소유합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"view-model-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 뷰 모델 계약\n",
+      "level": 2,
+      "title": "뷰 모델 계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 19,
+      "raw": "- `property var noteDetailPanelController`\n- `activeContentController`\n- `fileStatController`\n- `projectSelectionController`\n- `bookmarkSelectionController`\n- `progressSelectionController`\n- `activeStateName`\n- `noteContextLinked`\n- `toolbarItems`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`property var noteDetailPanelController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeContentController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`fileStatController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`projectSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bookmarkSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`progressSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeStateName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteContextLinked`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`toolbarItems`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 28,
+      "raw": "- 이 구성 요소는 이전 모노리식 디테일 패널의 중앙 툴바와 LVRS 스케일링된 콘텐츠 크기 규칙을 유지합니다.\n- 툴바 클릭은 주입된 노트 디테일 컨트롤러의 `requestStateChange(stateValue)`로 계속 이동합니다.\n- `linked`에는 도구 모음과 `DetailContents.qml`가 표시됩니다.\n- `detached`는 노트 세부 정보 표면을 비워 유지하므로 노트 컨텍스트가 바인딩되지 않은 경우 오래된 노트 메타데이터가 렌더링될 수 없습니다.\n- 기본 패널 너비 및 패널 간격은 크기 조정된 픽셀 리터럴 대신 `LV.Theme` 토큰이라는 이름을 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 구성 요소는 이전 모노리식 디테일 패널의 중앙 툴바와 LVRS 스케일링된 콘텐츠 크기 규칙을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "툴바 클릭은 주입된 노트 디테일 컨트롤러의 `requestStateChange(stateValue)`로 계속 이동합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`linked`에는 도구 모음과 `DetailContents.qml`가 표시됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`detached`는 노트 세부 정보 표면을 비워 유지하므로 노트 컨텍스트가 바인딩되지 않은 경우 오래된 노트 메타데이터가 렌더링될 수 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 패널 너비 및 패널 간격은 크기 조정된 픽셀 리터럴 대신 `LV.Theme` 토큰이라는 이름을 사용합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/NoteDetailPanel.qml`",
+      "anchor": "srcappqmlviewpanelsdetailnotedetailpanelqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "뷰 모델 계약",
+      "anchor": "뷰-모델-계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 23
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

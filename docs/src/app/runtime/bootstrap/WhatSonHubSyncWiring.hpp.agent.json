@@ -1,0 +1,222 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:ea9ca1d54453dbf8cd8cbeab8901c3355142af5d02d8585ca480febc2d9abdd5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/WhatSonHubSyncWiring.hpp.md",
+    "sha256": "f6bbff6eaee2750535ef9050b224a253cae80291a471df44eadaa9b1c86497d1",
+    "bytes": 782,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap/WhatSonHubSyncWiring.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WhatSonHubSyncController`에 대한 부트스트랩 배선 도우미를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- `HubSyncWiringResult`: 생성된 연결 핸들 및 집계 배선 상태를 캡처합니다.\n- `wireHubSyncController(...)`: 연결:\n  - 컨트롤러 `syncFailed` 로깅 경로\n  - 각 변이 소스 `hubFilesystemMutated()` 신호를 컨트롤러 `acknowledgeLocalMutation()`에 보냅니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`HubSyncWiringResult`: 생성된 연결 핸들 및 집계 배선 상태를 캡처합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`wireHubSyncController(...)`: 연결:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컨트롤러 `syncFailed` 로깅 경로",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 변이 소스 `hubFilesystemMutated()` 신호를 컨트롤러 `acknowledgeLocalMutation()`에 보냅니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"design-intent\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 디자인 의도\n",
+      "level": 2,
+      "title": "디자인 의도"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "`main.cpp`는 반복적인 신호 배선 세부 사항을 중복해서는 안 됩니다. 이 도우미는 런타임 동작을 변경하지 않고 유지하면서 연결 설정을 중앙 집중화합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap/WhatSonHubSyncWiring.hpp`",
+      "anchor": "srcappruntimebootstrapwhatsonhubsyncwiringhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "디자인 의도",
+      "anchor": "디자인-의도",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000016",
+        "line": 19,
+        "text": "`main.cpp`는 반복적인 신호 배선 세부 사항을 중복해서는 안 됩니다. 이 도우미는 런타임 동작을 변경하지 않고 유지하면서 연결 설정을 중앙 집중화합니다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

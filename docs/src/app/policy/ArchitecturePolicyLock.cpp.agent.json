@@ -1,0 +1,448 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:fc14447661089479e115b0a5085ad40be7a7005fc6ed2e0f24b1d7a83aaac927",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/policy/ArchitecturePolicyLock.cpp.md",
+    "sha256": "2e22b83cae8b814ac570426b2225939040e5ee44adbdbeadcbbbb8b2e19b4580",
+    "bytes": 3166,
+    "line_count": 50,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/policy/ArchitecturePolicyLock.cpp`",
+    "role": "reference",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/policy/ArchitecturePolicyLock.cpp`\n",
+      "level": 1,
+      "title": "`src/app/policy/ArchitecturePolicyLock.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 파일에는 구체적인 아키텍처 계약 매트릭스와 애플리케이션 시작 경로에서 사용되는 단방향 런타임 잠금이 포함되어 있습니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"dependency-matrix\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 종속성 매트릭스\n",
+      "level": 2,
+      "title": "종속성 매트릭스"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "행렬은 하드 코딩되어 있으며 의도적으로 단순합니다.\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 12,
+      "end_line": 16,
+      "raw": "- `View`는 `Controller`에 따라 달라질 수 있습니다.\n- `Controller`는 `DataModel`, `Store`, `Parser` 및 `Creator`에 종속될 수 있습니다.\n- `Store`는 `DataModel`, `Parser`, `Creator` 및 `FileSystem`에 종속될 수 있습니다.\n- `Parser` 및 `Creator`는 `DataModel`에 따라 달라질 수 있습니다.\n- `DataModel` 및 `FileSystem`는 이 정책을 통해 나가는 종속성을 얻지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`View`는 `Controller`에 따라 달라질 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Controller`는 `DataModel`, `Store`, `Parser` 및 `Creator`에 종속될 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Store`는 `DataModel`, `Parser`, `Creator` 및 `FileSystem`에 종속될 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Parser` 및 `Creator`는 `DataModel`에 따라 달라질 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`DataModel` 및 `FileSystem`는 이 정책을 통해 나가는 종속성을 얻지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "이는 범용 DI 프레임워크가 아닙니다. 저장소별 가드레일입니다.\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"runtime-lock\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 런타임 잠금\n",
+      "level": 2,
+      "title": "런타임 잠금"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "`g_architecturePolicyLocked`는 프로세스 전체의 원자 플래그입니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 28,
+      "raw": "- 잠금 해제가 시작됩니다.\n- 시작 코드는 종속성 주입을 수행합니다.\n- `ArchitecturePolicyLock::lock()`가 깃발을 뒤집습니다.\n- 늦은 배선 시도는 돌연변이를 거부하고 경고를 내보낼 수 있습니다.\n- `ArchitecturePolicyLock::unlockForTests()`는 회귀 테스트가 케이스 간에 전역 잠금 상태를 재설정할 수 있도록 존재합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "잠금 해제가 시작됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "시작 코드는 종속성 주입을 수행합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ArchitecturePolicyLock::lock()`가 깃발을 뒤집습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "늦은 배선 시도는 돌연변이를 거부하고 경고를 내보낼 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ArchitecturePolicyLock::unlockForTests()`는 회귀 테스트가 케이스 간에 전역 잠금 상태를 재설정할 수 있도록 존재합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000021",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "프로덕션 구성에서는 여전히 잠금 장치를 단방향으로 처리합니다. 첫 번째 QML 장면이 완전히 활성화되기 전에 애플리케이션 배선이 완료될 것으로 예상됩니다.\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "<a id=\"verification-helpers\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## 검증 도우미\n",
+      "level": 2,
+      "title": "검증 도우미"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 35,
+      "end_line": 38,
+      "raw": "- `assertDependencyAllowed(...)`는 순수한 진단 도우미입니다.\n- `verifyDependencyAllowed(...)`는 `[whatson:policy][dependency] ...`를 사용하여 생산 방향 경고 경로를 추가합니다.\n- `verifyMutableWiringAllowed(...)`는 `[whatson:policy][lock] ...`를 사용하여 포스트 잠금 재배선 가드를 추가합니다.\n- `verifyMutableDependencyAllowed(...)`는 이제 시작 잠금 이후에 시도된 모든 변형과 불법 레이어 가장자리를 모두 거부해야 하는 설정자/배선 진입점에서 사용되는 공유 도우미입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`assertDependencyAllowed(...)`는 순수한 진단 도우미입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyDependencyAllowed(...)`는 `[whatson:policy][dependency] ...`를 사용하여 생산 방향 경고 경로를 추가합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyMutableWiringAllowed(...)`는 `[whatson:policy][lock] ...`를 사용하여 포스트 잠금 재배선 가드를 추가합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`verifyMutableDependencyAllowed(...)`는 이제 시작 잠금 이후에 시도된 모든 변형과 불법 레이어 가장자리를 모두 거부해야 하는 설정자/배선 진입점에서 사용되는 공유 도우미입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "최신 브리지 및 컨트롤러 설정자 코드는 이러한 공유 도우미를 직접 사용하므로 정책은 문서로만 남아 있지 않고 실제 배선 경로에서 실행됩니다.\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"practical-reading\"></a>\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## 실용독서\n",
+      "level": 2,
+      "title": "실용독서"
+    },
+    {
+      "id": "b000034",
+      "kind": "paragraph",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "이 파일을 다음과 함께 읽으십시오:\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 50,
+      "raw": "- 잠금 타이밍용 `src/app/main.cpp`.\n- 뷰-컨트롤러 검증을 위한 `src/app/models/panel/HierarchyInteractionBridge.cpp`.\n- 드래그/드롭 계약 확인을 위한 `src/app/models/panel/HierarchyDragDropBridge.cpp`.\n- 컨트롤러-스토어 검증을 위한 `src/app/models/sidebar/SidebarHierarchyController.cpp`.\n- 주요 런타임 배선 이음새에서 잠금 후 돌연변이 거부를 위한 `src/app/models/sidebar/HierarchyControllerProvider.cpp`, `src/app/models/panel/NoteListModelContractBridge.cpp` 및 `src/app/models/detailPanel/DetailCurrentNoteContextBridge.cpp`.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "잠금 타이밍용 `src/app/main.cpp`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "뷰-컨트롤러 검증을 위한 `src/app/models/panel/HierarchyInteractionBridge.cpp`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "드래그/드롭 계약 확인을 위한 `src/app/models/panel/HierarchyDragDropBridge.cpp`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컨트롤러-스토어 검증을 위한 `src/app/models/sidebar/SidebarHierarchyController.cpp`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주요 런타임 배선 이음새에서 잠금 후 돌연변이 거부를 위한 `src/app/models/sidebar/HierarchyControllerProvider.cpp`, `src/app/models/panel/NoteListModelContractBridge.cpp` 및 `src/app/models/detailPanel/DetailCurrentNoteContextBridge.cpp`.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/policy/ArchitecturePolicyLock.cpp`",
+      "anchor": "srcapppolicyarchitecturepolicylockcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "종속성 매트릭스",
+      "anchor": "종속성-매트릭스",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 잠금",
+      "anchor": "런타임-잠금",
+      "start_line": 22
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "검증 도우미",
+      "anchor": "검증-도우미",
+      "start_line": 34
+    },
+    {
+      "block_id": "b000033",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "실용독서",
+      "anchor": "실용독서",
+      "start_line": 44
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

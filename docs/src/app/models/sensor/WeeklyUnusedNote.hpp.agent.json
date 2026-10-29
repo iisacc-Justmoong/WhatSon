@@ -1,0 +1,265 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:12f91a486fda3f6cc2250f94d902a81b7d6d94eb838796216d7b0d4a6d757a9d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sensor/WeeklyUnusedNote.hpp.md",
+    "sha256": "58b12c5af42e502d8186cd28fb6a1a21c090fc4d6632a8717bb0a14d16b9904a",
+    "bytes": 927,
+    "line_count": 25,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sensor/WeeklyUnusedNote.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sensor/WeeklyUnusedNote.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sensor/WeeklyUnusedNote.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`WeeklyUnusedNote`는 최소 일주일 동안 열리지 않은 노트에 대한 고정 창 센서 개체입니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"surface\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 표면\n",
+      "level": 2,
+      "title": "표면"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 17,
+      "raw": "- `hubPath`: 검사할 `.wshub` 루트의 압축을 풉니다.\n- `unusedNotes`: 타임스탬프 및 메모 경로를 포함한 전체 항목 페이로드.\n- `unusedNoteIds`: 필터링된 메모 ID를 편리하게 투영합니다.\n- `unusedNoteCount`: 바인딩에 대한 카운트 투영입니다.\n- `lastError`: 유효성 검사 또는 스캔 실패 텍스트.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`hubPath`: 검사할 `.wshub` 루트의 압축을 풉니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`unusedNotes`: 타임스탬프 및 메모 경로를 포함한 전체 항목 페이로드.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`unusedNoteIds`: 필터링된 메모 ID를 편리하게 투영합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`unusedNoteCount`: 바인딩에 대한 카운트 투영입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lastError`: 유효성 검사 또는 스캔 실패 텍스트.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"event-model\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 이벤트 모델\n",
+      "level": 2,
+      "title": "이벤트 모델"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 25,
+      "raw": "- 필터링된 결과가 변경될 때마다 `unusedNotesChanged()`를 내보냅니다.\n- 빈 상태 새로 고침을 포함하여 새로 고칠 때마다 `scanCompleted(...)`를 내보냅니다.\n- `refresh()`를 모델 도메인의 필수 슬롯 진입점으로 노출합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "필터링된 결과가 변경될 때마다 `unusedNotesChanged()`를 내보냅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "빈 상태 새로 고침을 포함하여 새로 고칠 때마다 `scanCompleted(...)`를 내보냅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`refresh()`를 모델 도메인의 필수 슬롯 진입점으로 노출합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sensor/WeeklyUnusedNote.hpp`",
+      "anchor": "srcappmodelssensorweeklyunusednotehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "표면",
+      "anchor": "표면",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이벤트 모델",
+      "anchor": "이벤트-모델",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000019",
+        "line": 25,
+        "text": "- `refresh()`를 모델 도메인의 필수 슬롯 진입점으로 노출합니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

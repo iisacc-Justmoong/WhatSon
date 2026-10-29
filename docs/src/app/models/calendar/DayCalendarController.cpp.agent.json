@@ -1,0 +1,114 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:402e509a0abe16c79fcc8c2d0c27604d0ebac2dd86dde9ea4f4cbe85ff20081f",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/DayCalendarController.cpp.md",
+    "sha256": "e6543e772371fb50a3c45646ae08132025a55d9d4a7a5e5d7717222a81cd5722",
+    "bytes": 466,
+    "line_count": 7,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/calendar/DayCalendarController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/calendar/DayCalendarController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/calendar/DayCalendarController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 주간 모델 재구축은 `ICalendarBoardStore::entriesChanged`를 수신합니다.\n- `requestDayView(...)`는 이제 훅/로그 전용이며, 실제 재구성 소유권은 `setDisplayedDateIso(...)`, `setCalendarBoardStore(...)` 및 `entriesChanged`에 남아 있어 `shiftDay(...)` / `jumpToToday()` 이후의 중복 재계산 경로를 제거합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "주간 모델 재구축은 `ICalendarBoardStore::entriesChanged`를 수신합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestDayView(...)`는 이제 훅/로그 전용이며, 실제 재구성 소유권은 `setDisplayedDateIso(...)`, `setCalendarBoardStore(...)` 및 `entriesChanged`에 남아 있어 `shiftDay(...)` / `jumpToToday()` 이후의 중복 재계산 경로를 제거합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/calendar/DayCalendarController.cpp`",
+      "anchor": "srcappmodelscalendardaycalendarcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

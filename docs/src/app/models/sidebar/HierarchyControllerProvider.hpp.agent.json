@@ -1,0 +1,221 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6fd56c9b460b217192dc37aa6005a409a1444965614ec887d777e55a64260519",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sidebar/HierarchyControllerProvider.hpp.md",
+    "sha256": "21c51162378a19f570b733dcad93c64528680e08a20ba87492cc02bb742cfaa6",
+    "bytes": 906,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sidebar/HierarchyControllerProvider.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sidebar/HierarchyControllerProvider.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sidebar/HierarchyControllerProvider.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`HierarchyControllerProvider`는 계층 도메인 인덱스를 전용 도메인 컨트롤러 및 메모 목록 모델로 확인합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"current-shape\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 현재 형태\n",
+      "level": 2,
+      "title": "현재 형태"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- 계층 구조 도메인당 하나의 하드 코딩된 구조체 필드 대신 `Mapping { hierarchyIndex, controller }` 항목을 사용합니다.\n- `HierarchySidebarDomain.hpp`로 입력된 인덱스 정규화된 레지스트리에 매핑을 저장합니다.\n- 새로운 멤버 변수나 새로운 계층 도메인마다 스위치 브랜치를 요구하지 않고 확장을 위해 해결 경로를 열어 두십시오.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "계층 구조 도메인당 하나의 하드 코딩된 구조체 필드 대신 `Mapping { hierarchyIndex, controller }` 항목을 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`HierarchySidebarDomain.hpp`로 입력된 인덱스 정규화된 레지스트리에 매핑을 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새로운 멤버 변수나 새로운 계층 도메인마다 스위치 브랜치를 요구하지 않고 확장을 위해 해결 경로를 열어 두십시오.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"boundary\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 경계\n",
+      "level": 2,
+      "title": "경계"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 19,
+      "raw": "- 컴포지션 루트는 여전히 구체적인 등록을 소유하고 있습니다.\n- 해당 라인 아래의 소비자는 `IHierarchyControllerProvider`에만 의존합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "컴포지션 루트는 여전히 구체적인 등록을 소유하고 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "해당 라인 아래의 소비자는 `IHierarchyControllerProvider`에만 의존합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sidebar/HierarchyControllerProvider.hpp`",
+      "anchor": "srcappmodelssidebarhierarchycontrollerproviderhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 형태",
+      "anchor": "현재-형태",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "경계",
+      "anchor": "경계",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

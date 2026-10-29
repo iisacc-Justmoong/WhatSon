@@ -1,0 +1,506 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:733d745fa3f3c83c65ec808c7682e8d2adc05fc6c721f05a123715d8de9f06bb",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/calendar/MonthCalendarDayCell.qml.md",
+    "sha256": "20828e89882a6db3d87a6af26aa562d59aeb809b23eade8c55009d388ac639e1",
+    "bytes": 3274,
+    "line_count": 58,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/calendar/MonthCalendarDayCell.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/calendar/MonthCalendarDayCell.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/MonthCalendarDayCell.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`MonthCalendarDayCell.qml` 는 Figma 노드 `227:9427` 에 대한 재사용 가능한 월별 일 셀 컴포넌트입니다. 그것은 하나의 불리언 인수를 통해 2 변형을 지원합니다:\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 7,
+      "end_line": 8,
+      "raw": "- 월별 날짜 셀용 `disable: false`\n- 월 그리드에 표시된 인접월 오버플로 날짜에 대한 `disable: true`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "월별 날짜 셀용 `disable: false`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "월 그리드에 표시된 인접월 오버플로 날짜에 대한 `disable: true`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "<a id=\"public-qml-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## 퍼블릭 QML 계약\n",
+      "level": 2,
+      "title": "퍼블릭 QML 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 20,
+      "raw": "- `property int dayNumber`\n- `property bool disable`\n- `property bool selected`\n- `property bool today`\n- `property int maxVisibleEntries`\n- `property var entryCells`\n- `signal clicked`\n- `signal entryActivated(var entryCellModel)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`property int dayNumber`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`property bool disable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`property bool selected`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`property bool today`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`property int maxVisibleEntries`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`property var entryCells`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`signal clicked`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`signal entryActivated(var entryCellModel)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"render-rules\"></a>\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## 렌더링 규칙\n",
+      "level": 2,
+      "title": "렌더링 규칙"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 34,
+      "raw": "- 배경: `LV.Theme.panelBackground04`\n- 비활성화된 변형: `opacity: 0.5`\n- 선택된 상태: `LV.Theme.accent` 및 `LV.Theme.strokeThin`를 사용하여 악센트 테두리를 적용합니다.\n- 오늘 상태: 셀이 선택된 날짜가 아닐 때, `LV.Theme.strokeSoft` 와 `LV.Theme.strokeThin` 를 사용하여 부드러운 테두리를 적용합니다.\n- 콘텐츠 패딩: `LV.Theme.gap8`\n- 요일 번호 및 오버플로 라벨 타이포그래피는 `LV.Theme.textBody`를 사용합니다.\n- 데이 레이블 간격, 이벤트 행 높이 및 이벤트 행 간격은 `LV.Theme.gap10`, `LV.Theme.iconSm` 및 `LV.Theme.gap2`를 사용합니다.\n- 월별 그리드 사용량에서 엔트리 칩은 `cornerRadius: LV.Theme.radiusSm`와 공유 `CalendarEventCell`에 위임됩니다.\n- 오버플로 상태: 표시되는 항목 용량을 초과하면 `+N more`를 렌더링합니다.\n- 부모 그리드는 이제 월 예측 내에서 이미 `dayModel.entries`에서 시작된 메모/이벤트 칩 페이로드를 통과할 수 있으므로, 눈에 보이는 캘린더 항목이 재구성된 월 스냅샷과 정렬된 상태를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "배경: `LV.Theme.panelBackground04`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "비활성화된 변형: `opacity: 0.5`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택된 상태: `LV.Theme.accent` 및 `LV.Theme.strokeThin`를 사용하여 악센트 테두리를 적용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오늘 상태: 셀이 선택된 날짜가 아닐 때, `LV.Theme.strokeSoft` 와 `LV.Theme.strokeThin` 를 사용하여 부드러운 테두리를 적용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "콘텐츠 패딩: `LV.Theme.gap8`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "요일 번호 및 오버플로 라벨 타이포그래피는 `LV.Theme.textBody`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데이 레이블 간격, 이벤트 행 높이 및 이벤트 행 간격은 `LV.Theme.gap10`, `LV.Theme.iconSm` 및 `LV.Theme.gap2`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "월별 그리드 사용량에서 엔트리 칩은 `cornerRadius: LV.Theme.radiusSm`와 공유 `CalendarEventCell`에 위임됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오버플로 상태: 표시되는 항목 용량을 초과하면 `+N more`를 렌더링합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "부모 그리드는 이제 월 예측 내에서 이미 `dayModel.entries`에서 시작된 메모/이벤트 칩 페이로드를 통과할 수 있으므로, 눈에 보이는 캘린더 항목이 재구성된 월 스냅샷과 정렬된 상태를 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"interaction\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 상호작용\n",
+      "level": 2,
+      "title": "상호작용"
+    },
+    {
+      "id": "b000022",
+      "kind": "list",
+      "start_line": 39,
+      "end_line": 41,
+      "raw": "1. 내부 `MouseArea`를 통해 전체 셀을 클릭할 수 있습니다.\n2. 상위 페이지는 `clicked`를 처리하고 `MonthCalendarController`에서 선택한 날짜를 업데이트합니다.\n3. 개별 노트 칩은 `entryActivated(entryCellModel)`를 방출할 수 있어, 노트 열기 제스처가 전체 데이셀 클릭 계약을 탈취할 필요가 없습니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "내부 `MouseArea`를 통해 전체 셀을 클릭할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "상위 페이지는 `clicked`를 처리하고 `MonthCalendarController`에서 선택한 날짜를 업데이트합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "개별 노트 칩은 `entryActivated(entryCellModel)`를 방출할 수 있어, 노트 열기 제스처가 전체 데이셀 클릭 계약을 탈취할 필요가 없습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "<a id=\"collaborators\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "## 협력자\n",
+      "level": 2,
+      "title": "협력자"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 47,
+      "raw": "- `src/app/qml/view/calendar/MonthCalendarPage.qml`\n- `src/app/qml/view/calendar/CalendarEventCell.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/MonthCalendarPage.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/CalendarEventCell.qml`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000032",
+      "kind": "list",
+      "start_line": 52,
+      "end_line": 58,
+      "raw": "- 현재 이 저장소에는 자동화된 테스트 파일이 없습니다.\n- 회귀 체크리스트:\n    - 선택한 날짜 셀은 오늘이 아닌 경우에도 강조 테두리로 렌더링되어야 합니다.\n    - 오늘도 선택되면 액센트 테두리가 부드러운 오늘 테두리보다 우선해야 합니다.\n    - 선택된 날짜가 아닌 경우 `dayModel.isToday === true` 에서 매핑된 일 셀은 가시적이지만 대비가 낮은 테두리로 여전히 렌더링되어야 합니다.\n    - 오늘이 아닌 인접한 날짜, 선택하지 않은 오버플로 날짜는 추가된 테두리 없이 계속 렌더링되어야 합니다.\n    - 셀 내부에 보이는 노트 칩은 클릭하거나 탭할 때 `entryActivated(...)`를 방출해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 이 저장소에는 자동화된 테스트 파일이 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택한 날짜 셀은 오늘이 아닌 경우에도 강조 테두리로 렌더링되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오늘도 선택되면 액센트 테두리가 부드러운 오늘 테두리보다 우선해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택된 날짜가 아닌 경우 `dayModel.isToday === true` 에서 매핑된 일 셀은 가시적이지만 대비가 낮은 테두리로 여전히 렌더링되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오늘이 아닌 인접한 날짜, 선택하지 않은 오버플로 날짜는 추가된 테두리 없이 계속 렌더링되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "셀 내부에 보이는 노트 칩은 클릭하거나 탭할 때 `entryActivated(...)`를 방출해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/MonthCalendarDayCell.qml`",
+      "anchor": "srcappqmlviewcalendarmonthcalendardaycellqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "퍼블릭 QML 계약",
+      "anchor": "퍼블릭-qml-계약",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000016",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "렌더링 규칙",
+      "anchor": "렌더링-규칙",
+      "start_line": 24
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용",
+      "anchor": "상호작용",
+      "start_line": 38
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "협력자",
+      "anchor": "협력자",
+      "start_line": 45
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 51
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,272 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:85a32bbd1b87a9fda24fa45f169994b5e9cab9ba527304d4efff073463071040",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/bootstrap/README.md",
+    "sha256": "4cbffbd8defe3778272c253166805b7dc7c3ae55ff0cb62c3c6a6b0145ab7aa9",
+    "bytes": 1967,
+    "line_count": 33,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/bootstrap`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/bootstrap`\n",
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Role\n",
+      "level": 2,
+      "title": "Role"
+    },
+    {
+      "id": "b000004",
+      "kind": "paragraph",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "This directory contains bootstrap-time composition helpers extracted from `main.cpp`.\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "The module keeps `main.cpp` focused on orchestration flow while moving repetitive wiring blocks into\ndedicated single-purpose helpers.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "heading",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "## Files\n",
+      "level": 2,
+      "title": "Files"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 10,
+      "end_line": 16,
+      "raw": "- `WhatSonAppLaunchSupport`: parses launcher flags and classifies whether startup can enter the workspace immediately.\n- `WhatSonQmlLaunchSupport`: routes QML root creation and window activation through LVRS app-entry helpers, preserving\n  `QmlRootLoadResult` for lifecycle and foreground-service bootstrap.\n- `WhatSonQmlInternalTypeRegistrar`: registers the remaining shell-level internal QML bridge types through an LVRS\n  manifest.\n- `WhatSonHubSyncWiring`: wires local mutation signals into `WhatSonHubSyncController`.\n- `WhatSonQmlContextBinder`: applies the workspace LVRS context/Controller bind plan before root QML load.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonAppLaunchSupport`: parses launcher flags and classifies whether startup can enter the workspace immediately.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonQmlLaunchSupport`: routes QML root creation and window activation through LVRS app-entry helpers, preserving",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonQmlInternalTypeRegistrar`: registers the remaining shell-level internal QML bridge types through an LVRS",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncWiring`: wires local mutation signals into `WhatSonHubSyncController`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonQmlContextBinder`: applies the workspace LVRS context/Controller bind plan before root QML load.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 20,
+      "raw": "`main.cpp` retains foreground-service startup ownership because scheduler and permission requests are composition-root\npolicy. That startup is guarded by LVRS `ForegroundServiceGate` after `WhatSonQmlLaunchSupport` has produced and\nactivated a visible workspace root.\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "This section is a bottom summary for checking the above  README  content in Korean.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 28,
+      "end_line": 33,
+      "raw": "- Target:  ``src/app/runtime/bootstrap``  ( `docs/src/app/runtime/bootstrap/README.md` )\n- Location:  `docs/src/app/runtime/bootstrap`\n- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.\n- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.\n- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.\n- Runtime: `WhatSonQmlLaunchSupport` preserves LVRS `QmlRootLoadResult` and delivers the same root/window results to the lifecycle/foreground-service bootstrap.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Target:  ``src/app/runtime/bootstrap``  ( `docs/src/app/runtime/bootstrap/README.md` )",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Location:  `docs/src/app/runtime/bootstrap`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Runtime: `WhatSonQmlLaunchSupport` preserves LVRS `QmlRootLoadResult` and delivers the same root/window results to the lifecycle/foreground-service bootstrap.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/bootstrap`",
+      "anchor": "srcappruntimebootstrap",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Role",
+      "anchor": "role",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000008",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Files",
+      "anchor": "files",
+      "start_line": 9
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 24
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

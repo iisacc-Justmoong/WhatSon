@@ -1,0 +1,129 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3e737351eb8e3cc7e21799622d4d78212eef2e92ee1c06bb76d78f1c5ed6f4c1",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sidebar/SidebarHierarchyController.cpp.md",
+    "sha256": "3b0df54ec8a7dc49a4f26cef18dd4277292775ac2e50d9cfaab40c22740fa5d5",
+    "bytes": 1416,
+    "line_count": 10,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sidebar/SidebarHierarchyController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sidebar/SidebarHierarchyController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 10,
+      "raw": "- 생성자는 이제 `IActiveHierarchySource` 베이스를 초기화합니다.\n- 셀렉션 스토어 소유권과 공급자 연결은 동일하게 유지됩니다. 활성 바인딩 알림 표면만 커졌습니다.\n- 활성 계층 인터페이스는 이제 뷰/패널 바인딩 코드에만 사용됩니다; 시작 런타임 로딩은 더 이상 사이드바 활성화를 지연된 부트스트랩 트리거로 사용하지 않습니다.\n- 일관된 \"toolbar index + hierarchy controller + note-list model\" 튜플이 필요한 활성 계층형 소비자는 이제 `activeBindingsChanged()`를 구독할 수 있습니다. 이 구현은 선택 변경 및 제공자 매핑 새로 고침 후 합성 신호를 발생시키므로, QML 셸은 한 번에 전체 활성 바인딩 스냅샷을 새로 고침하고 계층 구조 전환 시 일시적인 교차 도메인 목록 유령을 방지할 수 있습니다.\n- `hierarchyControllerForIndex(...)`와 `noteListModelForIndex(...)`는 이제 반환된 `QObject*` 바인딩에 대해 QML 경계를 넘기 전에 `QQmlEngine::CppOwnership`를 강제합니다. 이렇게 하면 계층 구조 스위치 스냅샷이 멤버가 소유한 C++ 객체를 마치 일회용 JS 소유 인스턴스인 것처럼 QML 가비지 컬렉터에 전달되는 것을 방지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "생성자는 이제 `IActiveHierarchySource` 베이스를 초기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "셀렉션 스토어 소유권과 공급자 연결은 동일하게 유지됩니다. 활성 바인딩 알림 표면만 커졌습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 계층 인터페이스는 이제 뷰/패널 바인딩 코드에만 사용됩니다; 시작 런타임 로딩은 더 이상 사이드바 활성화를 지연된 부트스트랩 트리거로 사용하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "일관된 \"toolbar index + hierarchy controller + note-list model\" 튜플이 필요한 활성 계층형 소비자는 이제 `activeBindingsChanged()`를 구독할 수 있습니다. 이 구현은 선택 변경 및 제공자 매핑 새로 고침 후 합성 신호를 발생시키므로, QML 셸은 한 번에 전체 활성 바인딩 스냅샷을 새로 고침하고 계층 구조 전환 시 일시적인 교차 도메인 목록 유령을 방지할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchyControllerForIndex(...)`와 `noteListModelForIndex(...)`는 이제 반환된 `QObject*` 바인딩에 대해 QML 경계를 넘기 전에 `QQmlEngine::CppOwnership`를 강제합니다. 이렇게 하면 계층 구조 스위치 스냅샷이 멤버가 소유한 C++ 객체를 마치 일회용 JS 소유 인스턴스인 것처럼 QML 가비지 컬렉터에 전달되는 것을 방지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyController.cpp`",
+      "anchor": "srcappmodelssidebarsidebarhierarchycontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

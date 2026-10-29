@@ -1,0 +1,475 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:dc4a026942696e302388896f80d6faf26e8471f37fa015b925b21a28233b8020",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/sync/WhatSonHubSyncController.hpp.md",
+    "sha256": "becd600c39edab26bf1298af69e625faef2c96d723799b3f4f452805243bb240",
+    "bytes": 3735,
+    "line_count": 52,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/sync/WhatSonHubSyncController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/sync/WhatSonHubSyncController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/sync/WhatSonHubSyncController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WhatSonHubSyncController`는 마운트된 `.wshub` 파일 시스템과 메모리 내 런타임 간의 앱 수준 동기화 경계를 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "이는 의도적으로 좁습니다. 클래스는 허브를 감시하고, 변경 힌트를 디바운스하고, 관찰된 허브 서명이 변경될 때 런타임 상태를 다시 빌드하도록 호출자 제공 다시 로드 콜백을 요청합니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "paragraph",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "구현은 협력자로 분할됩니다. 이제 컨트롤러는 공개 신호/슬롯 경계를 유지하고 재로드 결정 흐름을 소유하는 동시에 관찰, 감시자 등록 및 타이머 예약이 전용 개체에 적용됩니다.\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"public-api\"></a>\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 공개 API\n",
+      "level": 2,
+      "title": "공개 API"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 19,
+      "raw": "- `setReloadCallback(...)`: 관찰된 외부 변경 후에 사용되는 런타임 다시 로드 기능을 주입합니다.\n- `setCurrentHubPath(...)` : 마운트된 허브 경로를 전환하고, 시그니처 베이스라인을 재구성하며, 워처 커버리지를 재구성합니다.\n- `setPeriodicIntervalMs(...)` / `setDebounceIntervalMs(...)` : 런타임 진단 또는 플랫폼 조정에 대한 폴링/디바운스 정책을 조정합니다.\n- `requestSyncHint()`: 디바운싱된 동기화 확인을 예약합니다.\n- `acknowledgeLocalMutation()` : 앱 소유 쓰기를 표시하므로 다음 서명 변경 시 런타임를 다시 로드하는 대신 기준선을 새로 고칩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setReloadCallback(...)`: 관찰된 외부 변경 후에 사용되는 런타임 다시 로드 기능을 주입합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setCurrentHubPath(...)` : 마운트된 허브 경로를 전환하고, 시그니처 베이스라인을 재구성하며, 워처 커버리지를 재구성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setPeriodicIntervalMs(...)` / `setDebounceIntervalMs(...)` : 런타임 진단 또는 플랫폼 조정에 대한 폴링/디바운스 정책을 조정합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestSyncHint()`: 디바운싱된 동기화 확인을 예약합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`acknowledgeLocalMutation()` : 앱 소유 쓰기를 표시하므로 다음 서명 변경 시 런타임를 다시 로드하는 대신 기준선을 새로 고칩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"signals\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 신호\n",
+      "level": 2,
+      "title": "신호"
+    },
+    {
+      "id": "b000020",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 25,
+      "raw": "- `syncReloaded(hubPath)`: 다시 로드 콜백이 성공하고 기준선이 새로 고쳐진 후에 발생합니다.\n- `syncFailed(errorMessage)`: 다시 로드 콜백이 실패를 보고할 때 발생합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`syncReloaded(hubPath)`: 다시 로드 콜백이 성공하고 기준선이 새로 고쳐진 후에 발생합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`syncFailed(errorMessage)`: 다시 로드 콜백이 실패를 보고할 때 발생합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000021",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "html",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "<a id=\"architectural-constraints\"></a>\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "heading",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "## 건축적 제약\n",
+      "level": 2,
+      "title": "건축적 제약"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 35,
+      "raw": "- 컨트롤러는 파일 시스템 지향입니다. 더 이상 애플리케이션 이벤트 첨부, 이벤트 필터링 또는 앱 활성화 훅을 노출하지 않습니다.\n- UI 탐색, 제스처 및 일반 입력 이벤트는 이 클래스의 책임을 벗어납니다.\n- 로컬 앱 쓰기는 `acknowledgeLocalMutation()`를 통해 외부 쓰기와 다르게 처리되며, 이는 현재 세션이 자체 변이 경로 이후에 다시 로드되는 것을 방지합니다.\n- `WhatSonHubSyncObservationBuilder`는 단일 통과 관측 계약을 보유하고 있습니다: 하나의 재귀 보행은 시그니처 페이로드와 감시 경로 커버리지를 모두 생성합니다.\n- `WhatSonHubSyncWatcher`는 마지막으로 적용된 감시 경로 설정을 기억하므로, 변경되지 않은 동기화 힌트가 감시자 등록을 재구성하지 않습니다.\n- `WhatSonHubSyncScheduler`는 주기적인 폴링 및 디바운스 억제 기능을 보유하고 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "컨트롤러는 파일 시스템 지향입니다. 더 이상 애플리케이션 이벤트 첨부, 이벤트 필터링 또는 앱 활성화 훅을 노출하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "UI 탐색, 제스처 및 일반 입력 이벤트는 이 클래스의 책임을 벗어납니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 앱 쓰기는 `acknowledgeLocalMutation()`를 통해 외부 쓰기와 다르게 처리되며, 이는 현재 세션이 자체 변이 경로 이후에 다시 로드되는 것을 방지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncObservationBuilder`는 단일 통과 관측 계약을 보유하고 있습니다: 하나의 재귀 보행은 시그니처 페이로드와 감시 경로 커버리지를 모두 생성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncWatcher`는 마지막으로 적용된 감시 경로 설정을 기억하므로, 변경되지 않은 동기화 힌트가 감시자 등록을 재구성하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncScheduler`는 주기적인 폴링 및 디바운스 억제 기능을 보유하고 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "<a id=\"collaborators\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "## 협력자\n",
+      "level": 2,
+      "title": "협력자"
+    },
+    {
+      "id": "b000030",
+      "kind": "list",
+      "start_line": 40,
+      "end_line": 44,
+      "raw": "- `main.cpp` : 컨트롤러를 생성하고, 리로드 콜백을 주입하며, 계층형 컨트롤러에서 로컬 변이 확인을 전송합니다.\n- `WhatSonHubPathUtils`: 장착된 허브 경로를 정규화합니다.\n- `WhatSonHubSyncObservationBuilder`: 장착된 허브를 검사하고 관측 시그니처를 구축합니다.\n- `WhatSonHubSyncWatcher`: 재귀적 `QFileSystemWatcher` 적용 범위를 래핑합니다.\n- `WhatSonHubSyncScheduler`: 주기적/디바운스 타이머를 래핑합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`main.cpp` : 컨트롤러를 생성하고, 리로드 콜백을 주입하며, 계층형 컨트롤러에서 로컬 변이 확인을 전송합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubPathUtils`: 장착된 허브 경로를 정규화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncObservationBuilder`: 장착된 허브를 검사하고 관측 시그니처를 구축합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncWatcher`: 재귀적 `QFileSystemWatcher` 적용 범위를 래핑합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonHubSyncScheduler`: 주기적/디바운스 타이머를 래핑합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000031",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "html",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "heading",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 49,
+      "end_line": 52,
+      "raw": "- `test/cpp/suites/hub_sync_controller_tests.cpp`는 책임 분담과 `.whatson` 관찰 무시 계약을 포함합니다.\n- 회귀 체크리스트:\n  - 포함 소비자는 `file/sync/WhatSonHubSyncController.hpp`를 통해 이 컨트롤러를 확인해야 합니다.\n  - 이 헤더를 `file/sync`로 이동하면 공용 API 표면 또는 신호/슬롯 계약이 변경되어서는 안 됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/hub_sync_controller_tests.cpp`는 책임 분담과 `.whatson` 관찰 무시 계약을 포함합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "포함 소비자는 `file/sync/WhatSonHubSyncController.hpp`를 통해 이 컨트롤러를 확인해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 헤더를 `file/sync`로 이동하면 공용 API 표면 또는 신호/슬롯 계약이 변경되어서는 안 됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/sync/WhatSonHubSyncController.hpp`",
+      "anchor": "srcappmodelsfilesyncwhatsonhubsynccontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000014",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공개 API",
+      "anchor": "공개-api",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "신호",
+      "anchor": "신호",
+      "start_line": 23
+    },
+    {
+      "block_id": "b000024",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "건축적 제약",
+      "anchor": "건축적-제약",
+      "start_line": 29
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "협력자",
+      "anchor": "협력자",
+      "start_line": 39
+    },
+    {
+      "block_id": "b000034",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 48
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

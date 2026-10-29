@@ -1,0 +1,399 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:06c2c47f4691c1e8731cd49a1aa876cd05cfe935c293bb882691be2bd29ae8fc",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/HierarchyInteractionBridge.cpp.md",
+    "sha256": "4c678b653b760c4968d32cdb8565bb8832db11507e1ff419abe2a7e8147aafc6",
+    "bytes": 2476,
+    "line_count": 41,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/HierarchyInteractionBridge.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/HierarchyInteractionBridge.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyInteractionBridge.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 구현은 라이브 계층 구조 컨트롤러를 상호 작용 브리지에 바인딩하고 QML에 대해 캐시된 기능 상태를 유지합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"core-behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 핵심 행동\n",
+      "level": 2,
+      "title": "핵심 행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- `setHierarchyController(...)` 는 `View -> Controller` 의존성 에지를 `verifyDependencyAllowed(...)` 를 통해 확인합니다. 브릿지가 QML 에서 생성된 런타임 어댑터이므로 루트 C++ 객체 그래프가 동결된 후에도 활성 계층 구조 컨트롤러가 재결합될 수 있기 때문에 의도적으로 변형 가능한 와이어링 잠금 게이트를 사용하지 않습니다.\n- 브리지는 캐스트 `IHierarchyController*`를 `QPointer`로 저장합니다.\n- `hierarchySelectionChanged` 및 `hierarchyNodesChanged`를 수신합니다.\n- 모든 관련 변경 사항에서 캐시된 기능 부울을 다시 계산합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setHierarchyController(...)` 는 `View -> Controller` 의존성 에지를 `verifyDependencyAllowed(...)` 를 통해 확인합니다. 브릿지가 QML 에서 생성된 런타임 어댑터이므로 루트 C++ 객체 그래프가 동결된 후에도 활성 계층 구조 컨트롤러가 재결합될 수 있기 때문에 의도적으로 변형 가능한 와이어링 잠금 게이트를 사용하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "브리지는 캐스트 `IHierarchyController*`를 `QPointer`로 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchySelectionChanged` 및 `hierarchyNodesChanged`를 수신합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 관련 변경 사항에서 캐시된 기능 부울을 다시 계산합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"capability-resolution\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 능력 해결\n",
+      "level": 2,
+      "title": "능력 해결"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "기능 점검은 `qobject_cast`를 통해 수행됩니다.\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- 이름 바꾸기 지원은 `IHierarchyRenameCapability`에서 제공됩니다.\n- 생성/삭제/보기 옵션 지원은 `IHierarchyCrudCapability`에서 제공됩니다.\n- 확장 지원은 `IHierarchyExpansionCapability`에서 제공됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이름 바꾸기 지원은 `IHierarchyRenameCapability`에서 제공됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "생성/삭제/보기 옵션 지원은 `IHierarchyCrudCapability`에서 제공됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "확장 지원은 `IHierarchyExpansionCapability`에서 제공됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "캐시된 속성 접근 방식은 QML가 JavaScript의 기능을 반복적으로 검색하는 대신 안정적인 부울 속성에 바인딩할 수 있기 때문에 중요합니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"bulk-expansion-path\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 대량 확장 경로\n",
+      "level": 2,
+      "title": "대량 확장 경로"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 32,
+      "raw": "- `setAllItemsExpanded(...)`는 먼저 구체적인 컨트롤러 `Q_INVOKABLE`에 대한 직접적인 Meta Object 호출을 시도합니다.\n- 해당 대량 진입점을 사용할 수 없는 경우, 브리지는 행당 `IHierarchyExpansionCapability` 계약으로 되돌아가며, 직렬화된 계층 노드가 `showChevron: true`를 노출하는 행만 반복합니다.\n- 이를 통해 QML 바닥글 메뉴를 작게 유지하면서 개별 도메인이 나중에 최적화된 대량 경로를 제공할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setAllItemsExpanded(...)`는 먼저 구체적인 컨트롤러 `Q_INVOKABLE`에 대한 직접적인 Meta Object 호출을 시도합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "해당 대량 진입점을 사용할 수 없는 경우, 브리지는 행당 `IHierarchyExpansionCapability` 계약으로 되돌아가며, 직렬화된 계층 노드가 `showChevron: true`를 노출하는 행만 반복합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이를 통해 QML 바닥글 메뉴를 작게 유지하면서 개별 도메인이 나중에 최적화된 대량 경로를 제공할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "<a id=\"failure-model\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "## 실패 모델\n",
+      "level": 2,
+      "title": "실패 모델"
+    },
+    {
+      "id": "b000030",
+      "kind": "paragraph",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "컨트롤러가 없거나 기능을 구현하지 않거나 기능이 비활성화된 경우 브리지 안전하게 거부한다.\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 38,
+      "end_line": 39,
+      "raw": "- 부울 쿼리는 `false`를 반환합니다.\n- 명령이 작동하지 않게 됨\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "부울 쿼리는 `false`를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명령이 작동하지 않게 됨",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "paragraph",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "이는 QML 측을 더 단순하게 만들고 도메인이 기능을 지원하지 않을 때 부분적인 돌연변이 동작을 방지합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/HierarchyInteractionBridge.cpp`",
+      "anchor": "srcappmodelspanelhierarchyinteractionbridgecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "핵심 행동",
+      "anchor": "핵심-행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "능력 해결",
+      "anchor": "능력-해결",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "대량 확장 경로",
+      "anchor": "대량-확장-경로",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "실패 모델",
+      "anchor": "실패-모델",
+      "start_line": 36
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

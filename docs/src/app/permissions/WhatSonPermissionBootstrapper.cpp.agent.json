@@ -1,0 +1,350 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:f00c9926c91db1efe0de1a39c95572900942b4fad388ff860b9f90dbb425b111",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/permissions/WhatSonPermissionBootstrapper.cpp.md",
+    "sha256": "01e8ea3e63e8ac7ef2822563162ffce736545fda44955a34b624824e27978d62",
+    "bytes": 1501,
+    "line_count": 34,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/permissions/WhatSonPermissionBootstrapper.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/permissions/WhatSonPermissionBootstrapper.cpp`\n",
+      "level": 1,
+      "title": "`src/app/permissions/WhatSonPermissionBootstrapper.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "시작 시간 권한 요청 순서 지정 및 지속적인 결정 추적을 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"key-behaviors\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 주요 행동\n",
+      "level": 2,
+      "title": "주요 행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- `QSettings`를 통해 권한별 결정을 로드하고 유지합니다.\n  - `permissions/<permissionId>/requested`\n  - `permissions/<permissionId>/granted`\n- 후속 부팅 시 이미 결정된 권한을 건너뜁니다.\n- 각 권한을 비동기식으로 실행하고 `QTimer::singleShot(0, ...)`로 계속됩니다.\n- 최종 집계 부여 상태를 계산하고 `permissions/granted`에 저장합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`QSettings`를 통해 권한별 결정을 로드하고 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`permissions/<permissionId>/requested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`permissions/<permissionId>/granted`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후속 부팅 시 이미 결정된 권한을 건너뜁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 권한을 비동기식으로 실행하고 `QTimer::singleShot(0, ...)`로 계속됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "최종 집계 부여 상태를 계산하고 `permissions/granted`에 저장합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"platform-branches\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 플랫폼 지점\n",
+      "level": 2,
+      "title": "플랫폼 지점"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "- Qt   런타임  권한은 `QT_CONFIG(permissions)` 가 활성화될 때만 요청됩니다. `WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1` 은 런타임 앱에서 주입되며, CMake 에서 Qt 플러그인이 시뮬레이터 연결 안정성을 위해 제외될 때 `permissions` 됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Qt   런타임  권한은 `QT_CONFIG(permissions)` 가 활성화될 때만 요청됩니다. `WHATSON_DISABLE_QT_PERMISSION_REQUESTS=1` 은 런타임 앱에서 주입되며, CMake 에서 Qt 플러그인이 시뮬레이터 연결 안정성을 위해 제외될 때 `permissions` 됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"startup-integration\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 스타트업 통합\n",
+      "level": 2,
+      "title": "스타트업 통합"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 27,
+      "raw": "- `main.cpp`로 제작되었습니다.\n- `start()`를 통한 포그라운드 서비스 시작 경로에서 트리거됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`main.cpp`로 제작되었습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`start()`를 통한 포그라운드 서비스 시작 경로에서 트리거됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "<a id=\"regression-checklist\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "## 회귀 체크리스트\n",
+      "level": 2,
+      "title": "회귀 체크리스트"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 32,
+      "end_line": 34,
+      "raw": "- 기존 승인/거부 결정은 중복 프롬프트 없이 존중되어야 합니다.\n- 결정되지 않은 새로운 권한 단계는 정의된 순서로 실행되어야 합니다.\n- 최종 `permissions/granted`는 구성된 모든 단계를 반영해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "기존 승인/거부 결정은 중복 프롬프트 없이 존중되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "결정되지 않은 새로운 권한 단계는 정의된 순서로 실행되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "최종 `permissions/granted`는 구성된 모든 단계를 반영해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/permissions/WhatSonPermissionBootstrapper.cpp`",
+      "anchor": "srcapppermissionswhatsonpermissionbootstrappercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 행동",
+      "anchor": "주요-행동",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "플랫폼 지점",
+      "anchor": "플랫폼-지점",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "스타트업 통합",
+      "anchor": "스타트업-통합",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "회귀 체크리스트",
+      "anchor": "회귀-체크리스트",
+      "start_line": 31
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

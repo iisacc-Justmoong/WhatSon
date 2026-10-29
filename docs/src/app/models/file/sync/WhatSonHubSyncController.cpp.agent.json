@@ -1,0 +1,602 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:430901c57bbbd75401af9bdffc53a117a05cef4c3c61dc7937f0b0599f81a79c",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/sync/WhatSonHubSyncController.cpp.md",
+    "sha256": "31b171dd87ad88552893c63045b29fe3b39aa267feacf8cd05fb036ec6f40b3d",
+    "bytes": 3706,
+    "line_count": 65,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/sync/WhatSonHubSyncController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/sync/WhatSonHubSyncController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/sync/WhatSonHubSyncController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-summary\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 요약\n",
+      "level": 2,
+      "title": "구현 요약"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "구현은 허브 동기화를 3 명시적 단계로 변환합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "list",
+      "start_line": 8,
+      "end_line": 10,
+      "raw": "1. `WhatSonHubSyncObservationBuilder`에게 마운트된 `.wshub`를 검사하도록 요청하세요.\n2. `WhatSonHubSyncWatcher` 및 `WhatSonHubSyncScheduler`로부터 감시자 및 스케줄러 힌트를 받습니다.\n3. 기준선만 새로 고칠지 아니면 주입된 런타임 다시 로드 콜백을 호출할지 결정\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`WhatSonHubSyncObservationBuilder`에게 마운트된 `.wshub`를 검사하도록 요청하세요.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "`WhatSonHubSyncWatcher` 및 `WhatSonHubSyncScheduler`로부터 감시자 및 스케줄러 힌트를 받습니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "기준선만 새로 고칠지 아니면 주입된 런타임 다시 로드 콜백을 호출할지 결정",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"observation-model\"></a>\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 관찰 모델\n",
+      "level": 2,
+      "title": "관찰 모델"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "관찰은 이제 `WhatSonHubSyncObservationBuilder`에 있습니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "빌더는 마운트된 허브를 재귀적으로 순회하며 해싱을 위한 정규화된 파일/디렉토리 기록을 수집하고, `WhatSonHubSyncWatcher` 에 등록해야 하는 워쳐 경로를 기록합니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "관찰된 서명은 의도적으로 다음을 무시합니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "- `.whatson`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.whatson`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "paragraph",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "이로 인해 런타임 다시 로드 정책에서 앱 개인 장부 변동이 유지됩니다.\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "paragraph",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "이는 단일 재귀 관찰 패스에서 서명 해싱 및 감시자 적용 범위를 유지합니다.\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"watcher-model\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 감시자 모델\n",
+      "level": 2,
+      "title": "감시자 모델"
+    },
+    {
+      "id": "b000027",
+      "kind": "paragraph",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "수집된 감시자 경로는 `WhatSonHubSyncWatcher`에 공급됩니다.\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "이제 정규화된 감시 경로 세트가 변경되지 않으면 감시자 등록이 단락되므로 동일한 허브 토폴로지를 관찰하는 동기화 힌트가 더 이상 감시된 모든 경로를 해체하고 다시 추가하지 않습니다.\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "paragraph",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "감시자는 다음을 소유한 `WhatSonHubSyncScheduler`와 쌍을 이룹니다.\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 35,
+      "raw": "- 최종 일관성을 위한 주기적인 타이머\n- 버스트 억제를 위한 디바운스 타이머\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "최종 일관성을 위한 주기적인 타이머",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "버스트 억제를 위한 디바운스 타이머",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000033",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "paragraph",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "따라서 컨트롤러는 모든 개별 파일 시스템 콜백을 즉시 런타임 재구축으로 전환하지 않고도 외부 편집에 계속 응답합니다.\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"local-mutation-handling\"></a>\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "## 국소 돌연변이 처리\n",
+      "level": 2,
+      "title": "국소 돌연변이 처리"
+    },
+    {
+      "id": "b000039",
+      "kind": "paragraph",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "`acknowledgeLocalMutation()`는 다음으로 관찰된 서명 변경을 앱 소유로 표시합니다.\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "paragraph",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "`onDebounceTimeout()`는 해당 앱 소유 변경 사항을 확인하면 기준을 새로 고치고 감시자 적용 범위를 다시 구축하지만 런타임 다시 로드 콜백을 호출하지 않습니다. 이는 사용자가 시작한 메모/폴더 쓰기가 자체 다시 로드를 통해 라이브 편집기 세션에서 반송되는 것을 방지하는 주요 분리입니다.\n"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "html",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "<a id=\"external-mutation-handling\"></a>\n"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "heading",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "## 외부 돌연변이 처리\n",
+      "level": 2,
+      "title": "외부 돌연변이 처리"
+    },
+    {
+      "id": "b000046",
+      "kind": "paragraph",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "로컬 돌연변이 승인 없이 서명이 변경되는 경우:\n"
+    },
+    {
+      "id": "b000047",
+      "kind": "list",
+      "start_line": 50,
+      "end_line": 52,
+      "raw": "- 삽입된 다시 로드 콜백이 호출됩니다.\n- 다시 로드에 실패하면 `syncFailed(...)`가 발생합니다.\n- 성공적으로 다시 로드하면 동일한 관찰 페이로드를 재사용하여 기준을 새로 고치고 `syncReloaded(...)`를 내보냅니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "삽입된 다시 로드 콜백이 호출됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다시 로드에 실패하면 `syncFailed(...)`가 발생합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "성공적으로 다시 로드하면 동일한 관찰 페이로드를 재사용하여 기준을 새로 고치고 `syncReloaded(...)`를 내보냅니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000048",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000049",
+      "kind": "html",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "<a id=\"architectural-note\"></a>\n"
+    },
+    {
+      "id": "b000050",
+      "kind": "blank",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "\n"
+    },
+    {
+      "id": "b000051",
+      "kind": "heading",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "## 건축 노트\n",
+      "level": 2,
+      "title": "건축 노트"
+    },
+    {
+      "id": "b000052",
+      "kind": "paragraph",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "이 구현은 더 이상 포인터, 터치 또는 애플리케이션 활성화 이벤트에 반응하지 않습니다. 허브 동기화는 감시자/타이머 힌트와 명시적인 로컬 쓰기 승인에 의해서만 이루어지며, 이는 파일 시스템 동기화 정책을 UI 탐색 및 동작 처리와 독립적으로 유지합니다.\n"
+    },
+    {
+      "id": "b000053",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000054",
+      "kind": "html",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000055",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000056",
+      "kind": "heading",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000057",
+      "kind": "list",
+      "start_line": 62,
+      "end_line": 65,
+      "raw": "- `test/cpp/suites/hub_sync_controller_tests.cpp`는 분할 객체 경계를 다루고 관찰은 계약을 무시합니다.\n- 회귀 체크리스트:\n  - 런타임 배선(`main.cpp`, `WhatSonHubSyncWiring.cpp`)에는 `file/sync`의 이 구현이 포함되어야 합니다.\n  - `src/app/models/file/sync`로의 경로 마이그레이션은 디바운스, 감시자 재구축 또는 로컬 돌연변이 우회 동작을 변경해서는 안 됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`test/cpp/suites/hub_sync_controller_tests.cpp`는 분할 객체 경계를 다루고 관찰은 계약을 무시합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 배선(`main.cpp`, `WhatSonHubSyncWiring.cpp`)에는 `file/sync`의 이 구현이 포함되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models/file/sync`로의 경로 마이그레이션은 디바운스, 감시자 재구축 또는 로컬 돌연변이 우회 동작을 변경해서는 안 됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/sync/WhatSonHubSyncController.cpp`",
+      "anchor": "srcappmodelsfilesyncwhatsonhubsynccontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 요약",
+      "anchor": "구현-요약",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000012",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "관찰 모델",
+      "anchor": "관찰-모델",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "감시자 모델",
+      "anchor": "감시자-모델",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000038",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "국소 돌연변이 처리",
+      "anchor": "국소-돌연변이-처리",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000045",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "외부 돌연변이 처리",
+      "anchor": "외부-돌연변이-처리",
+      "start_line": 48
+    },
+    {
+      "block_id": "b000051",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "건축 노트",
+      "anchor": "건축-노트",
+      "start_line": 56
+    },
+    {
+      "block_id": "b000056",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 61
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000057",
+        "line": 65,
+        "text": "- `src/app/models/file/sync`로의 경로 마이그레이션은 디바운스, 감시자 재구축 또는 로컬 돌연변이 우회 동작을 변경해서는 안 됩니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

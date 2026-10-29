@@ -1,0 +1,465 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:8ad5c135cf91fb03b0e51e7c58eb900633a7009f872a7b4f30d5762bc876af1b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/README.md",
+    "sha256": "1a006a66c0c0d2da6fc5ffafde8a6e56b0e8b9bd5a679746d5d406b97c8c8e23",
+    "bytes": 4841,
+    "line_count": 52,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial`\n",
+      "level": 1,
+      "title": "`src/extension/trial`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Role\n",
+      "level": 2,
+      "title": "Role"
+    },
+    {
+      "id": "b000004",
+      "kind": "paragraph",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "This directory contains an optional trial-entitlement kit for builds that should unlock the app only for a fixed evaluation window.\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "The module is intentionally isolated from the mandatory app and daemon build graph. Consumers can opt in explicitly,\nand validation is handled through runtime integration flows.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "heading",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "## Files\n",
+      "level": 2,
+      "title": "Files"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 10,
+      "end_line": 16,
+      "raw": "- `WhatSonTrialSecureStore.hpp` / `WhatSonTrialSecureStore.cpp`: provide the optional OS secure-store bridge used by the trial module.\n- `WhatSonTrialInstallStore.hpp` / `WhatSonTrialInstallStore.cpp`: persist and normalize the first local install date as a signed `QSettings` record, with one-way migration from the legacy secure-store mirror.\n- `WhatSonTrialClientIdentityStore.hpp` / `WhatSonTrialClientIdentityStore.cpp`: persist the trial-only device UUID, 32-character in-app client key, and register-integrity secret in the OS secure store only, with one-way migration from legacy plain settings.\n- `WhatSonTrialRegisterXml.hpp` / `WhatSonTrialRegisterXml.cpp`: read and write `.whatson/trial_register.xml` for local `.wshub` packages, including an integrity signature.\n- `WhatSonTrialClockStore.hpp` / `WhatSonTrialClockStore.cpp`: persist shutdown timestamps and track a monotonic UTC high-water mark for rollback detection.\n- `WhatSonTrialActivationPolicy.hpp` / `WhatSonTrialActivationPolicy.cpp`: resolve the 90-day entitlement state and expose it through a small `QObject` API.\n- `WhatSonTrialWshubAccessBackend.hpp` / `WhatSonTrialWshubAccessBackend.cpp`: block `.wshub` package access when the trial state is expired, when a local hub register key no longer matches the in-app trial key, or when the register signature fails verification.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialSecureStore.hpp` / `WhatSonTrialSecureStore.cpp`: provide the optional OS secure-store bridge used by the trial module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialInstallStore.hpp` / `WhatSonTrialInstallStore.cpp`: persist and normalize the first local install date as a signed `QSettings` record, with one-way migration from the legacy secure-store mirror.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialClientIdentityStore.hpp` / `WhatSonTrialClientIdentityStore.cpp`: persist the trial-only device UUID, 32-character in-app client key, and register-integrity secret in the OS secure store only, with one-way migration from legacy plain settings.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialRegisterXml.hpp` / `WhatSonTrialRegisterXml.cpp`: read and write `.whatson/trial_register.xml` for local `.wshub` packages, including an integrity signature.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialClockStore.hpp` / `WhatSonTrialClockStore.cpp`: persist shutdown timestamps and track a monotonic UTC high-water mark for rollback detection.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialActivationPolicy.hpp` / `WhatSonTrialActivationPolicy.cpp`: resolve the 90-day entitlement state and expose it through a small `QObject` API.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialWshubAccessBackend.hpp` / `WhatSonTrialWshubAccessBackend.cpp`: block `.wshub` package access when the trial state is expired, when a local hub register key no longer matches the in-app trial key, or when the register signature fails verification.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## Policy Contract\n",
+      "level": 2,
+      "title": "Policy Contract"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 34,
+      "raw": "- The first evaluation writes `extension/trial/installDate` as a signed `QSettings` record whose signature is derived from the secure-store-backed register-integrity secret.\n- Trial length is fixed to 90 calendar days.\n- The app remains active from the install date through `installDate + 89 days`.\n- On `installDate + 90 days`, `remainingDays` becomes `0` and `active` becomes `false`.\n- Trial-only hub registration must use `.whatson/trial_register.xml`.\n- The trial client persists one local `deviceUUID` value, one 32-character alpha-numeric `clientKey` value, and one register-integrity secret for the current install.\n- Sensitive trial identity values are no longer mirrored into plain `QSettings`.\n- Trial hub registration writes `deviceUUID`, `key`, and a `signature` element into `.whatson/trial_register.xml`.\n- The register signature is an HMAC-SHA256 over the trial payload and is verified against the current in-app register-integrity secret before any key comparison is trusted.\n- Trial hub access still compares only the `key` value after integrity verification succeeds; `deviceUUID` remains informational.\n- Trial hub creation flows should call `WhatSonTrialClientIdentityStore::ensureIdentity()` and then write that identity into `.whatson/trial_register.xml`.\n- If `WhatSonRegisterManager::authenticated()` is `true`, trial restrictions are considered disabled only after the signed authenticated record verifies successfully.\n- Exit handlers should call `WhatSonTrialClockStore::stampExitTimestamp()` on shutdown.\n- Rollback detection compares the current UTC time against `extension/trial/lastSeenTimestampUtc`, not only against the raw last exit timestamp.\n- `.wshub` access backends may use `WhatSonTrialWshubAccessBackend` to reject expired trial sessions, local hubs missing `.whatson/trial_register.xml`, local hubs whose register signature fails verification, or local hubs whose register key does not match the current in-app trial key.\n- The trial register filename is intentionally different from product register files such as `.register.xml`, so trial-only enforcement never collides with the licensed build path.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "The first evaluation writes `extension/trial/installDate` as a signed `QSettings` record whose signature is derived from the secure-store-backed register-integrity secret.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial length is fixed to 90 calendar days.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The app remains active from the install date through `installDate + 89 days`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On `installDate + 90 days`, `remainingDays` becomes `0` and `active` becomes `false`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial-only hub registration must use `.whatson/trial_register.xml`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The trial client persists one local `deviceUUID` value, one 32-character alpha-numeric `clientKey` value, and one register-integrity secret for the current install.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Sensitive trial identity values are no longer mirrored into plain `QSettings`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial hub registration writes `deviceUUID`, `key`, and a `signature` element into `.whatson/trial_register.xml`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The register signature is an HMAC-SHA256 over the trial payload and is verified against the current in-app register-integrity secret before any key comparison is trusted.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial hub access still compares only the `key` value after integrity verification succeeds; `deviceUUID` remains informational.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial hub creation flows should call `WhatSonTrialClientIdentityStore::ensureIdentity()` and then write that identity into `.whatson/trial_register.xml`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "If `WhatSonRegisterManager::authenticated()` is `true`, trial restrictions are considered disabled only after the signed authenticated record verifies successfully.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Exit handlers should call `WhatSonTrialClockStore::stampExitTimestamp()` on shutdown.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Rollback detection compares the current UTC time against `extension/trial/lastSeenTimestampUtc`, not only against the raw last exit timestamp.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.wshub` access backends may use `WhatSonTrialWshubAccessBackend` to reject expired trial sessions, local hubs missing `.whatson/trial_register.xml`, local hubs whose register signature fails verification, or local hubs whose register key does not match the current in-app trial key.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The trial register filename is intentionally different from product register files such as `.register.xml`, so trial-only enforcement never collides with the licensed build path.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "heading",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "## Current Limits\n",
+      "level": 2,
+      "title": "Current Limits"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 37,
+      "end_line": 40,
+      "raw": "- This is still a local-only policy.\n- The secure-store bridge currently targets the host OS secure store where supported by the optional trial module build.\n- It still does not resist machine migration or remote entitlement sync.\n- Trial persistence now fails closed when the secure-store-backed signing secret cannot be loaded.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "This is still a local-only policy.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The secure-store bridge currently targets the host OS secure store where supported by the optional trial module build.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "It still does not resist machine migration or remote entitlement sync.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Trial persistence now fails closed when the secure-store-backed signing secret cannot be loaded.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "This section is a bottom summary for checking the above  README  content in Korean.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 48,
+      "end_line": 52,
+      "raw": "- Target:  ``src/extension/trial``  ( `docs/src/extension/trial/README.md` )\n- Location:  `docs/src/extension/trial`\n- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.\n- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.\n- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Target:  ``src/extension/trial``  ( `docs/src/extension/trial/README.md` )",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Location:  `docs/src/extension/trial`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial`",
+      "anchor": "srcextensiontrial",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Role",
+      "anchor": "role",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000008",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Files",
+      "anchor": "files",
+      "start_line": 9
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Policy Contract",
+      "anchor": "policy-contract",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000014",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Current Limits",
+      "anchor": "current-limits",
+      "start_line": 36
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 44
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000004",
+        "line": 4,
+        "text": "This directory contains an optional trial-entitlement kit for builds that should unlock the app only for a fixed evaluation window.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      },
+      {
+        "block_id": "b000012",
+        "line": 23,
+        "text": "- Trial-only hub registration must use `.whatson/trial_register.xml`.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000012",
+        "line": 29,
+        "text": "- Trial hub creation flows should call `WhatSonTrialClientIdentityStore::ensureIdentity()` and then write that identity into `.whatson/trial_register.xml`.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000012",
+        "line": 31,
+        "text": "- Exit handlers should call `WhatSonTrialClockStore::stampExitTimestamp()` on shutdown.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000012",
+        "line": 34,
+        "text": "- The trial register filename is intentionally different from product register files such as `.register.xml`, so trial-only enforcement never collides with the licensed build path.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

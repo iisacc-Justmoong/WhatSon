@@ -1,0 +1,530 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6c49be4a71123180ac07de3fb1c1d50cde6fe0b0c585df44ebbfa028a64d2f3d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryNoteListModel.hpp.md",
+    "sha256": "fe795e8d838e49d9e928b6e4eabe9b1f4142f294e48fd1c83aff2d8f6b33b025",
+    "bytes": 2685,
+    "line_count": 54,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryNoteListModel.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryNoteListModel.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteListModel.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`LibraryNoteListModel` 는 라이브러리 노트 목록 뷰에 공급하는 구체적 목록 모델 계약입니다. 이는  UI 대상 역할만 노출하며,  `noteId` ,  `primaryText` ,  `bodyText` ,  `displayDate` , 폴더, 태그, 북마크 상태 및  `noteDirectoryPath` 와 같은 역할을 포함하며, 각  `LibraryNoteListItem` 는 이제 내부  `createdAt` 와  `lastModifiedAt` 타임스탬프도 포함합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "paragraph",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "해당 타임스탬프는 QML 역할로 내보내지지 않습니다. 이는 공개 위임 계약의 나머지 부분을 유지하면서 모델이 가장 최근에 수정된 노트를 기준으로 정렬된 눈에 보이는 노트 행을 유지할 수 있도록 존재합니다.\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "<a id=\"ordering-contract\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "## 주문계약\n",
+      "level": 2,
+      "title": "주문계약"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 17,
+      "raw": "- `lastModifiedAt`는 기본 주문 키입니다.\n- `createdAt`는 `lastModifiedAt`가 비어 있거나 유효하지 않은 경우 대체 경로 주문 키입니다.\n- 유효한 타임스탬프가 없는 항목은 타임스탬프가 있는 항목 뒤에 원래의 상대 순서로 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`lastModifiedAt`는 기본 주문 키입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createdAt`는 `lastModifiedAt`가 비어 있거나 유효하지 않은 경우 대체 경로 주문 키입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유효한 타임스탬프가 없는 항목은 타임스탬프가 있는 항목 뒤에 원래의 상대 순서로 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "이는 보이는 행을 표시할 때 라이브러리 노트 목록이 더 이상 인덱스 파일 추가 순서 또는 생성 시 삽입 순서에 의존하지 않는다는 것을 의미합니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "선택한 행 계약에는 `currentNoteDirectoryPath`도 포함됩니다. 따라서 보기/컨트롤러 레이어는 `noteId`만 선택된 대상 ID로 처리하지 않고도 중복된 노트 ID를 명확하게 할 수 있습니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"source-metadata\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 소스 메타데이터\n",
+      "level": 2,
+      "title": "소스 메타데이터"
+    },
+    {
+      "id": "b000024",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 29,
+      "raw": "- 소스 경로: `src/app/models/hierarchy/library/LibraryNoteListModel.hpp`\n- 소스 종류: C++ 헤더\n- 파일 이름: `LibraryNoteListModel.hpp`\n- 대략적인 줄 수: 116\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "소스 경로: `src/app/models/hierarchy/library/LibraryNoteListModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소스 종류: C++ 헤더",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 이름: `LibraryNoteListModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대략적인 줄 수: 116",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"extracted-symbols\"></a>\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## 추출된 기호\n",
+      "level": 2,
+      "title": "추출된 기호"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 35,
+      "raw": "- 선언된 네임스페이스 존재: 아니요\n- QObject 매크로 존재: 예\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "선언된 네임스페이스 존재: 아니요",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QObject 매크로 존재: 예",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "html",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "<a id=\"classes-and-structs\"></a>\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "heading",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "### 클래스와 구조체\n",
+      "level": 3,
+      "title": "클래스와 구조체"
+    },
+    {
+      "id": "b000034",
+      "kind": "list",
+      "start_line": 40,
+      "end_line": 41,
+      "raw": "- `LibraryNoteListItem`\n- `LibraryNoteListModel`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LibraryNoteListItem`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteListModel`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000035",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "html",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "<a id=\"enums\"></a>\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "heading",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "### 열거형\n",
+      "level": 3,
+      "title": "열거형"
+    },
+    {
+      "id": "b000039",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "- `Role`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`Role`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "html",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "<a id=\"runtime-notes\"></a>\n"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "heading",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "## 런타임 노트\n",
+      "level": 2,
+      "title": "런타임 노트"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "list",
+      "start_line": 52,
+      "end_line": 54,
+      "raw": "- QML 표면은 인덱스 기반이기 때문에 선택 항목은 여전히 가시 행 인덱스에 의해 노출됩니다.\n- 새로 고침 시간 선택 복구는 구현에서 노트 ID에 의해 수행되므로, 저장 후에 의존하면 행이 이동하더라도 동일한 논리 노트가 선택된 상태를 유지합니다.\n- 내보낸 행 계약은 이제 `noteDirectoryPath` / `currentNoteDirectoryPath`도 표시되므로, 하위 소비 측 선택 코드는 중복된 노트 ID를 구분할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "QML 표면은 인덱스 기반이기 때문에 선택 항목은 여전히 가시 행 인덱스에 의해 노출됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새로 고침 시간 선택 복구는 구현에서 노트 ID에 의해 수행되므로, 저장 후에 의존하면 행이 이동하더라도 동일한 논리 노트가 선택된 상태를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "내보낸 행 계약은 이제 `noteDirectoryPath` / `currentNoteDirectoryPath`도 표시되므로, 하위 소비 측 선택 코드는 중복된 노트 ID를 구분할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteListModel.hpp`",
+      "anchor": "srcappmodelshierarchylibrarylibrarynotelistmodelhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주문계약",
+      "anchor": "주문계약",
+      "start_line": 13
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소스 메타데이터",
+      "anchor": "소스-메타데이터",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000028",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "추출된 기호",
+      "anchor": "추출된-기호",
+      "start_line": 33
+    },
+    {
+      "block_id": "b000033",
+      "parent_id": "b000028",
+      "level": 3,
+      "title": "클래스와 구조체",
+      "anchor": "클래스와-구조체",
+      "start_line": 39
+    },
+    {
+      "block_id": "b000038",
+      "parent_id": "b000028",
+      "level": 3,
+      "title": "열거형",
+      "anchor": "열거형",
+      "start_line": 45
+    },
+    {
+      "block_id": "b000043",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 노트",
+      "anchor": "런타임-노트",
+      "start_line": 50
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000017",
+        "line": 19,
+        "text": "이는 보이는 행을 표시할 때 라이브러리 노트 목록이 더 이상 인덱스 파일 추가 순서 또는 생성 시 삽입 순서에 의존하지 않는다는 것을 의미합니다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,354 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:06a68a136319fc70745719d16b2a65bebee01d602d892f032123a456ed57508c",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/WhatSonFolderDepthEntry.hpp.md",
+    "sha256": "43b5654b193a1276894daf409dde5447c10db47527a6f0220704a04d5292ed17",
+    "bytes": 1983,
+    "line_count": 37,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/WhatSonFolderDepthEntry.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/WhatSonFolderDepthEntry.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonFolderDepthEntry.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`WhatSonFolderDepthEntry`는 하나의 지속형 폴더 행을 간략하게 표현한 메모리 내입니다. 폴더 파서, 폴더 직렬 변환기, 허브 부트스트랩 코드 및 라이브러리 계층 컨트롤러에서 사용됩니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"data-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 데이터 계약\n",
+      "level": 2,
+      "title": "데이터 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- `id` : `Research/Competitor`와 같은 레거시 전체 경로 식별자. 현재 코드는 `.wsfolders` 데이터가 지속되고 일부 대체 경로 조회가 경로 기반이기 때문에 여전히 이 필드를 유지합니다.\n- `label`: 폴더 세그먼트의 표시 이름입니다.\n- `depth`: 트리 재구성에 사용되는 0기반 중첩 깊이.\n- `uuid`: 영문자와 숫자로 구성된 고정 64자리 폴더 식별자이다. UUID 마이그레이션 이후 런타임 폴더 관계의 기준 식별자이다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`id` : `Research/Competitor`와 같은 레거시 전체 경로 식별자. 현재 코드는 `.wsfolders` 데이터가 지속되고 일부 대체 경로 조회가 경로 기반이기 때문에 여전히 이 필드를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`label`: 폴더 세그먼트의 표시 이름입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`depth`: 트리 재구성에 사용되는 0기반 중첩 깊이.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`uuid`: 영문자와 숫자로 구성된 고정 64자리 폴더 식별자이다. UUID 마이그레이션 이후 런타임 폴더 관계의 기준 식별자이다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"why-both-id-and-uuid-exist\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## `id`와 `uuid`가 모두 존재하는 이유\n",
+      "level": 2,
+      "title": "`id`와 `uuid`가 모두 존재하는 이유"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "저장소는 호환성 단계에 있습니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 26,
+      "raw": "- `.wsfolders`는 여전히 사람이 읽을 수 있는 경로 정보를 저장합니다.\n- 노트 헤더와 런타임 선택 로직은 이제 `uuid`를 선호합니다.\n- `uuid`가 없는 오래된 데이터는 로드/저장 중에 파서 및 저장에 의해 업그레이드됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.wsfolders`는 여전히 사람이 읽을 수 있는 경로 정보를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 헤더와 런타임 선택 로직은 이제 `uuid`를 선호합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`uuid`가 없는 오래된 데이터는 로드/저장 중에 파서 및 저장에 의해 업그레이드됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "이 분할을 통해 이름 바꾸기 및 상위 재지정 작업을 통해 메모-폴더 바인딩을 무효화하지 않고 표시되는 경로를 변경할 수 있습니다.\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "html",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "<a id=\"main-collaborators\"></a>\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 주요 협력자\n",
+      "level": 2,
+      "title": "주요 협력자"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 37,
+      "raw": "- `WhatSonFoldersHierarchyParser.cpp`: `.wsfolders`에서 행을 읽습니다.\n- `WhatSonFoldersHierarchyCreator.cpp`: 행을 디스크에 다시 씁니다.\n- `LibraryHierarchyController.cpp`: 이러한 행을 UI 방향 계층 구조 항목에 투영합니다.\n- `WhatSonLibraryFolderHierarchyMutationService.cpp` : 폴더 경로가 변경될 때 메모 헤더를 정렬하기 위해 UUID를 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonFoldersHierarchyParser.cpp`: `.wsfolders`에서 행을 읽습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonFoldersHierarchyCreator.cpp`: 행을 디스크에 다시 씁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController.cpp`: 이러한 행을 UI 방향 계층 구조 항목에 투영합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryFolderHierarchyMutationService.cpp` : 폴더 경로가 변경될 때 메모 헤더를 정렬하기 위해 UUID를 사용합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/WhatSonFolderDepthEntry.hpp`",
+      "anchor": "srcappmodelshierarchywhatsonfolderdepthentryhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "데이터 계약",
+      "anchor": "데이터-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "`id`와 `uuid`가 모두 존재하는 이유",
+      "anchor": "id와-uuid가-모두-존재하는-이유",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 협력자",
+      "anchor": "주요-협력자",
+      "start_line": 32
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

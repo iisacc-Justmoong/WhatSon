@@ -1,0 +1,442 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:17a70863dda7d16bd6580ce3d073041261b42dae9534169dcc609ca6847a89d0",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml.md",
+    "sha256": "652f1461cbfb114d2b09b78a615e4d4e917057a38c25e0a4a549bd60f20b4e53",
+    "bytes": 2477,
+    "line_count": 47,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NavigationApplicationControlBar.qml`는 공유 탐색 모음에 대한 애플리케이션 수준 후행 제어 클러스터를 소유합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 8,
+      "raw": "\n\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"compact-variants\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 소형 변형\n",
+      "level": 2,
+      "title": "소형 변형"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "이 파일은 2 개의 콤팩트 변형을 노출합니다.\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "- 계층/편집자 제어 경로: 내장된 LVRS 체브론 표시기가 포함된 `toolwindowtodo` 메뉴 트리거와 `compactDetailPanelVisible == true` 시 선택적 오른쪽 가장자리 `columnIndex` 상세 페이지 버튼이 포함됩니다.\n- 노트 목록 경로: `sortByType`, `cwmPermissionView` 및 동일한 `toolwindowtodo` 메뉴 트리거\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "계층/편집자 제어 경로: 내장된 LVRS 체브론 표시기가 포함된 `toolwindowtodo` 메뉴 트리거와 `compactDetailPanelVisible == true` 시 선택적 오른쪽 가장자리 `columnIndex` 상세 페이지 버튼이 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 목록 경로: `sortByType`, `cwmPermissionView` 및 동일한 `toolwindowtodo` 메뉴 트리거",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000013",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 16,
+      "raw": "\n\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"menu-ownership\"></a>\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 메뉴 소유권\n",
+      "level": 2,
+      "title": "메뉴 소유권"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "이 파일은 2 개의 컨텍스트 메뉴를 소유합니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "list",
+      "start_line": 21,
+      "end_line": 22,
+      "raw": "- 계층/제어 경로용 `applicationControlContextMenu`\n- 컴팩트한 메모 목록 경로를 위한 `noteListApplicationControlContextMenu`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "계층/제어 경로용 `applicationControlContextMenu`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트한 메모 목록 경로를 위한 `noteListApplicationControlContextMenu`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "paragraph",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "두 메뉴 모두 트리거의 오른쪽 하단 모서리에서 `openFor(button, button.width, button.height + menuYOffset)`를 통해 고정됩니다.\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"desktop-composition\"></a>\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 데스크탑 구성\n",
+      "level": 2,
+      "title": "데스크탑 구성"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "데스크탑 행은 Figma 하위 순서를 유지합니다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 33,
+      "raw": "1. `NavigationAppControlBar`\n2. `NavigationExportBar`\n3. `NavigationAddNewBar`\n4. `NavigationPreferenceBar`\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`NavigationAppControlBar`",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "`NavigationExportBar`",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "`NavigationAddNewBar`",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "`NavigationPreferenceBar`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "html",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "<a id=\"invariants\"></a>\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "heading",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "## 불변성\n",
+      "level": 2,
+      "title": "불변성"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 38,
+      "end_line": 40,
+      "raw": "- 압축 계층 모드는 `generalprojectStructure` 메뉴 문자 모양으로 되돌아가면 안 됩니다.\n- 컴팩트 노트 목록 모드는 `sort -> visibility -> todo menu` 순서를 유지해야 합니다.\n- 메뉴 항목은 `keyVisible: false` 및 `showChevron: false`를 사용하는 작업 전용 항목으로 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "압축 계층 모드는 `generalprojectStructure` 메뉴 문자 모양으로 되돌아가면 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컴팩트 노트 목록 모드는 `sort -> visibility -> todo menu` 순서를 유지해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "메뉴 항목은 `keyVisible: false` 및 `showChevron: false`를 사용하는 작업 전용 항목으로 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"recent-updates\"></a>\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## 최근 업데이트\n",
+      "level": 2,
+      "title": "최근 업데이트"
+    },
+    {
+      "id": "b000036",
+      "kind": "list",
+      "start_line": 45,
+      "end_line": 47,
+      "raw": "- `pragma ComponentBehavior: Bound`를 추가하여 컴팩트/전체 모드 중첩된 `Component` 브랜치가 `applicationControlBar` ID 멤버에 접근할 수 있도록 LVRS -standard 바운드 컴포넌트 범위에 접근할 수 있습니다. 복제 컨텍스트 메뉴 작업.\n- 그 컴팩트한 디테일 버튼은 이제 훅 사유 `open-detail-page`를 방출하여, 이전의 접기/확장 오버레이 문구 대신 라우팅된 페이지 상호작용과 일치합니다.\n- 메뉴 너비/y 오프셋 및 데스크톱 전체 행 간격이 이제 원시 `176/2/12px` 리터럴이 아니라 `LV.Theme.inputMinWidth - LV.Theme.gap4` 및 `LV.Theme.gap2/12`를 라우팅합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`pragma ComponentBehavior: Bound`를 추가하여 컴팩트/전체 모드 중첩된 `Component` 브랜치가 `applicationControlBar` ID 멤버에 접근할 수 있도록 LVRS -standard 바운드 컴포넌트 범위에 접근할 수 있습니다. 복제 컨텍스트 메뉴 작업.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "그 컴팩트한 디테일 버튼은 이제 훅 사유 `open-detail-page`를 방출하여, 이전의 접기/확장 오버레이 문구 대신 라우팅된 페이지 상호작용과 일치합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "메뉴 너비/y 오프셋 및 데스크톱 전체 행 간격이 이제 원시 `176/2/12px` 리터럴이 아니라 `LV.Theme.inputMinWidth - LV.Theme.gap4` 및 `LV.Theme.gap2/12`를 라우팅합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml`",
+      "anchor": "srcappqmlviewpanelsnavigationcontrolnavigationapplicationcontrolbarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소형 변형",
+      "anchor": "소형-변형",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000016",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메뉴 소유권",
+      "anchor": "메뉴-소유권",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000024",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "데스크탑 구성",
+      "anchor": "데스크탑-구성",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000030",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "불변성",
+      "anchor": "불변성",
+      "start_line": 37
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "최근 업데이트",
+      "anchor": "최근-업데이트",
+      "start_line": 44
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

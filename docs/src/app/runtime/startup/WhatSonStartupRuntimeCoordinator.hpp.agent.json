@@ -1,0 +1,169 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5869d9b2e06df7202ca8b47528e6dd81deef903e1a6f7809b8f1887d30b6f3b1",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp.md",
+    "sha256": "722ae1fe886ad0cdd28c013c76110fdb5f401f91e56915dfa23de3775cceb9b5",
+    "bytes": 887,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WhatSonStartupRuntimeCoordinator`는 `.wshub` 런타임 데이터를 도메인 컨트롤러로 로드하는 것을 조정합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"interface-alignment\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 인터페이스 정렬\n",
+      "level": 2,
+      "title": "인터페이스 정렬"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- 런타임 대상은 이제 `IWhatSonRuntimeParallelLoader::Targets`를 재사용합니다.\n- 코디네이터는 `setParallelLoader(...)`를 통해 로더를 승인합니다.\n- 공개 시작 표면은 정상적인 전체 허브 로딩과 리소스 도메인 재로드로 축소되며, 워크스페이스 루트가 표시된 후 지속된 시작 스케줄링은 `main.cpp`가 소유합니다.\n- 이전 지연된 사이드바 활성화 부트스트랩 경로가 제거되어 시작 시 사전 윈도우 부분 부하와 후속 계층 부하 대신 하나의 런타임 로드 경로를 가집니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "런타임 대상은 이제 `IWhatSonRuntimeParallelLoader::Targets`를 재사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "코디네이터는 `setParallelLoader(...)`를 통해 로더를 승인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공개 시작 표면은 정상적인 전체 허브 로딩과 리소스 도메인 재로드로 축소되며, 워크스페이스 루트가 표시된 후 지속된 시작 스케줄링은 `main.cpp`가 소유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이전 지연된 사이드바 활성화 부트스트랩 경로가 제거되어 시작 시 사전 윈도우 부분 부하와 후속 계층 부하 대신 하나의 런타임 로드 경로를 가집니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/startup/WhatSonStartupRuntimeCoordinator.hpp`",
+      "anchor": "srcappruntimestartupwhatsonstartupruntimecoordinatorhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "인터페이스 정렬",
+      "anchor": "인터페이스-정렬",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

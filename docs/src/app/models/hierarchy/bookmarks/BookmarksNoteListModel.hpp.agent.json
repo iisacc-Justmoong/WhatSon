@@ -1,0 +1,477 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2281487a3f222216953d6a663b459d4e67cf7d071f7bbcf7a5354fee94db47ba",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp.md",
+    "sha256": "9cd294faea05816b26a2eb2746528aaded394e7777296722b7527599f8468aec",
+    "bytes": 1626,
+    "line_count": 48,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`BookmarksNoteListModel` 는  `LibraryNoteListModel` 의 북마크 도메인 동료입니다. 동일한 대리자 대상 행 역할을 노출하며, 이제 각  `BookmarksNoteListItem` 에 내부  `createdAt` /  `lastModifiedAt` 필드를 포함하여 북마크 목록이 메인 라이브러리 목록과 동일한 가장 최근 수정 우선 정렬 정책을 따를 수 있습니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"ordering-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 주문계약\n",
+      "level": 2,
+      "title": "주문계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 행은 `lastModifiedAt` 내림차순으로 정렬됩니다.\n- `createdAt`는 `lastModifiedAt`가 누락된 경우에 사용됩니다.\n- 동점은 들어오는 상대 순서를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "행은 `lastModifiedAt` 내림차순으로 정렬됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`createdAt`는 `lastModifiedAt`가 누락된 경우에 사용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "동점은 들어오는 상대 순서를 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "따라서 북마크 사이드바는 북마크된 여러 노트가 함께 표시될 때 허브 구문 분석 순서에 의존하지 않습니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"source-metadata\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 소스 메타데이터\n",
+      "level": 2,
+      "title": "소스 메타데이터"
+    },
+    {
+      "id": "b000020",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 25,
+      "raw": "- 소스 경로: `src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`\n- 소스 종류: C++ 헤더\n- 파일 이름: `BookmarksNoteListModel.hpp`\n- 대략적인 줄 수: 116\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "소스 경로: `src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소스 종류: C++ 헤더",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 이름: `BookmarksNoteListModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대략적인 줄 수: 116",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000021",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "html",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "<a id=\"extracted-symbols\"></a>\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "heading",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "## 추출된 기호\n",
+      "level": 2,
+      "title": "추출된 기호"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 31,
+      "raw": "- 선언된 네임스페이스 존재: 아니요\n- QObject 매크로 존재: 예\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "선언된 네임스페이스 존재: 아니요",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QObject 매크로 존재: 예",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "<a id=\"classes-and-structs\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "### 클래스와 구조체\n",
+      "level": 3,
+      "title": "클래스와 구조체"
+    },
+    {
+      "id": "b000030",
+      "kind": "list",
+      "start_line": 36,
+      "end_line": 37,
+      "raw": "- `BookmarksNoteListItem`\n- `BookmarksNoteListModel`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`BookmarksNoteListItem`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`BookmarksNoteListModel`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000031",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"enums\"></a>\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "### 열거형\n",
+      "level": 3,
+      "title": "열거형"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "- `Role`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`Role`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "html",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "<a id=\"runtime-notes\"></a>\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "heading",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "## 런타임 노트\n",
+      "level": 2,
+      "title": "런타임 노트"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "paragraph",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "선택은 여전히 가시적 행 인덱스로 공개되지만 구현에서는 필터 또는 리조트 작업 후에 노트 ID별로 선택을 복원합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/bookmarks/BookmarksNoteListModel.hpp`",
+      "anchor": "srcappmodelshierarchybookmarksbookmarksnotelistmodelhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주문계약",
+      "anchor": "주문계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소스 메타데이터",
+      "anchor": "소스-메타데이터",
+      "start_line": 21
+    },
+    {
+      "block_id": "b000024",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "추출된 기호",
+      "anchor": "추출된-기호",
+      "start_line": 29
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000024",
+      "level": 3,
+      "title": "클래스와 구조체",
+      "anchor": "클래스와-구조체",
+      "start_line": 35
+    },
+    {
+      "block_id": "b000034",
+      "parent_id": "b000024",
+      "level": 3,
+      "title": "열거형",
+      "anchor": "열거형",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000039",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 노트",
+      "anchor": "런타임-노트",
+      "start_line": 46
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

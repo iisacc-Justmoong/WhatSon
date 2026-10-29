@@ -1,0 +1,124 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:76bc6da8c1748ede01f94da77caa63e5dc8151b01af2dc94701c0b2ca9d7fc9b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryNoteMutationController.cpp.md",
+    "sha256": "f0477a0293dbbfca028008ce071b7eeea2a5c0919cc10a47937842871e132ecd",
+    "bytes": 703,
+    "line_count": 9,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryNoteMutationController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 9,
+      "raw": "- 이제 돌연변이 외관이 `qobject_cast`를 통해 `ILibraryNoteMutationCapability`를 발견합니다.\n- 돌연변이 신호는 컴파일 타임의 구체적인 유형 커플링 대신 QObject 신호 배선을 통해 전달됩니다.\n- 배치 삭제 및 폴더 정리 도우미는 기존 단일 메모 기능 호출을 재생하기 전에 들어오는 메모 ID를 정규화하고 중복을 제거합니다.\n- 이것은 QML 배치 노트 리스트 작업을 하나의 파사드에 보관하고, `ListBarLayout.qml`를 통해 ID별 변이 루프를 흩뜨리는 대신에.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 돌연변이 외관이 `qobject_cast`를 통해 `ILibraryNoteMutationCapability`를 발견합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "돌연변이 신호는 컴파일 타임의 구체적인 유형 커플링 대신 QObject 신호 배선을 통해 전달됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "배치 삭제 및 폴더 정리 도우미는 기존 단일 메모 기능 호출을 재생하기 전에 들어오는 메모 ID를 정규화하고 중복을 제거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이것은 QML 배치 노트 리스트 작업을 하나의 파사드에 보관하고, `ListBarLayout.qml`를 통해 ID별 변이 루프를 흩뜨리는 대신에.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteMutationController.cpp`",
+      "anchor": "srcappmodelshierarchylibrarylibrarynotemutationcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

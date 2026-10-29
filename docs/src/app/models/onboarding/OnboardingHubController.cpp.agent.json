@@ -1,0 +1,119 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:650ab75e3dd6159d46837884e7ae55fdeeba8d45d88d20a66761722ca0bf8a5b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/onboarding/OnboardingHubController.cpp.md",
+    "sha256": "619c36aa4d61ade33abdad20eb3afa8d446b8daf74a702e8b80e18d433bfe6f3",
+    "bytes": 511,
+    "line_count": 8,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/onboarding/OnboardingHubController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/onboarding/OnboardingHubController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/onboarding/OnboardingHubController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 8,
+      "raw": "- 생성자는 이제 `IOnboardingHubController` 베이스를 초기화합니다.\n- 허브 선택, 생성 및 전환 동작이 이제 런타임 로드 콜백을 호출하기 전에 마운트/액세스 + 구조 검증을 `WhatSonHubMountValidator`에 위임합니다.\n- 이러한 변경으로 인해 경로 오케스트레이션이 전체 구체적인 컨트롤러 표면에서 분리되었습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "생성자는 이제 `IOnboardingHubController` 베이스를 초기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "허브 선택, 생성 및 전환 동작이 이제 런타임 로드 콜백을 호출하기 전에 마운트/액세스 + 구조 검증을 `WhatSonHubMountValidator`에 위임합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이러한 변경으로 인해 경로 오케스트레이션이 전체 구체적인 컨트롤러 표면에서 분리되었습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/onboarding/OnboardingHubController.cpp`",
+      "anchor": "srcappmodelsonboardingonboardinghubcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

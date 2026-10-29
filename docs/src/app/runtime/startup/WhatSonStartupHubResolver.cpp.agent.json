@@ -1,0 +1,129 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:65b8689bc77c8bf68be81e2bd1dffd6faf87830d05cdd611f31bceceffb317ec",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/startup/WhatSonStartupHubResolver.cpp.md",
+    "sha256": "9b484830e5fb6584faa8c093a58766fdd6361b489cd6b317b948f44edc789463",
+    "bytes": 872,
+    "line_count": 10,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/startup/WhatSonStartupHubResolver.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/startup/WhatSonStartupHubResolver.cpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/startup/WhatSonStartupHubResolver.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 10,
+      "raw": "- 이제 시작 선택 확인이 `ISelectedHubStore`를 통해 지속적인 허브 상태를 읽습니다.\n- 개별 허브 마운트/액세스 사전 검사는 `WhatSonHubMountValidator`에 위임됩니다.\n- 지속형 시작 허브가 없으면 확인자는 빈 선택 항목을 반환하고 시작은 온보딩 상태를 유지합니다.\n- 지속된 시작 허브가 존재하지만 마운트할 수 없는 경우, 리졸버는 아무런 알림 없이가 모든 대체 경로 허브로 전환하는 대신 해당 실패를 유지합니다. 온보딩 표면은 실제 시작 오류를 표시할 수 있습니다.\n- 개별 허브 후보에 대한 마운트 및 검증 동작은 이제 온보딩에서 사용되는 공유 허브 검증기에서 비롯됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 시작 선택 확인이 `ISelectedHubStore`를 통해 지속적인 허브 상태를 읽습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "개별 허브 마운트/액세스 사전 검사는 `WhatSonHubMountValidator`에 위임됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지속형 시작 허브가 없으면 확인자는 빈 선택 항목을 반환하고 시작은 온보딩 상태를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지속된 시작 허브가 존재하지만 마운트할 수 없는 경우, 리졸버는 아무런 알림 없이가 모든 대체 경로 허브로 전환하는 대신 해당 실패를 유지합니다. 온보딩 표면은 실제 시작 오류를 표시할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "개별 허브 후보에 대한 마운트 및 검증 동작은 이제 온보딩에서 사용되는 공유 허브 검증기에서 비롯됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/startup/WhatSonStartupHubResolver.cpp`",
+      "anchor": "srcappruntimestartupwhatsonstartuphubresolvercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

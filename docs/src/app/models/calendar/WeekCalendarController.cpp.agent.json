@@ -1,0 +1,191 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b5a7c9a9d9476d37c024960eec8863b926cc3c21f5509fc41a22ce5f424029a8",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/WeekCalendarController.cpp.md",
+    "sha256": "d7150dbfe9919842d1e0cfcba1904412510bde9da0cec7786dc0b3c3f5422635",
+    "bytes": 1745,
+    "line_count": 17,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/calendar/WeekCalendarController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/calendar/WeekCalendarController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/calendar/WeekCalendarController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 12,
+      "raw": "- 이제 주간 새로 고침이 `ICalendarBoardStore::entriesChanged`를 관찰합니다.\n- 컨트롤러는 여전히 정규화된 주 앵커를 소유합니다.\n- 컨트롤러는 이제 지연 로딩하는 가로 타임라인 창(`timelineDayModels`)도 소유하며, QML 측에 두 번째 `ListModel`을 두지 않고 해당 창의 초기화·앞에 추가·뒤에 추가·잘라내기·새로 고침을 수행할 수 있다.\n- 타임라인 데이 모델은 이제 이미 `entries`, `eventCount`, `taskCount`, `weekdayLabel` 및 `dateLabel`를 포함하고 있으므로, 주 페이지는 자체적으로 날짜 메타데이터나 캐시 항목 목록을 재구성하지 않습니다.\n- QML 레이어는 이제 3-열 뷰포트의 포커스된 중간 날짜에서 `displayedWeekStartIso`를 동기화하여, `Today`가 실제 현재 날짜에 도달하면서 주간 수준 앵커를 유지할 수 있습니다.\n- `requestWeekView(...)`는 이제 훅/로그 전용이며, 실제 주간 재조립은 `setDisplayedWeekStartIso(...)`, `setCalendarBoardStore(...)`, 그리고 보드 진입 변이를 뒤에 두어 페이지 열기와 이전/다음 탐색이 두 번 재구축되지 않도록 합니다.\n- `trimTimelineWindow(...)`는 `QVariantList::size()`를 명시적인 `int` 윈도우 카운트로 정규화한 뒤 `std::min(...)`를 호출하여, Qt 6 `qsizetype` 컨테이너 API가 타임라인 트림 컴파일 경로를 깨는 것을 방지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 주간 새로 고침이 `ICalendarBoardStore::entriesChanged`를 관찰합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컨트롤러는 여전히 정규화된 주 앵커를 소유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컨트롤러는 이제 지연 로딩하는 가로 타임라인 창(`timelineDayModels`)도 소유하며, QML 측에 두 번째 `ListModel`을 두지 않고 해당 창의 초기화·앞에 추가·뒤에 추가·잘라내기·새로 고침을 수행할 수 있다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "타임라인 데이 모델은 이제 이미 `entries`, `eventCount`, `taskCount`, `weekdayLabel` 및 `dateLabel`를 포함하고 있으므로, 주 페이지는 자체적으로 날짜 메타데이터나 캐시 항목 목록을 재구성하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML 레이어는 이제 3-열 뷰포트의 포커스된 중간 날짜에서 `displayedWeekStartIso`를 동기화하여, `Today`가 실제 현재 날짜에 도달하면서 주간 수준 앵커를 유지할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestWeekView(...)`는 이제 훅/로그 전용이며, 실제 주간 재조립은 `setDisplayedWeekStartIso(...)`, `setCalendarBoardStore(...)`, 그리고 보드 진입 변이를 뒤에 두어 페이지 열기와 이전/다음 탐색이 두 번 재구축되지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`trimTimelineWindow(...)`는 `QVariantList::size()`를 명시적인 `int` 윈도우 카운트로 정규화한 뒤 `std::min(...)`를 호출하여, Qt 6 `qsizetype` 컨테이너 API가 타임라인 트림 컴파일 경로를 깨는 것을 방지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"regression-checks\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 회귀 수표\n",
+      "level": 2,
+      "title": "회귀 수표"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "- `trimTimelineWindow(...)`는 `QVariantList::size()`가 Qt 6에서 `qsizetype`로 확인될 때 계속 컴파일해야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`trimTimelineWindow(...)`는 `QVariantList::size()`가 Qt 6에서 `qsizetype`로 확인될 때 계속 컴파일해야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/calendar/WeekCalendarController.cpp`",
+      "anchor": "srcappmodelscalendarweekcalendarcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "회귀 수표",
+      "anchor": "회귀-수표",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

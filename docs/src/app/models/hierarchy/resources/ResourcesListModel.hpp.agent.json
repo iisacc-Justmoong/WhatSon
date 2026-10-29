@@ -1,0 +1,275 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:dca7dab1983e284cf7c75d0357d618aeb5f83e67dc1474b9f5b16770beeee8dc",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/resources/ResourcesListModel.hpp.md",
+    "sha256": "bb59575d97cf357ed6133a25a796c9f15393f9000bc464ce68a827329f935d3e",
+    "bytes": 1767,
+    "line_count": 30,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/resources/ResourcesListModel.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/resources/ResourcesListModel.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/ResourcesListModel.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "리소스 계층 도메인에 대한 전용 오른쪽 패널 목록 모델을 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 24,
+      "raw": "- `ListBarLayout` 및 편집기 선택 연결에서 사용되는 공유 목록 브리지 계약을 공개합니다.\n  - `itemCount`\n  - `currentIndex`\n  - `noteBacked`\n  - `currentNoteId`\n  - `currentBodyText`\n  - `currentResourceEntry`\n  - `searchText`\n- `noteBacked` 는 영구적으로 `false` 입니다. 리소스 목록은 여전히 일반적인 목록 대리자를 위해 노트와 같은 id/본문 속성을 재사용하지만, 이러한 id 는 노트 지속성, 노트 헤더 또는 선택된 노트 본문 로더에 의해 실제 노트 패키지 id 로 취급되어서는 안 됩니다.\n- 노트 카드 호환 역할( `noteId`, `primaryText`, `image`, `imageSource`, `displayDate`, `folders`, `tags`)을 제공하여 기존 리스트 델리인 UI를 `LibraryNoteListModel`를 사용하지 않고도 렌더링할 수 있도록 합니다.\n- 리소스 인식 렌더링 경로를 위해 리소스별 역할( `type`, `format`, `resourcePath`, `resolvedPath`, `source`, `renderMode`, `displayName`, `previewText`)을 추가합니다.\n- `currentResourceEntry`는 현재 선택된 리소스 페이로드를 맵으로 노출하므로, 전용 파일 뷰어가 노트 본문을 재파싱하지 않고도 목록 선택에서 렌더링할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ListBarLayout` 및 편집기 선택 연결에서 사용되는 공유 목록 브리지 계약을 공개합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`itemCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentIndex`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteBacked`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteId`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentBodyText`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentResourceEntry`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`searchText`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteBacked` 는 영구적으로 `false` 입니다. 리소스 목록은 여전히 일반적인 목록 대리자를 위해 노트와 같은 id/본문 속성을 재사용하지만, 이러한 id 는 노트 지속성, 노트 헤더 또는 선택된 노트 본문 로더에 의해 실제 노트 패키지 id 로 취급되어서는 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 카드 호환 역할( `noteId`, `primaryText`, `image`, `imageSource`, `displayDate`, `folders`, `tags`)을 제공하여 기존 리스트 델리인 UI를 `LibraryNoteListModel`를 사용하지 않고도 렌더링할 수 있도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "리소스 인식 렌더링 경로를 위해 리소스별 역할( `type`, `format`, `resourcePath`, `resolvedPath`, `source`, `renderMode`, `displayName`, `previewText`)을 추가합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentResourceEntry`는 현재 선택된 리소스 페이로드를 맵으로 노출하므로, 전용 파일 뷰어가 노트 본문을 재파싱하지 않고도 목록 선택에서 렌더링할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"intent\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 의도\n",
+      "level": 2,
+      "title": "의도"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "이 모델은 의도적으로 일반 라이브러리 노트 목록 모델에서 리소스 목록 동작을 분리하므로 리소스 도메인 변경으로 인해 라이브러리 도메인 목록 의미가 회귀되지 않습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/ResourcesListModel.hpp`",
+      "anchor": "srcappmodelshierarchyresourcesresourceslistmodelhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의도",
+      "anchor": "의도",
+      "start_line": 28
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

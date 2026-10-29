@@ -1,0 +1,99 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:96a923f9b1a26f8054973473be1b1997d257a970ed5286baf4241fb0465325ac",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/BodyLayout.qml.md",
+    "sha256": "dd5773c7e9819dc4a6e843036135e509b2cd6899b75453c7e3a05a76d52a6362",
+    "bytes": 613,
+    "line_count": 7,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/BodyLayout.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/BodyLayout.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/BodyLayout.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "paragraph",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "`BodyLayout.qml`는 데스크톱 작업 공간 본체(계층 구조 사이드바, 목록/세부 정보 패널 및 중앙 콘텐츠 화면)를 정렬합니다.\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "계층 구조, 노트 목록, 클립보드 가져오기 상태, 편집기 글꼴 제공자, 달력 컨트롤러 및 패널 레지스트리 개체를 `ContentViewLayout.qml`로 전달합니다.\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "삭제된 편집기 문서 세션, 편집기 붙여넣기 브리지 및 네이티브 입력 명령 필터는 더 이상 이 레이아웃의 속성이 아니며 이 셸을 통해 스레드되어서는 안 됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/BodyLayout.qml`",
+      "anchor": "srcappqmlviewpanelsbodylayoutqml",
+      "start_line": 1
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

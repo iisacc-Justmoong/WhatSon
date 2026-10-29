@@ -1,0 +1,164 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:eaca052e5076193406547f039ee6c2deb0b8ff6d6ad3d8c9b49e3eb07b5b1276",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/SystemCalendarStore.hpp.md",
+    "sha256": "8caeda9b41761579683339314d9ca8a688b049b78aaf0b6f7362856b5ebabac2",
+    "bytes": 552,
+    "line_count": 13,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/calendar/SystemCalendarStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/calendar/SystemCalendarStore.hpp`\n",
+      "level": 1,
+      "title": "`src/app/calendar/SystemCalendarStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`SystemCalendarStore`는 `ISystemCalendarStore` 뒤에 있는 구체적인 시스템 로케일 구현입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"interface-alignment\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 인터페이스 정렬\n",
+      "level": 2,
+      "title": "인터페이스 정렬"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 13,
+      "raw": "- `ISystemCalendarStore`의 전체 로케일/날짜 형식 지정 계약을 구현합니다.\n- 삽입되지 않은 코드 경로에 대해 정적 대체 경로 형식 지정 도우미를 유지합니다.\n- `main.cpp`에서 계층 구조 컨트롤러에 주입된 구체적인 소스 역할을 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`ISystemCalendarStore`의 전체 로케일/날짜 형식 지정 계약을 구현합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "삽입되지 않은 코드 경로에 대해 정적 대체 경로 형식 지정 도우미를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`main.cpp`에서 계층 구조 컨트롤러에 주입된 구체적인 소스 역할을 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/calendar/SystemCalendarStore.hpp`",
+      "anchor": "srcappcalendarsystemcalendarstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "인터페이스 정렬",
+      "anchor": "인터페이스-정렬",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

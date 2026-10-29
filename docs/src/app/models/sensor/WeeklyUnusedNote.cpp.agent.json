@@ -1,0 +1,178 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:7c5d2eb023d6f477e5c9bf3ef9c6897d1409479f9794de969c80cd9d580cad54",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sensor/WeeklyUnusedNote.cpp.md",
+    "sha256": "a902f7d20c827058f2b2740563d5ae3586b98c5e05450649c9c4de076a3c86a3",
+    "bytes": 494,
+    "line_count": 15,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sensor/WeeklyUnusedNote.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sensor/WeeklyUnusedNote.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sensor/WeeklyUnusedNote.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`UnusedNoteSensorSupport` 주위에 주간 비활성 래퍼를 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"window-definition\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 창 정의\n",
+      "level": 2,
+      "title": "창 정의"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 새로 고침당 하나의 UTC 참조 시간을 캡처합니다.\n- `referenceUtc.addDays(-7)`를 주간 컷오프로 사용합니다.\n- 공유 파싱, 숨김 경로 필터링 및 페이로드 구성을 `UnusedNoteSensorSupport::collectUnusedNoteEntries(...)`에 맡깁니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "새로 고침당 하나의 UTC 참조 시간을 캡처합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`referenceUtc.addDays(-7)`를 주간 컷오프로 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공유 파싱, 숨김 경로 필터링 및 페이로드 구성을 `UnusedNoteSensorSupport::collectUnusedNoteEntries(...)`에 맡깁니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sensor/WeeklyUnusedNote.cpp`",
+      "anchor": "srcappmodelssensorweeklyunusednotecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "창 정의",
+      "anchor": "창-정의",
+      "start_line": 11
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

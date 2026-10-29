@@ -1,0 +1,216 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:6ada5c1cca7cc522b043ea52c209872ab8aa697707c7970b86ee42004d02d02f",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/NoteDetailPanelController.hpp.md",
+    "sha256": "8715869d99aa30327165825bea6b22813df8c8a8e47489037b5ee514e0b0170c",
+    "bytes": 760,
+    "line_count": 18,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/NoteDetailPanelController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/NoteDetailPanelController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/NoteDetailPanelController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`NoteDetailPanelController`는 노트 받침 디테일 패널용으로 QML에 등록된 콘크리트 런타임 유형입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"structure\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 구조\n",
+      "level": 2,
+      "title": "구조"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- 동작을 변경하지 않고 `DetailPanelController`를 상속합니다.\n- 런타임가 별도의 `ResourceDetailPanelController`와 함께 명시적으로 노트 스코프된 디테일 컨트롤러를 마운트할 수 있도록 존재합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "동작을 변경하지 않고 `DetailPanelController`를 상속합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임가 별도의 `ResourceDetailPanelController`와 함께 명시적으로 노트 스코프된 디테일 컨트롤러를 마운트할 수 있도록 존재합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"runtime-role\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 런타임 역할\n",
+      "level": 2,
+      "title": "런타임 역할"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 18,
+      "raw": "- `main.cpp`는 모든 비자원 계층 구조에 대해 `NoteDetailPanelController`를 인스턴스화합니다.\n- `DetailPanel.qml`는 해당 개체를 `NoteDetailPanel.qml`로 라우팅합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`main.cpp`는 모든 비자원 계층 구조에 대해 `NoteDetailPanelController`를 인스턴스화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`DetailPanel.qml`는 해당 개체를 `NoteDetailPanel.qml`로 라우팅합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/NoteDetailPanelController.hpp`",
+      "anchor": "srcappmodelsdetailpanelnotedetailpanelcontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구조",
+      "anchor": "구조",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 역할",
+      "anchor": "런타임-역할",
+      "start_line": 16
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

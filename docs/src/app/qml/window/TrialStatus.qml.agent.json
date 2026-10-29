@@ -1,0 +1,308 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:943fa0170758b6e67ccecbd53d5e6a682fe0004adfdccf51f92f3fce3ad1e27e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/window/TrialStatus.qml.md",
+    "sha256": "423f7b6e55749515b0dba027dcf3a89133900f46489af3075d3779d43e28adbb",
+    "bytes": 1593,
+    "line_count": 31,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/window/TrialStatus.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/window/TrialStatus.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/window/TrialStatus.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`TrialStatus.qml`는 평가판 패키징 트리 전용 데스크탑 평가판 창입니다. 평가판 앱을 시작할 때마다 표시되며 사용자가 다른 런타임 동작에서 상태를 추론하지 않고도 남은 평가판 시간을 볼 수 있습니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"surface\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 표면\n",
+      "level": 2,
+      "title": "표면"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 18,
+      "raw": "- 루트 유형: `Window`\n- 입력 속성:\n  - `hostWindow`\n  - `trialActivationPolicy`\n- 파생된 상태:\n  - 인증된 우회 상태\n  - 활성 또는 만료된 시험 헤드라인\n  - 남은 일수/경과 일수/설치 및 마지막 활성 날짜\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 유형: `Window`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "입력 속성:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hostWindow`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`trialActivationPolicy`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파생된 상태:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "인증된 우회 상태",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 또는 만료된 시험 헤드라인",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "남은 일수/경과 일수/설치 및 마지막 활성 날짜",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 25,
+      "raw": "- 호스트 창이 제공되면 창의 중심이 호스트 창에 맞춰집니다.\n- 표시된 모든 값은 `WhatSonTrialActivationPolicy`에서 직접 읽으므로 보기는 읽기 전용를 유지하고 평가판 상태를 변경하지 않습니다.\n- 윈도우 크기, 카드 반경, 구분자 두께 및 헤드라인/바디 타이포그래피가 이제 로컬 픽셀 리터럴 대신 명명된 `LV.Theme` 크기, 간격, 타이포그래피 및 스트로크 토큰을 통해 라우팅되므로, 시험 표면은 LVRS 밀도 정책을 따릅니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "호스트 창이 제공되면 창의 중심이 호스트 창에 맞춰집니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "표시된 모든 값은 `WhatSonTrialActivationPolicy`에서 직접 읽으므로 보기는 읽기 전용를 유지하고 평가판 상태를 변경하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "윈도우 크기, 카드 반경, 구분자 두께 및 헤드라인/바디 타이포그래피가 이제 로컬 픽셀 리터럴 대신 명명된 `LV.Theme` 크기, 간격, 타이포그래피 및 스트로크 토큰을 통해 라우팅되므로, 시험 표면은 LVRS 밀도 정책을 따릅니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "<a id=\"why-this-exists\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "## 이것이 존재하는 이유\n",
+      "level": 2,
+      "title": "이것이 존재하는 이유"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 30,
+      "end_line": 31,
+      "raw": "- 이전에는 평가판 빌드에 명시적인 온보딩/상태 표시 화면이 없었으므로 사용자는 평가판 게이트가 활성화되었는지 여부를 알 수 없었습니다.\n- 이 창은 시작 시 평가판 수명 주기를 표시하고 만료 또는 인증된 우회에 대한 모호성을 줄입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이전에는 평가판 빌드에 명시적인 온보딩/상태 표시 화면이 없었으므로 사용자는 평가판 게이트가 활성화되었는지 여부를 알 수 없었습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 창은 시작 시 평가판 수명 주기를 표시하고 만료 또는 인증된 우회에 대한 모호성을 줄입니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/window/TrialStatus.qml`",
+      "anchor": "srcappqmlwindowtrialstatusqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "표면",
+      "anchor": "표면",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 22
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이것이 존재하는 이유",
+      "anchor": "이것이-존재하는-이유",
+      "start_line": 29
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

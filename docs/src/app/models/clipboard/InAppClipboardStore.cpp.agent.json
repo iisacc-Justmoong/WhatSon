@@ -1,0 +1,238 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b80aacc8a6eda91ebd5379a15730dd0db5697583d2b1ba982d2c0e3aa3f0f6d7",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/InAppClipboardStore.cpp.md",
+    "sha256": "322f046f036de1461e683e48f1e98f6646440e038111ac315ea744538d6b6464",
+    "bytes": 927,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/InAppClipboardStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/InAppClipboardStore.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`InAppClipboardManager`에서 사용하는 단일 리소스 클립보드 스냅샷 저장소를 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- 최대 하나의 `ClipboardResourceImport`를 저장합니다.\n- 정규화된 리소스 파일 이름, MIME 유형, 형식, 유형, 버킷 및 변형 맵 메타데이터를 노출합니다.\n- 유효한 리소스가 저장, 가져오기 또는 삭제되면 `resourceChanged()`를 내보냅니다.\n- 잘못된 리소스 가져오기가 할당되면 자체적으로 지워집니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "최대 하나의 `ClipboardResourceImport`를 저장합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정규화된 리소스 파일 이름, MIME 유형, 형식, 유형, 버킷 및 변형 맵 메타데이터를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유효한 리소스가 저장, 가져오기 또는 삭제되면 `resourceChanged()`를 내보냅니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "잘못된 리소스 가져오기가 할당되면 자체적으로 지워집니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- manager가 들고 있던 현재 clipboard resource 상태를 이 store가 소유한다.\n- 여러 항목을 저장하지 않고 현재 붙여넣기 후보 하나만 유지한다.\n- manager는 이 store의 `resourceChanged()` 신호를 QML-facing `resourceChanged()`로 다시 전달한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "manager가 들고 있던 현재 clipboard resource 상태를 이 store가 소유한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "여러 항목을 저장하지 않고 현재 붙여넣기 후보 하나만 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "manager는 이 store의 `resourceChanged()` 신호를 QML-facing `resourceChanged()`로 다시 전달한다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardStore.cpp`",
+      "anchor": "srcappmodelsclipboardinappclipboardstorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

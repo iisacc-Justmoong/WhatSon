@@ -1,0 +1,288 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e65890def522dd416952a19b0e2215c88ac14ad7b7b244c3623ce49b132d851b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/detail/RightPanel.qml.md",
+    "sha256": "0aa21472d1d1a1b6473266fe845ea1a1edda26045d0c686cf8a60ec226fff3a6",
+    "bytes": 1363,
+    "line_count": 27,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/detail/RightPanel.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/detail/RightPanel.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/RightPanel.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`RightPanel.qml`는 Figma `RightPanel` 프레임(`155:4574`)용 외부 데스크탑 상세 패널 셸입니다. 패널 캔버스를 투명하게 유지하고 패널-뷰-모델 후크 진입점을 유지하며 `DetailPanel.qml`를 통해 실제 디테일 구성을 마운트합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"visual-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 시각적 계약\n",
+      "level": 2,
+      "title": "시각적 계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- Figma 루트 프레임 ID: `155:4574`\n- 루트 `objectName`: `RightPanel`\n- 기본/최소 패널 너비는 이제 명명된 `LV.Theme` 너비/간격/획 토큰 구성을 통해 확인됩니다.\n- 하위 `DetailPanel`가 래퍼를 채우므로 상위 레이아웃 크기 조정이 최종 너비를 제어합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Figma 루트 프레임 ID: `155:4574`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "루트 `objectName`: `RightPanel`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본/최소 패널 너비는 이제 명명된 `LV.Theme` 너비/간격/획 토큰 구성을 통해 확인됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하위 `DetailPanel`가 래퍼를 채우므로 상위 레이아웃 크기 조정이 최종 너비를 제어합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"runtime-notes\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 런타임 노트\n",
+      "level": 2,
+      "title": "런타임 노트"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 21,
+      "raw": "- 파일은 의도적으로 얇게 유지됩니다.\n- 세부 상태를 소유하지 않으며, 데스크톱 셸의 나머지 부분에서 이미 사용되는 공유 패널 래퍼 패턴을 통해 `calendarDetailActive`와 라이프사이클 가시성을 전달합니다.\n- `requestViewHook(reason)`는 여전히 `panelControllerRegistry.panelController(\"detail.RightPanel\")`를 통해 라우팅됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "파일은 의도적으로 얇게 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "세부 상태를 소유하지 않으며, 데스크톱 셸의 나머지 부분에서 이미 사용되는 공유 패널 래퍼 패턴을 통해 `calendarDetailActive`와 라이프사이클 가시성을 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestViewHook(reason)`는 여전히 `panelControllerRegistry.panelController(\"detail.RightPanel\")`를 통해 라우팅됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"integration\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 통합\n",
+      "level": 2,
+      "title": "통합"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 27,
+      "raw": "- 상위 래퍼: `src/app/qml/view/panels/DetailPanelLayout.qml`\n- 하위 구성: `src/app/qml/view/panels/detail/DetailPanel.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "상위 래퍼: `src/app/qml/view/panels/DetailPanelLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하위 구성: `src/app/qml/view/panels/detail/DetailPanel.qml`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/detail/RightPanel.qml`",
+      "anchor": "srcappqmlviewpanelsdetailrightpanelqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "시각적 계약",
+      "anchor": "시각적-계약",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 노트",
+      "anchor": "런타임-노트",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "통합",
+      "anchor": "통합",
+      "start_line": 25
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

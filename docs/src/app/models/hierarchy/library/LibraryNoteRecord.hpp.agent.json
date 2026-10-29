@@ -1,0 +1,335 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:ec6bac128a43d44e294b84890ac1de014ac0f708e64ed941aa3f2258041d03c1",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryNoteRecord.hpp.md",
+    "sha256": "8ce3d938b4293d60920cf41522209326e3955f54e4850037deb2a6a02520f530",
+    "bytes": 1956,
+    "line_count": 34,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryNoteRecord.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryNoteRecord.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteRecord.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`LibraryNoteRecord`는 라이브러리 도메인의 한 노트에 대한 정규화된 런타임 페이로드입니다. 노트 목록 모델, 계층 구조 필터 및 유지된 런타임 프로젝션 코드에서 사용되는 공유 데이터 형태입니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"relevant-folder-fields\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 관련 폴더 필드\n",
+      "level": 2,
+      "title": "관련 폴더 필드"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 14,
+      "raw": "- `folders`: 프레젠테이션 및 이전 버전과의 호환성에 사용되는 표시되는 폴더 경로입니다.\n- `folderUuids`: `folders`를 사용하여 인덱스로 정렬된 안정적인 폴더 ID입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`folders`: 프레젠테이션 및 이전 버전과의 호환성에 사용되는 표시되는 폴더 경로입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`folderUuids`: `folders`를 사용하여 인덱스로 정렬된 안정적인 폴더 ID입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "2 목록은 의도적으로 함께 저장되어 애플리케이션이 필터링 및 변형 논리가 안정적 UUID 에 의존하는 동안 읽을 수 있는 경로를 유지할 수 있습니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"invariants\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 불변성\n",
+      "level": 2,
+      "title": "불변성"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 27,
+      "raw": "- 필터링이나 지속성을 위해 레코드를 사용하기 전에 `folderUuids`를 정규화해야 합니다.\n- 발신자는 `folders` 및 `folderUuids`를 순서대로 정렬하고 개수를 계산해야 합니다.\n- 누락된 UUID는 가져오기 중 레거시 폴백으로만 허용되며, 최신 쓰기는 UUID를 보존해야 합니다.\n- 레코드에는 노트 본문 소스 또는 파생된 본문 미리보기 필드가 없습니다.\n- `progress == -1`는 `No progress`를 나타내며 신규/지워진 노트에 대한 중립 기본값입니다.\n- 구조적 동등성이 이제 전체 레코드 페이로드를 포괄하므로, 증분 인덱스 레이어는 무연산 업서트를 억제하고 실제로 노트 레코드가 변경되지 않은 경우 넓은 재구축 신호를 방출하는 것을 방지할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "필터링이나 지속성을 위해 레코드를 사용하기 전에 `folderUuids`를 정규화해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "발신자는 `folders` 및 `folderUuids`를 순서대로 정렬하고 개수를 계산해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "누락된 UUID는 가져오기 중 레거시 폴백으로만 허용되며, 최신 쓰기는 UUID를 보존해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "레코드에는 노트 본문 소스 또는 파생된 본문 미리보기 필드가 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`progress == -1`는 `No progress`를 나타내며 신규/지워진 노트에 대한 중립 기본값입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "구조적 동등성이 이제 전체 레코드 페이로드를 포괄하므로, 증분 인덱스 레이어는 무연산 업서트를 억제하고 실제로 노트 레코드가 변경되지 않은 경우 넓은 재구축 신호를 방출하는 것을 방지할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "<a id=\"main-collaborators\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "## 주요 협력자\n",
+      "level": 2,
+      "title": "주요 협력자"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 33,
+      "end_line": 34,
+      "raw": "- `LibraryAll.cpp`: 현재 라이브러리 색인 경계를 소유합니다.\n- `LibraryHierarchyController.cpp`: 선택한 폴더 UUID를 기준으로 레코드를 필터링합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LibraryAll.cpp`: 현재 라이브러리 색인 경계를 소유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController.cpp`: 선택한 폴더 UUID를 기준으로 레코드를 필터링합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryNoteRecord.hpp`",
+      "anchor": "srcappmodelshierarchylibrarylibrarynoterecordhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "관련 폴더 필드",
+      "anchor": "관련-폴더-필드",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "불변성",
+      "anchor": "불변성",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 협력자",
+      "anchor": "주요-협력자",
+      "start_line": 31
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:acf3224aaaba31a0192de83e12db382b07681c441e243c9b72dcacaa07a0b0f4",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/calendar/YearCalendarController.cpp.md",
+    "sha256": "9f017c5968b3a70b38dff47eaee5e0dda61d4867531e289ff20af777cc5924ff",
+    "bytes": 433,
+    "line_count": 7,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/calendar/YearCalendarController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/calendar/YearCalendarController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/calendar/YearCalendarController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 연도 재구축은 이제 `ICalendarBoardStore::entriesChanged`를 관찰합니다.\n- `requestYearView(...)`는 이제 훅/로그 전용이며, 실제 연식 모델 재구성은 `setDisplayedYear(...)`, `setCalendarSystemByEnum(...)`, `setCalendarBoardStore(...)` 및 보드 엔트리 변이를 그대로 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "연도 재구축은 이제 `ICalendarBoardStore::entriesChanged`를 관찰합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`requestYearView(...)`는 이제 훅/로그 전용이며, 실제 연식 모델 재구성은 `setDisplayedYear(...)`, `setCalendarSystemByEnum(...)`, `setCalendarBoardStore(...)` 및 보드 엔트리 변이를 그대로 유지합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/calendar/YearCalendarController.cpp`",
+      "anchor": "srcappmodelscalendaryearcalendarcontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:44bf734008297ed277dd2ef09cdb13bdb637d7259ed26e3e48278b5f028700fe",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/FiletypeCapture.cpp.md",
+    "sha256": "60f1767a1ec2f05f99aca91143d5cd5d6a0989465f0c95ce0f3452cddaa81346",
+    "bytes": 1183,
+    "line_count": 23,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/FiletypeCapture.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/FiletypeCapture.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/FiletypeCapture.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "클립보드 가져오기를 위해 MIME 및 파일 이름 기반 리소스 형식 감지를 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- MIME 형식 테이블을 `ClipboardResourceImport`에서 유지합니다.\n- `WhatSonResourcePackageSupport` 형식 정규화를 사용하여 클립보드 붙여넣기와 허브 리소스 가져오기가 동일한 형식 어휘를 공유합니다.\n- MIME 플랫폼 이미지 페이로드 macOS 와 Qt 클립보드 브릿지에서 사용하는 광범위한 `application/x-qt-image` 및 `com.apple.tiff` 이름을 인식합니다.\n- 알 수 없는 이미지 MIME 제품군을 `.png`로 대체하고 일반 옥텟 스트림 페이로드를 `.bin`로 대체합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "MIME 형식 테이블을 `ClipboardResourceImport`에서 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonResourcePackageSupport` 형식 정규화를 사용하여 클립보드 붙여넣기와 허브 리소스 가져오기가 동일한 형식 어휘를 공유합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "MIME 플랫폼 이미지 페이로드 macOS 와 Qt 클립보드 브릿지에서 사용하는 광범위한 `application/x-qt-image` 및 `com.apple.tiff` 이름을 인식합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "알 수 없는 이미지 MIME 제품군을 `.png`로 대체하고 일반 옥텟 스트림 페이로드를 `.bin`로 대체합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 23,
+      "raw": "- MIME type과 파일명 확장자에서 hub resource format을 산출한다.\n- OS 스크린샷 clipboard처럼 정확한 resource MIME 표준명이 아니라 platform image payload 이름으로 들어오는 경우도\n  이미지 후보로 판별한다.\n- `ClipboardResourceImport`는 이 파일의 결과를 사용하지만, MIME table 자체를 소유하지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "MIME type과 파일명 확장자에서 hub resource format을 산출한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "OS 스크린샷 clipboard처럼 정확한 resource MIME 표준명이 아니라 platform image payload 이름으로 들어오는 경우도",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ClipboardResourceImport`는 이 파일의 결과를 사용하지만, MIME table 자체를 소유하지 않는다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/FiletypeCapture.cpp`",
+      "anchor": "srcappmodelsclipboardfiletypecapturecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000017",
+        "line": 23,
+        "text": "- `ClipboardResourceImport`는 이 파일의 결과를 사용하지만, MIME table 자체를 소유하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

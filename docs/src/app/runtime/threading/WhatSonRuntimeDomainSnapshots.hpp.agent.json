@@ -1,0 +1,235 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:13e06979e22da37091acc4d8d6b68e306ea5c7193e745636cfc1010bbd29ade9",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp.md",
+    "sha256": "1f9ef4664cebbb175d72fca66946ee570487b9903757aa67eb1a3a17984dd64c",
+    "bytes": 1357,
+    "line_count": 22,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp`\n",
+      "level": 1,
+      "title": "`src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`WhatSonRuntimeDomainSnapshots.hpp`는 런타임 부트스트랩 및 허브 다시 로드 중에 사용되는 작업자 스레드 페이로드 유형을 선언합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"notable-api\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 주목할만한 API\n",
+      "level": 2,
+      "title": "주목할만한 API"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- `loadLibrary(...)` : 라이브러리 도메인을 색인하고 `LibraryHierarchyController`가 필요로 하는 노트 레코드, 스마트 버킷 및 파싱된 폴더 계층 구조를 반환합니다.\n- `buildBookmarks(...)`: 이미 색인화된 라이브러리 노트 세트에서 북마크 스냅샷을 파생합니다.\n- `loadBookmarks(...)` : 대체 경로 경로는 라이브러리 도메인 없이 북마크 도메인이 요청될 때만 사용됩니다.\n- `loadHubRuntime(...)`: 이제 전용 `HubRuntimeSnapshot`를 반환하며, 작업 스레드에서 라이브 런타임 스토어를 변형하는 대신 전체 로드된 `WhatSonHubRuntimeStore` 복사본을 스테이저합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`loadLibrary(...)` : 라이브러리 도메인을 색인하고 `LibraryHierarchyController`가 필요로 하는 노트 레코드, 스마트 버킷 및 파싱된 폴더 계층 구조를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`buildBookmarks(...)`: 이미 색인화된 라이브러리 노트 세트에서 북마크 스냅샷을 파생합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadBookmarks(...)` : 대체 경로 경로는 라이브러리 도메인 없이 북마크 도메인이 요청될 때만 사용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadHubRuntime(...)`: 이제 전용 `HubRuntimeSnapshot`를 반환하며, 작업 스레드에서 라이브 런타임 스토어를 변형하는 대신 전체 로드된 `WhatSonHubRuntimeStore` 복사본을 스테이저합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"architectural-note\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 건축 노트\n",
+      "level": 2,
+      "title": "건축 노트"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "이제 헤더는 북마크에 대한 \"index once, derive again\" 규칙을 인코딩합니다. `buildBookmarks(...)`가 존재하므로 `WhatSonRuntimeParallelLoader`는 두 번째 허브 통과를 강제하는 대신 공유 라이브러리 스냅샷을 재사용할 수 있습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.hpp`",
+      "anchor": "srcappruntimethreadingwhatsonruntimedomainsnapshotshpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주목할만한 API",
+      "anchor": "주목할만한-api",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "건축 노트",
+      "anchor": "건축-노트",
+      "start_line": 20
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

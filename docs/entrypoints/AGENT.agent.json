@@ -1,0 +1,2236 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b2b8205f554545e8b192e9d627d357b744fc144cd8f71f3d632ae028a12ee302",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "AGENT.md",
+    "sha256": "2770e4e02891c812339b94701c52f8654e4546223a15354ff274af5d41d27bcc",
+    "bytes": 27371,
+    "line_count": 347,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "WhatSon 에이전트 지침",
+    "role": "instructions",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# WhatSon 에이전트 지침\n",
+      "level": 1,
+      "title": "WhatSon 에이전트 지침"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## 보존한 AGENTS.md 프로젝트 지침\n",
+      "level": 2,
+      "title": "보존한 AGENTS.md 프로젝트 지침"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "# WhatSon 에이전트 운영 가이드\n",
+      "level": 1,
+      "title": "WhatSon 에이전트 운영 가이드"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "heading",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "## 목적\n",
+      "level": 2,
+      "title": "목적"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "paragraph",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "이 저장소는 LVRS 기반 Qt Quick 애플리케이션으로 구현된 비즈니스급 크리에이티브, 브랜딩, 정보, 지식 텍스트 허브 편집기다. 이 문서는 Codex가 매 턴 동일한 맥락과 규칙으로 작업하도록 고정 운영 기준을 정의한다.\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 언어 원칙\n",
+      "level": 2,
+      "title": "언어 원칙"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 사용자에게 보내는 모든 답변은 한국어로 작성한다.\n- 이 `AGENTS.md`는 한국어 운영 문서로 유지한다.\n- 코드, 식별자, 커밋/PR용 기술 문서, 저장소 내부 상세 문서는 기존 프로젝트 관례에 맞춰 영어를 기본으로 한다. 단, 사용자가 명시적으로 한국어 문서를 요구하면 그 지시를 우선한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "사용자에게 보내는 모든 답변은 한국어로 작성한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 `AGENTS.md`는 한국어 운영 문서로 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "코드, 식별자, 커밋/PR용 기술 문서, 저장소 내부 상세 문서는 기존 프로젝트 관례에 맞춰 영어를 기본으로 한다. 단, 사용자가 명시적으로 한국어 문서를 요구하면 그 지시를 우선한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 기술 기준선\n",
+      "level": 2,
+      "title": "기술 기준선"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 47,
+      "raw": "- UI 스택: Qt 6.5+ QML + LVRS 1.0\n- 앱 진입점: `src/app/main.cpp`\n- 앱 빌드 정의: `src/app/CMakeLists.txt`, `src/app/*/CMakeLists.txt` 아래의 최상위 도메인 shard, 그리고 `src/app/cmake/{resources,defaults,runtime}/CMakeLists.txt` 아래의 빌드 전용 shard\n- 데몬 진입점: `src/daemon/main.cpp`\n- 루트 빌드 정의: `CMakeLists.txt` 및 `cmake/root/*/CMakeLists.txt` 아래의 그룹화된 루트 타깃 shard\n- 기본 QML 루트: `src/app/qml/Main.qml`\n- 라이브러리 계층 백엔드: `src/app/models/hierarchy/library`\n- 공통 계층 표시 모델: `src/app/models/hierarchy/WhatSonHierarchyModel.*`\n- 라이브러리 계층 item struct/컨트롤러: `src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`,\n  `src/app/models/hierarchy/library/LibraryHierarchyController.*`\n- 라이브러리 오른쪽 패널 목록 모델: `src/app/models/hierarchy/library/LibraryNoteListModel.*`\n- 허브 배치 store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`\n- 태그 depth provider: `src/app/models/hierarchy/tags/WhatSonHubTagsDepthProvider.*`\n- 허브 런타임 store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`\n- 런타임 병렬 bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`\n- 태그 런타임 상태 store: `src/app/models/hierarchy/tags/WhatSonHubTagsStateStore.*`\n- 태그 계층 item struct/컨트롤러: `src/app/models/hierarchy/tags/TagsHierarchyModel.hpp`,\n  `src/app/models/hierarchy/tags/TagsHierarchyController.*`\n- 내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,\n  `src/app/models/navigationbar/NavigationModeSectionController.*`,\n  `src/app/models/navigationbar/NavigationModeController.*`\n- 사이드바 선택 store 인터페이스/구현: `src/app/store/sidebar/ISidebarSelectionStore.*`,\n  `src/app/store/sidebar/SidebarSelectionStore.*`\n- 사이드바 계층 wiring 인터페이스/컨트롤러: `src/app/models/sidebar/IHierarchyControllerProvider.*`,\n  `src/app/models/sidebar/HierarchyControllerProvider.*`,\n  `src/app/models/sidebar/SidebarHierarchyController.*`\n- 전역 노트 active 상태 추적 객체: `src/app/models/panel/NoteActiveStateTracker.*`\n- 아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`\n- 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "UI 스택: Qt 6.5+ QML + LVRS 1.0",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "앱 진입점: `src/app/main.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "앱 빌드 정의: `src/app/CMakeLists.txt`, `src/app/*/CMakeLists.txt` 아래의 최상위 도메인 shard, 그리고 `src/app/cmake/{resources,defaults,runtime}/CMakeLists.txt` 아래의 빌드 전용 shard",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데몬 진입점: `src/daemon/main.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "루트 빌드 정의: `CMakeLists.txt` 및 `cmake/root/*/CMakeLists.txt` 아래의 그룹화된 루트 타깃 shard",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 QML 루트: `src/app/qml/Main.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리 계층 백엔드: `src/app/models/hierarchy/library`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공통 계층 표시 모델: `src/app/models/hierarchy/WhatSonHierarchyModel.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리 계층 item struct/컨트롤러: `src/app/models/hierarchy/library/LibraryHierarchyModel.hpp`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리 오른쪽 패널 목록 모델: `src/app/models/hierarchy/library/LibraryNoteListModel.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "허브 배치 store: `src/app/models/file/hub/WhatSonHubPlacementStore.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "태그 depth provider: `src/app/models/hierarchy/tags/WhatSonHubTagsDepthProvider.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "허브 런타임 store: `src/app/models/file/hub/WhatSonHubRuntimeStore.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 병렬 bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "태그 런타임 상태 store: `src/app/models/hierarchy/tags/WhatSonHubTagsStateStore.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "태그 계층 item struct/컨트롤러: `src/app/models/hierarchy/tags/TagsHierarchyModel.hpp`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "내비게이션 모드 상태/컨트롤러: `src/app/models/navigationbar/NavigationModeState.*`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "사이드바 선택 store 인터페이스/구현: `src/app/store/sidebar/ISidebarSelectionStore.*`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "사이드바 계층 wiring 인터페이스/컨트롤러: `src/app/models/sidebar/IHierarchyControllerProvider.*`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전역 노트 active 상태 추적 객체: `src/app/models/panel/NoteActiveStateTracker.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "아키텍처 policy lock 및 layer contract: `src/app/policy/ArchitecturePolicyLock.*`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "## 자동화 테스트 정책\n",
+      "level": 2,
+      "title": "자동화 테스트 정책"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 51,
+      "end_line": 57,
+      "raw": "- 이 저장소는 루트 CMake 타깃과 `test/` 아래에 in-repo 빌드 및 런타임 회귀 게이트를 유지한다.\n- 유지되는 검증 진입점은 `whatson_build_regression`(빌드 게이트), `whatson_cpp_regression`(런타임 C++ 회귀 게이트), `whatson_regression`(기본 통합 게이트)이다.\n- `scripts/test_*.py` 아래의 Python 테스트 스크립트는 제거되었으며 다시 도입하면 안 된다. 자동 회귀 커버리지는 CTest와 `test/`의 C++ 회귀 suite 아래에 유지한다.\n- 사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.\n- 기본 작업 흐름은 인계 전 가장 작은 관련 검증 게이트를 실행하고, 모든 생성 산출물을 `build/` 아래에 둔다.\n- `build/` 루트에는 임시 WhatSon 진단 로그, 스크린샷 PNG, 백업 XML, Finder metadata를 남기지 않는다.\n  불가피한 임시 산출물은 소유 하위 디렉터리에 두고, 일반 회귀 흐름은 `whatson_clean_build_extras`로 루트 clutter를 정리해야 한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 저장소는 루트 CMake 타깃과 `test/` 아래에 in-repo 빌드 및 런타임 회귀 게이트를 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유지되는 검증 진입점은 `whatson_build_regression`(빌드 게이트), `whatson_cpp_regression`(런타임 C++ 회귀 게이트), `whatson_regression`(기본 통합 게이트)이다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`scripts/test_*.py` 아래의 Python 테스트 스크립트는 제거되었으며 다시 도입하면 안 된다. 자동 회귀 커버리지는 CTest와 `test/`의 C++ 회귀 suite 아래에 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 작업 흐름은 인계 전 가장 작은 관련 검증 게이트를 실행하고, 모든 생성 산출물을 `build/` 아래에 둔다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`build/` 루트에는 임시 WhatSon 진단 로그, 스크린샷 PNG, 백업 XML, Finder metadata를 남기지 않는다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "### 계층 컨트롤러 소유권 (중요)\n",
+      "level": 3,
+      "title": "계층 컨트롤러 소유권 (중요)"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 61,
+      "end_line": 90,
+      "raw": "- 각 계층 타입은 `src/app/models/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.\n- 모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.\n- 표준 매핑:\n    - 라이브러리 -> `LibraryHierarchyController`\n    - 프로젝트 -> `ProjectsHierarchyController`\n    - 북마크 -> `BookmarksHierarchyController`\n    - 태그 -> `TagsHierarchyController`\n    - 자원 -> `ResourcesHierarchyController`\n    - 진행 -> `ProgressHierarchyController`\n    - 이벤트 -> `EventHierarchyController`\n    - 사전 설정 -> `PresetHierarchyController`\n- 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.\n- 런타임 계층 Controller wiring은 one-type/one-Controller contract를 유지하되, 표시용 item model은\n  `src/app/models/hierarchy/WhatSonHierarchyModel.*` 하나를 공유해야 한다. 각 Controller는 자기 domain의 typed\n  mutation state를 유지하고, `depthItems()`가 반환하는 `LV.Hierarchy` node map을 공통 `WhatSonHierarchyModel`에\n  공급한다.\n- 도메인별 `*HierarchyModel.hpp` 파일은 domain item struct와 icon helper만 둘 수 있으며, 새\n  `QAbstractListModel` subclass를 선언하면 안 된다.\n- model/support 코드는 `src/app/models/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.\n- 하이어라키 row의 우측 chevron expand/collapse 공통 검증과 state flip은 `IHierarchyController`의 protected\n  helper(`setHierarchyItemExpanded(...)`, `setAllHierarchyItemsExpanded(...)`)를 부모 계약으로 사용한다. 각 도메인\n  Controller는 이 부모 helper를 호출한 뒤 단일 row 변경은 `WhatSonHierarchyModel::setItemExpanded(...)`로 반영하고,\n  전체 hierarchy replacement가 필요할 때만 공통 model에 `depthItems()`를 다시 공급해야 한다.\n- Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,\n  반복되는 depth item parsing/serialization/selection support는\n  `src/app/models/hierarchy/WhatSonNamedStringHierarchySupport.hpp`의 typed C++ helper를 공유한다. chevron expansion은\n  위 `IHierarchyController` 부모 helper 경로를 따른다.\n- Projects 계층은 Library 계층처럼 child project를 허용하는 nested depth tree다. `ProjectsHierarchyController`와\n  `ProjectLists.wsproj` parser/store/creator는 depth, child drop, subtree delete/reorder를 보존해야 하며 flat-only\n  project list 정책으로 되돌리면 안 된다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "각 계층 타입은 `src/app/models/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "표준 매핑:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "라이브러리 -> `LibraryHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 -> `ProjectsHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "북마크 -> `BookmarksHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "태그 -> `TagsHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "자원 -> `ResourcesHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "진행 -> `ProgressHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이벤트 -> `EventHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "사전 설정 -> `PresetHierarchyController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 계층 Controller wiring은 one-type/one-Controller contract를 유지하되, 표시용 item model은",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "도메인별 `*HierarchyModel.hpp` 파일은 domain item struct와 icon helper만 둘 수 있으며, 새",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "model/support 코드는 `src/app/models/hierarchy/<domain>/`의 도메인별 디렉터리 안에 격리한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하이어라키 row의 우측 chevron expand/collapse 공통 검증과 state flip은 `IHierarchyController`의 protected",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Event/Preset처럼 문자열 목록 기반의 단순 계층 도메인은 전용 Controller class를 유지하되,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Projects 계층은 Library 계층처럼 child project를 허용하는 nested depth tree다. `ProjectsHierarchyController`와",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 91,
+      "end_line": 91,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 92,
+      "end_line": 92,
+      "raw": "### 컨트롤러 구현 경계 (중요)\n",
+      "level": 3,
+      "title": "컨트롤러 구현 경계 (중요)"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 93,
+      "end_line": 93,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 94,
+      "end_line": 125,
+      "raw": "- 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다. 뷰는 모델과 직접적으로 이어진다.\n- Controller는 단일 책임 C++ class여야 한다.\n- `src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.\n- QML은 view construction과 view-local behavior를 직접 소유한다. 버튼 dispatch, 메뉴 열기/닫기, pointer hit-test,\n  transient visual state, focus presentation, view-local callback/signal coalescing처럼 화면 표면 안에서 끝나는\n  동작은 QML에서 구현한다.\n- QML에 둘 수 있는 것은 화면 이벤트를 어떤 함수에 꽂을지, 클릭 뒤 어떤 UI 후처리를 한 틱 늦게 실행할지,\n  disabled 버튼을 한 번 더 막을지 같은 얇은 view wiring으로 제한한다.\n- 상태 보존, rollback, 다중 호출 간 정합성, parser/renderer/geometry/line-metrics처럼 재현성과 테스트성이 필요한\n  정책은 C++ model/controller 계층에 남긴다.\n- model, controller, session, persistence, sync, parsing, domain mutation, scheduling, command-surface 책임을\n  우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.\n- 순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다. view 동작이\n  domain mutation을 필요로 할 때는 QML이 이미 노출된 좁은 model/controller/bridge API를 직접 호출한다.\n- 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.\n- `LibraryHierarchyController`는 계층/선택 조정자 역할에 머물러야 하며 note-list projection/cache 조립은\n  `WhatSonLibraryNoteListProjection` 같은 전용 C++ collaborator에 둔다.\n- note record lookup과 note directory 조회처럼 여러 note-backed hierarchy Controller가 반복하는 저수준\n  note-record 작업은 `WhatSonHierarchyNoteRecordSupport`에 둔다. 본문 상태 반영이나 body source 조회 경로는\n  삭제된 note editor/save 계약이므로 되살리지 않는다.\n- `InAppClipboardManager`는 `src/app/models/clipboard`에서 file/url 기반 import orchestration,\n  conflict/persistence 처리를 소유하고, 단일 in-app clipboard resource state는 `InAppClipboardStore`에 둔다.\n  이 clipboard resource state는 이미지 전용이 아니라 앱 지원 resource taxonomy에 매칭되는 문서, 텍스트/HTML,\n  오디오, 비디오, 3D 모델, 압축 파일 같은 비이미지 payload도 받을 수 있어야 한다.\n  clipboard file type/MIME 확인은 `FiletypeCapture`에 두고 `ClipboardResourceImport`는 확인된 format으로\n  import descriptor만 구성해야 한다.\n  editor paste orchestration을 담당하던 `ClipboardEditorPaste` 경계는 삭제되었다. clipboard manager는\n  리소스 패키지 import까지만 담당하며, 본문 document/source 삽입 경로를 되살리지 않는다.\n  `ResourcesImportController`는 삭제된 경계이며 되살리지 않는다.\n- resource taxonomy에서 음악 파일과 일반 오디오 파일은 canonical type/bucket을 `audio`/`Audio`로 합친다.\n  과거 `music`/`Music` metadata는 legacy alias로만 읽고, 앱 내부 record와 resources hierarchy에는 `audio`만\n  남겨야 한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다. 뷰는 모델과 직접적으로 이어진다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Controller는 단일 책임 C++ class여야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML은 view construction과 view-local behavior를 직접 소유한다. 버튼 dispatch, 메뉴 열기/닫기, pointer hit-test,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML에 둘 수 있는 것은 화면 이벤트를 어떤 함수에 꽂을지, 클릭 뒤 어떤 UI 후처리를 한 틱 늦게 실행할지,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "상태 보존, rollback, 다중 호출 간 정합성, parser/renderer/geometry/line-metrics처럼 재현성과 테스트성이 필요한",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "model, controller, session, persistence, sync, parsing, domain mutation, scheduling, command-surface 책임을",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "순수 view 동작을 C++ Controller signal round-trip으로 감싸는 간접 경로를 새로 만들지 않는다. view 동작이",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController`는 계층/선택 조정자 역할에 머물러야 하며 note-list projection/cache 조립은",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "note record lookup과 note directory 조회처럼 여러 note-backed hierarchy Controller가 반복하는 저수준",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`InAppClipboardManager`는 `src/app/models/clipboard`에서 file/url 기반 import orchestration,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "resource taxonomy에서 음악 파일과 일반 오디오 파일은 canonical type/bucket을 `audio`/`Audio`로 합친다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 126,
+      "end_line": 126,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 127,
+      "end_line": 127,
+      "raw": "### Model Layer, QML 의 역할 분담 (중요)\n",
+      "level": 3,
+      "title": "Model Layer, QML 의 역할 분담 (중요)"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 128,
+      "end_line": 128,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "list",
+      "start_line": 129,
+      "end_line": 136,
+      "raw": "- `src/app/models/**`는 QML 파일을 포함하면 안 된다.\n- `src/app/models` 아래에 남아 있는 모든 QML 파일은 C++(`.hpp/.cpp`)으로 변환 후 제거해야 할 migration debt로 취급한다.\n- model layer는 QObject/Q_GADGET/QAbstractItemModel 기반 API를 QML에 노출할 수 있지만, domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, input policy를 QML로 구현하면 안 된다.\n- 기능이 `src/app/qml/view/**` 아래보다 낮은 레이어의 logic을 필요로 하면, `src/app/models` 아래에 또 다른 `*.qml` helper를 추가하지 말고 소유 도메인의 C++ object를 생성하거나 확장한다.\n- `src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition과 view-local behavior\n  구현 역할에 머물러야 한다.\n- qml에는 백엔드가 존재할 수 없으며, 오로지 뷰 구현에 관련한 동작만을 허용한다. 이 뷰 동작은 QML에서\n  직접 구현하는 것을 기본값으로 한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/models/**`는 QML 파일을 포함하면 안 된다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/models` 아래에 남아 있는 모든 QML 파일은 C++(`.hpp/.cpp`)으로 변환 후 제거해야 할 migration debt로 취급한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "model layer는 QObject/Q_GADGET/QAbstractItemModel 기반 API를 QML에 노출할 수 있지만, domain logic, orchestration, controller behavior, mutable session state, formatting policy, parsing policy, mutation planning, resource import handling, input policy를 QML로 구현하면 안 된다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기능이 `src/app/qml/view/**` 아래보다 낮은 레이어의 logic을 필요로 하면, `src/app/models` 아래에 또 다른 `*.qml` helper를 추가하지 말고 소유 도메인의 C++ object를 생성하거나 확장한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/**`만 QML의 허용 위치이며, 해당 파일은 view/presentation composition과 view-local behavior",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "qml에는 백엔드가 존재할 수 없으며, 오로지 뷰 구현에 관련한 동작만을 허용한다. 이 뷰 동작은 QML에서",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 137,
+      "end_line": 138,
+      "raw": "\n\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 139,
+      "end_line": 139,
+      "raw": "### 콘텐츠 Source of Truth (중요)\n",
+      "level": 3,
+      "title": "콘텐츠 Source of Truth (중요)"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 140,
+      "end_line": 140,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "list",
+      "start_line": 141,
+      "end_line": 166,
+      "raw": "- workspace route의 shell/layout은 desktop status bar, navigation bar, sidebar, note list, detail panel 구조를 유지한다.\n- 노트 본문 편집과 저장에 연결되던 객체는 삭제된 상태다. `ContentViewLayout.qml`은 노트 본문\n  parse/projection/persistence bridge를 mount하지 않고, 이미지 리소스 viewer와 빈 content placeholder만 조합한다.\n- contents 내부 QML(`src/app/qml/view/contents`)에는 `ImageEditor.qml`만 허용한다. `Gutter.qml`,\n  `TextEditor.qml`, `Minimap.qml`은 삭제된 note editor surface이므로 되살리지 않는다.\n- `ContentViewLayout.qml`은 이미지 리소스 선택 시 `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에\n  전달해 이미지 viewer surface로 전환한다. 노트 선택 또는 비이미지 리소스 선택은 본문 editor 대신 빈 content\n  placeholder를 표시한다.\n- clipboard image paste, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷 컨텍스트 메뉴, editor native key\n  filter는 삭제된 문서 모델 경계다. `ClipboardEditorPaste`, `EditorInputCommandFilter`,\n  `NoteEditorDocumentSession`을 되살리거나 QML compatibility wrapper로 우회하지 않는다.\n- clipboard resource import는 `InAppClipboardManager`가 `.wsresources/<id>.wsresource` 패키지와\n  `Resources.wsresources` 목록에 등록하는 경로까지만 유지한다. 본문 태그 삽입 경로는 삭제된 editor document\n  model에 속하므로 연결하지 않는다.\n- `ContentViewLayout.qml`은 `ContentsEditorDisplayBackend`, page/print renderer, generic resource editor,\n  structured-document wrapper, projection, renderer를 직접 mount하지 않는다.\n- `EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`은\n  삭제된 view-mode chrome이다. Plain/Page/Print/Web/Presentation 콤보박스 계약을 되살리지 않는다.\n- 새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,\n  직접 `TextEdit` adapter, snapshot cache, projection cache, renderer bridge, editor document session을\n  되살리지 않는다.\n- note body parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.\n  현재 노트 본문을 편집기에 연결하는 문서 session 경로와 note package persistence 경로는 삭제된 상태이며,\n  QML은 이를 대체 구현하지 않는다.\n- live editor formatting command surface와 지속 태그 삽입 writer는 삭제되었다. `SetTag` 계열 C++ helper를\n  QML 단축키나 컨텍스트 메뉴로 직접 연결하지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "workspace route의 shell/layout은 desktop status bar, navigation bar, sidebar, note list, detail panel 구조를 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 본문 편집과 저장에 연결되던 객체는 삭제된 상태다. `ContentViewLayout.qml`은 노트 본문",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "contents 내부 QML(`src/app/qml/view/contents`)에는 `ImageEditor.qml`만 허용한다. `Gutter.qml`,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ContentViewLayout.qml`은 이미지 리소스 선택 시 `ResourcesListModel.currentResourceEntry`를 `ImageEditor.qml`에",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "clipboard image paste, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷 컨텍스트 메뉴, editor native key",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "clipboard resource import는 `InAppClipboardManager`가 `.wsresources/<id>.wsresource` 패키지와",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ContentViewLayout.qml`은 `ContentsEditorDisplayBackend`, page/print renderer, generic resource editor,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`EditorViewModeController`, `EditorViewSectionController`, `EditorViewState`, `NavigationEditorViewBar.qml`은",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "note body parser/projection/rendering, tag mutation 같은 domain 책임은 QML 계약의 일부가 아니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "live editor formatting command surface와 지속 태그 삽입 writer는 삭제되었다. `SetTag` 계열 C++ helper를",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 167,
+      "end_line": 167,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "heading",
+      "start_line": 168,
+      "end_line": 168,
+      "raw": "### 입력기 권한 (중요)\n",
+      "level": 3,
+      "title": "입력기 권한 (중요)"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 169,
+      "end_line": 169,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "list",
+      "start_line": 170,
+      "end_line": 177,
+      "raw": "- 현재 content QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를\n  설치하지 않는다. clipboard image paste command wiring, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷\n  컨텍스트 메뉴, native editor item event filter는 삭제된 문서 모델 경계이며 다시 추가하지 않는다.\n- Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.\n- editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.\n- `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.\n- text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.\n  현재 입력 표면은 active note 파일 읽기/저장, body parse/serialize, editor document projection을 수행하지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 content QML은 ordinary note editing을 위한 custom text input handler나 rendered selection handler를",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 178,
+      "end_line": 178,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "heading",
+      "start_line": 179,
+      "end_line": 179,
+      "raw": "## LVRS 통합의 단일 Source of Truth\n",
+      "level": 2,
+      "title": "LVRS 통합의 단일 Source of Truth"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 180,
+      "end_line": 180,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "heading",
+      "start_line": 181,
+      "end_line": 181,
+      "raw": "### CMake\n",
+      "level": 3,
+      "title": "CMake"
+    },
+    {
+      "id": "b000046",
+      "kind": "blank",
+      "start_line": 182,
+      "end_line": 182,
+      "raw": "\n"
+    },
+    {
+      "id": "b000047",
+      "kind": "paragraph",
+      "start_line": 183,
+      "end_line": 183,
+      "raw": "app target은 이 pattern을 유지해야 한다.\n"
+    },
+    {
+      "id": "b000048",
+      "kind": "blank",
+      "start_line": 184,
+      "end_line": 184,
+      "raw": "\n"
+    },
+    {
+      "id": "b000049",
+      "kind": "fenced_code",
+      "start_line": 185,
+      "end_line": 199,
+      "raw": "```cmake\nfind_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)\nfind_package(LVRS CONFIG REQUIRED)\n\nqt_add_executable(WhatSon main.cpp)\nqt_add_qml_module(WhatSon\n        URI WhatSon.App\n        VERSION 1.0\n        RESOURCE_PREFIX \"/qt/qml\"\n        QML_FILES\n        qml/Main.qml\n)\n\nlvrs_configure_qml_app(WhatSon)\n```\n",
+      "language": "cmake",
+      "code": "find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)\nfind_package(LVRS CONFIG REQUIRED)\n\nqt_add_executable(WhatSon main.cpp)\nqt_add_qml_module(WhatSon\n        URI WhatSon.App\n        VERSION 1.0\n        RESOURCE_PREFIX \"/qt/qml\"\n        QML_FILES\n        qml/Main.qml\n)\n\nlvrs_configure_qml_app(WhatSon)\n",
+      "closed": true
+    },
+    {
+      "id": "b000050",
+      "kind": "blank",
+      "start_line": 200,
+      "end_line": 200,
+      "raw": "\n"
+    },
+    {
+      "id": "b000051",
+      "kind": "heading",
+      "start_line": 201,
+      "end_line": 201,
+      "raw": "### QML\n",
+      "level": 3,
+      "title": "QML"
+    },
+    {
+      "id": "b000052",
+      "kind": "blank",
+      "start_line": 202,
+      "end_line": 202,
+      "raw": "\n"
+    },
+    {
+      "id": "b000053",
+      "kind": "paragraph",
+      "start_line": 203,
+      "end_line": 203,
+      "raw": "모든 LVRS 기반 QML 파일은 이 import baseline을 사용한다.\n"
+    },
+    {
+      "id": "b000054",
+      "kind": "blank",
+      "start_line": 204,
+      "end_line": 204,
+      "raw": "\n"
+    },
+    {
+      "id": "b000055",
+      "kind": "fenced_code",
+      "start_line": 205,
+      "end_line": 208,
+      "raw": "```qml\nimport QtQuick\nimport LVRS 1.0 as LV\n```\n",
+      "language": "qml",
+      "code": "import QtQuick\nimport LVRS 1.0 as LV\n",
+      "closed": true
+    },
+    {
+      "id": "b000056",
+      "kind": "blank",
+      "start_line": 209,
+      "end_line": 209,
+      "raw": "\n"
+    },
+    {
+      "id": "b000057",
+      "kind": "heading",
+      "start_line": 210,
+      "end_line": 210,
+      "raw": "## 금지 변경\n",
+      "level": 2,
+      "title": "금지 변경"
+    },
+    {
+      "id": "b000058",
+      "kind": "blank",
+      "start_line": 211,
+      "end_line": 211,
+      "raw": "\n"
+    },
+    {
+      "id": "b000059",
+      "kind": "list",
+      "start_line": 212,
+      "end_line": 215,
+      "raw": "- LVRS 통합을 위해 manual `rpath`, manual `-F`, manual framework path를 추가하지 않는다.\n- `QQmlApplicationEngine`에 LVRS-specific import/plugin path를 수동 주입하지 않는다.\n- LVRS 대체물로 `QtQuick.Controls.Material` 중심 UI로 회귀하지 않는다.\n- LVRS component screen에 임의의 Qt default widget styling을 섞지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "LVRS 통합을 위해 manual `rpath`, manual `-F`, manual framework path를 추가하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`QQmlApplicationEngine`에 LVRS-specific import/plugin path를 수동 주입하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS 대체물로 `QtQuick.Controls.Material` 중심 UI로 회귀하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "LVRS component screen에 임의의 Qt default widget styling을 섞지 않는다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000060",
+      "kind": "blank",
+      "start_line": 216,
+      "end_line": 216,
+      "raw": "\n"
+    },
+    {
+      "id": "b000061",
+      "kind": "heading",
+      "start_line": 217,
+      "end_line": 217,
+      "raw": "## 허용 예외\n",
+      "level": 2,
+      "title": "허용 예외"
+    },
+    {
+      "id": "b000062",
+      "kind": "blank",
+      "start_line": 218,
+      "end_line": 218,
+      "raw": "\n"
+    },
+    {
+      "id": "b000063",
+      "kind": "paragraph",
+      "start_line": 219,
+      "end_line": 219,
+      "raw": "예외는 다음 조건을 모두 만족할 때만 허용한다.\n"
+    },
+    {
+      "id": "b000064",
+      "kind": "blank",
+      "start_line": 220,
+      "end_line": 220,
+      "raw": "\n"
+    },
+    {
+      "id": "b000065",
+      "kind": "list",
+      "start_line": 221,
+      "end_line": 224,
+      "raw": "1. `find_package(LVRS)`와 `lvrs_configure_qml_app()`이 재현 가능하게 실패한다.\n2. 실패 로그가 명시적이고 보존되어 있다.\n3. 변경이 재현 가능하며 임시 우회가 아니다.\n4. 이유와 rollback condition이 PR/commit message에 문서화되어 있다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`find_package(LVRS)`와 `lvrs_configure_qml_app()`이 재현 가능하게 실패한다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "실패 로그가 명시적이고 보존되어 있다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "변경이 재현 가능하며 임시 우회가 아니다.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "이유와 rollback condition이 PR/commit message에 문서화되어 있다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000066",
+      "kind": "blank",
+      "start_line": 225,
+      "end_line": 225,
+      "raw": "\n"
+    },
+    {
+      "id": "b000067",
+      "kind": "heading",
+      "start_line": 226,
+      "end_line": 226,
+      "raw": "## 현재 UI 레이아웃\n",
+      "level": 2,
+      "title": "현재 UI 레이아웃"
+    },
+    {
+      "id": "b000068",
+      "kind": "blank",
+      "start_line": 227,
+      "end_line": 227,
+      "raw": "\n"
+    },
+    {
+      "id": "b000069",
+      "kind": "list",
+      "start_line": 228,
+      "end_line": 270,
+      "raw": "- 루트 쉘: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)\n- Workspace route: `Main.qml`은 desktop layout shell을 유지한다. `BodyLayout.qml`의 content slot이\n  `src/app/qml/view/panels/ContentViewLayout.qml`을 mount한다. 노트 선택 시 본문 editor를 열지 않고 빈 content\n  placeholder를 유지한다. 리소스 하이어라키에서 이미지 리소스 list item을 선택하면 같은 content slot이\n  `ImageEditor.qml`을 표시한다.\n- View directory(legacy `shell`과 `pages`에서 병합됨):\n    - `src/app/qml/view/panels/StatusBarLayout.qml`\n    - `src/app/qml/view/panels/NavigationBarLayout.qml`\n    - `src/app/qml/view/panels/BodyLayout.qml`\n    - `src/app/qml/view/panels/ListBarLayout.qml`(Figma 구동 목록 표시줄 패널, 노드 `73:2635`)\n    - `src/app/qml/view/panels/ListBarHeader.qml`(Figma 구동 목록 표시줄 헤더, 노드 `134:3180`)\n        - `src/app/qml/view/panels/NoteListItem.qml`(Figma 구동 메모 항목 카드, 노드 `119:3028`)\n        - `src/app/qml/view/panels/DetailPanelLayout.qml`(Figma 구동 오른쪽 패널 래퍼, 노드 `134:3212`)\n        - `src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma 프레임 `PropertiesBar`, 노드 `147:3876`)\n        - `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma 프레임 `InformationBar`, 노드 `134:3138`)\n        - `src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma 프레임 `NavigationMode`, 노드 `147:3875`)\n        - `src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`\n        - `src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`\n        - `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`\n            - `src/app/qml/view/panels/detail/RightPanel.qml`(Figma 프레임 `RightPanel`, 노드 `134:3212`)\n            - `src/app/qml/view/panels/detail/DetailPanel.qml`(Figma 프레임 `DetailPanel`, 노드 `134:3641`)\n            - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`(Figma 프레임 `DetailPanelHeaderToolbar`, 노드 `134:3642`)\n            - `src/app/qml/view/panels/detail/DetailContents.qml`(Figma 프레임 `DetailContents`, 노드 `134:3649`)\n                - `src/app/qml/view/body/HierarchySidebarLayout.qml`\n                    - `src/app/qml/view/panels/ContentViewLayout.qml`\n                    - `src/app/qml/view/contents/ImageEditor.qml`\n                - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`\n                - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`\n- 공유 구성요소:\n    - `src/app/qml/components/NavigationRail.qml`\n    - `src/app/qml/components/MetricCard.qml`\n    - `src/app/qml/components/InfoListCard.qml`\n    - `src/app/qml/components/InsightPanel.qml`\n- 콘텐츠 뷰 네임스페이스:\n    - `src/app/qml/view/contents`는 단일 콘텐츠 뷰 네임스페이스입니다.\n    - `src/app/qml/contents` 또는 `src/app/qml/view/content`를 다시 도입하지 마십시오.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 쉘: `src/app/qml/Main.qml`(`LV.ApplicationWindow`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Workspace route: `Main.qml`은 desktop layout shell을 유지한다. `BodyLayout.qml`의 content slot이",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "View directory(legacy `shell`과 `pages`에서 병합됨):",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/StatusBarLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/NavigationBarLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/BodyLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/ListBarLayout.qml`(Figma 구동 목록 표시줄 패널, 노드 `73:2635`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/ListBarHeader.qml`(Figma 구동 목록 표시줄 헤더, 노드 `134:3180`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/NoteListItem.qml`(Figma 구동 메모 항목 카드, 노드 `119:3028`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/DetailPanelLayout.qml`(Figma 구동 오른쪽 패널 래퍼, 노드 `134:3212`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationPropertiesBar.qml`(Figma 프레임 `PropertiesBar`, 노드 `147:3876`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationInformationBar.qml`(Figma 프레임 `InformationBar`, 노드 `134:3138`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationModeBar.qml`(Figma 프레임 `NavigationMode`, 노드 `147:3875`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/detail/RightPanel.qml`(Figma 프레임 `RightPanel`, 노드 `134:3212`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/detail/DetailPanel.qml`(Figma 프레임 `DetailPanel`, 노드 `134:3641`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`(Figma 프레임 `DetailPanelHeaderToolbar`, 노드 `134:3642`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/detail/DetailContents.qml`(Figma 프레임 `DetailContents`, 노드 `134:3649`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/body/HierarchySidebarLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/ContentViewLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/contents/ImageEditor.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공유 구성요소:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/components/NavigationRail.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/components/MetricCard.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/components/InfoListCard.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/components/InsightPanel.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "콘텐츠 뷰 네임스페이스:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/contents`는 단일 콘텐츠 뷰 네임스페이스입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/contents` 또는 `src/app/qml/view/content`를 다시 도입하지 마십시오.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000070",
+      "kind": "blank",
+      "start_line": 271,
+      "end_line": 271,
+      "raw": "\n"
+    },
+    {
+      "id": "b000071",
+      "kind": "heading",
+      "start_line": 272,
+      "end_line": 272,
+      "raw": "## 시작 체크리스트\n",
+      "level": 2,
+      "title": "시작 체크리스트"
+    },
+    {
+      "id": "b000072",
+      "kind": "blank",
+      "start_line": 273,
+      "end_line": 273,
+      "raw": "\n"
+    },
+    {
+      "id": "b000073",
+      "kind": "list",
+      "start_line": 274,
+      "end_line": 276,
+      "raw": "1. `CMakeLists.txt`와 `src/app/CMakeLists.txt`가 여전히 LVRS baseline pattern과 일치하는지 확인한다. root orchestration과 per-directory `add_subdirectory(...)` split을 맞춘 상태로 유지한다.\n2. QML import가 일관되게 `import LVRS 1.0 as LV`인지 확인한다.\n3. 새 UI는 LVRS component를 먼저 사용해 설계한다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`CMakeLists.txt`와 `src/app/CMakeLists.txt`가 여전히 LVRS baseline pattern과 일치하는지 확인한다. root orchestration과 per-directory `add_subdirectory(...)` split을 맞춘 상태로 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "QML import가 일관되게 `import LVRS 1.0 as LV`인지 확인한다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "새 UI는 LVRS component를 먼저 사용해 설계한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000074",
+      "kind": "blank",
+      "start_line": 277,
+      "end_line": 277,
+      "raw": "\n"
+    },
+    {
+      "id": "b000075",
+      "kind": "heading",
+      "start_line": 278,
+      "end_line": 278,
+      "raw": "## 플랜 및 구현 체크리스트\n",
+      "level": 2,
+      "title": "플랜 및 구현 체크리스트"
+    },
+    {
+      "id": "b000076",
+      "kind": "blank",
+      "start_line": 279,
+      "end_line": 279,
+      "raw": "\n"
+    },
+    {
+      "id": "b000077",
+      "kind": "list",
+      "start_line": 280,
+      "end_line": 281,
+      "raw": "1. 계산과 동작은 반드시 C++로 구현되어야 하고, 오로지 뷰만을 Qml에서 다룬다. Qml은 객체 모델링 및 메서드 정의 등 백엔드 논리를 전담할 수 없다.\n2. \n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "계산과 동작은 반드시 C++로 구현되어야 하고, 오로지 뷰만을 Qml에서 다룬다. Qml은 객체 모델링 및 메서드 정의 등 백엔드 논리를 전담할 수 없다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000078",
+      "kind": "blank",
+      "start_line": 282,
+      "end_line": 283,
+      "raw": "\n\n"
+    },
+    {
+      "id": "b000079",
+      "kind": "heading",
+      "start_line": 284,
+      "end_line": 284,
+      "raw": "## 완료 체크리스트\n",
+      "level": 2,
+      "title": "완료 체크리스트"
+    },
+    {
+      "id": "b000080",
+      "kind": "blank",
+      "start_line": 285,
+      "end_line": 285,
+      "raw": "\n"
+    },
+    {
+      "id": "b000081",
+      "kind": "list",
+      "start_line": 286,
+      "end_line": 290,
+      "raw": "1. 변경된 source와 repository policy 변경을 문서가 함께 반영한다.\n2. 수정된 QML은 LVRS import와 component usage 일관성을 유지한다.\n3. model/controller/view contract는 signal-slot hook을 보존한다. C++에서는 `signals`+`slots`, QML view에서는 `signal` + callable hook function을 사용한다.\n4. 사용자가 명시적으로 달리 지시하지 않는 한 인계 전 `build/`에서 가장 작은 관련 검증 게이트를 실행하고, 대체 build directory를 만들지 않는다.\n5. 빌드/검증 중 생성된 임시 진단 로그, 스크린샷, 백업 파일은 `build/` 루트에 남기지 않는다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "변경된 source와 repository policy 변경을 문서가 함께 반영한다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "수정된 QML은 LVRS import와 component usage 일관성을 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "model/controller/view contract는 signal-slot hook을 보존한다. C++에서는 `signals`+`slots`, QML view에서는 `signal` + callable hook function을 사용한다.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "사용자가 명시적으로 달리 지시하지 않는 한 인계 전 `build/`에서 가장 작은 관련 검증 게이트를 실행하고, 대체 build directory를 만들지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "5.",
+          "text": "빌드/검증 중 생성된 임시 진단 로그, 스크린샷, 백업 파일은 `build/` 루트에 남기지 않는다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000082",
+      "kind": "blank",
+      "start_line": 291,
+      "end_line": 291,
+      "raw": "\n"
+    },
+    {
+      "id": "b000083",
+      "kind": "heading",
+      "start_line": 292,
+      "end_line": 292,
+      "raw": "## 유지보수 규칙\n",
+      "level": 2,
+      "title": "유지보수 규칙"
+    },
+    {
+      "id": "b000084",
+      "kind": "blank",
+      "start_line": 293,
+      "end_line": 293,
+      "raw": "\n"
+    },
+    {
+      "id": "b000085",
+      "kind": "list",
+      "start_line": 294,
+      "end_line": 307,
+      "raw": "- build-system 단순성을 우선한다.\n- C++ entrypoint는 작고 집중된 상태로 유지한다.\n- design token에는 LVRS `Theme`를 우선 사용한다.\n- 명령 예시와 실제 output path를 docs에서 동기화한다.\n- project-local C++ include는 configured include root 기준의 repository-absolute include를 사용한다. basename-only 또는 file-relative include 대신 `app/...`, `extension/...`, `test/...`를 사용한다.\n- model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.\n- hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.\n- QML에는 SRP를 강제한다. 하나의 QML 파일이 layout shell, rendering delegate, interaction logic을 함께 품기 시작하면 같은 domain directory 아래의 dedicated sibling module로 분리하고 parent screen에서 compose한다.\n- 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.\n- decomposition work와 quality gate를 맞춘다.\n    - QML refactor 후 `cmake --build build --target whatson_qmllint -j`를 실행한다.\n    - C++ refactor 후 `clang-tidy`가 설치되어 있으면 `cmake --build build --target whatson_clang_tidy -j`를 실행한다. 사용할 수 없으면 완료 보고에 누락 도구를 명시한다.\n    - build-system 또는 compilation-surface 변경 후 `cmake --build build --target whatson_build_regression -j`를 실행한다.\n    - C++ 또는 cross-domain behavior 변경 후 `cmake --build build --target whatson_regression -j`를 실행한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "build-system 단순성을 우선한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "C++ entrypoint는 작고 집중된 상태로 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "design token에는 LVRS `Theme`를 우선 사용한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명령 예시와 실제 output path를 docs에서 동기화한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "project-local C++ include는 configured include root 기준의 repository-absolute include를 사용한다. basename-only 또는 file-relative include 대신 `app/...`, `extension/...`, `test/...`를 사용한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "hierarchy wiring은 type-safe로 유지한다. 각 hierarchy category는 `src/app/models/hierarchy` 아래의 전용 Controller에 계속 bound되어야 한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML에는 SRP를 강제한다. 하나의 QML 파일이 layout shell, rendering delegate, interaction logic을 함께 품기 시작하면 같은 domain directory 아래의 dedicated sibling module로 분리하고 parent screen에서 compose한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "복잡한 editor surface에는 최소 reusable module을 우선한다. 예: minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "decomposition work와 quality gate를 맞춘다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML refactor 후 `cmake --build build --target whatson_qmllint -j`를 실행한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "C++ refactor 후 `clang-tidy`가 설치되어 있으면 `cmake --build build --target whatson_clang_tidy -j`를 실행한다. 사용할 수 없으면 완료 보고에 누락 도구를 명시한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "build-system 또는 compilation-surface 변경 후 `cmake --build build --target whatson_build_regression -j`를 실행한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "C++ 또는 cross-domain behavior 변경 후 `cmake --build build --target whatson_regression -j`를 실행한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000086",
+      "kind": "blank",
+      "start_line": 308,
+      "end_line": 308,
+      "raw": "\n"
+    },
+    {
+      "id": "b000087",
+      "kind": "heading",
+      "start_line": 309,
+      "end_line": 309,
+      "raw": "## Troubleshooting 기준선\n",
+      "level": 2,
+      "title": "Troubleshooting 기준선"
+    },
+    {
+      "id": "b000088",
+      "kind": "blank",
+      "start_line": 310,
+      "end_line": 310,
+      "raw": "\n"
+    },
+    {
+      "id": "b000089",
+      "kind": "list",
+      "start_line": 311,
+      "end_line": 313,
+      "raw": "- LVRS를 찾지 못하면 `CMAKE_PREFIX_PATH`에 LVRS prefix를 제공한다.\n- QML module을 찾지 못하면 LVRS 설치 상태(`lib/qt6/qml/LVRS/qmldir`)를 확인한다.\n- link warning은 먼저 `lvrs_configure_qml_app()`에 맡기고 manual link addition은 피한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "LVRS를 찾지 못하면 `CMAKE_PREFIX_PATH`에 LVRS prefix를 제공한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML module을 찾지 못하면 LVRS 설치 상태(`lib/qt6/qml/LVRS/qmldir`)를 확인한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "link warning은 먼저 `lvrs_configure_qml_app()`에 맡기고 manual link addition은 피한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000090",
+      "kind": "blank",
+      "start_line": 314,
+      "end_line": 314,
+      "raw": "\n"
+    },
+    {
+      "id": "b000091",
+      "kind": "heading",
+      "start_line": 315,
+      "end_line": 315,
+      "raw": "## Agent 응답 및 작업 규칙\n",
+      "level": 2,
+      "title": "Agent 응답 및 작업 규칙"
+    },
+    {
+      "id": "b000092",
+      "kind": "blank",
+      "start_line": 316,
+      "end_line": 316,
+      "raw": "\n"
+    },
+    {
+      "id": "b000093",
+      "kind": "list",
+      "start_line": 317,
+      "end_line": 323,
+      "raw": "- 추정 대신 실제 repository file과 log를 근거로 사용한다.\n- 변경은 작고 검증 가능하게 유지한다.\n- 완료 보고에는 변경 파일, 검증 명령, 알려진 한계를 포함한다.\n- 검증을 생략했거나 실행할 수 없었으면 명시적으로 말하고, 사용자가 거절했는지 환경이 막았는지 설명한다.\n- 작업 중 사용자가 개입하면 최신 사용자 지시를 우선하고, 충돌하는 기존 방향은 즉시 재정렬한다. 사용자의 개입은 작업 중단 신호가 아니라 현재 목표를 더 정확히 맞추기 위한 상위 입력으로 취급한다.\n- 프로젝트 내부 산출물은 기본적으로 영어를 사용한다. 단, 사용자-facing 답변과 이 `AGENTS.md`는 한국어를 사용한다.\n- 큰 코드베이스 변경이나 새 요구사항이 도입되면 `AGENTS.md`를 함께 재정비한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "추정 대신 실제 repository file과 log를 근거로 사용한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "변경은 작고 검증 가능하게 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "완료 보고에는 변경 파일, 검증 명령, 알려진 한계를 포함한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "검증을 생략했거나 실행할 수 없었으면 명시적으로 말하고, 사용자가 거절했는지 환경이 막았는지 설명한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "작업 중 사용자가 개입하면 최신 사용자 지시를 우선하고, 충돌하는 기존 방향은 즉시 재정렬한다. 사용자의 개입은 작업 중단 신호가 아니라 현재 목표를 더 정확히 맞추기 위한 상위 입력으로 취급한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 내부 산출물은 기본적으로 영어를 사용한다. 단, 사용자-facing 답변과 이 `AGENTS.md`는 한국어를 사용한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "큰 코드베이스 변경이나 새 요구사항이 도입되면 `AGENTS.md`를 함께 재정비한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000094",
+      "kind": "blank",
+      "start_line": 324,
+      "end_line": 324,
+      "raw": "\n"
+    },
+    {
+      "id": "b000095",
+      "kind": "heading",
+      "start_line": 325,
+      "end_line": 325,
+      "raw": "## 파일 생성 소유권\n",
+      "level": 2,
+      "title": "파일 생성 소유권"
+    },
+    {
+      "id": "b000096",
+      "kind": "blank",
+      "start_line": 326,
+      "end_line": 326,
+      "raw": "\n"
+    },
+    {
+      "id": "b000097",
+      "kind": "list",
+      "start_line": 327,
+      "end_line": 329,
+      "raw": "- 앱의 파일·디렉터리·임시 파일·잠금 파일 생성은 iiFileProvider에 위임한다.\n- 허브·클립보드·리소스 형식과 검증은 기존 도메인에서 유지한다.\n- Qt 저장 어댑터는 제공자의 장치 API를 사용하고, 인코더에는 제공자가 확보한 경로 또는 스트림을 전달한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "앱의 파일·디렉터리·임시 파일·잠금 파일 생성은 iiFileProvider에 위임한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "허브·클립보드·리소스 형식과 검증은 기존 도메인에서 유지한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Qt 저장 어댑터는 제공자의 장치 API를 사용하고, 인코더에는 제공자가 확보한 경로 또는 스트림을 전달한다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000098",
+      "kind": "blank",
+      "start_line": 330,
+      "end_line": 330,
+      "raw": "\n"
+    },
+    {
+      "id": "b000099",
+      "kind": "html",
+      "start_line": 331,
+      "end_line": 331,
+      "raw": "<!-- workspace-docs:agent:start -->\n"
+    },
+    {
+      "id": "b000100",
+      "kind": "heading",
+      "start_line": 332,
+      "end_line": 332,
+      "raw": "## 문서 구조와 에이전트 탐색\n",
+      "level": 2,
+      "title": "문서 구조와 에이전트 탐색"
+    },
+    {
+      "id": "b000101",
+      "kind": "blank",
+      "start_line": 333,
+      "end_line": 333,
+      "raw": "\n"
+    },
+    {
+      "id": "b000102",
+      "kind": "list",
+      "start_line": 334,
+      "end_line": 340,
+      "raw": "- 프로젝트 루트의 `README.md`는 사람용 영문 진입 문서이며 `AGENT.md`는 에이전트 진입점이다.\n- 하위 인간용 Markdown과 구조화된 agent JSON을 함께 유지한다. Markdown이 원본이며 JSON은 원문 해시와 줄 범위를 가진 파생 문서이다.\n- 먼저 [docs/agent-index.json](docs/agent-index.json)에서 관련 문서와 JSON 투영을 찾는다. 원문 SHA-256이 다르면 현재 Markdown을 읽고 투영을 갱신한다.\n- JSON의 규칙 후보는 검색용 어휘 일치 결과이다. 과거 기록·예제·실패 상태를 현재 지시나 검증 완료로 자동 해석하지 않는다.\n- 기존 프로젝트별 규칙, 동결된 증거, 라이선스, 외부 원본, 사용자 데이터와 다른 작업의 변경을 보존한다.\n- 이 문서 재편 지침은 과거 작업의 기능 구현·배포를 자동 재개하라는 요청이 아니다. 현재 사용자의 작업 범위를 우선한다.\n- 문서를 수정하면 JSON 쌍·색인을 함께 갱신하고 검증한다. 기존 소스 변경에 대한 빌드·테스트 규칙은 계속 따른다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "프로젝트 루트의 `README.md`는 사람용 영문 진입 문서이며 `AGENT.md`는 에이전트 진입점이다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하위 인간용 Markdown과 구조화된 agent JSON을 함께 유지한다. Markdown이 원본이며 JSON은 원문 해시와 줄 범위를 가진 파생 문서이다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "먼저 [docs/agent-index.json](docs/agent-index.json)에서 관련 문서와 JSON 투영을 찾는다. 원문 SHA-256이 다르면 현재 Markdown을 읽고 투영을 갱신한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "JSON의 규칙 후보는 검색용 어휘 일치 결과이다. 과거 기록·예제·실패 상태를 현재 지시나 검증 완료로 자동 해석하지 않는다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 프로젝트별 규칙, 동결된 증거, 라이선스, 외부 원본, 사용자 데이터와 다른 작업의 변경을 보존한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이 문서 재편 지침은 과거 작업의 기능 구현·배포를 자동 재개하라는 요청이 아니다. 현재 사용자의 작업 범위를 우선한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "문서를 수정하면 JSON 쌍·색인을 함께 갱신하고 검증한다. 기존 소스 변경에 대한 빌드·테스트 규칙은 계속 따른다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000103",
+      "kind": "blank",
+      "start_line": 341,
+      "end_line": 341,
+      "raw": "\n"
+    },
+    {
+      "id": "b000104",
+      "kind": "paragraph",
+      "start_line": 342,
+      "end_line": 342,
+      "raw": "Workspace에서 이 프로젝트의 문서를 갱신하는 명령은 다음과 같다.\n"
+    },
+    {
+      "id": "b000105",
+      "kind": "blank",
+      "start_line": 343,
+      "end_line": 343,
+      "raw": "\n"
+    },
+    {
+      "id": "b000106",
+      "kind": "fenced_code",
+      "start_line": 344,
+      "end_line": 346,
+      "raw": "```sh\npython3 ../../../Engineering/WorkspaceDocumentation/App/workspace_docs.py --workspace ../../.. sync --project Product/.Deprecated/WhatSon\n```\n",
+      "language": "sh",
+      "code": "python3 ../../../Engineering/WorkspaceDocumentation/App/workspace_docs.py --workspace ../../.. sync --project Product/.Deprecated/WhatSon\n",
+      "closed": true
+    },
+    {
+      "id": "b000107",
+      "kind": "html",
+      "start_line": 347,
+      "end_line": 347,
+      "raw": "<!-- workspace-docs:agent:end -->\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "WhatSon 에이전트 지침",
+      "anchor": "whatson-에이전트-지침",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "보존한 AGENTS.md 프로젝트 지침",
+      "anchor": "보존한-agentsmd-프로젝트-지침",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": null,
+      "level": 1,
+      "title": "WhatSon 에이전트 운영 가이드",
+      "anchor": "whatson-에이전트-운영-가이드",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000007",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "목적",
+      "anchor": "목적",
+      "start_line": 7
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "언어 원칙",
+      "anchor": "언어-원칙",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "기술 기준선",
+      "anchor": "기술-기준선",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "자동화 테스트 정책",
+      "anchor": "자동화-테스트-정책",
+      "start_line": 49
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000019",
+      "level": 3,
+      "title": "계층 컨트롤러 소유권 (중요)",
+      "anchor": "계층-컨트롤러-소유권-중요",
+      "start_line": 59
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000019",
+      "level": 3,
+      "title": "컨트롤러 구현 경계 (중요)",
+      "anchor": "컨트롤러-구현-경계-중요",
+      "start_line": 92
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000019",
+      "level": 3,
+      "title": "Model Layer, QML 의 역할 분담 (중요)",
+      "anchor": "model-layer-qml-의-역할-분담-중요",
+      "start_line": 127
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000019",
+      "level": 3,
+      "title": "콘텐츠 Source of Truth (중요)",
+      "anchor": "콘텐츠-source-of-truth-중요",
+      "start_line": 139
+    },
+    {
+      "block_id": "b000039",
+      "parent_id": "b000019",
+      "level": 3,
+      "title": "입력기 권한 (중요)",
+      "anchor": "입력기-권한-중요",
+      "start_line": 168
+    },
+    {
+      "block_id": "b000043",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "LVRS 통합의 단일 Source of Truth",
+      "anchor": "lvrs-통합의-단일-source-of-truth",
+      "start_line": 179
+    },
+    {
+      "block_id": "b000045",
+      "parent_id": "b000043",
+      "level": 3,
+      "title": "CMake",
+      "anchor": "cmake",
+      "start_line": 181
+    },
+    {
+      "block_id": "b000051",
+      "parent_id": "b000043",
+      "level": 3,
+      "title": "QML",
+      "anchor": "qml",
+      "start_line": 201
+    },
+    {
+      "block_id": "b000057",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "금지 변경",
+      "anchor": "금지-변경",
+      "start_line": 210
+    },
+    {
+      "block_id": "b000061",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "허용 예외",
+      "anchor": "허용-예외",
+      "start_line": 217
+    },
+    {
+      "block_id": "b000067",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "현재 UI 레이아웃",
+      "anchor": "현재-ui-레이아웃",
+      "start_line": 226
+    },
+    {
+      "block_id": "b000071",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "시작 체크리스트",
+      "anchor": "시작-체크리스트",
+      "start_line": 272
+    },
+    {
+      "block_id": "b000075",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "플랜 및 구현 체크리스트",
+      "anchor": "플랜-및-구현-체크리스트",
+      "start_line": 278
+    },
+    {
+      "block_id": "b000079",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "완료 체크리스트",
+      "anchor": "완료-체크리스트",
+      "start_line": 284
+    },
+    {
+      "block_id": "b000083",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "유지보수 규칙",
+      "anchor": "유지보수-규칙",
+      "start_line": 292
+    },
+    {
+      "block_id": "b000087",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "Troubleshooting 기준선",
+      "anchor": "troubleshooting-기준선",
+      "start_line": 309
+    },
+    {
+      "block_id": "b000091",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "Agent 응답 및 작업 규칙",
+      "anchor": "agent-응답-및-작업-규칙",
+      "start_line": 315
+    },
+    {
+      "block_id": "b000095",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "파일 생성 소유권",
+      "anchor": "파일-생성-소유권",
+      "start_line": 325
+    },
+    {
+      "block_id": "b000100",
+      "parent_id": "b000005",
+      "level": 2,
+      "title": "문서 구조와 에이전트 탐색",
+      "anchor": "문서-구조와-에이전트-탐색",
+      "start_line": 332
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000017",
+        "line": 47,
+        "text": "- 런타임 bootstrap: 저장된 `.wshub` 선택을 mount할 수 있으면 앱 시작 시 workspace shell로 바로 진입할 수 있다. 저장된 시작 허브를 mount할 수 없으면 startup은 unmounted 상태를 유지하고 blueprint/sample workspace를 다시 여는 대신 onboarding으로 라우팅해야 한다. 저장된 시작 경로는 첫 workspace window가 생성되기 전에 runtime domain을 load하면 안 된다. `main.cpp`는 LVRS `AfterFirstIdle` lifecycle task를 통해 일반 full runtime load를 예약하고, 이후 `WhatSonRuntimeParallelLoader`의 Controller 상태를 적용한다. onboarding 중 명시적 허브 선택은 workspace로 전환하기 전에 선택된 허브를 load할 수 있다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000021",
+        "line": 54,
+        "text": "- 사용자가 명시적으로 두 번째 테스트 표면을 요구하지 않는 한 `tests/*`, `scripts/test_*.py`, 또는 임시 중복 harness를 추가하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000021",
+        "line": 57,
+        "text": "불가피한 임시 산출물은 소유 하위 디렉터리에 두고, 일반 회귀 흐름은 `whatson_clean_build_extras`로 루트 clutter를 정리해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000025",
+        "line": 61,
+        "text": "- 각 계층 타입은 `src/app/models/hierarchy/*` 아래의 전용 Controller를 사용해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000025",
+        "line": 62,
+        "text": "- 모든 계층 카테고리를 하나의 공유 Controller instance에 바인딩하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000025",
+        "line": 72,
+        "text": "- 계층 wiring 변경은 반드시 이 one-type/one-Controller contract를 보존해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000025",
+        "line": 74,
+        "text": "`src/app/models/hierarchy/WhatSonHierarchyModel.*` 하나를 공유해야 한다. 각 Controller는 자기 domain의 typed",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000025",
+        "line": 83,
+        "text": "전체 hierarchy replacement가 필요할 때만 공통 model에 `depthItems()`를 다시 공급해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000029",
+        "line": 94,
+        "text": "- 이 저장소는 MVVM을 사용하지 않는다. `ViewModel` 개념, `src/app/viewmodel`, QML view-model registry binding, 또는 `LV.ViewModels`/`LV.Controllers` 기반 런타임 lookup을 도입하지 않는다. 뷰는 모델과 직접적으로 이어진다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000029",
+        "line": 96,
+        "text": "- `src/app/models` 아래에 QML 파일을 추가하지 말고, 해당 디렉터리를 QML module source로 등록하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000029",
+        "line": 105,
+        "text": "우회하기 위한 compatibility QML wrapper를 추가하지 않는다. 해당 책임은 single-purpose C++ object로 승격한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000029",
+        "line": 108,
+        "text": "- 각 C++ Controller는 좁은 signal/slot contract를 노출하고, domain mutation, timing, rendering, persistence 작업은 소유 model layer에 위임해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000029",
+        "line": 119,
+        "text": "import descriptor만 구성해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 151,
+        "text": "`NoteEditorDocumentSession`을 되살리거나 QML compatibility wrapper로 우회하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 154,
+        "text": "model에 속하므로 연결하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 156,
+        "text": "structured-document wrapper, projection, renderer를 직접 mount하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 159,
+        "text": "- 새 편집 정책은 문서 모델을 새로 정의하기 전까지 추가하지 않는다. 기존 QML 호환 wrapper, RichText overlay,",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 164,
+        "text": "QML은 이를 대체 구현하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000037",
+        "line": 166,
+        "text": "QML 단축키나 컨텍스트 메뉴로 직접 연결하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 171,
+        "text": "설치하지 않는다. clipboard image paste command wiring, 정적 포맷 태그 단축키, 선택 텍스트 우클릭 포맷",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 172,
+        "text": "컨텍스트 메뉴, native editor item event filter는 삭제된 문서 모델 경계이며 다시 추가하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 173,
+        "text": "- Markdown list shortcut, markdown list Enter continuation, generic text-boundary key override는 editor input layer에서 허용하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 174,
+        "text": "- editor QML에서 `Qt.inputMethod.update(...)`, `Qt.inputMethod.show()`, `Qt.inputMethod.hide()`, 또는 bare QML `InputMethod.*` singleton을 호출하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 175,
+        "text": "- `Qt.inputMethod && ...`, `Qt.inputMethod.visible !== undefined` guard처럼 alternate input-method object를 허용하는 fallback branch를 추가하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 176,
+        "text": "- text editor wrapper는 programmatic sync defer를 위한 native text state 관찰을 현재 계약에 포함하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000041",
+        "line": 177,
+        "text": "현재 입력 표면은 active note 파일 읽기/저장, body parse/serialize, editor document projection을 수행하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000047",
+        "line": 183,
+        "text": "app target은 이 pattern을 유지해야 한다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      },
+      {
+        "block_id": "b000057",
+        "line": 210,
+        "text": "## 금지 변경",
+        "basis": "lexical_match",
+        "context": "heading"
+      },
+      {
+        "block_id": "b000059",
+        "line": 212,
+        "text": "- LVRS 통합을 위해 manual `rpath`, manual `-F`, manual framework path를 추가하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000059",
+        "line": 213,
+        "text": "- `QQmlApplicationEngine`에 LVRS-specific import/plugin path를 수동 주입하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000059",
+        "line": 214,
+        "text": "- LVRS 대체물로 `QtQuick.Controls.Material` 중심 UI로 회귀하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000077",
+        "line": 280,
+        "text": "1. 계산과 동작은 반드시 C++로 구현되어야 하고, 오로지 뷰만을 Qml에서 다룬다. Qml은 객체 모델링 및 메서드 정의 등 백엔드 논리를 전담할 수 없다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000085",
+        "line": 299,
+        "text": "- model/controller/view interface는 event-driven으로 유지한다. 모든 model, controller, view는 적어도 하나의 signal과 하나의 slot/hook entrypoint를 노출해야 한다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000085",
+        "line": 302,
+        "text": "- 복잡한 editor surface에는 최소 reusable module을 우선한다. 예: minimap layer, splitter interaction layer. 모든 delegate를 하나의 root file에 embed하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000102",
+        "line": 337,
+        "text": "- JSON의 규칙 후보는 검색용 어휘 일치 결과이다. 과거 기록·예제·실패 상태를 현재 지시나 검증 완료로 자동 해석하지 않는다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [
+      {
+        "block_id": "b000106",
+        "language": "sh",
+        "code": "python3 ../../../Engineering/WorkspaceDocumentation/App/workspace_docs.py --workspace ../../.. sync --project Product/.Deprecated/WhatSon\n"
+      }
+    ],
+    "links": [
+      {
+        "block_id": "b000102",
+        "label": "docs/agent-index.json",
+        "target": "docs/agent-index.json",
+        "kind": "relative",
+        "line": 336
+      }
+    ],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

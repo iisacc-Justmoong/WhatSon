@@ -1,0 +1,291 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:14306f1e9b43f77d05b23f0f4650e2d4ae83b5845171e99b87b5c11226d7135b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/clipboard/InAppClipboardManager.cpp.md",
+    "sha256": "f61bcd7d68a0f5a1dd1cd73522634e06ecc4204e6b5d0927ee3d2845434a910e",
+    "bytes": 3337,
+    "line_count": 34,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/clipboard/InAppClipboardManager.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/clipboard/InAppClipboardManager.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardManager.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "QML `inAppClipboard` 컨텍스트 개체에 대한 시스템 클립보드 캡처, URL/파일 가져오기 오케스트레이션 및 리소스 패키지 가져오기를 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 21,
+      "raw": "- 로컬 파일 URL, 지원되는 MIME 페이로드, text/html 페이로드, 이미지, 픽맵, 및 이미지 데이터 URL 을 `QClipboard` / `QMimeData` 에서 읽습니다.\n- 플랫폼 이미지 MIME 페이로드와 이미지 데이터 URL을 일반 텍스트/html 리소스 캡처 전에 추출하므로, 스크린샷 붙여넣기가 텍스트/html로 건너뛰거나 저장되는 대신 이미지 `.wsresource`로 가져옵니다.\n- 현재 시스템 클립보드에서 리소스 가용성 스냅샷을 새로 고치며, 오래된 앱 내 스냅샷을 신뢰하지 않습니다. 캡처가 실패하면 이전 인앱 리소스 스냅샷이 삭제되고 편집기 붙여넣기 경로는 네이티브 붙여넣기로 되돌아가야 합니다.\n- 앱 내부 로컬 파일, 원시 바이트 및 텍스트를 리소스 페이로드로 허용합니다.\n- 단일 현재 클립보드 리소스 스냅샷을 `InAppClipboardStore`에 위임합니다.\n- 로컬 파일 또는 구체화된 클립보드 페이로드를 `.wsresources/<id>.wsresource`에 유지합니다.\n- 기본 `clipboard-resource.*` 임시 파일 이름을 사용하는 클립보드 페이로드가 32자리의 알파벳 숫자 리소스 ID 와 일치하는 자산 파일 이름으로 저장되므로, 반복적인 스크린샷 붙여넣기가 중복 파일 이름 충돌을 일으키지 않습니다. 기본 임시 파일 이름은 나중에 무작위 ID 로 최종 패키지 및 자산 이름이 생성되기 때문에 중복 사전 검사 에서 제외됩니다.\n- `Resources.wsresources`를 업데이트하고, 중복 가져오기 정책을 처리하고, 편집기 삽입 메타데이터를 반환합니다.\n- `ClipboardResourcePackageImport.cpp`를 다시 도입해서는 안 됩니다. 패키지 가져오기 파이프라인은 이 개체의 일부입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "로컬 파일 URL, 지원되는 MIME 페이로드, text/html 페이로드, 이미지, 픽맵, 및 이미지 데이터 URL 을 `QClipboard` / `QMimeData` 에서 읽습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "플랫폼 이미지 MIME 페이로드와 이미지 데이터 URL을 일반 텍스트/html 리소스 캡처 전에 추출하므로, 스크린샷 붙여넣기가 텍스트/html로 건너뛰거나 저장되는 대신 이미지 `.wsresource`로 가져옵니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 시스템 클립보드에서 리소스 가용성 스냅샷을 새로 고치며, 오래된 앱 내 스냅샷을 신뢰하지 않습니다. 캡처가 실패하면 이전 인앱 리소스 스냅샷이 삭제되고 편집기 붙여넣기 경로는 네이티브 붙여넣기로 되돌아가야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "앱 내부 로컬 파일, 원시 바이트 및 텍스트를 리소스 페이로드로 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "단일 현재 클립보드 리소스 스냅샷을 `InAppClipboardStore`에 위임합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 파일 또는 구체화된 클립보드 페이로드를 `.wsresources/<id>.wsresource`에 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 `clipboard-resource.*` 임시 파일 이름을 사용하는 클립보드 페이로드가 32자리의 알파벳 숫자 리소스 ID 와 일치하는 자산 파일 이름으로 저장되므로, 반복적인 스크린샷 붙여넣기가 중복 파일 이름 충돌을 일으키지 않습니다. 기본 임시 파일 이름은 나중에 무작위 ID 로 최종 패키지 및 자산 이름이 생성되기 때문에 중복 사전 검사 에서 제외됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Resources.wsresources`를 업데이트하고, 중복 가져오기 정책을 처리하고, 편집기 삽입 메타데이터를 반환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ClipboardResourcePackageImport.cpp`를 다시 도입해서는 안 됩니다. 패키지 가져오기 파이프라인은 이 개체의 일부입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 34,
+      "raw": "- 시스템 clipboard에서 앱이 리소스로 받아들일 수 있는 항목을 캡처한다.\n- platform image MIME payload와 image data URL은 일반 text/html 리소스 캡처보다 먼저 이미지로 추출한다.\n- paste 직전 refresh는 기존 snapshot이 남아 있어도 현재 OS clipboard를 다시 캡처한다. 캡처에 실패하면 이전\n  snapshot을 보존하지 않고 비워 native paste fallback으로 돌려보낸다.\n- 이미지 전용이 아니며, 앱 내부에서 전달하는 local file, raw bytes, text payload도 같은 경로로 처리한다.\n- 현재 붙여넣기 후보 하나의 저장 상태는 `InAppClipboardStore`가 소유한다.\n- `.wsresource` 패키지 생성, `Resources.wsresources` 갱신, 충돌 처리는 manager가 조율한다.\n- 기본 임시 이름인 `clipboard-resource.*`로 materialize된 clipboard payload는 32자 영문대소숫자 resource id와\n  같은 asset 파일명으로 저장해 반복 스크린샷 붙여넣기 간 이름 충돌을 만들지 않는다. 이 기본 임시 이름은\n  실제 저장 이름이 아니므로 duplicate preflight에서도 기존 `clipboard-resource.*` asset과 충돌시키지 않는다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "시스템 clipboard에서 앱이 리소스로 받아들일 수 있는 항목을 캡처한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "platform image MIME payload와 image data URL은 일반 text/html 리소스 캡처보다 먼저 이미지로 추출한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "paste 직전 refresh는 기존 snapshot이 남아 있어도 현재 OS clipboard를 다시 캡처한다. 캡처에 실패하면 이전",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이미지 전용이 아니며, 앱 내부에서 전달하는 local file, raw bytes, text payload도 같은 경로로 처리한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 붙여넣기 후보 하나의 저장 상태는 `InAppClipboardStore`가 소유한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.wsresource` 패키지 생성, `Resources.wsresources` 갱신, 충돌 처리는 manager가 조율한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기본 임시 이름인 `clipboard-resource.*`로 materialize된 clipboard payload는 32자 영문대소숫자 resource id와",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/clipboard/InAppClipboardManager.cpp`",
+      "anchor": "srcappmodelsclipboardinappclipboardmanagercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 23
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000013",
+        "line": 21,
+        "text": "- `ClipboardResourcePackageImport.cpp`를 다시 도입해서는 안 됩니다. 패키지 가져오기 파이프라인은 이 개체의 일부입니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

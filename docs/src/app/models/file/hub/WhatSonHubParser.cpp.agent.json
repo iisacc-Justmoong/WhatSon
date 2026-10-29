@@ -1,0 +1,322 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:1d10ff0b4ad2748ffb0cc8078fa03c9d120b323ff84835ae26a92fa5999866cc",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/hub/WhatSonHubParser.cpp.md",
+    "sha256": "3860dfcfda08d56596f5fc6f084f847cc7ed531c065d661f94de3abad79eedbe",
+    "bytes": 1481,
+    "line_count": 32,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/hub/WhatSonHubParser.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/hub/WhatSonHubParser.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubParser.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 `.wshub` 패키지용 부트스트랩 파서입니다. 지속형 허브 파일을 읽고 상위 수준 저장소 및 컨트롤러에서 사용되는 메모리 내 런타임 페이로드를 생성합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"folder-hierarchy-output\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 폴더 계층 출력\n",
+      "level": 2,
+      "title": "폴더 계층 출력"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "폴더 계층의 경우 파서는 이제 안정적인 `uuid` 필드를 포함하여 전체 `WhatSonFolderDepthEntry` 계약을 전달합니다. 따라서 라이브러리 계층 구조 컨트롤러 또는 돌연변이 서비스가 노트 필터링을 시작하기 전에 시작하는 동안 즉시 UUID ID를 사용할 수 있습니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"compatibility-notes\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## 호환성 참고 사항\n",
+      "level": 2,
+      "title": "호환성 참고 사항"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 20,
+      "raw": "- 폴더 UUID가 없는 레거시 허브 패키지는 하위 레벨 폴더 파서가 업그레이드하기 때문에 여전히 허용됩니다.\n- 새 허브 패키지는 UUID를 끝까지 보존하므로, 한 세션에서 수행된 폴더 이름 변경은 다음 세션에서 삭제 및 재생성 이벤트가 아니라 이름 변경으로 유지됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "폴더 UUID가 없는 레거시 허브 패키지는 하위 레벨 폴더 파서가 업그레이드하기 때문에 여전히 허용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "새 허브 패키지는 UUID를 끝까지 보존하므로, 한 세션에서 수행된 폴더 이름 변경은 다음 세션에서 삭제 및 재생성 이벤트가 아니라 이름 변경으로 유지됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"resource-counting-rule\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "## 자원 계산 규칙\n",
+      "level": 2,
+      "title": "자원 계산 규칙"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "리소스 도메인은 이제 raw file 개수가 아니라 flat `.wsresource` package 개수를 센다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 28,
+      "end_line": 30,
+      "raw": "- `resourceCount` fallback\n- domain payload의 `resourcePaths`\n- `resourceFileCount`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resourceCount` fallback",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "domain payload의 `resourcePaths`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourceFileCount`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "모두 허브 루트 `*.wsresources` 디렉터리의 직계 패키지 기준으로 계산된다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubParser.cpp`",
+      "anchor": "srcappmodelsfilehubwhatsonhubparsercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "폴더 계층 출력",
+      "anchor": "폴더-계층-출력",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호환성 참고 사항",
+      "anchor": "호환성-참고-사항",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "자원 계산 규칙",
+      "anchor": "자원-계산-규칙",
+      "start_line": 24
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

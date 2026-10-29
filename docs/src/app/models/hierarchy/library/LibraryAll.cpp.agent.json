@@ -1,0 +1,337 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:266082fbff4ac3acaa2589de5271e893f57786eef1a2f3905fb352077a9b6e6b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/LibraryAll.cpp.md",
+    "sha256": "e63f7d7682f0459a3413adb38d5a8459c771665b6a5a4e25dfe092acdc35993d",
+    "bytes": 2556,
+    "line_count": 35,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library/LibraryAll.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library/LibraryAll.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryAll.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`LibraryAll`는 \"All Library\" 목록을 뒷받침하는 런타임 노트 버킷을 구축합니다. `.wsnindex`, `.wsnhead` 및 본문 콘텐츠를 읽고 해당 소스를 `LibraryNoteRecord`에 병합한 다음 라이브러리 계층 구조 컨트롤러에 안정적인 프로젝션을 노출합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"folder-uuid-role\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 폴더 UUID 역할\n",
+      "level": 2,
+      "title": "폴더 UUID 역할"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "이제 레코드 병합 파이프라인은 다음 두 가지를 모두 수행합니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 16,
+      "raw": "- 사람이 읽을 수 있는 폴더 경로\n- 안정적인 폴더 UUID\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "사람이 읽을 수 있는 폴더 경로",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "안정적인 폴더 UUID",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "인덱스가 불완전하면 `LibraryAll`는 `.wsnhead`로 대체되고 폴더 경로를 UUID 대응 항목과 정렬하므로 이후 필터는 원시 경로 대신 폴더 ID를 기준으로 메모를 일치시킬 수 있습니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"compatibility-behavior\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 호환성 동작\n",
+      "level": 2,
+      "title": "호환성 동작"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 24,
+      "end_line": 29,
+      "raw": "- 폴더 경로만 포함된 이전 메모 데이터는 계속 로드됩니다.\n- `<folder uuid=\"...\">path</folder>`를 저장하는 최신 메모 헤더는 UUID 값을 그대로 유지합니다.\n- 코드 패드를 병합하거나 UUID 목록을 복구하여 호출자가 일치하지 않는 폴더 경로 / UUID 배열을 받지 않도록 합니다.\n- `.wsnhead`가 존재하는 경우, 해당 `<project>` 필드는 명시적으로 비어 있더라도 권한이 있습니다. 이렇게 하면 `index.wsnindex`에 아직 캐시되어 있을 수 있는 오래된 프로젝트 레이블이 삭제되어, 프로젝트 계층 필터가 이름이 지정된 프로젝트 버킷 아래에 \"No project\" 노트를 실수로 표시하지 않도록 합니다.\n- 런타임 라이브러리 인덱싱은 메타데이터 전용입니다. 노트 본문 소스에서 본문 미리보기 필드나 리소스 썸네일을 파생하지 않습니다.\n- 정규형 `all notes` 버킷은 이제 변경 개폐된 단일음 `upsertNote(...)`, `removeNoteById(...)` 및 `noteById(...)` 연산도 지원합니다. 이러한 작업은 로컬 노트 편집 후 부분적인 라이브러리/캘리더 새로 고침의 기반이 됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "폴더 경로만 포함된 이전 메모 데이터는 계속 로드됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`<folder uuid=\"...\">path</folder>`를 저장하는 최신 메모 헤더는 UUID 값을 그대로 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "코드 패드를 병합하거나 UUID 목록을 복구하여 호출자가 일치하지 않는 폴더 경로 / UUID 배열을 받지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`.wsnhead`가 존재하는 경우, 해당 `<project>` 필드는 명시적으로 비어 있더라도 권한이 있습니다. 이렇게 하면 `index.wsnindex`에 아직 캐시되어 있을 수 있는 오래된 프로젝트 레이블이 삭제되어, 프로젝트 계층 필터가 이름이 지정된 프로젝트 버킷 아래에 \"No project\" 노트를 실수로 표시하지 않도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "런타임 라이브러리 인덱싱은 메타데이터 전용입니다. 노트 본문 소스에서 본문 미리보기 필드나 리소스 썸네일을 파생하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정규형 `all notes` 버킷은 이제 변경 개폐된 단일음 `upsertNote(...)`, `removeNoteById(...)` 및 `noteById(...)` 연산도 지원합니다. 이러한 작업은 로컬 노트 편집 후 부분적인 라이브러리/캘리더 새로 고침의 기반이 됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"why-this-matters\"></a>\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## 이것이 중요한 이유\n",
+      "level": 2,
+      "title": "이것이 중요한 이유"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "라이브러리 사이드바는 더 이상 상위 이름 변경을 의미 폴더 변경으로 처리하지 않습니다. 따라서 `LibraryAll`는 로드 시간 정규화를 통해 원래 폴더 UUID를 보존해야 합니다. 그렇지 않으면 기본 데이터가 올바르게 마이그레이션된 경우에도 계층 구조 이름 변경 후 노트 필터가 중단됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library/LibraryAll.cpp`",
+      "anchor": "srcappmodelshierarchylibrarylibraryallcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "폴더 UUID 역할",
+      "anchor": "폴더-uuid-역할",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호환성 동작",
+      "anchor": "호환성-동작",
+      "start_line": 22
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이것이 중요한 이유",
+      "anchor": "이것이-중요한-이유",
+      "start_line": 33
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

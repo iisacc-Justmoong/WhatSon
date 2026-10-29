@@ -1,0 +1,174 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:1c898c6279986cf64330accd2ec2bc5f45aed3961ebac9bdf21c89a2aada457c",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/register/WhatSonRegisterManager.cpp.md",
+    "sha256": "4845d9f799ac55972235c47331afd123636b7f70d8e830cdc942f895c70315ae",
+    "bytes": 869,
+    "line_count": 15,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/register/WhatSonRegisterManager.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/register/WhatSonRegisterManager.cpp`\n",
+      "level": 1,
+      "title": "`src/app/register/WhatSonRegisterManager.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`QSettings` 위에 지속형 인증 관리자를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- 기본 설정 키는 `register/authenticated`입니다.\n- 생성은 지속된 플래그를 즉시 다시 로드하므로 새로운 관리자 인스턴스는 현재 앱 인증 상태를 반영합니다.\n- 평가판 빌드는 인증된 우회 경로에 대해 더 이상 일반 부울을 신뢰하지 않습니다.\n- 지속되는 평가판 빌드 값은 `register/authenticated`로 키가 지정되고 보안 저장소 지원 평가판 무결성 비밀에 대해 확인된 `QSettings`의 서명된 JSON 레코드입니다.\n- 유효하지 않거나 형식이 잘못되었거나 서명되지 않은 레거시 값은 평가판 정책을 잠금 해제하는 대신 거부되고 지워집니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "기본 설정 키는 `register/authenticated`입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "생성은 지속된 플래그를 즉시 다시 로드하므로 새로운 관리자 인스턴스는 현재 앱 인증 상태를 반영합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "평가판 빌드는 인증된 우회 경로에 대해 더 이상 일반 부울을 신뢰하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지속되는 평가판 빌드 값은 `register/authenticated`로 키가 지정되고 보안 저장소 지원 평가판 무결성 비밀에 대해 확인된 `QSettings`의 서명된 JSON 레코드입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유효하지 않거나 형식이 잘못되었거나 서명되지 않은 레거시 값은 평가판 정책을 잠금 해제하는 대신 거부되고 지워집니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/register/WhatSonRegisterManager.cpp`",
+      "anchor": "srcappregisterwhatsonregistermanagercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

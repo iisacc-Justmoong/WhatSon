@@ -1,0 +1,228 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:5f562905d586b4c58644b544d9a01b0f93b6c2cd29dd61944ac2b049bfc164f6",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp.md",
+    "sha256": "efd5f4acf9f79adc6cc25d5187b12cf72367784b47c3368a6876123961d15576",
+    "bytes": 1281,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 활성 노트 디렉토리에서 `Folders.wsfolders`를 해결합니다.\n- 요청된 폴더 경로가 영구 폴더 계층 구조에 존재하도록 보장한 후, 상세 패널이 해당 폴더를 현재 노트 헤더에 바인딩합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "활성 노트 디렉토리에서 `Folders.wsfolders`를 해결합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "요청된 폴더 경로가 영구 폴더 계층 구조에 존재하도록 보장한 후, 상세 패널이 해당 폴더를 현재 노트 헤더에 바인딩합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"escaped-segment-semantics\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 이스케이프된 세그먼트 의미론\n",
+      "level": 2,
+      "title": "이스케이프된 세그먼트 의미론"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 12,
+      "end_line": 14,
+      "raw": "- 폴더 생성 및 조회는 이제 공유된 `WhatSon::NoteFolders::appendFolderPathSegment(...)` 헬퍼를 통해 누적 경로를 구축합니다.\n- 하나의 폴더 라벨 안에 있는 문자 그대로의 `/`는 영구적인 ID에서 `\\/`로 이스케이프된 상태를 유지하며, 상세 패널 쓰기 중에 실수로 부모/자식 계층 레벨로 다시 확장되지 않습니다.\n- 기존 이스케이프된 폴더 항목은 정규 인코딩된 경로와 일치하므로, `Marketing\\/Sales`에 메모를 재할당하면 중복된 계층 행을 생성하는 대신 동일한 폴더 uuid를 재사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "폴더 생성 및 조회는 이제 공유된 `WhatSon::NoteFolders::appendFolderPathSegment(...)` 헬퍼를 통해 누적 경로를 구축합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "하나의 폴더 라벨 안에 있는 문자 그대로의 `/`는 영구적인 ID에서 `\\/`로 이스케이프된 상태를 유지하며, 상세 패널 쓰기 중에 실수로 부모/자식 계층 레벨로 다시 확장되지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "기존 이스케이프된 폴더 항목은 정규 인코딩된 경로와 일치하므로, `Marketing\\/Sales`에 메모를 재할당하면 중복된 계층 행을 생성하는 대신 동일한 폴더 uuid를 재사용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "- 유지 관리되는 C++ 회귀 스위트에 이제 이스케이프 슬래시 재사용 경로를 회귀에 대해 잠그는 세션 서비스 케이스가 포함됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "유지 관리되는 C++ 회귀 스위트에 이제 이스케이프 슬래시 재사용 경로를 회귀에 대해 잠그는 세션 서비스 케이스가 포함됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp`",
+      "anchor": "srcappmodelsdetailpanelsessionwhatsonfoldershierarchysessionservicecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이스케이프된 세그먼트 의미론",
+      "anchor": "이스케이프된-세그먼트-의미론",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

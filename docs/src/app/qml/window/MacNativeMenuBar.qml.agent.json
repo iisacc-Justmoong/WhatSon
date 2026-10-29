@@ -1,0 +1,326 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:311199d67b7cb0bdd9e069937789ac1d631f70380e05191947a64a8d3a50ff95",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/window/MacNativeMenuBar.qml.md",
+    "sha256": "b2e379e3b296ee2bb8f19de2fc235b31f9d58995ad601c1673167aef8f5332f9",
+    "bytes": 2037,
+    "line_count": 32,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/window/MacNativeMenuBar.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/window/MacNativeMenuBar.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/window/MacNativeMenuBar.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 macOS 전역 메뉴 막대를 정의한다. 현재 사용자에게 보이는 2개의 경로를 노출한다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 10,
+      "raw": "- `File > Import File...`는 네이티브 멀티 파일 픽커를 열고 선택된 로컬 파일을 현재 허브 리소스 가져오기 흐름으로 전달합니다.\n- `Window > Onboarding` 루트 창 온보딩 도우미를 다시 엽니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`File > Import File...`는 네이티브 멀티 파일 픽커를 열고 선택된 로컬 파일을 현재 허브 리소스 가져오기 흐름으로 전달합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Window > Onboarding` 루트 창 온보딩 도우미를 다시 엽니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "<a id=\"required-properties\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "## 필수 속성\n",
+      "level": 2,
+      "title": "필수 속성"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 17,
+      "raw": "- `hostWindow`는 `Window` 메뉴 작업에서 사용되는 루트 창 객체입니다.\n- `inAppClipboard` 현재 허브에 대해 선택된 로컬 파일 URL을 수락하는 클립보드/임포트 백엔드.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`hostWindow`는 `Window` 메뉴 작업에서 사용되는 루트 창 객체입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`inAppClipboard` 현재 허브에 대해 선택된 로컬 파일 URL을 수락하는 클립보드/임포트 백엔드.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"import-flow\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 가져오기 흐름\n",
+      "level": 2,
+      "title": "가져오기 흐름"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 23,
+      "end_line": 28,
+      "raw": "1. 사용자가 `Import File...`를 트리거합니다.\n2. `FileDialog.OpenFiles`는 하나 이상의 로컬 파일을 수집합니다.\n3. 수락하면 메뉴 바가 `selectedImportUrls()`를 통해 피커 출력을 정규화하고, 이후 `inAppClipboard.inspectImportConflictForUrls(selectedFiles)`에게 현재 `*.wsresources` 스토어에 이미 존재하는 들어오는 자산 이름이 있는지 묻습니다.\n4. 중복이 존재하는 경우, 메뉴 바는 호스트 창 콘텐츠 표면에 장착된 `LV.Alert`를 열고 사용자가 `Overwrite`, `Keep Both` 또는 `Cancel Import`를 선택하도록 합니다.\n5. 사용자가 정책을 선택한 후, 메뉴 막대가 `inAppClipboard.importUrlsWithConflictPolicy(selectedFiles, policy)`를 호출합니다.\n6. 가져오기가 실패하면 `lastError`를 읽고 모달 실패 대화 상자를 엽니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "사용자가 `Import File...`를 트리거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "`FileDialog.OpenFiles`는 하나 이상의 로컬 파일을 수집합니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "수락하면 메뉴 바가 `selectedImportUrls()`를 통해 피커 출력을 정규화하고, 이후 `inAppClipboard.inspectImportConflictForUrls(selectedFiles)`에게 현재 `*.wsresources` 스토어에 이미 존재하는 들어오는 자산 이름이 있는지 묻습니다.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "중복이 존재하는 경우, 메뉴 바는 호스트 창 콘텐츠 표면에 장착된 `LV.Alert`를 열고 사용자가 `Overwrite`, `Keep Both` 또는 `Cancel Import`를 선택하도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "5.",
+          "text": "사용자가 정책을 선택한 후, 메뉴 막대가 `inAppClipboard.importUrlsWithConflictPolicy(selectedFiles, policy)`를 호출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "6.",
+          "text": "가져오기가 실패하면 `lastError`를 읽고 모달 실패 대화 상자를 엽니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "`selectedImportUrls()`는 의도적으로 `selectedFiles` 및 `selectedFile` 경로를 모두 병합하므로 가져오기는 macOS 네이티브 대화 상자 백엔드의 선택기 페이로드 모양 차이에 걸쳐 작동합니다.\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "성공적인 가져오기는 런타임 리소스 다시 로드를 사용하여 UI를 즉시 새로 고치므로 이 메뉴는 별도의 성공 알림을 내보내지 않습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/window/MacNativeMenuBar.qml`",
+      "anchor": "srcappqmlwindowmacnativemenubarqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "필수 속성",
+      "anchor": "필수-속성",
+      "start_line": 14
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "가져오기 흐름",
+      "anchor": "가져오기-흐름",
+      "start_line": 21
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000011",
+        "line": 12,
+        "text": "<a id=\"required-properties\"></a>",
+        "basis": "lexical_match",
+        "context": "html"
+      },
+      {
+        "block_id": "b000013",
+        "line": 14,
+        "text": "## 필수 속성",
+        "basis": "lexical_match",
+        "context": "heading"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

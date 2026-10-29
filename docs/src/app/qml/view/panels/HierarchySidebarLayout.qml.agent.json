@@ -1,0 +1,349 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b0e3b8c7c413136fd43460cf841838b7912ebdf656ad8007ad8c7906d3b43542",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/HierarchySidebarLayout.qml.md",
+    "sha256": "69ee3590280edfc3b0d76434fb4fe03976d3ca9fea14bc3b7ba3afdae5efeb64",
+    "bytes": 1806,
+    "line_count": 34,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/HierarchySidebarLayout.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/HierarchySidebarLayout.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/HierarchySidebarLayout.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 구성 요소는 일반 사이드바 보기와 런타임 계층 구조 라우팅 레이어 사이의 어댑터입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "4 개의 중요한 작업을 수행합니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 12,
+      "raw": "- 현재 활성 계층 도메인을 확인합니다.\n- `SidebarHierarchyController`에서 일치하는 도메인 컨트롤러를 선택합니다.\n- 2 개의 시각 사이드바에 사용되는 브릿지 객체를 인스턴스화합니다.\n- C++에서 바닥글 및 확장 결정을 유지하는 사이드바 상호 작용 정책 컨트롤러를 인스턴스화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 활성 계층 도메인을 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`SidebarHierarchyController`에서 일치하는 도메인 컨트롤러를 선택합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "2 개의 시각 사이드바에 사용되는 브릿지 객체를 인스턴스화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "C++에서 바닥글 및 확장 결정을 유지하는 사이드바 상호 작용 정책 컨트롤러를 인스턴스화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"binding-strategy\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 바인딩 전략\n",
+      "level": 2,
+      "title": "바인딩 전략"
+    },
+    {
+      "id": "b000014",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "`resolvedHierarchyController`는 먼저 `sidebarHierarchyController.hierarchyControllerForIndex(currentHierarchy)`에서 확인된 다음 `sidebarHierarchyController.resolvedHierarchyController`를 통해 대체됩니다. 이전에 확인된 공급자 개체보다 약간 빠릅니다.\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"hosted-bridges\"></a>\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 호스팅 브리지\n",
+      "level": 2,
+      "title": "호스팅 브리지"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 24,
+      "raw": "- `HierarchyDragDropBridge`: 재정렬 및 메모 드롭 브리지.\n- `HierarchyInteractionBridge`: 이름 바꾸기, 생성, 삭제 및 확장 브리지.\n- `SidebarHierarchyInteractionController` : 푸터 디스패치, 중복 트리거 병합, 그리고 활성 계층 인덱스에 바인딩된 확장 상태 정책 컨트롤러.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`HierarchyDragDropBridge`: 재정렬 및 메모 드롭 브리지.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`HierarchyInteractionBridge`: 이름 바꾸기, 생성, 삭제 및 확장 브리지.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`SidebarHierarchyInteractionController` : 푸터 디스패치, 중복 트리거 병합, 그리고 활성 계층 인덱스에 바인딩된 확장 상태 정책 컨트롤러.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"layout-notes\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 레이아웃 참고 사항\n",
+      "level": 2,
+      "title": "레이아웃 참고 사항"
+    },
+    {
+      "id": "b000024",
+      "kind": "list",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "- 공유 도구 모음 프레임 너비는 이제 원시 대신 `LV.Theme.inputMinWidth + LV.Theme.gap20`를 통해 확인됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "공유 도구 모음 프레임 너비는 이제 원시 대신 `LV.Theme.inputMinWidth + LV.Theme.gap20`를 통해 확인됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"why-this-file-is-important\"></a>\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## 이 파일이 중요한 이유\n",
+      "level": 2,
+      "title": "이 파일이 중요한 이유"
+    },
+    {
+      "id": "b000029",
+      "kind": "paragraph",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "이는 저장소의 \"one hierarchy type, one dedicated controller\" 규칙이 런타임에서 도메인을 전환할 수 있는 시각적 사이드바로 변환되는 QML 이음새입니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/HierarchySidebarLayout.qml`",
+      "anchor": "srcappqmlviewpanelshierarchysidebarlayoutqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "바인딩 전략",
+      "anchor": "바인딩-전략",
+      "start_line": 16
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호스팅 브리지",
+      "anchor": "호스팅-브리지",
+      "start_line": 21
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "레이아웃 참고 사항",
+      "anchor": "레이아웃-참고-사항",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000028",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이 파일이 중요한 이유",
+      "anchor": "이-파일이-중요한-이유",
+      "start_line": 33
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

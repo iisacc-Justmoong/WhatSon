@@ -1,0 +1,114 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:ad5b70a686b8aaf53b625ebc06ea485783348a6d4c0c9b345d666a50ab040b5a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailNoteHeaderSelectionSourceController.cpp.md",
+    "sha256": "3305d878fc8ca7192b7c5168fe0644ba5541d3c27a6edaceeac8029409ebbba9",
+    "bytes": 278,
+    "line_count": 7,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailNoteHeaderSelectionSourceController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailNoteHeaderSelectionSourceController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailNoteHeaderSelectionSourceController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- `setSessionStore(...)`는 이제 세션 인터페이스를 허용합니다.\n- 선택 동기화 및 지속성 논리는 변경되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setSessionStore(...)`는 이제 세션 인터페이스를 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택 동기화 및 지속성 논리는 변경되지 않습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailNoteHeaderSelectionSourceController.cpp`",
+      "anchor": "srcappmodelsdetailpaneldetailnoteheaderselectionsourcecontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

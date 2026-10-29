@@ -1,0 +1,231 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:7592d65aba4f775497c098329b842c3613ff122a46304d9fbf47fc7c1a7647a1",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialActivationPolicy.hpp.md",
+    "sha256": "8670af85844ed74a6ff1dc620a53efafd57277c3c6afba20df01c368ea3d30c5",
+    "bytes": 1286,
+    "line_count": 21,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialActivationPolicy.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialActivationPolicy.hpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialActivationPolicy.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 자격 흐름에 대한 90일 활성화 정책을 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- `WhatSonTrialActivationState`: 설치 날짜, 마지막 활성 날짜, 경과 일수, 남은 일수, 활성 플래그 및 인증 우회 플래그가 포함된 불변 스타일 스냅샷.\n- `refreshForDate(...)`: 제공된 달력 날짜에 대한 정책을 평가하고 캐시된 상태를 업데이트합니다.\n- `refresh()`: `QDate::currentDate()`에 대해 평가하는 슬롯 지향 런타임 진입점입니다.\n- `stateChanged()`: 캐시된 활성화 상태가 변경될 때만 발생합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonTrialActivationState`: 설치 날짜, 마지막 활성 날짜, 경과 일수, 남은 일수, 활성 플래그 및 인증 우회 플래그가 포함된 불변 스타일 스냅샷.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`refreshForDate(...)`: 제공된 달력 날짜에 대한 정책을 평가하고 캐시된 상태를 업데이트합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`refresh()`: `QDate::currentDate()`에 대해 평가하는 슬롯 지향 런타임 진입점입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`stateChanged()`: 캐시된 활성화 상태가 변경될 때만 발생합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"qmlruntime-use\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## QML/런타임 사용\n",
+      "level": 2,
+      "title": "QML/런타임 사용"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 21,
+      "raw": "- 클래스는 `QObject`이므로 앱은 나중에 API를 다시 디자인하지 않고도 QML 또는 시작 오케스트레이션에 노출할 수 있습니다.\n- `refresh()`는 의도된 시작 후크입니다. 한 번 호출한 다음 `active`에서 앱 활성화를 시작합니다.\n- `WhatSonRegisterManager::authenticated()`가 `true`이면 `active`는 `true`로 유지되고 `bypassedByAuthentication`는 `true`가 되므로 하위 소비 측 코드는 평가판 만료를 무시할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "클래스는 `QObject`이므로 앱은 나중에 API를 다시 디자인하지 않고도 QML 또는 시작 오케스트레이션에 노출할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`refresh()`는 의도된 시작 후크입니다. 한 번 호출한 다음 `active`에서 앱 활성화를 시작합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonRegisterManager::authenticated()`가 `true`이면 `active`는 `true`로 유지되고 `bypassedByAuthentication`는 `true`가 되므로 하위 소비 측 코드는 평가판 만료를 무시할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialActivationPolicy.hpp`",
+      "anchor": "srcextensiontrialwhatsontrialactivationpolicyhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "QML/런타임 사용",
+      "anchor": "qml런타임-사용",
+      "start_line": 18
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

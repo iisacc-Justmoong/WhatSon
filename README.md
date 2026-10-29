@@ -91,3 +91,12 @@ These scripts are convenience utilities. Completion gates still use the CMake ta
 - Validation must be performed based on  `build/`  criteria.
 - The default completion gate is  `whatson_regression` .
 - QML is responsible only for view configuration and view local behavior, and the state/parsing/storage/synchronization policies are placed in the  C++  layer.
+
+<!-- workspace-docs:readme:start -->
+## Documentation entry points
+
+- Human overview: this English `README.md`.
+- Agent instructions: [AGENT.md](AGENT.md).
+- Human documentation: [documentation index](docs/README.md).
+- Structured agent documentation: [agent index](docs/agent-index.json).
+<!-- workspace-docs:readme:end -->

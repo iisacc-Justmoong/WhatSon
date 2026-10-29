@@ -1,0 +1,375 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:522948bcf147be8f26f31dbf04ed0dceae1dd07c96c2df5e96e263a6ecabf2f7",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/permissions/WhatSonPermissionBootstrapper.hpp.md",
+    "sha256": "5e9dbe2894a65df380bb945f186998ab583ae1f2a2b944e986150cb492195dfd",
+    "bytes": 1235,
+    "line_count": 39,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/permissions/WhatSonPermissionBootstrapper.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/permissions/WhatSonPermissionBootstrapper.hpp`\n",
+      "level": 1,
+      "title": "`src/app/permissions/WhatSonPermissionBootstrapper.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "앱 실행 배선에 사용되는 시작 권한 부트스트랩 코디네이터를 선언합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- `WhatSonPermissionBootstrapper(QCoreApplication& app)`: 앱 인스턴스에 바인딩하고 요청 단계를 사전 빌드합니다.\n- `start()`: 순차적 권한 처리를 시작합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonPermissionBootstrapper(QCoreApplication& app)`: 앱 인스턴스에 바인딩하고 요청 단계를 사전 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`start()`: 순차적 권한 처리를 시작합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "<a id=\"internal-contract\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "## 내부 계약\n",
+      "level": 2,
+      "title": "내부 계약"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 17,
+      "end_line": 21,
+      "raw": "- 권한 단계를 `PermissionStep{id, request}`로 저장하고 순서대로 실행합니다.\n- `permissions/<id>/*` 아래의 `QSettings`에서 요청/승인 결정을 유지합니다.\n- 다음을 모두 지원합니다.\n  - Qt 권한 API 흐름(`addQtPermissionStep(...)`)\n  - Apple 브리지 흐름(`addApplePermissionStep(...)`)\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "권한 단계를 `PermissionStep{id, request}`로 저장하고 순서대로 실행합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`permissions/<id>/*` 아래의 `QSettings`에서 요청/승인 결정을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음을 모두 지원합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Qt 권한 API 흐름(`addQtPermissionStep(...)`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Apple 브리지 흐름(`addApplePermissionStep(...)`)",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"ordering-policy\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 주문 정책\n",
+      "level": 2,
+      "title": "주문 정책"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 34,
+      "raw": "- 빌드 순서에는 다음이 포함됩니다(플랫폼에 따라 다름).\n  - 전체 디스크 액세스\n  - 사진 라이브러리\n  - 마이크\n  - 접근성\n  - 달력\n  - 알림\n  - 로컬 네트워크\n  - 위치\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "빌드 순서에는 다음이 포함됩니다(플랫폼에 따라 다름).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전체 디스크 액세스",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "사진 라이브러리",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "마이크",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "접근성",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "달력",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "알림",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 네트워크",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "위치",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"completion-rule\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 완료 규칙\n",
+      "level": 2,
+      "title": "완료 규칙"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "- 모든 단계가 끝나면 집계된 부여 상태를 `permissions/granted`에 기록합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "모든 단계가 끝나면 집계된 부여 상태를 `permissions/granted`에 기록합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/permissions/WhatSonPermissionBootstrapper.hpp`",
+      "anchor": "srcapppermissionswhatsonpermissionbootstrapperhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "내부 계약",
+      "anchor": "내부-계약",
+      "start_line": 16
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주문 정책",
+      "anchor": "주문-정책",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "완료 규칙",
+      "anchor": "완료-규칙",
+      "start_line": 38
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

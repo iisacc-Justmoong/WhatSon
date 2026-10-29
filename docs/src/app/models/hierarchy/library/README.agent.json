@@ -1,0 +1,598 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e8f421dd84f58eae707cc1c62471021a949f79579aae5a0e6e3b1ed89ece0662",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/library/README.md",
+    "sha256": "be150ef21187ea5d0aee1829fde067e622b4244cfb04e7985d27dd826e654da0",
+    "bytes": 3657,
+    "line_count": 79,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/library`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/library`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Status\n",
+      "level": 2,
+      "title": "Status"
+    },
+    {
+      "id": "b000004",
+      "kind": "list",
+      "start_line": 4,
+      "end_line": 5,
+      "raw": "- Directory mirror generated from the current `src` tree.\n- This file is the entry point for the detailed documentation pass of this directory.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Directory mirror generated from the current `src` tree.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "This file is the entry point for the detailed documentation pass of this directory.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "heading",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "## Scope\n",
+      "level": 2,
+      "title": "Scope"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 8,
+      "end_line": 10,
+      "raw": "- Mirrored source directory: `src/app/models/hierarchy/library`\n- Child directories: 0\n- Child files: 30\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Mirrored source directory: `src/app/models/hierarchy/library`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Child directories: 0",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Child files: 30",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## Child Directories\n",
+      "level": 2,
+      "title": "Child Directories"
+    },
+    {
+      "id": "b000010",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "- No child directories.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "No child directories.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "heading",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "## Child Files\n",
+      "level": 2,
+      "title": "Child Files"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 16,
+      "end_line": 43,
+      "raw": "- `LibraryAll.cpp`\n- `LibraryAll.hpp`\n- `LibraryDraft.cpp`\n- `LibraryDraft.hpp`\n- `LibraryHierarchyController.cpp`\n- `LibraryHierarchyController.hpp`\n- `LibraryHierarchyControllerSupport.hpp`\n- `LibraryHierarchyModel.hpp`\n- `LibraryNoteListModel.cpp`\n- `LibraryNoteListModel.hpp`\n- `LibraryNoteMutationController.cpp`\n- `LibraryNoteMutationController.hpp`\n- `LibraryNoteRecord.hpp`\n- `LibraryNotePreviewText.hpp`\n- `LibraryToday.cpp`\n- `LibraryToday.hpp`\n- `WhatSonLibraryIndexedState.cpp`\n- `WhatSonLibraryIndexedState.hpp`\n- `WhatSonLibraryFolderHierarchyMutationService.cpp`\n- `WhatSonLibraryFolderHierarchyMutationService.hpp`\n- `WhatSonLibraryHierarchyCreator.cpp`\n- `WhatSonLibraryHierarchyCreator.hpp`\n- `WhatSonLibraryHierarchyParser.cpp`\n- `WhatSonLibraryHierarchyParser.hpp`\n- `WhatSonLibraryHierarchyStore.cpp`\n- `WhatSonLibraryHierarchyStore.hpp`\n- `WhatSonLibraryNoteListProjection.cpp`\n- `WhatSonLibraryNoteListProjection.hpp`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LibraryAll.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryAll.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryDraft.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryDraft.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyControllerSupport.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteListModel.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteListModel.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteMutationController.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteMutationController.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNoteRecord.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNotePreviewText.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryToday.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryToday.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryIndexedState.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryIndexedState.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryFolderHierarchyMutationService.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryFolderHierarchyMutationService.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyCreator.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyCreator.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyParser.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyParser.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyStore.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryHierarchyStore.hpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryNoteListProjection.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryNoteListProjection.hpp`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "## Intended Detailed Sections\n",
+      "level": 2,
+      "title": "Intended Detailed Sections"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 51,
+      "raw": "- Module responsibilities and architectural layer\n- Internal submodule boundaries\n- Cross-directory dependencies\n- Runtime ownership and lifecycle rules\n- Testing strategy and coverage map\n- Known hotspots and refactor priorities\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Module responsibilities and architectural layer",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Internal submodule boundaries",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Cross-directory dependencies",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Runtime ownership and lifecycle rules",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Testing strategy and coverage map",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Known hotspots and refactor priorities",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "## Notes\n",
+      "level": 2,
+      "title": "Notes"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 54,
+      "end_line": 66,
+      "raw": "- `LibraryNoteRecord` now exposes structural equality so incremental mutation layers can suppress no-op updates before\n  they fan out into note-list/calendar rebuilds.\n- `LibraryAll`, `LibraryDraft`, and `LibraryToday` now all support single-note upsert/remove operations, and\n  `WhatSonLibraryIndexedState` uses those paths to keep canonical and derived buckets synchronized without replacing\n  the whole note snapshot on every local edit.\n- `LibraryNotePreviewText.hpp` is the shared preview-text authority for library note cards and calendar note chips, so\n  compact note renderers do not drift into separate headline rules.\n- `LibraryHierarchyController` owns the hub-independent in-app scaffold (`All Library`, `Drafts`, `Today`) and must keep\n  it visible during construction, empty depth refreshes, runtime snapshot refreshes, and load-failure recovery.\n- `LibraryHierarchyModel.hpp` is now an item-struct/icon-helper header. The runtime item model exposed to QML is the\n  shared `WhatSonHierarchyModel` owned by the controller.\n- `WhatSonLibraryNoteListProjection` mirrors that scaffold label contract by using `Drafts` for notes that have no\n  explicit hub-authored folder chips.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`LibraryNoteRecord` now exposes structural equality so incremental mutation layers can suppress no-op updates before",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryAll`, `LibraryDraft`, and `LibraryToday` now all support single-note upsert/remove operations, and",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryNotePreviewText.hpp` is the shared preview-text authority for library note cards and calendar note chips, so",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyController` owns the hub-independent in-app scaffold (`All Library`, `Drafts`, `Today`) and must keep",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`LibraryHierarchyModel.hpp` is now an item-struct/icon-helper header. The runtime item model exposed to QML is the",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`WhatSonLibraryNoteListProjection` mirrors that scaffold label contract by using `Drafts` for notes that have no",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 67,
+      "end_line": 67,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 68,
+      "end_line": 68,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 69,
+      "end_line": 69,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 70,
+      "end_line": 70,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 71,
+      "end_line": 71,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 72,
+      "end_line": 72,
+      "raw": "This section is a bottom summary for checking the above  README  content in Korean.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 73,
+      "end_line": 73,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 74,
+      "end_line": 79,
+      "raw": "- Target:  ``src/app/models/hierarchy/library``  ( `docs/src/app/models/hierarchy/library/README.md` )\n- Location:  `docs/src/app/models/hierarchy/library`\n- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.\n- Current rule: `LibraryHierarchyController` always maintains independent `All Library`, `Drafts`, `Today` in-app scaffolds from the hub. The display item model is not a domain-specific model but a common `WhatSonHierarchyModel`.\n- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.\n- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Target:  ``src/app/models/hierarchy/library``  ( `docs/src/app/models/hierarchy/library/README.md` )",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Location:  `docs/src/app/models/hierarchy/library`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Current rule: `LibraryHierarchyController` always maintains independent `All Library`, `Drafts`, `Today` in-app scaffolds from the hub. The display item model is not a domain-specific model but a common `WhatSonHierarchyModel`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/library`",
+      "anchor": "srcappmodelshierarchylibrary",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Status",
+      "anchor": "status",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000006",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Scope",
+      "anchor": "scope",
+      "start_line": 7
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Child Directories",
+      "anchor": "child-directories",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000012",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Child Files",
+      "anchor": "child-files",
+      "start_line": 15
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Intended Detailed Sections",
+      "anchor": "intended-detailed-sections",
+      "start_line": 45
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Notes",
+      "anchor": "notes",
+      "start_line": 53
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 70
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000019",
+        "line": 60,
+        "text": "compact note renderers do not drift into separate headline rules.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000019",
+        "line": 61,
+        "text": "- `LibraryHierarchyController` owns the hub-independent in-app scaffold (`All Library`, `Drafts`, `Today`) and must keep",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

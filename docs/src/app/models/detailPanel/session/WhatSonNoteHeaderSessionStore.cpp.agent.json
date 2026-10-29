@@ -1,0 +1,129 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:246c2f4a9d7a7c20a2e45de9c881603dbb3b464957a5b8e6f780c7db1b092e10",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp.md",
+    "sha256": "93bfaeba6b194b87567dc9bfb257392d4b98c8d33fd2c94850e4773a6d9ecde2",
+    "bytes": 933,
+    "line_count": 10,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 10,
+      "raw": "- 생성자는 이제 `IWhatSonNoteHeaderSessionStore` 베이스를 초기화합니다.\n- 로드 중은 여전히 활성 노트 컨텍스트에 대한 `.wsnhead` 구문 분석/캐시 수명 주기를 소유하고 있습니다.\n- `assignFolderBinding(...)`는 메모리 내 헤더 스냅샷만 업데이트합니다; 메모 패키지를 삭제한 후에는 구체적인 메모 헤더 영속성이 비활성화됩니다.\n- `assignTag(...)`는 이제 활성 헤더에 동일한 대소문자로 접힌 태그가 이미 포함되어 있지 않은 경우에만 정규화된 태그 값을 추가하고, 동일한 공유 캐시 항목을 통해 지속됩니다.\n- 색인화된 폴더/태그 제거는 캐시된 헤더 스냅샷을 변경하고 파일 지속성 없이 캐시를 정리한 것으로 표시합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "생성자는 이제 `IWhatSonNoteHeaderSessionStore` 베이스를 초기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로드 중은 여전히 활성 노트 컨텍스트에 대한 `.wsnhead` 구문 분석/캐시 수명 주기를 소유하고 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignFolderBinding(...)`는 메모리 내 헤더 스냅샷만 업데이트합니다; 메모 패키지를 삭제한 후에는 구체적인 메모 헤더 영속성이 비활성화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignTag(...)`는 이제 활성 헤더에 동일한 대소문자로 접힌 태그가 이미 포함되어 있지 않은 경우에만 정규화된 태그 값을 추가하고, 동일한 공유 캐시 항목을 통해 지속됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "색인화된 폴더/태그 제거는 캐시된 헤더 스냅샷을 변경하고 파일 지속성 없이 캐시를 정리한 것으로 표시합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp`",
+      "anchor": "srcappmodelsdetailpanelsessionwhatsonnoteheadersessionstorecpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

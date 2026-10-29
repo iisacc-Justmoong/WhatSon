@@ -1,0 +1,346 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:68fe9afb0f18935a04b62c04451ef74814a777996dd58778ee6ccf4b16d3f4e6",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/NoteListModelContractBridge.hpp.md",
+    "sha256": "67409c5477834d34d6e8197131c513d723dfc60fb1b7fab56c084c24a415f7ad",
+    "bytes": 2885,
+    "line_count": 41,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/NoteListModelContractBridge.hpp`",
+    "role": "reference",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/NoteListModelContractBridge.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/NoteListModelContractBridge.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`NoteListModelContractBridge`는 동적 노트 목록 계약 조사를 `ListBarLayout.qml`에서 C++로 이동하는 QML 방향 어댑터입니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"public-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 공공 계약\n",
+      "level": 2,
+      "title": "공공 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 31,
+      "raw": "- 다음 중 하나를 허용합니다.\n  - 명시적인 `QObject*` `noteListModel`, 또는\n  - `QObject*` `hierarchyController`의 `hierarchyNoteListModel` / `noteListModel` 계약이 현재 계층 도메인에 대한 활성 목록 모델을 식별합니다.\n- 명시적인 `noteListModel` 입력은 두 입력이 모두 존재해도 여전히 승리하므로, 기존 호출자는 필요에 따라 자동 계층 구조에서 파생된 선택 경로를 재정의할 수 있습니다.\n- 명시적 기능 플래그를 노출합니다.\n  - `hasNoteListModel`\n  - `searchContractAvailable`\n  - `currentIndexContractAvailable`\n- 정규화된 읽기 계약을 노출합니다.\n  - `currentIndex`\n  - `currentNoteEntry`\n  - `currentNoteId`\n  - `readCurrentNoteEntry()`는 활성 메모 기반 행 스냅샷을 단일 QVariantMap 페이로드로 내보내며, 리소스 계층 구조의 `currentResourceEntry` 패턴을 반영합니다.\n  - 시각적 다중 선택 행 인덱스를 안정적인 노트 ID로 다시 전환하는 `readNoteIdAt(int)`\n  - `readAllRows()`는 현재 목록 행을 역할 이름 키가 있는 스냅샷으로 내보내며, 이를 QML가 직접 리셋 `QAbstractItemModel`에 바인딩하지 않고 diff할 수 있습니다.\n  - 브리지 자체의 `noteListModel` 바인딩이 반드시 정착되기 전에, 계층 전환 중에 명시적인 모델 객체에 대해 동일한 스냅샷 계약을 내보내기 위한 `readAllRowsForModel(QObject*)`\n- 쓰기 도우미를 노출합니다.\n  - `applySearchText(QString)`\n  - `pushCurrentIndex(int)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "다음 중 하나를 허용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명시적인 `QObject*` `noteListModel`, 또는",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`QObject*` `hierarchyController`의 `hierarchyNoteListModel` / `noteListModel` 계약이 현재 계층 도메인에 대한 활성 목록 모델을 식별합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명시적인 `noteListModel` 입력은 두 입력이 모두 존재해도 여전히 승리하므로, 기존 호출자는 필요에 따라 자동 계층 구조에서 파생된 선택 경로를 재정의할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "명시적 기능 플래그를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hasNoteListModel`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`searchContractAvailable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentIndexContractAvailable`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정규화된 읽기 계약을 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentIndex`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteEntry`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteId`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`readCurrentNoteEntry()`는 활성 메모 기반 행 스냅샷을 단일 QVariantMap 페이로드로 내보내며, 리소스 계층 구조의 `currentResourceEntry` 패턴을 반영합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "시각적 다중 선택 행 인덱스를 안정적인 노트 ID로 다시 전환하는 `readNoteIdAt(int)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`readAllRows()`는 현재 목록 행을 역할 이름 키가 있는 스냅샷으로 내보내며, 이를 QML가 직접 리셋 `QAbstractItemModel`에 바인딩하지 않고 diff할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "브리지 자체의 `noteListModel` 바인딩이 반드시 정착되기 전에, 계층 전환 중에 명시적인 모델 객체에 대해 동일한 스냅샷 계약을 내보내기 위한 `readAllRowsForModel(QObject*)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "쓰기 도우미를 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applySearchText(QString)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`pushCurrentIndex(int)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "<a id=\"why-it-exists\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "## 그것이 존재하는 이유\n",
+      "level": 2,
+      "title": "그것이 존재하는 이유"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "`ListBarLayout.qml`는 다양한 런타임 표면을 가진 다중 계층 노트 목록 모델을 계속 지원해야 합니다. 이 브리지는 동적 속성/메서드 감지를 중앙 집중화하므로 QML 측은 반사가 많은 계약 논리보다는 렌더링 및 상호 작용 흐름에 계속 집중할 수 있습니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "`activeNoteListModel` 또는 도구 모음/도메인 전환 중 양쪽 모두 사용. 현재 셸 와이어링은 명시적 메모 목록 모델을 전달하는 것을 선호하므로 목록 표면과 편집자 표면이 같은 턴에서 같은 객체를 소비하는 반면, 계층에서 파생된 경로는 계층 객체만 아는 호출자에게 대체 경로 로 남습니다.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "또한 브리지는 이제 `currentNoteEntry` 계약을 노출하므로 노트 지원 계층은 이미 `currentResourceEntry`를 통해 리소스에 대해 작동하는 동일한 명시적 \"current selection entry\" 형태를 따를 수 있습니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/NoteListModelContractBridge.hpp`",
+      "anchor": "srcappmodelspanelnotelistmodelcontractbridgehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 계약",
+      "anchor": "공공-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "그것이 존재하는 이유",
+      "anchor": "그것이-존재하는-이유",
+      "start_line": 35
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000013",
+        "line": 28,
+        "text": "- 브리지 자체의 `noteListModel` 바인딩이 반드시 정착되기 전에, 계층 전환 중에 명시적인 모델 객체에 대해 동일한 스냅샷 계약을 내보내기 위한 `readAllRowsForModel(QObject*)`",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

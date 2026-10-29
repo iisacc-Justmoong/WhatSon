@@ -1,0 +1,169 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:0df1dfac16b6a07cf0b4197f94234bc9514ffaa9459a0c57d9c66cfafa3ce10b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp.md",
+    "sha256": "13464889c62c113e0e74e818fbaf820ce7dfb362da44cc795ec55420990ab74f",
+    "bytes": 634,
+    "line_count": 14,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`IWhatSonNoteHeaderSessionStore`는 세션 지원 노트 헤더 편집 계약을 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 계약\n",
+      "level": 2,
+      "title": "계약"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- `.wsnhead` 상태에 대한 세션 로드/읽기 액세스입니다.\n- 프로젝트, 북마크, 진행 상황, 폴더 및 태그 작업에 대한 헤더 변형.\n- 이제 태그 변형에는 인덱싱된 제거 외에도 할당/업서트 경로(`assignTag(...)`)가 명시적으로 포함됩니다.\n- 헤더 업데이트를 반영하는 소비자를 위한 `entryChanged(noteId)` 알림입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`.wsnhead` 상태에 대한 세션 로드/읽기 액세스입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트, 북마크, 진행 상황, 폴더 및 태그 작업에 대한 헤더 변형.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이제 태그 변형에는 인덱싱된 제거 외에도 할당/업서트 경로(`assignTag(...)`)가 명시적으로 포함됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더 업데이트를 반영하는 소비자를 위한 `entryChanged(noteId)` 알림입니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp`",
+      "anchor": "srcappmodelsdetailpanelsessioniwhatsonnoteheadersessionstorehpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약",
+      "anchor": "계약",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

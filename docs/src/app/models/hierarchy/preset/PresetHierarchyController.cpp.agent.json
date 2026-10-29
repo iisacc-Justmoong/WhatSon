@@ -1,0 +1,543 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:b8ed55268c5b7b492c739bb9140687c634ac655a8c4090ffe10b33d911cbff7b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/preset/PresetHierarchyController.cpp.md",
+    "sha256": "a65afb782c4a71f5710af7e612a5c4179547fc48001c69fd2cb6fd58ad6c1972",
+    "bytes": 3367,
+    "line_count": 58,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/preset/PresetHierarchyController.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/preset/PresetHierarchyController.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/preset/PresetHierarchyController.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 런타임 스냅샷 새로 고침 전반에 걸쳐 미리 설정된 계층 구조 로딩, 행 모델 재구성, 지속성 동기화 및 상태 보존을 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"runtime-refresh-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 런타임 갱신 계약\n",
+      "level": 2,
+      "title": "런타임 갱신 계약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "`applyRuntimeSnapshot(...)`는 이제 이벤트 계층 구조 동작을 미러링합니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "list",
+      "start_line": 15,
+      "end_line": 17,
+      "raw": "- 비교하기 전에 들어오는 사전 설정 이름을 삭제합니다.\n- 정리된 목록이 `m_presetNames`와 일치하면 로드 상태 메타데이터만 업데이트됩니다.\n- 목록이 변경된 경우, 사전 설정된 버킷 행을 재구성하고, 확장된 브랜치를 복원하며, 안정 키로 이전 선택을 복원하고, 모델을 동기화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "비교하기 전에 들어오는 사전 설정 이름을 삭제합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정리된 목록이 `m_presetNames`와 일치하면 로드 상태 메타데이터만 업데이트됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "목록이 변경된 경우, 사전 설정된 버킷 행을 재구성하고, 확장된 브랜치를 복원하며, 안정 키로 이전 선택을 복원하고, 모델을 동기화합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "이렇게 하면 노트 저장 관련 런타임 새로 고침이 사전 설정된 사이드바 트리를 축소하는 것을 중지합니다.\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "<a id=\"controller-hook-contract\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "## 컨트롤러 후크 계약\n",
+      "level": 2,
+      "title": "컨트롤러 후크 계약"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "`requestControllerHook()`는 사전 설정된 소스 경로가 알려진 경우 파일 기반 자체 새로 고침을 수행합니다.\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 27,
+      "end_line": 29,
+      "raw": "- `reloadFromPresetFilePath(...)`를 통해 `Preset.wspreset`를 다시 로드합니다.\n- 성공하면, 컨트롤러는 스냅샷 파이프라인을 다시 적용하고 상태가 실제로 변경된 경우에만 `loadStateChanged`를 방출합니다.\n- 읽기/파싱 실패 시 현재 행을 유지하고, 부하 상태에서 실패를 기록하며, 여전히 `controllerHookRequested()`를 방출하여 외부 훅 리스너가 결정론성을 유지하도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`reloadFromPresetFilePath(...)`를 통해 `Preset.wspreset`를 다시 로드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "성공하면, 컨트롤러는 스냅샷 파이프라인을 다시 적용하고 상태가 실제로 변경된 경우에만 `loadStateChanged`를 방출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "읽기/파싱 실패 시 현재 행을 유지하고, 부하 상태에서 실패를 기록하며, 여전히 `controllerHookRequested()`를 방출하여 외부 훅 리스너가 결정론성을 유지하도록 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"expansion-ownership\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## 확장 소유권\n",
+      "level": 2,
+      "title": "확장 소유권"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 35,
+      "end_line": 36,
+      "raw": "- `setItemExpanded(...)`는 공유된 체브론 검증/상태 플립을 `IHierarchyController`에 위임하고, 유효한 확장 가능한 행이 변경될 때 사전 설정된 모델을 동기화합니다.\n- 확장은 메모리 내에서만 직렬화됩니다; 이는 `Preset.wspreset`의 일부가 아니라 사용자 세션 상태로 의도적으로 취급됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setItemExpanded(...)`는 공유된 체브론 검증/상태 플립을 `IHierarchyController`에 위임하고, 유효한 확장 가능한 행이 변경될 때 사전 설정된 모델을 동기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "확장은 메모리 내에서만 직렬화됩니다; 이는 `Preset.wspreset`의 일부가 아니라 사용자 세션 상태로 의도적으로 취급됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "html",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "<a id=\"mutation-flow\"></a>\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "## 돌연변이 흐름\n",
+      "level": 2,
+      "title": "돌연변이 흐름"
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 44,
+      "raw": "- `setPresetNames(...)`는 초기 로드에 사용되는 명령형 설정자입니다.\n- `renameItem(...)`, `createFolder()`, 및 `deleteSelectedFolder()`는 현재 아이템 세트를 변환한 다음, 해당 아이템들로부터 프리셋 스토어를 다시 작성합니다.\n- `syncModel()`는 행 벡터를 QML에 다시 게시하는 유일한 경로입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setPresetNames(...)`는 초기 로드에 사용되는 명령형 설정자입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`renameItem(...)`, `createFolder()`, 및 `deleteSelectedFolder()`는 현재 아이템 세트를 변환한 다음, 해당 아이템들로부터 프리셋 스토어를 다시 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`syncModel()`는 행 벡터를 QML에 다시 게시하는 유일한 경로입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "html",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "<a id=\"invariants\"></a>\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "heading",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "## 불변성\n",
+      "level": 2,
+      "title": "불변성"
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "list",
+      "start_line": 50,
+      "end_line": 52,
+      "raw": "- 사전 설정된 계층 구조 행은 현재 행 위치가 아닌 의미론적으로 키가 지정됩니다.\n- 재구성은 사전 설정된 소스가 실질적으로 변경된 경우에만 허용됩니다.\n- 행이 사용 가능할 경우, 부정적이거나 잘못된 선택된 인덱스가 첫 번째 보이는 행으로 정규화되어 런타임 새로 고침이 컨트롤러가 보이지 않는 \"no selection\" 상태에 남지 않도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "사전 설정된 계층 구조 행은 현재 행 위치가 아닌 의미론적으로 키가 지정됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "재구성은 사전 설정된 소스가 실질적으로 변경된 경우에만 허용됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "행이 사용 가능할 경우, 부정적이거나 잘못된 선택된 인덱스가 첫 번째 보이는 행으로 정규화되어 런타임 새로 고침이 컨트롤러가 보이지 않는 \"no selection\" 상태에 남지 않도록 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "html",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "<a id=\"count-role-compatibility\"></a>\n"
+    },
+    {
+      "id": "b000046",
+      "kind": "blank",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "\n"
+    },
+    {
+      "id": "b000047",
+      "kind": "heading",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "## 카운트 역할 호환성\n",
+      "level": 2,
+      "title": "카운트 역할 호환성"
+    },
+    {
+      "id": "b000048",
+      "kind": "blank",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "\n"
+    },
+    {
+      "id": "b000049",
+      "kind": "paragraph",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "`depthItems()`는 이제 모든 사전 설정 행에 숫자 `count` 필드를 게시합니다. 사전 설정 도메인은 현재 사전 설정 이름별로 노트 인덱스 멤버십을 전달하지 않으므로 공유 계층 페이로드 계약을 계속 충족시키면서 값이 `0`로 방출됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/preset/PresetHierarchyController.cpp`",
+      "anchor": "srcappmodelshierarchypresetpresethierarchycontrollercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "런타임 갱신 계약",
+      "anchor": "런타임-갱신-계약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "컨트롤러 후크 계약",
+      "anchor": "컨트롤러-후크-계약",
+      "start_line": 23
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "확장 소유권",
+      "anchor": "확장-소유권",
+      "start_line": 33
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "돌연변이 흐름",
+      "anchor": "돌연변이-흐름",
+      "start_line": 40
+    },
+    {
+      "block_id": "b000041",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "불변성",
+      "anchor": "불변성",
+      "start_line": 48
+    },
+    {
+      "block_id": "b000047",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "카운트 역할 호환성",
+      "anchor": "카운트-역할-호환성",
+      "start_line": 56
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

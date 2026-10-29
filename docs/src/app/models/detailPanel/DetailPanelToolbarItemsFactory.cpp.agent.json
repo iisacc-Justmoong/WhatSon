@@ -1,0 +1,305 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2895a69a1e1c2bc55ceaf41dc4f068fbd321137cfa1ae75fe4d22af747a81f1f",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailPanelToolbarItemsFactory.cpp.md",
+    "sha256": "7a4ce313bfeb9322a2fbb5645421e50aa908134c628fd5e42a99b019e6f04e7b",
+    "bytes": 1067,
+    "line_count": 30,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailPanelToolbarItemsFactory.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailPanelToolbarItemsFactory.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelToolbarItemsFactory.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 팩토리는 `DetailPanelController`에서 사용하는 표준 도구 모음 사양 목록을 작성합니다. 6개의 세부 패널 상태 버튼과 해당 아이콘 이름은 C++ 기준 원본입니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"current-mapping\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 현재 매핑\n",
+      "level": 2,
+      "title": "현재 매핑"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- `Properties` -> `config`\n- `FileStat` -> `chartBar`\n- `Insert` -> `generaladd`\n- `Layer` -> `toolwindowdependencies`\n- `FileHistory` -> `toolWindowClock`\n- `Help` -> `featureAnswer`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`Properties` -> `config`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FileStat` -> `chartBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Insert` -> `generaladd`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Layer` -> `toolwindowdependencies`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`FileHistory` -> `toolWindowClock`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Help` -> `featureAnswer`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"output-shape\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 출력 형태\n",
+      "level": 2,
+      "title": "출력 형태"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "생성된 각 도구 모음 항목은 다음을 포함하는 `QVariantMap`입니다.\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 24,
+      "raw": "- `iconName`\n- `stateValue`\n- `selected`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`iconName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`stateValue`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selected`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"notes\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 메모\n",
+      "level": 2,
+      "title": "메모"
+    },
+    {
+      "id": "b000022",
+      "kind": "list",
+      "start_line": 29,
+      "end_line": 30,
+      "raw": "- 첫 번째 아이콘은 이전 프로젝트 구조 문자 모양에서 `config`로 변경되어 데스크탑 세부 도구 모음이 Figma `Properties` 버튼 계약과 일치합니다.\n- QML는 검사 및 테스트를 위해 Figma 노드 ID와 의미 개체 이름으로 이러한 항목을 계속 강화합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "첫 번째 아이콘은 이전 프로젝트 구조 문자 모양에서 `config`로 변경되어 데스크탑 세부 도구 모음이 Figma `Properties` 버튼 계약과 일치합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML는 검사 및 테스트를 위해 Figma 노드 ID와 의미 개체 이름으로 이러한 항목을 계속 강화합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelToolbarItemsFactory.cpp`",
+      "anchor": "srcappmodelsdetailpaneldetailpaneltoolbaritemsfactorycpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "현재 매핑",
+      "anchor": "현재-매핑",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "출력 형태",
+      "anchor": "출력-형태",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "메모",
+      "anchor": "메모",
+      "start_line": 28
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

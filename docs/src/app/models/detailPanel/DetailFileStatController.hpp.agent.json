@@ -1,0 +1,500 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:9dcf7f63000a7ab73a1ea082cbb0272af13c803842126e4a63e28460aa26d3b9",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailFileStatController.hpp.md",
+    "sha256": "4cb14d849099a1263fc2e010158690780ece25a29daaf5f3fcfa3b10176715a2",
+    "bytes": 1916,
+    "line_count": 64,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailFileStatController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailFileStatController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailFileStatController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailFileStatController`는 `fileStat` 도구 모음 상태에 대한 전용 세부 정보 패널 통계 개체입니다. 숫자 `.wsnhead <fileStat>` 필드를 QML 친화적 속성으로 미러링하고 통계 보기에서 사용되는 Figma 모양의 텍스트 블록도 노출합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"exported-metric-properties\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 내보낸 메트릭 속성\n",
+      "level": 2,
+      "title": "내보낸 메트릭 속성"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 24,
+      "raw": "- `totalFolders`\n- `totalTags`\n- `letterCount`\n- `wordCount`\n- `sentenceCount`\n- `paragraphCount`\n- `spaceCount`\n- `indentCount`\n- `lineCount`\n- `openCount`\n- `modifiedCount`\n- `backlinkToCount`\n- `backlinkByCount`\n- `includedResourceCount`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`totalFolders`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`totalTags`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`letterCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`wordCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`sentenceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`paragraphCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`spaceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`indentCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lineCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`openCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`modifiedCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkToCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkByCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`includedResourceCount`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"figma-text-surface\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## Figma 텍스트 표면\n",
+      "level": 2,
+      "title": "Figma 텍스트 표면"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 29,
+      "end_line": 50,
+      "raw": "- `summaryLines`\n  - `Projects: ...`\n  - `Total folders: ...`\n  - `Folders: ...`\n  - `Total tags: ...`\n  - `Tags: ...`\n  - `Created at: ...`\n  - `Modified at: ...`\n- `textMetricLines`\n  - `Letter: ...`\n  - `Word: ...`\n  - `Sentence: ...`\n  - `Paragraph: ...`\n  - `Space: ...`\n  - `Indent: ...`\n  - `Line: ...`\n- `activityLines`\n  - `Open count: ...`\n  - `Modified count: ...`\n  - `Backlink to: ...`\n  - `Backlink by: ...`\n  - `Include resources: ...`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`summaryLines`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Projects: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Total folders: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Folders: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Total tags: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Tags: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Created at: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Modified at: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`textMetricLines`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Letter: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Word: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Sentence: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Paragraph: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Space: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Indent: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Line: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activityLines`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Open count: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Modified count: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Backlink to: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Backlink by: ...`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Include resources: ...`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "<a id=\"grouped-qml-surface\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "## 그룹화된 QML 표면\n",
+      "level": 2,
+      "title": "그룹화된 QML 표면"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 55,
+      "end_line": 57,
+      "raw": "- `overviewItems`: 폴더, 태그, 열기, 수정됨\n- `textItems`: 문자, 단어, 문장, 단락, 공백, 들여쓰기, 줄\n- `relationItems`: 링크 대상, 링크 대상, 리소스\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`overviewItems`: 폴더, 태그, 열기, 수정됨",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`textItems`: 문자, 단어, 문장, 단락, 공백, 들여쓰기, 줄",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`relationItems`: 링크 대상, 링크 대상, 리소스",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "<a id=\"lifecycle\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "## 수명주기\n",
+      "level": 2,
+      "title": "수명주기"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 62,
+      "end_line": 64,
+      "raw": "- `applyHeader(...)`는 현재 로드된 메모 헤더 스냅샷을 컨트롤러에 복사합니다.\n- `clearHeader()`는 표면을 비어 있거나 해결되지 않은 노트에 사용되는 0상태 계약으로 다시 재설정합니다.\n- 모든 업데이트는 `statsChanged()`를 발생하므로, QML는 동일한 소스 객체의 숫자 속성와 텍스트 블록을 모두 새로 고칠 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`applyHeader(...)`는 현재 로드된 메모 헤더 스냅샷을 컨트롤러에 복사합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`clearHeader()`는 표면을 비어 있거나 해결되지 않은 노트에 사용되는 0상태 계약으로 다시 재설정합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 업데이트는 `statsChanged()`를 발생하므로, QML는 동일한 소스 객체의 숫자 속성와 텍스트 블록을 모두 새로 고칠 수 있습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailFileStatController.hpp`",
+      "anchor": "srcappmodelsdetailpaneldetailfilestatcontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "내보낸 메트릭 속성",
+      "anchor": "내보낸-메트릭-속성",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Figma 텍스트 표면",
+      "anchor": "figma-텍스트-표면",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "그룹화된 QML 표면",
+      "anchor": "그룹화된-qml-표면",
+      "start_line": 54
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "수명주기",
+      "anchor": "수명주기",
+      "start_line": 61
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e6dd3e7be4b7d188ee48a43b6be792f02e3c9f2507391057e53bbf1fdbbe9430",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/APP_ARCHITECTURE.md",
+    "sha256": "129e8e2b3dd91cf64169df1a6c35e7b4d598a3c8536ffa5e560236e5ca9c9122",
+    "bytes": 1040,
+    "line_count": 19,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "앱 아키텍처",
+    "role": "reference",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "html",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "<a id=\"app-architecture\"></a>\n"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "# 앱 아키텍처\n",
+      "level": 1,
+      "title": "앱 아키텍처"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "paragraph",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "WhatSon는 C++ 모델/컨트롤러 소유권 및 QML 뷰 구성을 갖춘 Qt Quick 및 LVRS 애플리케이션입니다.\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "html",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "<a id=\"current-editor-boundary\"></a>\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "## 현재 편집자 경계\n",
+      "level": 2,
+      "title": "현재 편집자 경계"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "paragraph",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "이전 활성 메모 문서 세션 모델이 제거되었습니다. 워크스페이스 콘텐츠 표면은 이미지 리소스 보기와 메모 또는 비이미지 선택을 위한 빈 플레이스홀더만 유지하며, 활성 메모 본문 파싱, 투영, 포맷팅 단축키, 붙여넣기 변형 및 편집기 지속성은 더 이상 콘텐츠 라우트에 연결되지 않습니다.\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "paragraph",
+      "start_line": 13,
+      "end_line": 13,
+      "raw": "이미지 리소스 선택은 여전히 리소스 목록 모델을 통해 `ImageEditor.qml`로 라우팅됩니다.\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 14,
+      "end_line": 14,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "<a id=\"qml-rule\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## QML 규칙\n",
+      "level": 2,
+      "title": "QML 규칙"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "QML는 보기 전용으로 유지됩니다. 노트 본문 소스를 구문 분석하거나, RAW 소스를 변경하거나, 편집기 지속성을 소유하거나, 래퍼 개체를 통해 삭제된 문서 세션 동작을 다시 생성해서는 안 됩니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000003",
+      "parent_id": null,
+      "level": 1,
+      "title": "앱 아키텍처",
+      "anchor": "앱-아키텍처",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000003",
+      "level": 2,
+      "title": "현재 편집자 경계",
+      "anchor": "현재-편집자-경계",
+      "start_line": 9
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000003",
+      "level": 2,
+      "title": "QML 규칙",
+      "anchor": "qml-규칙",
+      "start_line": 17
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000019",
+        "line": 19,
+        "text": "QML는 보기 전용으로 유지됩니다. 노트 본문 소스를 구문 분석하거나, RAW 소스를 변경하거나, 편집기 지속성을 소유하거나, 래퍼 개체를 통해 삭제된 문서 세션 동작을 다시 생성해서는 안 됩니다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

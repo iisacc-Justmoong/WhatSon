@@ -1,0 +1,174 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:611aca9d7fa0a5b7925bd9bbe94bc1ef00ac51bc870905aed378863b91f32156",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/extension/trial/WhatSonTrialRegisterXml.cpp.md",
+    "sha256": "178744f27a5d388b5f3af85e5ef31da0dc1b61c7ca5f991c1aaec60dc5c7e5b9",
+    "bytes": 783,
+    "line_count": 15,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/extension/trial/WhatSonTrialRegisterXml.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/extension/trial/WhatSonTrialRegisterXml.cpp`\n",
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialRegisterXml.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "선택적 평가판 확장을 위해 `.whatson/trial_register.xml` 직렬화를 구현합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"behavior\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 행동\n",
+      "level": 2,
+      "title": "행동"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- `<deviceUUID>`, `<key>` 및 `<signature>` 요소를 사용하여 작은 XML 페이로드를 작성합니다.\n- 입력 ID를 유지하기 전에 정규화합니다.\n- 로컬 레지스터 무결성 비밀을 사용하여 정식 페이로드에 대해 HMAC-SHA256 서명을 계산합니다.\n- 부분적으로 작성된 레지스터 파일이 유효한 데이터에 대해 커밋되지 않도록 `QSaveFile`를 사용합니다.\n- 형식이 잘못되었거나 불완전하거나 무결성이 일치하지 않는 레지스터 파일을 다시 로드할 때 거부합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`<deviceUUID>`, `<key>` 및 `<signature>` 요소를 사용하여 작은 XML 페이로드를 작성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "입력 ID를 유지하기 전에 정규화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로컬 레지스터 무결성 비밀을 사용하여 정식 페이로드에 대해 HMAC-SHA256 서명을 계산합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "부분적으로 작성된 레지스터 파일이 유효한 데이터에 대해 커밋되지 않도록 `QSaveFile`를 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "형식이 잘못되었거나 불완전하거나 무결성이 일치하지 않는 레지스터 파일을 다시 로드할 때 거부합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/extension/trial/WhatSonTrialRegisterXml.cpp`",
+      "anchor": "srcextensiontrialwhatsontrialregisterxmlcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동",
+      "anchor": "행동",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

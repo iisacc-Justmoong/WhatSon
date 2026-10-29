@@ -1,0 +1,530 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:daea224c4b6c63b8e2a008d36711aa491b936710f97fa3ea9f3daff1db1b3918",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp.md",
+    "sha256": "0cfa549c153d0a91dc9a1760b7d305c14dbdbed5567d2e15d0caad056fd7eeb3",
+    "bytes": 2841,
+    "line_count": 62,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 파일은 `WhatSonNoteHeaderStore`를 `.wsnhead` XML로 다시 직렬화합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"folder-serialization-rules\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 폴더 직렬화 규칙\n",
+      "level": 2,
+      "title": "폴더 직렬화 규칙"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- 각 폴더 바인딩은 `<folder>` 요소로 내보내집니다.\n- 유효한 UUID가 동일한 인덱스에 있으면 직렬화기는 이를 `uuid=\"...\"`로 씁니다.\n- 요소 본문은 읽을 수 있는 폴더 경로를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "각 폴더 바인딩은 `<folder>` 요소로 내보내집니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "유효한 UUID가 동일한 인덱스에 있으면 직렬화기는 이를 `uuid=\"...\"`로 씁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "요소 본문은 읽을 수 있는 폴더 경로를 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "이 이중 표현을 사용하면 응용 프로그램이 여전히 안정적인 시스템 ID에 의존하는 동안 사람이 메모 헤더를 검사할 수 있습니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "<a id=\"output-expectations\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "## 출력 기대치\n",
+      "level": 2,
+      "title": "출력 기대치"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "발신자는 정규화된 데이터를 가지고 도착해야 합니다. 작성자는 경로에서 누락된 UUID를 추론하려고 시도하지 않습니다. 해당 책임은 현재 폴더 트리를 알고 있는 상위 수준 서비스에 속합니다.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "paragraph",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "이제 생성자는 최상위 라이프사이클 메타데이터에서 `<lastOpened>...</lastOpened>`를 내보내므로 RAW 노트 헤더는 `lastModified`와 독립적으로 지속되는 마지막 열기 타임스탬프를 전달합니다.\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "html",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "<a id=\"scaffold-path-policy\"></a>\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "heading",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "## 비계 경로 정책\n",
+      "level": 2,
+      "title": "비계 경로 정책"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "list",
+      "start_line": 31,
+      "end_line": 32,
+      "raw": "- `requiredRelativePaths()`는 의도적으로 비어 있습니다.\n- 헤더 생성에는 더 이상 패키지 로컬 `.meta` 하위 디렉터리가 필요하거나 생성되지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`requiredRelativePaths()`는 의도적으로 비어 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더 생성에는 더 이상 패키지 로컬 `.meta` 하위 디렉터리가 필요하거나 생성되지 않습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "html",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "<a id=\"progress-serialization-rules\"></a>\n"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "heading",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "## 진행 직렬화 규칙\n",
+      "level": 2,
+      "title": "진행 직렬화 규칙"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "list",
+      "start_line": 38,
+      "end_line": 40,
+      "raw": "- 직렬화기 는 이제 `<progress enums=\"...\">` 속성에 `WhatSonNoteHeaderStore::progressEnums()` 를 보존하므로, 기본 `Ready/Pending/InProgress/Done` 세트로 다시 작성되지 않는 사용자 정의 노트 로컬 진행 라벨 왕복 변환 를 유지합니다.\n- 음수가 아닌 진행률 값은 `<progress>` 요소 본문으로 직렬화됩니다.\n- 지워진 진행 상태(`-1`)는 빈 `<progress ...></progress>` 요소로 직렬화되므로 파서는 `0`로 다시 강제하는 대신 진행 없음을 왕복 변환할 수 있습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "직렬화기 는 이제 `<progress enums=\"...\">` 속성에 `WhatSonNoteHeaderStore::progressEnums()` 를 보존하므로, 기본 `Ready/Pending/InProgress/Done` 세트로 다시 작성되지 않는 사용자 정의 노트 로컬 진행 라벨 왕복 변환 를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "음수가 아닌 진행률 값은 `<progress>` 요소 본문으로 직렬화됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지워진 진행 상태(`-1`)는 빈 `<progress ...></progress>` 요소로 직렬화되므로 파서는 `0`로 다시 강제하는 대신 진행 없음을 왕복 변환할 수 있습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000036",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000037",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"file-statistics-serialization-rules\"></a>\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## 파일 통계 직렬화 규칙\n",
+      "level": 2,
+      "title": "파일 통계 직렬화 규칙"
+    },
+    {
+      "id": "b000040",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000041",
+      "kind": "list",
+      "start_line": 46,
+      "end_line": 62,
+      "raw": "- 직렬화기는 이제 `.wsnhead <head>` 바로 아래에 전용 `<fileStat>` 블록을 방출합니다.\n- 모든 통계는 값이 `0`일 때도 명시적으로 작성되므로, 새로운 메모는 안정적인 스키마로 시작하고 오래된 독자는 블록을 안전하게 무시할 수 있습니다.\n- 현재 블록에는 다음이 포함되어 있습니다.\n  - `totalFolders`\n  - `totalTags`\n  - `letterCount`\n  - `wordCount`\n  - `sentenceCount`\n  - `paragraphCount`\n  - `spaceCount`\n  - `indentCount`\n  - `lineCount`\n  - `openCount`\n  - `modifiedCount`\n  - `backlinkToCount`\n  - `backlinkByCount`\n  - `includedResourceCount`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "직렬화기는 이제 `.wsnhead <head>` 바로 아래에 전용 `<fileStat>` 블록을 방출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "모든 통계는 값이 `0`일 때도 명시적으로 작성되므로, 새로운 메모는 안정적인 스키마로 시작하고 오래된 독자는 블록을 안전하게 무시할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 블록에는 다음이 포함되어 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`totalFolders`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`totalTags`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`letterCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`wordCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`sentenceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`paragraphCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`spaceCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`indentCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lineCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`openCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`modifiedCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkToCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`backlinkByCount`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`includedResourceCount`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/note/header/WhatSonNoteHeaderCreator.cpp`",
+      "anchor": "srcappmodelsfilenoteheaderwhatsonnoteheadercreatorcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "폴더 직렬화 규칙",
+      "anchor": "폴더-직렬화-규칙",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "출력 기대치",
+      "anchor": "출력-기대치",
+      "start_line": 21
+    },
+    {
+      "block_id": "b000027",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "비계 경로 정책",
+      "anchor": "비계-경로-정책",
+      "start_line": 29
+    },
+    {
+      "block_id": "b000033",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "진행 직렬화 규칙",
+      "anchor": "진행-직렬화-규칙",
+      "start_line": 36
+    },
+    {
+      "block_id": "b000039",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "파일 통계 직렬화 규칙",
+      "anchor": "파일-통계-직렬화-규칙",
+      "start_line": 44
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

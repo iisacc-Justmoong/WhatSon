@@ -1,0 +1,330 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:da478006d3e7eedb8528cf2ae5daca38b510957bd9cb41e571cfb672982f803e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/panel/NoteActiveStateTracker.cpp.md",
+    "sha256": "becd7f2b9e5339b1b166cb32eef7e5b815124295d33a17e0832925a048b49659",
+    "bytes": 2502,
+    "line_count": 37,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/panel/NoteActiveStateTracker.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/panel/NoteActiveStateTracker.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/panel/NoteActiveStateTracker.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "활성 계층 컨텍스트와 현재 활성 노트 목록 모델을 구독하여 전역 활성 노트 추적을 구현합니다. 선택 및 패키지 경로 게시 시 의도적으로 중지됩니다. 구문 분석된 편집기 세션 마운트, 프로젝션 및 렌더링은 이 개체의 책임이 아닙니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"behavior-summary\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 행동 요약\n",
+      "level": 2,
+      "title": "행동 요약"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 24,
+      "raw": "- `setHierarchyContextSource(...)`는 아키텍처 정책 잠금 전에 사이드바 수준의 `IActiveHierarchyContextSource`를 수락하고, 잠금 후에는 재배선을 거부합니다.\n- `synchronizeActiveBindings()`는 활성 계층 인덱스, 활성 계층 컨트롤러 및 활성 메모 목록 모델을 하나의 스냅샷으로 갱신합니다.\n- 활성 노트 목록 모델은 다음과 같이 관찰됩니다.\n  - `currentIndexChanged()`\n  - `currentNoteEntryChanged()`\n  - `currentNoteIdChanged()`\n  - `currentNoteDirectoryPathChanged()`\n  - `noteBackedChanged()`\n  - 관련 `QAbstractItemModel` 행/재설정/레이아웃 변경\n- 활성 노트 해상도는 `currentNoteEntry`를 선호하고, 그 다음 `currentNoteId/currentNoteDirectoryPath`를 선호하며, 모델에 커밋된 노트 ID 계약이 없을 때만 현재 행 역할 스냅샷으로 되돌아갑니다.\n- `bodyText` 행 데이터는 `activeNoteEntry`에서 의도적으로 생략되었습니다; 트래커는 더 이상 본문 텍스트나 본문 파일 경로를 게시하지 않습니다.\n- `setActiveNoteState(...)` 다음 엔트리를, 노트 ID 를, 그리고 노트 디렉토리 경로를 다음 변경 신호를 방출하기 전에 기록합니다. 동기식 관찰자는 이전 노트 디렉토리와 새로운 `activeNoteId` 가 짝지어진 것을 결코 볼 수 없습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`setHierarchyContextSource(...)`는 아키텍처 정책 잠금 전에 사이드바 수준의 `IActiveHierarchyContextSource`를 수락하고, 잠금 후에는 재배선을 거부합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`synchronizeActiveBindings()`는 활성 계층 인덱스, 활성 계층 컨트롤러 및 활성 메모 목록 모델을 하나의 스냅샷으로 갱신합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 노트 목록 모델은 다음과 같이 관찰됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentIndexChanged()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteEntryChanged()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteIdChanged()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`currentNoteDirectoryPathChanged()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteBackedChanged()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "관련 `QAbstractItemModel` 행/재설정/레이아웃 변경",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "활성 노트 해상도는 `currentNoteEntry`를 선호하고, 그 다음 `currentNoteId/currentNoteDirectoryPath`를 선호하며, 모델에 커밋된 노트 ID 계약이 없을 때만 현재 행 역할 스냅샷으로 되돌아갑니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bodyText` 행 데이터는 `activeNoteEntry`에서 의도적으로 생략되었습니다; 트래커는 더 이상 본문 텍스트나 본문 파일 경로를 게시하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setActiveNoteState(...)` 다음 엔트리를, 노트 ID 를, 그리고 노트 디렉토리 경로를 다음 변경 신호를 방출하기 전에 기록합니다. 동기식 관찰자는 이전 노트 디렉토리와 새로운 `activeNoteId` 가 짝지어진 것을 결코 볼 수 없습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "`test/cpp/suites/note_active_state_tracker_tests.cpp` 및 `test/cpp/suites/architecture_policy_lock_tests.cpp`의 아키텍처 잠금 검사에 포함됩니다.\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "## 한국어\n",
+      "level": 2,
+      "title": "한국어"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 37,
+      "raw": "- 대상: `src/app/models/panel/NoteActiveStateTracker.cpp`\n- 역할: active hierarchy와 active note-list model의 변화를 구독해 전역 active note 상태를 갱신한다.\n- 검증: active hierarchy 전환, 빈 selection clear, `noteBacked=false` clear, architecture lock 이후 재배선 거부를\n  회귀 테스트로 고정한다. change signal 중에도 note id와 directory path가 원자적으로 일치하는지도 회귀 테스트로 고정한다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "대상: `src/app/models/panel/NoteActiveStateTracker.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "역할: active hierarchy와 active note-list model의 변화를 구독해 전역 active note 상태를 갱신한다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "검증: active hierarchy 전환, 빈 selection clear, `noteBacked=false` clear, architecture lock 이후 재배선 거부를",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/panel/NoteActiveStateTracker.cpp`",
+      "anchor": "srcappmodelspanelnoteactivestatetrackercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "행동 요약",
+      "anchor": "행동-요약",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "한국어",
+      "anchor": "한국어",
+      "start_line": 32
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,617 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:440124fcbc1437844be3bccd5212b9522330a92c9980cffb4b54db8c7743e5b1",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/calendar/WeekCalendarPage.qml.md",
+    "sha256": "abceab03eb53c342045d8400d9ebd73e1fd9738d086eb7bfeef90d65402882a3",
+    "bytes": 6883,
+    "line_count": 80,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/calendar/WeekCalendarPage.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/calendar/WeekCalendarPage.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/WeekCalendarPage.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`WeekCalendarPage.qml` 는 주 캘린더를 3열 인라인 타임라인 표면으로 렌더링합니다. 주 표면은 이제 하나의 연속된 시간 스펙트럼을 유지합니다: 왼쪽 `Time` 헤더와 24 시간별 레이블은 고정되어 있고, 오른쪽의 일 열만 수평으로 이동합니다. 가시적인 뷰포트 는 여전히 3 일 열을 위한 크기를 갖지만, 수평 스와이프는 페이지 스냅 없이 인접한 날짜를 가로지릅니다. 페이지는 이제 두 번째 날짜 모델/캐시 레이어를 소유하지 않으며, 뷰포트 이동만 관리하고 타임라인 데이터 소유권을 `WeekCalendarController` 에 위임합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"view-contract\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 계약 보기\n",
+      "level": 2,
+      "title": "계약 보기"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 14,
+      "raw": "- 입력: `weekCalendarController`\n- 출력 신호: `noteOpenRequested(string noteId)`\n- 후크 신호: `viewHookRequested(string reason)`\n- 후크 전달자: `requestViewHook(reason)`는 `weekCalendarController.requestWeekView(reason)`에 위임합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "입력: `weekCalendarController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "출력 신호: `noteOpenRequested(string noteId)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후크 신호: `viewHookRequested(string reason)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후크 전달자: `requestViewHook(reason)`는 `weekCalendarController.requestWeekView(reason)`에 위임합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"ui-composition\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## UI 구성\n",
+      "level": 2,
+      "title": "UI 구성"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 19,
+      "end_line": 37,
+      "raw": "- 표면:\n  - 루트 페이지는 `LV.Theme.accentTransparent`를 유지하므로 앱 배경이 표시됩니다.\n- 헤더:\n  - 공유 `CalendarTodayControl`(`Prev/Today/Next`)만 해당됩니다.\n  - `Prev/Next`는 현재 초점을 맞춘 중간 날짜로부터 주 단위로 다시 중심을 잡는 반면, 가로로 긋기는 일별 순회를 처리합니다.\n  - `Today`는 표면의 중심을 조정하여 실제 현재 날짜가 표시되는 날짜의 중간 열에 위치하도록 합니다.\n- 본체:\n  - 고정된 왼쪽 시간 비계(`Time` 헤더 + 24 시간 라벨) 1개,\n  - 날짜 열만 소유하는 오른쪽의 수평 `Flickable` 하나,\n  - 표시되는 뷰포트는 한 번에 3일 열에 해당하는 크기입니다.\n  - 날짜-열 모델은 이제 `WeekCalendarController.timelineDayModels`에서 직접 제공됩니다.\n  - 각 일일 모델은 이미 날짜별 항목 목록과 파생 메타데이터를 포함하고 있으므로, 페이지는 더 이상 로컬 `ListModel`, `dateEntriesCache` 또는 `buildDateModel(...)` 함수를 유지하지 않습니다.\n  - 전용 날짜 헤더 행은 둘 다 동일한 수평 콘텐츠 표면에 있기 때문에 시간별 그리드와 정렬된 상태로 유지됩니다.\n  - 일반 날짜 헤더와 시간 셀은 현재 주에 속하는지와 관계없이 `LV.Theme.accentTransparent`를 통해 투명하게 유지하므로 주 화면은 열별 그리드 채우기를 그리지 않는다,\n  - 이번 주 강조는 이제 텍스트 어조와 기존 오늘 개요로 제한됩니다.\n  - 스캐폴드는 사용 가능한 뷰포트 높이에서 `hourRowHeight`를 계산하므로 24 행은 나머지 영역(`00:00` 상단 슬롯, 하단 가장자리의 최종 슬롯)을 균등하게 채웁니다.\n  - 3 일 열은 시간 열과 3 열 간격 이후 남은 너비를 나눕니다.\n  - 가로 스크롤에는 스냅 동작이 없습니다.\n- 중심일 하이라이트 반경은 이제 로컬 픽셀 상수 대신 `LV.Theme.gap20 + LV.Theme.strokeThin`를 통해 라우팅됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "표면:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "루트 페이지는 `LV.Theme.accentTransparent`를 유지하므로 앱 배경이 표시됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공유 `CalendarTodayControl`(`Prev/Today/Next`)만 해당됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Prev/Next`는 현재 초점을 맞춘 중간 날짜로부터 주 단위로 다시 중심을 잡는 반면, 가로로 긋기는 일별 순회를 처리합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Today`는 표면의 중심을 조정하여 실제 현재 날짜가 표시되는 날짜의 중간 열에 위치하도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "본체:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "고정된 왼쪽 시간 비계(`Time` 헤더 + 24 시간 라벨) 1개,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "날짜 열만 소유하는 오른쪽의 수평 `Flickable` 하나,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "표시되는 뷰포트는 한 번에 3일 열에 해당하는 크기입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "날짜-열 모델은 이제 `WeekCalendarController.timelineDayModels`에서 직접 제공됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 일일 모델은 이미 날짜별 항목 목록과 파생 메타데이터를 포함하고 있으므로, 페이지는 더 이상 로컬 `ListModel`, `dateEntriesCache` 또는 `buildDateModel(...)` 함수를 유지하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "전용 날짜 헤더 행은 둘 다 동일한 수평 콘텐츠 표면에 있기 때문에 시간별 그리드와 정렬된 상태로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "일반 날짜 헤더와 시간 셀은 현재 주에 속하는지와 관계없이 `LV.Theme.accentTransparent`를 통해 투명하게 유지하므로 주 화면은 열별 그리드 채우기를 그리지 않는다,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이번 주 강조는 이제 텍스트 어조와 기존 오늘 개요로 제한됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "스캐폴드는 사용 가능한 뷰포트 높이에서 `hourRowHeight`를 계산하므로 24 행은 나머지 영역(`00:00` 상단 슬롯, 하단 가장자리의 최종 슬롯)을 균등하게 채웁니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "3 일 열은 시간 열과 3 열 간격 이후 남은 너비를 나눕니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "가로 스크롤에는 스냅 동작이 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "중심일 하이라이트 반경은 이제 로컬 픽셀 상수 대신 `LV.Theme.gap20 + LV.Theme.strokeThin`를 통해 라우팅됩니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"interactiondata-flow\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "## 상호작용/데이터 흐름\n",
+      "level": 2,
+      "title": "상호작용/데이터 흐름"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 53,
+      "raw": "1. `Component.onCompleted`는 중앙에 배치된 레이지 날짜 창을 초기화하고, 현재 주를 열 때 주 시작 월요일 앵커 대신 실제 현재 날짜를 초기 포커스된 중간 열로 사용합니다.\n2. 수평 이동은 오른쪽 날짜 열 표면만 업데이트합니다. 시간 비계는 움직이지 않습니다.\n3. 니어 에지 액세스로 인해 지연 날짜 증가가 발생합니다.\n   - 왼쪽 가장자리: `prependDates(...)` -> `WeekCalendarController.prependTimelineDates(...)`\n   - 오른쪽 가장자리: `appendDates(...)` -> `WeekCalendarController.appendTimelineDates(...)`\n4. 인접한 콘텐츠는 한 번에 하루씩 진행되므로 사용자는 `1-3`, `2-4`, `3-5` 등을 탐색할 수 있습니다.\n5. Date-window 크기는 한계가 설정된 (`maxDateWindowSize`) 에서 `WeekCalendarController.trimTimelineWindow(...)` 로 제한되어 무한한 메모리 성장을 피합니다.\n6. 프로그래밍 방식 중심 조정(`Prev`, `Next`, `Today`)은 주 앵커를 동기화하기 전에 대상 날짜를 중간 열에 정렬합니다.\n7. 수평 이동 종료는 현재 집중된 중간 날짜를 월요일 시작 주로 정규화하고 `displayedWeekStartIso`를 동기화합니다.\n8. 시간 슬롯 레이블은 컨트롤러 소유 요일 모델 `entries` 페이로드에서 파생되며 `slotSummary(...)`로 압축됩니다.\n9. 시간 슬롯 항목 칩은 공유 `CalendarEventCell`(기본/항목 유형별 배경 색상)로 렌더링됩니다.\n10. 직접 메모 열기는 눈에 보이는 슬롯 칩이 정확히 하나의 투사된 메모 항목을 나타내는 경우에만 활성화됩니다. 압축된 `title +N` 칩은 고유한 노트 타깃을 노출하지 않기 때문에 수동적인 상태를 유지합니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`Component.onCompleted`는 중앙에 배치된 레이지 날짜 창을 초기화하고, 현재 주를 열 때 주 시작 월요일 앵커 대신 실제 현재 날짜를 초기 포커스된 중간 열로 사용합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "수평 이동은 오른쪽 날짜 열 표면만 업데이트합니다. 시간 비계는 움직이지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "니어 에지 액세스로 인해 지연 날짜 증가가 발생합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "왼쪽 가장자리: `prependDates(...)` -> `WeekCalendarController.prependTimelineDates(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오른쪽 가장자리: `appendDates(...)` -> `WeekCalendarController.appendTimelineDates(...)`",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "인접한 콘텐츠는 한 번에 하루씩 진행되므로 사용자는 `1-3`, `2-4`, `3-5` 등을 탐색할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "5.",
+          "text": "Date-window 크기는 한계가 설정된 (`maxDateWindowSize`) 에서 `WeekCalendarController.trimTimelineWindow(...)` 로 제한되어 무한한 메모리 성장을 피합니다.",
+          "checked": null
+        },
+        {
+          "marker": "6.",
+          "text": "프로그래밍 방식 중심 조정(`Prev`, `Next`, `Today`)은 주 앵커를 동기화하기 전에 대상 날짜를 중간 열에 정렬합니다.",
+          "checked": null
+        },
+        {
+          "marker": "7.",
+          "text": "수평 이동 종료는 현재 집중된 중간 날짜를 월요일 시작 주로 정규화하고 `displayedWeekStartIso`를 동기화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "8.",
+          "text": "시간 슬롯 레이블은 컨트롤러 소유 요일 모델 `entries` 페이로드에서 파생되며 `slotSummary(...)`로 압축됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "9.",
+          "text": "시간 슬롯 항목 칩은 공유 `CalendarEventCell`(기본/항목 유형별 배경 색상)로 렌더링됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "10.",
+          "text": "직접 메모 열기는 눈에 보이는 슬롯 칩이 정확히 하나의 투사된 메모 항목을 나타내는 경우에만 활성화됩니다. 압축된 `title +N` 칩은 고유한 노트 타깃을 노출하지 않기 때문에 수동적인 상태를 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 55,
+      "end_line": 55,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 56,
+      "end_line": 56,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 59,
+      "end_line": 72,
+      "raw": "- 현재 이 저장소에는 자동화된 테스트 파일이 없습니다.\n- 회귀 체크리스트:\n  - 주간 페이지에서는 `Time` 헤더와 24 시간 레이블을 고정하고 날짜 열만 수평으로 이동해야 합니다.\n  - 주간 달력 콘텐츠 너비는 뷰포트 이내로 유지되어야 하며 유휴 상태의 정확히 3일 열을 표시해야 합니다.\n  - 가로 스크롤은 페이지 스냅 없이 계속해서 움직여야 합니다.\n  - 주 페이지는 컨트롤러 데이터 위에 두 번째 로컬 `ListModel` 또는 날짜별 항목 캐시를 유지해서는 안 됩니다.\n  - 이번 주의 초기 페이지 열기는 주가 시작되는 월요일 대신 실제 현재 날짜를 중앙에 두어야 합니다.\n  - `Today`를 클릭하면 일반 현재 주 머리글/시간 셀에 눈에 띄는 테두리가 표시되어서는 안 됩니다.\n  - `Today`를 클릭하면 실제 현재 날짜가 표시되는 중간 날짜 열에 배치되어야 합니다.\n  - 일반 헤더 및 시간 셀은 모든 날짜 열에 대해 투명하게 유지되어야 합니다.\n  - 주간 페이지는 시간별 그리드 위에 전용 날짜 헤더 행을 렌더링해야 합니다.\n  - 오늘은 날짜 헤더 행에서 시각적으로 구별되어야 합니다.\n  - 정확히 하나의 메모 항목으로 뒷받침되는 주간 슬롯 칩은 클릭/탭 시 `noteOpenRequested(...)`를 방출해야 합니다.\n  - 압축된 다중 항목 주간 슬롯 칩은 슬롯 UI가 항목별 적중 대상을 노출할 때까지 열 수 없는 상태로 유지되어야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 이 저장소에는 자동화된 테스트 파일이 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주간 페이지에서는 `Time` 헤더와 24 시간 레이블을 고정하고 날짜 열만 수평으로 이동해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주간 달력 콘텐츠 너비는 뷰포트 이내로 유지되어야 하며 유휴 상태의 정확히 3일 열을 표시해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "가로 스크롤은 페이지 스냅 없이 계속해서 움직여야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주 페이지는 컨트롤러 데이터 위에 두 번째 로컬 `ListModel` 또는 날짜별 항목 캐시를 유지해서는 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이번 주의 초기 페이지 열기는 주가 시작되는 월요일 대신 실제 현재 날짜를 중앙에 두어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Today`를 클릭하면 일반 현재 주 머리글/시간 셀에 눈에 띄는 테두리가 표시되어서는 안 됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`Today`를 클릭하면 실제 현재 날짜가 표시되는 중간 날짜 열에 배치되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "일반 헤더 및 시간 셀은 모든 날짜 열에 대해 투명하게 유지되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "주간 페이지는 시간별 그리드 위에 전용 날짜 헤더 행을 렌더링해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오늘은 날짜 헤더 행에서 시각적으로 구별되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "정확히 하나의 메모 항목으로 뒷받침되는 주간 슬롯 칩은 클릭/탭 시 `noteOpenRequested(...)`를 방출해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "압축된 다중 항목 주간 슬롯 칩은 슬롯 UI가 항목별 적중 대상을 노출할 때까지 열 수 없는 상태로 유지되어야 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 73,
+      "end_line": 73,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 74,
+      "end_line": 74,
+      "raw": "<a id=\"collaborators\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 75,
+      "end_line": 75,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 76,
+      "end_line": 76,
+      "raw": "## 협력자\n",
+      "level": 2,
+      "title": "협력자"
+    },
+    {
+      "id": "b000032",
+      "kind": "list",
+      "start_line": 77,
+      "end_line": 80,
+      "raw": "- `src/app/models/calendar/WeekCalendarController.hpp/.cpp`\n- `src/app/qml/view/calendar/CalendarTodayControl.qml`\n- `src/app/qml/view/calendar/CalendarEventCell.qml`\n- `src/app/qml/view/panels/ContentViewLayout.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/models/calendar/WeekCalendarController.hpp/.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/CalendarTodayControl.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/CalendarEventCell.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/ContentViewLayout.qml`",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/WeekCalendarPage.qml`",
+      "anchor": "srcappqmlviewcalendarweekcalendarpageqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약 보기",
+      "anchor": "계약-보기",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "UI 구성",
+      "anchor": "ui-구성",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용/데이터 흐름",
+      "anchor": "상호작용데이터-흐름",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 57
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "협력자",
+      "anchor": "협력자",
+      "start_line": 76
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000027",
+        "line": 64,
+        "text": "- 주 페이지는 컨트롤러 데이터 위에 두 번째 로컬 `ListModel` 또는 날짜별 항목 캐시를 유지해서는 안 됩니다.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

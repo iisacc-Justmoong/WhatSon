@@ -1,0 +1,179 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2309b52a63afbf0bc4e377427fddc0c6e53e624b2e4621bf31040739ec0646d0",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sidebar/SidebarHierarchyController.hpp.md",
+    "sha256": "9ac93fe637ad2e0467eb4e39328dabd35df2c86379008baaf495a0757644ca15",
+    "bytes": 1712,
+    "line_count": 16,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sidebar/SidebarHierarchyController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sidebar/SidebarHierarchyController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`SidebarHierarchyController`는 사이드바 선택 상태와 활성 계층 바인딩을 소유합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"interface-alignment\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 인터페이스 정렬\n",
+      "level": 2,
+      "title": "인터페이스 정렬"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 16,
+      "raw": "- 이제 `IActiveHierarchyContextSource`를 구현합니다.\n- 시작/ 런타임 조정은 전체 사이드바 구현 유형에 의존하지 않고도 상속된 `IActiveHierarchySource` 계약을 통해 여전히 활성화를 관찰할 수 있습니다.\n- 부유한 소비자는 이제 `SidebarHierarchyController`를 직접 명명하지 않고도 액티브 계층 구조 컨트롤러와 액티브 노트리스트 모델을 읽기 위해 컨텍스트 수준 인터페이스에 의존할 수 있습니다.\n- 생성자는 더 이상 QObject 양육을 위한 직접 기반 초기화자 이름을 하드코딩하지 않습니다. 이제 생성자 본문에서 부모 소유가 `setParent(parent)`를 통해 적용되므로, 인터페이스 레이어 리팩터링은 클래스를 컴파일 상태로 유지하기 위해 초기화자 목록에 대한 두 번째 수동 업데이트가 필요하지 않습니다.\n- `activeHierarchyIndex() const noexcept`는 이제 명시적으로 `override` 로 표시되며, 선언을 순수 가상 인터페이스 계약에 맞게 정렬하고 생성된 moc 빌드 중에 컴파일러 경고 소음을 제거합니다.\n- 컨트롤러는 또한 `activeBindingsChanged()`를 발행합니다. 이는 합성 변경 신호로, 활성 계층 인덱스, 활성 계층 제어기 및 활성 노트 리스트 모델을 하나씩 반응하는 대신 하나의 일관된 스냅샷으로 갱신해야 하는 소비자에게 적용됩니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이제 `IActiveHierarchyContextSource`를 구현합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "시작/ 런타임 조정은 전체 사이드바 구현 유형에 의존하지 않고도 상속된 `IActiveHierarchySource` 계약을 통해 여전히 활성화를 관찰할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "부유한 소비자는 이제 `SidebarHierarchyController`를 직접 명명하지 않고도 액티브 계층 구조 컨트롤러와 액티브 노트리스트 모델을 읽기 위해 컨텍스트 수준 인터페이스에 의존할 수 있습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "생성자는 더 이상 QObject 양육을 위한 직접 기반 초기화자 이름을 하드코딩하지 않습니다. 이제 생성자 본문에서 부모 소유가 `setParent(parent)`를 통해 적용되므로, 인터페이스 레이어 리팩터링은 클래스를 컴파일 상태로 유지하기 위해 초기화자 목록에 대한 두 번째 수동 업데이트가 필요하지 않습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeHierarchyIndex() const noexcept`는 이제 명시적으로 `override` 로 표시되며, 선언을 순수 가상 인터페이스 계약에 맞게 정렬하고 생성된 moc 빌드 중에 컴파일러 경고 소음을 제거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "컨트롤러는 또한 `activeBindingsChanged()`를 발행합니다. 이는 합성 변경 신호로, 활성 계층 인덱스, 활성 계층 제어기 및 활성 노트 리스트 모델을 하나씩 반응하는 대신 하나의 일관된 스냅샷으로 갱신해야 하는 소비자에게 적용됩니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyController.hpp`",
+      "anchor": "srcappmodelssidebarsidebarhierarchycontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "인터페이스 정렬",
+      "anchor": "인터페이스-정렬",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

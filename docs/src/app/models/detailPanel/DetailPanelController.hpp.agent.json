@@ -1,0 +1,448 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:3c61c193ae40a0078a9356c224aa74845f37ae6e7b0b258b270937642b53d59f",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/detailPanel/DetailPanelController.hpp.md",
+    "sha256": "fa720cabcdb4ccad12126fec04a06082706e129043110e97392669b1a05d2dc7",
+    "bytes": 4214,
+    "line_count": 55,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/detailPanel/DetailPanelController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/detailPanel/DetailPanelController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`DetailPanelController` 는 활성 세부 정보 패널 페이지 상태, 툴바 선택 상태, 전용 `fileStat` 통계 객체, 그리고 속성 폼에 의해 사용되는 3 세부 정보 로컬 계층 구조 선택자 복사를 소유합니다. 그것은 이제 재사용 가능한 노트 세부 정보 구현 기본입니다. UI 에 마운트된 구체적인 런타임 객체는 `NoteDetailPanelController` 입니다. 이 계약은 변경 없이 이를 상속합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"owned-objects\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 소유된 객체\n",
+      "level": 2,
+      "title": "소유된 객체"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 21,
+      "raw": "- `properties`용 `DetailPropertiesController`\n- `fileStat`용 `DetailFileStatController`\n- 다음에 대한 `DetailContentSectionController` 인스턴스:\n  - `insert`\n  - `fileHistory`\n  - `layer`\n  - `help`\n- 다음에 대한 `DetailHierarchySelectionController` 인스턴스:\n  - `projectSelectionController`\n  - `bookmarkSelectionController`\n  - `progressSelectionController`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`properties`용 `DetailPropertiesController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`fileStat`용 `DetailFileStatController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음에 대한 `DetailContentSectionController` 인스턴스:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`insert`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`fileHistory`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`layer`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`help`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음에 대한 `DetailHierarchySelectionController` 인스턴스:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`projectSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bookmarkSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`progressSelectionController`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "<a id=\"public-wiring-surface\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "## 공용 배선 표면\n",
+      "level": 2,
+      "title": "공용 배선 표면"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 26,
+      "end_line": 43,
+      "raw": "- `activeContentController`\n- `activeStateName`\n- `noteContextLinked`\n- `fileStatController`\n- `toolbarItems`\n- `projectSelectionController`\n- `bookmarkSelectionController`\n- `progressSelectionController`\n- `writeProjectSelection(int index)`\n- `writeBookmarkSelection(int index)`\n- `writeProgressSelection(int index)`\n- `assignFolderByName(const QString& folderPath)`\n- `assignTagByName(const QString& tag)`\n- `removeActiveFolder()`\n- `removeActiveTag()`\n- `setCurrentNoteListModel(QObject*)`\n- `setCurrentNoteDirectorySourceController(QObject*)`\n- `setTagsSourceController(QObject*)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`activeContentController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeStateName`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteContextLinked`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`fileStatController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`toolbarItems`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`projectSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`bookmarkSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`progressSelectionController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`writeProjectSelection(int index)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`writeBookmarkSelection(int index)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`writeProgressSelection(int index)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignFolderByName(const QString& folderPath)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`assignTagByName(const QString& tag)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`removeActiveFolder()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`removeActiveTag()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setCurrentNoteListModel(QObject*)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setCurrentNoteDirectorySourceController(QObject*)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`setTagsSourceController(QObject*)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "<a id=\"dependency-direction\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "## 의존성 방향\n",
+      "level": 2,
+      "title": "의존성 방향"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "세부 정보 패널은 이제 사이드바 계층 구조 컨트롤러에 QML 선택자를 직접 바인딩하지 않습니다. 대신, C++ 는 해당 계층 구조 컨트롤러들을 소유된 선택자 복사 객체로 읽기 전용 옵션 소스로 주입하며, 별도의 현재 노트 컨텍스트 브릿지는 활성 노트 id 와 노트 디렉토리 경로를 해결합니다. 그 브릿지는 활성 사이드바 도메인이 노트 목록 또는 노트 디렉토리 계약을 노출하지 않을 때 마지막 유효한 노트 컨텍스트를 유지하므로, 선택자들은 `No ...` 로 떨어지는 대신 열린 노트 헤더를 계속 반영할 수 있습니다. 동일하게 로드된 헤더 스냅샷은 또한 전용 `DetailFileStatController` 에 적용되므로, 통계 탭은 속성 탭과 동일한 지속된 `.wsnhead` 캐시에서 읽습니다. `noteContextLinked` 는 패널 표면의 게이트 계약입니다: 현재 노트 id 와 디렉토리가 모두 해결되고 활성 `.wsnhead` 스냅샷이 성공적으로 로드될 때만 `true` 로 전환됩니다. `setCurrentNoteListModel(QObject*)` 또한 활성 노트 목록 모델에서 선택된 노트가 `itemsChanged()` 신호를 선택적으로 관찰하므로, 밴드외부 폴더 또는 태그 편집 후 동일한 선택된 노트는 `.wsnhead` 메타데이터 스냅샷을 강제로 새로고칠 수 있습니다. 사유 쓰기 경로는 성공적인 메타데이터 편집을 다시 적용하여 로드된 상세 헤더 스냅샷을 갱신합니다. 이제 단일 노트 리로딩 호출을 계층 도메인으로 라우팅하지 않습니다. 폴더 및 태그 추가 작업은 QML 의 관점에서 동일한 변형 형식을 공유합니다: 팝업은 표준 문자열 식별자를 `assignFolderByName(...)` 또는 `assignTagByName(...)` 에 전달하고, 컨트롤러는 새로 갱신된 헤더 스냅샷을 다시 적용하기 전에 이를 영속화합니다.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "<a id=\"selection-semantics\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "## 선택 의미론\n",
+      "level": 2,
+      "title": "선택 의미론"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 53,
+      "end_line": 55,
+      "raw": "- 3 선택자 복사 객체는 인덱스 `0` 에 합성된 `No ...` 항목을 노출합니다.\n- 인덱스 `0`를 `writeProjectSelection(...)`, `writeBookmarkSelection(...)` 또는 `writeProgressSelection(...)`에 전달하면 현재 `.wsnhead` 파일에서 해당 필드가 지워집니다.\n- 현재 선택된 인덱스를 `write...Selection(...)` API에 전달하는 것은 무작동 성공 경로이며 메타데이터 지속성 또는 계층 구조 다시 로드 콜백을 트리거하지 않습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "3 선택자 복사 객체는 인덱스 `0` 에 합성된 `No ...` 항목을 노출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "인덱스 `0`를 `writeProjectSelection(...)`, `writeBookmarkSelection(...)` 또는 `writeProgressSelection(...)`에 전달하면 현재 `.wsnhead` 파일에서 해당 필드가 지워집니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 선택된 인덱스를 `write...Selection(...)` API에 전달하는 것은 무작동 성공 경로이며 메타데이터 지속성 또는 계층 구조 다시 로드 콜백을 트리거하지 않습니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/detailPanel/DetailPanelController.hpp`",
+      "anchor": "srcappmodelsdetailpaneldetailpanelcontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소유된 객체",
+      "anchor": "소유된-객체",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공용 배선 표면",
+      "anchor": "공용-배선-표면",
+      "start_line": 25
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의존성 방향",
+      "anchor": "의존성-방향",
+      "start_line": 47
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "선택 의미론",
+      "anchor": "선택-의미론",
+      "start_line": 52
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

@@ -1,0 +1,486 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:061794c47e403e338592bab1b14d86d41fe456f55d411a85aa6432718c38cf43",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/navigation/README.md",
+    "sha256": "5d7d439f11427d27e77e6a875b493ca4b05f6a47c1179f5e9136cabdc7e31686",
+    "bytes": 2011,
+    "line_count": 53,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/navigation`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/navigation`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Status\n",
+      "level": 2,
+      "title": "Status"
+    },
+    {
+      "id": "b000004",
+      "kind": "list",
+      "start_line": 4,
+      "end_line": 5,
+      "raw": "- Directory mirror generated from the current `src` tree.\n- This file is the entry point for the detailed documentation pass of this directory.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Directory mirror generated from the current `src` tree.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "This file is the entry point for the detailed documentation pass of this directory.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "heading",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "## Scope\n",
+      "level": 2,
+      "title": "Scope"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 8,
+      "end_line": 10,
+      "raw": "- Mirrored source directory: `src/app/qml/view/panels/navigation`\n- Child directories: 3\n- Child files: 9\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Mirrored source directory: `src/app/qml/view/panels/navigation`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Child directories: 3",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Child files: 9",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## Child Directories\n",
+      "level": 2,
+      "title": "Child Directories"
+    },
+    {
+      "id": "b000010",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- `control`\n- `edit`\n- `view`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`control`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`edit`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`view`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000011",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "heading",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "## Child Files\n",
+      "level": 2,
+      "title": "Child Files"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 18,
+      "end_line": 26,
+      "raw": "- `NavigationAddNewBar.qml`\n- `NavigationApplicationAddNewBar.qml`\n- `NavigationApplicationCalendarBar.qml`\n- `NavigationApplicationPreferenceBar.qml`\n- `NavigationCalendarBar.qml`\n- `NavigationInformationBar.qml`\n- `NavigationModeBar.qml`\n- `NavigationPreferenceBar.qml`\n- `NavigationPropertiesBar.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`NavigationAddNewBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationAddNewBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationCalendarBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationApplicationPreferenceBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationCalendarBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationInformationBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationModeBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationPreferenceBar.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`NavigationPropertiesBar.qml`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "## Recent Notes\n",
+      "level": 2,
+      "title": "Recent Notes"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 29,
+      "end_line": 32,
+      "raw": "- The small shared navigation bars now use `LV.Theme.gap...` tokens for their inter-button spacing instead of local\n  integer literals such as `2`, `4`, `8`, or `12`.\n- The removed editor view-mode chrome stays absent; navigation bars must not recreate Plain/Page/Print/Web/Presentation\n  selection without a new document model contract.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "The small shared navigation bars now use `LV.Theme.gap...` tokens for their inter-button spacing instead of local",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The removed editor view-mode chrome stays absent; navigation bars must not recreate Plain/Page/Print/Web/Presentation",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "## Intended Detailed Sections\n",
+      "level": 2,
+      "title": "Intended Detailed Sections"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 35,
+      "end_line": 40,
+      "raw": "- Module responsibilities and architectural layer\n- Internal submodule boundaries\n- Cross-directory dependencies\n- Runtime ownership and lifecycle rules\n- Testing strategy and coverage map\n- Known hotspots and refactor priorities\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Module responsibilities and architectural layer",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Internal submodule boundaries",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Cross-directory dependencies",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Runtime ownership and lifecycle rules",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Testing strategy and coverage map",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Known hotspots and refactor priorities",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "This section is a bottom summary for checking the above  README  content in Korean.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 48,
+      "end_line": 53,
+      "raw": "- Target:  ``src/app/qml/view/panels/navigation``  ( `docs/src/app/qml/view/panels/navigation/README.md` )\n- Location:  `docs/src/app/qml/view/panels/navigation`\n- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.\n- Deleted editor view-mode chrome is not revived.\n- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.\n- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Target:  ``src/app/qml/view/panels/navigation``  ( `docs/src/app/qml/view/panels/navigation/README.md` )",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Location:  `docs/src/app/qml/view/panels/navigation`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Deleted editor view-mode chrome is not revived.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/navigation`",
+      "anchor": "srcappqmlviewpanelsnavigation",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Status",
+      "anchor": "status",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000006",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Scope",
+      "anchor": "scope",
+      "start_line": 7
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Child Directories",
+      "anchor": "child-directories",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000012",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Child Files",
+      "anchor": "child-files",
+      "start_line": 17
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Recent Notes",
+      "anchor": "recent-notes",
+      "start_line": 28
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Intended Detailed Sections",
+      "anchor": "intended-detailed-sections",
+      "start_line": 34
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 44
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000016",
+        "line": 31,
+        "text": "- The removed editor view-mode chrome stays absent; navigation bars must not recreate Plain/Page/Print/Web/Presentation",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

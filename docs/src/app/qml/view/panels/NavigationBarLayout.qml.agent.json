@@ -1,0 +1,695 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:39f48dbe607243d844a3b8443e0b6fbc14f23ef27b015643c8136b99ee715826",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/panels/NavigationBarLayout.qml.md",
+    "sha256": "b08a52b8ad36c9ff0abffcf8a7e9bb91fc8590b80f2f2de0ce84c3e8cdc94cf9",
+    "bytes": 3688,
+    "line_count": 77,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/panels/NavigationBarLayout.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/panels/NavigationBarLayout.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/panels/NavigationBarLayout.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"status\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 상태\n",
+      "level": 2,
+      "title": "상태"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 문서화 단계: 라이브 소스 트리에서 생성된 스캐폴드입니다.\n- 세부 수준: 이후 딥 패스를 위해 준비된 구조적 자리 표시자입니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "문서화 단계: 라이브 소스 트리에서 생성된 스캐폴드입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "세부 수준: 이후 딥 패스를 위해 준비된 구조적 자리 표시자입니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"source-metadata\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 소스 메타데이터\n",
+      "level": 2,
+      "title": "소스 메타데이터"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 12,
+      "end_line": 15,
+      "raw": "- 소스 경로: `src/app/qml/view/panels/NavigationBarLayout.qml`\n- 소스 종류: QML 뷰/컴포넌트\n- 파일 이름: `NavigationBarLayout.qml`\n- 대략적인 줄 수: 262\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "소스 경로: `src/app/qml/view/panels/NavigationBarLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소스 종류: QML 뷰/컴포넌트",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파일 이름: `NavigationBarLayout.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대략적인 줄 수: 262",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"qml-surface-snapshot\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## QML 표면 스냅샷\n",
+      "level": 2,
+      "title": "QML 표면 스냅샷"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "- 루트 유형: `Rectangle`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "루트 유형: `Rectangle`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "<a id=\"object-ids\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "### 개체 ID\n",
+      "level": 3,
+      "title": "개체 ID"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 32,
+      "raw": "- `navigationBar`\n- `navigationBarSurface`\n- `navigationBarContents`\n- `propertiesBar`\n- `applicationBarLoader`\n- `applicationViewBarComponent`\n- `applicationEditBarComponent`\n- `applicationControlBarComponent`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`navigationBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`navigationBarSurface`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`navigationBarContents`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`propertiesBar`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applicationBarLoader`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applicationViewBarComponent`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applicationEditBarComponent`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`applicationControlBarComponent`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "html",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "<a id=\"required-properties\"></a>\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "heading",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "### 필수 속성\n",
+      "level": 3,
+      "title": "필수 속성"
+    },
+    {
+      "id": "b000026",
+      "kind": "list",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "- 스캐폴드 생성 중에 감지된 항목이 없습니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "스캐폴드 생성 중에 감지된 항목이 없습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000027",
+      "kind": "blank",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "html",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "<a id=\"signals\"></a>\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "### 신호\n",
+      "level": 3,
+      "title": "신호"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 50,
+      "raw": "- `compactAddFolderRequested`\n- `compactLeadingActionRequested`\n- `dayCalendarRequested`\n- `monthCalendarRequested`\n- `toggleDetailPanelRequested`\n- `toggleSidebarRequested`\n- `viewHookRequested`\n- `weekCalendarRequested`\n- `yearCalendarRequested`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`compactAddFolderRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`compactLeadingActionRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`dayCalendarRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`monthCalendarRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`toggleDetailPanelRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`toggleSidebarRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`viewHookRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`weekCalendarRequested`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`yearCalendarRequested`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "html",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "<a id=\"recent-updates\"></a>\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 53,
+      "end_line": 53,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 54,
+      "end_line": 54,
+      "raw": "## 최근 업데이트\n",
+      "level": 2,
+      "title": "최근 업데이트"
+    },
+    {
+      "id": "b000036",
+      "kind": "list",
+      "start_line": 55,
+      "end_line": 57,
+      "raw": "- `pragma ComponentBehavior: Bound` 를 추가하여 중첩 모드 `Component` 분기들이 자격 없는 범위 경고 없이 `navigationBar` id 멤버를 안전하게 참조할 수 있습니다. 활성 View/Edit/Control 애플리케이션 바 컴포넌트에서 로드된 `nodesnewFolder` 폴더 추가 버튼 하나와 모드별 애플리케이션 바 슬롯 하나입니다. 활성 View/Edit/Control 애플리케이션 바 컴포넌트입니다. 이것은 활성 콘텐츠 라우트가 계층 구조나 메모 목록 라우트로 해당 기능 (affordance) 을 누출시키지 않고 컴팩트 컨텍스트 메뉴 내부에 해당 작업을 중복하지 않으면서 전용 오른쪽 테두리 상세 페이지 아이콘 버튼을 표시할 수 있게 합니다.\n- 편집기 뷰 모드 선택기는 제거됩니다. 데스크톱 및 컴팩트 탐색은 편집기 뷰 모드 컨트롤러를 전달하거나 편집기 전용 뷰 크롬을 마운트하지 않아야 합니다. `panelBackground10` (`#343536`) 를 해당 피플 배경에 사용해야 하며 투명하게 두거나 페이지 캔버스 톤을 상속하지 않아야 합니다.\n- View/Edit 애플리케이션 바에서 발생하는 캘린더 훅 사유는 `handleApplicationBarViewHook(...)`에서 정규화됩니다. `daily-calendar`, `weekly-calendar`, `monthly-calendar`, 또는 `yearly-calendar`가 일치하는 캘린더 요청 신호를 발생시하여 `Main.qml`가 해당 콘텐츠 오버레이를 열 수 있도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`pragma ComponentBehavior: Bound` 를 추가하여 중첩 모드 `Component` 분기들이 자격 없는 범위 경고 없이 `navigationBar` id 멤버를 안전하게 참조할 수 있습니다. 활성 View/Edit/Control 애플리케이션 바 컴포넌트에서 로드된 `nodesnewFolder` 폴더 추가 버튼 하나와 모드별 애플리케이션 바 슬롯 하나입니다. 활성 View/Edit/Control 애플리케이션 바 컴포넌트입니다. 이것은 활성 콘텐츠 라우트가 계층 구조나 메모 목록 라우트로 해당 기능 (affordance) 을 누출시키지 않고 컴팩트 컨텍스트 메뉴 내부에 해당 작업을 중복하지 않으면서 전용 오른쪽 테두리 상세 페이지 아이콘 버튼을 표시할 수 있게 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "편집기 뷰 모드 선택기는 제거됩니다. 데스크톱 및 컴팩트 탐색은 편집기 뷰 모드 컨트롤러를 전달하거나 편집기 전용 뷰 크롬을 마운트하지 않아야 합니다. `panelBackground10` (`#343536`) 를 해당 피플 배경에 사용해야 하며 투명하게 두거나 페이지 캔버스 톤을 상속하지 않아야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "View/Edit 애플리케이션 바에서 발생하는 캘린더 훅 사유는 `handleApplicationBarViewHook(...)`에서 정규화됩니다. `daily-calendar`, `weekly-calendar`, `monthly-calendar`, 또는 `yearly-calendar`가 일치하는 캘린더 요청 신호를 발생시하여 `Main.qml`가 해당 콘텐츠 오버레이를 열 수 있도록 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000037",
+      "kind": "blank",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "html",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "<a id=\"intended-detailed-sections\"></a>\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "blank",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "heading",
+      "start_line": 61,
+      "end_line": 61,
+      "raw": "## 의도된 세부 섹션\n",
+      "level": 2,
+      "title": "의도된 세부 섹션"
+    },
+    {
+      "id": "b000041",
+      "kind": "list",
+      "start_line": 62,
+      "end_line": 70,
+      "raw": "- 책임과 비즈니스 역할\n- 소유권 및 수명주기\n- 공개 API 또는 외부에서 관찰된 바인딩\n- 협력자 및 의존성 방향\n- 데이터 흐름 및 상태 전환\n- 오류 처리 및 복구 경로\n- 관련된 경우 스레딩, 스케줄링 또는 UI 선호도 제약 조건\n- 확장점, 불변성 및 알려진 복잡성 핫스팟\n- 테스트 적용 범위 및 검증 누락\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "책임과 비즈니스 역할",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "소유권 및 수명주기",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "공개 API 또는 외부에서 관찰된 바인딩",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "협력자 및 의존성 방향",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데이터 흐름 및 상태 전환",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오류 처리 및 복구 경로",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "관련된 경우 스레딩, 스케줄링 또는 UI 선호도 제약 조건",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "확장점, 불변성 및 알려진 복잡성 핫스팟",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "테스트 적용 범위 및 검증 누락",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000042",
+      "kind": "blank",
+      "start_line": 71,
+      "end_line": 71,
+      "raw": "\n"
+    },
+    {
+      "id": "b000043",
+      "kind": "html",
+      "start_line": 72,
+      "end_line": 72,
+      "raw": "<a id=\"authoring-notes-for-next-pass\"></a>\n"
+    },
+    {
+      "id": "b000044",
+      "kind": "blank",
+      "start_line": 73,
+      "end_line": 73,
+      "raw": "\n"
+    },
+    {
+      "id": "b000045",
+      "kind": "heading",
+      "start_line": 74,
+      "end_line": 74,
+      "raw": "## 다음 패스에 대한 작성 노트\n",
+      "level": 2,
+      "title": "다음 패스에 대한 작성 노트"
+    },
+    {
+      "id": "b000046",
+      "kind": "list",
+      "start_line": 75,
+      "end_line": 77,
+      "raw": "- 이 스캐폴드를 교체하기 전에 실제 구현과 인접한 헤더를 읽어보세요.\n- 해당하는 경우 구체적인 신호, 슬롯, 호출 가능 항목, 지속성 부작용 및 LVRS/QML 바인딩을 문서화합니다.\n- 세부 단계가 시작되면 이 파일을 동일한 디렉터리에 있는 피어 모듈과 상호 연결하세요.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 스캐폴드를 교체하기 전에 실제 구현과 인접한 헤더를 읽어보세요.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "해당하는 경우 구체적인 신호, 슬롯, 호출 가능 항목, 지속성 부작용 및 LVRS/QML 바인딩을 문서화합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "세부 단계가 시작되면 이 파일을 동일한 디렉터리에 있는 피어 모듈과 상호 연결하세요.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/panels/NavigationBarLayout.qml`",
+      "anchor": "srcappqmlviewpanelsnavigationbarlayoutqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상태",
+      "anchor": "상태",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "소스 메타데이터",
+      "anchor": "소스-메타데이터",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "QML 표면 스냅샷",
+      "anchor": "qml-표면-스냅샷",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000015",
+      "level": 3,
+      "title": "개체 ID",
+      "anchor": "개체-id",
+      "start_line": 24
+    },
+    {
+      "block_id": "b000025",
+      "parent_id": "b000015",
+      "level": 3,
+      "title": "필수 속성",
+      "anchor": "필수-속성",
+      "start_line": 36
+    },
+    {
+      "block_id": "b000030",
+      "parent_id": "b000015",
+      "level": 3,
+      "title": "신호",
+      "anchor": "신호",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "최근 업데이트",
+      "anchor": "최근-업데이트",
+      "start_line": 54
+    },
+    {
+      "block_id": "b000040",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "의도된 세부 섹션",
+      "anchor": "의도된-세부-섹션",
+      "start_line": 61
+    },
+    {
+      "block_id": "b000045",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "다음 패스에 대한 작성 노트",
+      "anchor": "다음-패스에-대한-작성-노트",
+      "start_line": 74
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000023",
+        "line": 34,
+        "text": "<a id=\"required-properties\"></a>",
+        "basis": "lexical_match",
+        "context": "html"
+      },
+      {
+        "block_id": "b000025",
+        "line": 36,
+        "text": "### 필수 속성",
+        "basis": "lexical_match",
+        "context": "heading"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

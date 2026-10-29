@@ -1,0 +1,443 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:24a54dc139ac391c2fbba088d26306eb8ced0c4aef155f39829f4c74d34360cd",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/IHierarchyController.hpp.md",
+    "sha256": "57241086758f30dc91341935b178dd7b79f97d3d04fe26322b73c29d2f815e88",
+    "bytes": 2798,
+    "line_count": 49,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/IHierarchyController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/IHierarchyController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/IHierarchyController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "이 파일은 계층 구조 컨트롤러에 대한 공유 읽기 지향 QObject 계약을 정의합니다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "paragraph",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "많은 소비자에게 다음이 필요하다는 내용으로 의도적으로 제한되었습니다.\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 9,
+      "end_line": 14,
+      "raw": "- 계층 노드\n- 선택된 인덱스\n- 품목 수\n- 로드 성공 상태\n- 마지막 로드 오류\n- 계층 항목 모델 및 메모 목록 모델에 대한 액세스\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "계층 노드",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "선택된 인덱스",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "품목 수",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "로드 성공 상태",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "마지막 로드 오류",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "계층 항목 모델 및 메모 목록 모델에 대한 액세스",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 15,
+      "end_line": 15,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "html",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "heading",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000014",
+      "kind": "paragraph",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "`Q_PROPERTY` 레이어가 존재하므로 QML는 지원 도메인에 관계없이 정규화된 계층 구조에 바인딩할 수 있습니다.\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "blank",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "필요한 가상 기능은 하위 수준 구현 계약에 매핑됩니다.\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 29,
+      "raw": "- `itemModel()`\n- `noteListModel()`\n- `selectedIndex()` 및 `setSelectedIndex(...)`\n- `itemCount()`\n- `loadSucceeded()`\n- `lastLoadError()`\n- `hierarchyModel()`\n- `itemLabel(...)`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`itemModel()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`noteListModel()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`selectedIndex()` 및 `setSelectedIndex(...)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`itemCount()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`loadSucceeded()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`lastLoadError()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchyModel()`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`itemLabel(...)`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"signal-bridging\"></a>\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## 신호 브리징\n",
+      "level": 2,
+      "title": "신호 브리징"
+    },
+    {
+      "id": "b000022",
+      "kind": "paragraph",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "`initializeHierarchyInterfaceSignalBridge()`가 중요합니다. 구체적인 계층 구조 컨트롤러는 `selectedIndexChanged()` 및 `hierarchyModelChanged()`와 같은 도메인 로컬 신호를 노출할 것으로 예상됩니다. 이 도우미는 해당 구현 신호를 일반 QML에서 사용하는 정규화된 인터페이스 수준 신호로 다시 연결합니다.\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000024",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"shared-expansion-helpers\"></a>\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 공유 확장 도우미\n",
+      "level": 2,
+      "title": "공유 확장 도우미"
+    },
+    {
+      "id": "b000027",
+      "kind": "paragraph",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "`setHierarchyItemExpanded(...)` 와 `setAllHierarchyItemsExpanded(...)` 는 구체적 계층 컨트롤러를 위한 보호된 부모 헬퍼입니다. 모든 계층이 공유하는 오른쪽 화살표 확장 규칙을 중앙집중화하며: 유효하지 않은 인덱스를 거부하고, `showChevron` 가 없는 행을 거부하며, 요청된 상태가 이미 현재 상태인 경우 무작정 작업을 수행하고, 메모리 내 항목 상태가 변경된 후에만 도메인의 커밋 후크를 호출합니다.\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "<a id=\"what-this-interface-no-longer-does\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 42,
+      "end_line": 42,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 43,
+      "end_line": 43,
+      "raw": "## 이 인터페이스가 더 이상 수행하지 않는 작업\n",
+      "level": 2,
+      "title": "이 인터페이스가 더 이상 수행하지 않는 작업"
+    },
+    {
+      "id": "b000032",
+      "kind": "paragraph",
+      "start_line": 44,
+      "end_line": 44,
+      "raw": "이 인터페이스는 이제 이름 변경, 생성, 삭제, 재순서, 확장, 또는 노트 드롭 작업을 공개 뷰에 노출하는 API 로 더 이상 노출하지 않습니다. 이러한 동작은 전용 기능 인터페이스로 이동하여 읽기 전용 소비자가 쓰기 집약적 API 에 의존하지 않습니다. 보호된 확장 헬퍼는 자식 컨트롤러를 위한 구현 재사용이며, 공개 변형 표면이 아닙니다.\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "html",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "<a id=\"practical-effect\"></a>\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000036",
+      "kind": "heading",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "## 실질적인 효과\n",
+      "level": 2,
+      "title": "실질적인 효과"
+    },
+    {
+      "id": "b000037",
+      "kind": "paragraph",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "QML 표면이 계층 구조 상태만 표시하면 되는 경우 이 인터페이스에 바인딩하세요. 계층 구조 상태를 변경해야 하는 경우 브리지를 통해 이 인터페이스를 하나 이상의 기능 인터페이스와 결합합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/IHierarchyController.hpp`",
+      "anchor": "srcappmodelshierarchyihierarchycontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000013",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 18
+    },
+    {
+      "block_id": "b000021",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "신호 브리징",
+      "anchor": "신호-브리징",
+      "start_line": 33
+    },
+    {
+      "block_id": "b000026",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공유 확장 도우미",
+      "anchor": "공유-확장-도우미",
+      "start_line": 38
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "이 인터페이스가 더 이상 수행하지 않는 작업",
+      "anchor": "이-인터페이스가-더-이상-수행하지-않는-작업",
+      "start_line": 43
+    },
+    {
+      "block_id": "b000036",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "실질적인 효과",
+      "anchor": "실질적인-효과",
+      "start_line": 48
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

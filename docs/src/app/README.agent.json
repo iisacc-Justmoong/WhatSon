@@ -1,0 +1,434 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:eb59cb0137856fb38af81b14db77405eab4660573632d2add18744b8b06765d5",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/README.md",
+    "sha256": "9edb662f24c0d8ed4f8b48e040ddd277590879f885777ebd079bb97d63dd1241",
+    "bytes": 3620,
+    "line_count": 57,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app`\n",
+      "level": 1,
+      "title": "`src/app`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Role\n",
+      "level": 2,
+      "title": "Role"
+    },
+    {
+      "id": "b000004",
+      "kind": "paragraph",
+      "start_line": 4,
+      "end_line": 5,
+      "raw": "`src/app` contains the main Qt Quick application. It is responsible for building the runtime object graph, loading a\n`.wshub` workspace, exposing long-lived services to QML, and composing the LVRS-based interface.\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 8,
+      "raw": "This directory is the architectural center of the repository. Most other modules are either dependencies of `src/app`\nor helpers used by it during startup, runtime synchronization, and UI rendering.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## Main Subsystems\n",
+      "level": 2,
+      "title": "Main Subsystems"
+    },
+    {
+      "id": "b000009",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 18,
+      "raw": "- `models`: QObject-based runtime and storage domains, including content, editor, file, calendar, navigation, panel,\n  sidebar, detail-panel, onboarding, display, and sensor helpers.\n- `qml`: LVRS-based view composition and interaction surfaces.\n- `runtime`: startup-time scheduling and background domain loading.\n- `store`: lightweight shared state containers such as selected hub and sidebar selection.\n- `models/file/sync`: runtime and editor synchronization controllers consolidated under the file domain.\n- `policy`: layer rules and lock semantics for startup wiring.\n- `permissions`, `platform`: host-integration points that sit beside the app domain model.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`models`: QObject-based runtime and storage domains, including content, editor, file, calendar, navigation, panel,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`qml`: LVRS-based view composition and interaction surfaces.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`runtime`: startup-time scheduling and background domain loading.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`store`: lightweight shared state containers such as selected hub and sidebar selection.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`models/file/sync`: runtime and editor synchronization controllers consolidated under the file domain.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`policy`: layer rules and lock semantics for startup wiring.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`permissions`, `platform`: host-integration points that sit beside the app domain model.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## Startup Shape\n",
+      "level": 2,
+      "title": "Startup Shape"
+    },
+    {
+      "id": "b000012",
+      "kind": "paragraph",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "The app startup sequence lives in `main.cpp` and performs five broad phases.\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 31,
+      "raw": "1. Parse launch options and resolve a startup hub candidate through the shared hub mount validator.\n   If a persisted hub selection exists but cannot be mounted, startup now leaves the app in onboarding with the\n   original failure visible instead of silently opening any fallback hub. If that candidate mounts but the first\n   workspace runtime load still fails, startup also returns to onboarding and keeps the runtime error visible.\n2. Construct stores, services, controllers, and helper bridges on the C++ side.\n3. Load critical workspace domain snapshots, usually through `WhatSonRuntimeParallelLoader`.\n4. Defer low-priority hierarchy domains until the first post-show idle turns or the first sidebar activation that\n   needs them.\n5. Wire dedicated hierarchy controllers into `HierarchyControllerProvider` and `SidebarHierarchyController`.\n6. Freeze mutable wiring through `ArchitecturePolicyLock`, then expose runtime objects to QML.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "Parse launch options and resolve a startup hub candidate through the shared hub mount validator.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "Construct stores, services, controllers, and helper bridges on the C++ side.",
+          "checked": null
+        },
+        {
+          "marker": "3.",
+          "text": "Load critical workspace domain snapshots, usually through `WhatSonRuntimeParallelLoader`.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "Defer low-priority hierarchy domains until the first post-show idle turns or the first sidebar activation that",
+          "checked": null
+        },
+        {
+          "marker": "5.",
+          "text": "Wire dedicated hierarchy controllers into `HierarchyControllerProvider` and `SidebarHierarchyController`.",
+          "checked": null
+        },
+        {
+          "marker": "6.",
+          "text": "Freeze mutable wiring through `ArchitecturePolicyLock`, then expose runtime objects to QML.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## Architectural Notes\n",
+      "level": 2,
+      "title": "Architectural Notes"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 34,
+      "end_line": 39,
+      "raw": "- The repository follows dedicated hierarchy controllers per domain. Library, projects, bookmarks, tags, resources,\n  progress, event, and preset each keep their own controller instance.\n- Read-oriented hierarchy access now flows through `IHierarchyController`.\n- Write-oriented hierarchy actions are split into capability interfaces and panel bridges.\n- QML receives bootstrap objects through LVRS context-object bindings. MVVM and a separate view-model directory are no\n  longer part of the app architecture.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "The repository follows dedicated hierarchy controllers per domain. Library, projects, bookmarks, tags, resources,",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Read-oriented hierarchy access now flows through `IHierarchyController`.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Write-oriented hierarchy actions are split into capability interfaces and panel bridges.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "QML receives bootstrap objects through LVRS context-object bindings. MVVM and a separate view-model directory are no",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "heading",
+      "start_line": 41,
+      "end_line": 41,
+      "raw": "## Hotspots\n",
+      "level": 2,
+      "title": "Hotspots"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 42,
+      "end_line": 45,
+      "raw": "- `main.cpp` remains the most complex file in the application because it still owns startup orchestration and QML\n  exposure.\n- `qml` and `models` move together. Changes to one usually require documentation changes in the other.\n- The sidebar and hierarchy domain are the current center of model-domain controller decomposition work.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`main.cpp` remains the most complex file in the application because it still owns startup orchestration and QML",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`qml` and `models` move together. Changes to one usually require documentation changes in the other.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "The sidebar and hierarchy domain are the current center of model-domain controller decomposition work.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "<a id=\"한국어\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "## Korean\n",
+      "level": 2,
+      "title": "Korean"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 50,
+      "end_line": 50,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 51,
+      "end_line": 51,
+      "raw": "This section is a bottom summary for checking the above  README  content in Korean.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 52,
+      "end_line": 52,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "list",
+      "start_line": 53,
+      "end_line": 57,
+      "raw": "- Target:  ``src/app``  ( `docs/src/app/README.md` )\n- Location:  `docs/src/app`\n- Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.\n- Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.\n- On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Target:  ``src/app``  ( `docs/src/app/README.md` )",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Location:  `docs/src/app`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Role: This file describes the structure, responsibility, operating rules, and validation criteria of the corresponding directory or module.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Criteria: File path, command,  API  name, and detailed change history are maintained based on the original English text.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "On Change: If the above English text is modified, this Korean lower section is also updated to the latest state.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app`",
+      "anchor": "srcapp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Role",
+      "anchor": "role",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000008",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Main Subsystems",
+      "anchor": "main-subsystems",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Startup Shape",
+      "anchor": "startup-shape",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Architectural Notes",
+      "anchor": "architectural-notes",
+      "start_line": 33
+    },
+    {
+      "block_id": "b000018",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Hotspots",
+      "anchor": "hotspots",
+      "start_line": 41
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Korean",
+      "anchor": "korean",
+      "start_line": 49
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

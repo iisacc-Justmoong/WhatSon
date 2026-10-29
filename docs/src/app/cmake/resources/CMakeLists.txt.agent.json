@@ -1,0 +1,263 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:7bf93a57c0eac085ae86cb5a1a6be1c4e8032913242fcd4268f2787d929cf24a",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/cmake/resources/CMakeLists.txt.md",
+    "sha256": "6891a28370a2bea97b15c0d05653c067ce52b7f91183f235d871811d71efa2d1",
+    "bytes": 1458,
+    "line_count": 25,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "src/app/cmake/resources/CMakeLists.txt",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# src/app/cmake/resources/CMakeLists.txt\n",
+      "level": 1,
+      "title": "src/app/cmake/resources/CMakeLists.txt"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"purpose\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 목적\n",
+      "level": 2,
+      "title": "목적"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "이 샤드는 `WhatSon` 실행 가능 대상이 존재한 후 앱 소유 시각적 리소스를 등록합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"macos-bundle-icon\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## macOS 번들 아이콘\n",
+      "level": 2,
+      "title": "macOS 번들 아이콘"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- `resources/icons/app/desktop/AppIcon.png`는 인앱 QML 및 `QWindow`에서 사용되는 Qt qrc 아이콘으로 유지됩니다.\n- `resources/icons/app/desktop/AppIcon.icns`는 macOS 애플리케이션 번들 아이콘입니다. `MACOSX_PACKAGE_LOCATION \"Resources\"`와 함께 소스로 `WhatSon` 실행 파일에 추가됩니다.\n- `platform/Apple/Info.plist`는 `CFBundleIconFile`를 통해 동일한 파일에 이름을 지정하고, `src/app/cmake/runtime/CMakeLists.txt`는 `MACOSX_BUNDLE_ICON_FILE \"AppIcon.icns\"`를 설정합니다.\n- 샤드도 `WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE`를 내보내므로, 소유 앱 CMake 파일이 링크 후 아이콘을 `WhatSon.app/Contents/Resources/AppIcon.icns`에 복사할 수 있습니다. 이것은 선언적 번들 소스 사본을 구현하지 않는 제너레이터에서도 아이콘을 표시하도록 유지합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`resources/icons/app/desktop/AppIcon.png`는 인앱 QML 및 `QWindow`에서 사용되는 Qt qrc 아이콘으로 유지됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resources/icons/app/desktop/AppIcon.icns`는 macOS 애플리케이션 번들 아이콘입니다. `MACOSX_PACKAGE_LOCATION \"Resources\"`와 함께 소스로 `WhatSon` 실행 파일에 추가됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`platform/Apple/Info.plist`는 `CFBundleIconFile`를 통해 동일한 파일에 이름을 지정하고, `src/app/cmake/runtime/CMakeLists.txt`는 `MACOSX_BUNDLE_ICON_FILE \"AppIcon.icns\"`를 설정합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "샤드도 `WHATSON_MACOS_POST_BUILD_BUNDLE_ICON_FILE`를 내보내므로, 소유 앱 CMake 파일이 링크 후 아이콘을 `WhatSon.app/Contents/Resources/AppIcon.icns`에 복사할 수 있습니다. 이것은 선언적 번들 소스 사본을 구현하지 않는 제너레이터에서도 아이콘을 표시하도록 유지합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "앱 아이콘은 macOS `.app` 번들 경로에 있어야 합니다. 이 책임을 Qt qrc 자원으로 옮기지 마십시오.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "html",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "<a id=\"other-platform-icons\"></a>\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "heading",
+      "start_line": 22,
+      "end_line": 22,
+      "raw": "## 다른 플랫폼 아이콘\n",
+      "level": 2,
+      "title": "다른 플랫폼 아이콘"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "paragraph",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "  리소스 단계의 자산 카탈로그.\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "list",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "- Windows는 데스크탑 `.ico`를 가리키는 생성된 `.rc` 파일을 내보냅니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Windows는 데스크탑 `.ico`를 가리키는 생성된 `.rc` 파일을 내보냅니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "src/app/cmake/resources/CMakeLists.txt",
+      "anchor": "srcappcmakeresourcescmakeliststxt",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "목적",
+      "anchor": "목적",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "macOS 번들 아이콘",
+      "anchor": "macos-번들-아이콘",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000019",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "다른 플랫폼 아이콘",
+      "anchor": "다른-플랫폼-아이콘",
+      "start_line": 22
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

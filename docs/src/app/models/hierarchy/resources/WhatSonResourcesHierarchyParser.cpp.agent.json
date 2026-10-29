@@ -1,0 +1,370 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:2f49a263177b6265e3f7f163f07262a3b5c9b277de16f13b79f36b204f8b3c1b",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp.md",
+    "sha256": "b018a8a8598f9ba9b6aab677bcec07b1d4e755818dcdd4d6645b99a472e6aad6",
+    "bytes": 1805,
+    "line_count": 40,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`Resources.wsresources` 페이로드를 읽고 정규화된 `.wsresource` 패키지 경로 목록을 복원합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"accepted-input-forms\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 허용되는 입력 양식\n",
+      "level": 2,
+      "title": "허용되는 입력 양식"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 18,
+      "raw": "- 레거시 JSON 문자열 배열.\n- `resources: [...]`를 사용한 개체 루트.\n- `resourcePath` 또는 레거시 `path`(대소문자를 구분하지 않는 키 일치)가 포함된 객체 배열 항목입니다.\n- 루트 개체 직접 경로 키(`resourcePath` / `path`).\n- `<resource ... path=...>` 또는 `<resource ... resourcePath=...>`와 같은 XML 유사 태그 텍스트입니다.\n- 최종 대체 경로: 줄 기반 일반 텍스트.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "레거시 JSON 문자열 배열.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resources: [...]`를 사용한 개체 루트.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`resourcePath` 또는 레거시 `path`(대소문자를 구분하지 않는 키 일치)가 포함된 객체 배열 항목입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "루트 개체 직접 경로 키(`resourcePath` / `path`).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`<resource ... path=...>` 또는 `<resource ... resourcePath=...>`와 같은 XML 유사 태그 텍스트입니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "최종 대체 경로: 줄 기반 일반 텍스트.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "`<resource ...>` 태그 내부의 속성 값은 지원되는 모든 형식으로 구문 분석됩니다.\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 24,
+      "raw": "- 큰따옴표(`path=\"...\"`).\n- 작은따옴표(`path='...'`).\n- 베어 값(`resourcePath=...`).\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "큰따옴표(`path=\"...\"`).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "작은따옴표(`path='...'`).",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "베어 값(`resourcePath=...`).",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "paragraph",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "또한 파서는 속성 키에 대해 대소문자 혼합을 허용합니다(예: `PATH`).\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 27,
+      "end_line": 27,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 28,
+      "end_line": 28,
+      "raw": "<a id=\"compatibility\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 29,
+      "end_line": 29,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "## 호환성\n",
+      "level": 2,
+      "title": "호환성"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "paragraph",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "이제 작성자 출력은 객체 배열 형식을 선호하지만 파서 호환성은 레거시 허브에 대해 이전 버전과 안전하므로 런타임 로드에 즉각적인 마이그레이션이 필요하지 않습니다.\n"
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "paragraph",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "`<resources>` 스타일 래퍼 라인은 대체 경로 라인 구문 분석 중에 무시되며 리소스 경로로 처리되지 않습니다.\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 35,
+      "end_line": 35,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "html",
+      "start_line": 36,
+      "end_line": 36,
+      "raw": "<a id=\"regex-literal-safety-note\"></a>\n"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 37,
+      "end_line": 37,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "heading",
+      "start_line": 38,
+      "end_line": 38,
+      "raw": "## 정규식 리터럴 안전 참고 사항\n",
+      "level": 2,
+      "title": "정규식 리터럴 안전 참고 사항"
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 39,
+      "end_line": 39,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "paragraph",
+      "start_line": 40,
+      "end_line": 40,
+      "raw": "리소스 태그 속성 정규식 리터럴은 C++ 원시 문자열 리터럴 대신 이스케이프된 `QStringLiteral(...)` 문자열을 사용하여 속성 따옴표가 포함된 패턴에서 실수로 원시 리터럴 종결자 충돌을 방지합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`",
+      "anchor": "srcappmodelshierarchyresourceswhatsonresourceshierarchyparsercpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "허용되는 입력 양식",
+      "anchor": "허용되는-입력-양식",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호환성",
+      "anchor": "호환성",
+      "start_line": 30
+    },
+    {
+      "block_id": "b000031",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "정규식 리터럴 안전 참고 사항",
+      "anchor": "정규식-리터럴-안전-참고-사항",
+      "start_line": 38
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

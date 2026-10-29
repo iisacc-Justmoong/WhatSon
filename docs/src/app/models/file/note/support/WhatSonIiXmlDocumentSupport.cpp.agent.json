@@ -1,0 +1,188 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:a6877f91831447ac2331a5ac6f4dc2b0c260cf6a7056a0ec139c556df087b40d",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp.md",
+    "sha256": "a75d71f80cbb6ba86548a296182f40d8ed577098f47f652c5f368896ed820b43",
+    "bytes": 953,
+    "line_count": 17,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "로컬 iiXml 파서 주변에 공유 노트 패키지 어댑터를 구현합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"key-behavior\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 주요 행동\n",
+      "level": 2,
+      "title": "주요 행동"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 17,
+      "raw": "- `iiXml::Parser::TagParser`를 호출하기 전에 XML 선언과 최상위 수준 문서 유형 프리앰블을 제거합니다.\n- 파서 소유 문서 소스 복사본을 유지하면서 iiXml `std::string_view` 슬라이스를 `QString`로 변환합니다.\n- 노드 텍스트 및 속성 값에 대한 공통 XML 엔터티를 디코딩합니다.\n- 노트 패키지 조회를 위해 대소문자를 구분하지 않고 구문 분석된 `TagNode` 트리를 탐색합니다.\n- 대체 속성 이름 전반에 걸쳐 첫 번째 비어 있지 않은 속성 해석을 제공하여, 오래된 리소스 태그 도형이 로컬 정규식 스캔을 다시 도입하지 않고도 계속 로드될 수 있도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`iiXml::Parser::TagParser`를 호출하기 전에 XML 선언과 최상위 수준 문서 유형 프리앰블을 제거합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "파서 소유 문서 소스 복사본을 유지하면서 iiXml `std::string_view` 슬라이스를 `QString`로 변환합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노드 텍스트 및 속성 값에 대한 공통 XML 엔터티를 디코딩합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "노트 패키지 조회를 위해 대소문자를 구분하지 않고 구문 분석된 `TagNode` 트리를 탐색합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "대체 속성 이름 전반에 걸쳐 첫 번째 비어 있지 않은 속성 해석을 제공하여, 오래된 리소스 태그 도형이 로컬 정규식 스캔을 다시 도입하지 않고도 계속 로드될 수 있도록 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/note/support/WhatSonIiXmlDocumentSupport.cpp`",
+      "anchor": "srcappmodelsfilenotesupportwhatsoniixmldocumentsupportcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "주요 행동",
+      "anchor": "주요-행동",
+      "start_line": 11
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

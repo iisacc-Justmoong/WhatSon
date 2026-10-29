@@ -1,0 +1,227 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:e1dd0c39f709e679217282776e41f829947a627b07da647464908c66610bcd32",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/sidebar/SidebarHierarchyInteractionController.hpp.md",
+    "sha256": "cdf083b9daf4cf753bb8408992a25381e67b9f26561df7188d81f858e4dc1544",
+    "bytes": 1887,
+    "line_count": 20,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/sidebar/SidebarHierarchyInteractionController.hpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/sidebar/SidebarHierarchyInteractionController.hpp`\n",
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyInteractionController.hpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "paragraph",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "`SidebarHierarchyInteractionController`는 시각적 레이아웃 외의 계층 상호작용 정책을 위해 `SidebarHierarchyView.qml`가 사용하는 C++ 계약을 노출한다. 해당 유형은 생성 가능한 내부 QML QObject로 등록되므로 C++ 클래스는 `final`로 선언해서는 안 된다. Qt의 QML 등록 계층이 여기서 내부 `QQmlElement<T>` 래퍼를 파생하기 때문이다.\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "<a id=\"public-surface\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## 공공 표면\n",
+      "level": 2,
+      "title": "공공 표면"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 15,
+      "raw": "- 이 클래스는 내부 QML 레지스트라가 이를 생성 가능한 QObject 타입으로 노출하고, Qt가 생성 가능한 타입을 `QQmlElement<T>`로 감싸기 때문에 의도적으로 `final`로 표시되지 않았습니다.\n- `hierarchyInteractionBridge`는 컨트롤러를 기존 계층 구조 CRUD/확장 브리지에 바인딩합니다.\n- `activeHierarchyIndex`는 활성 사이드바 도메인별로 확장 키를 보존합니다.\n- `captureExpansionState(...)`, `modelWithPreservedExpansion(...)`, `handleExpansionSignal(...)`, `armExpansionForItem(...)`, `requestChevronExpansionForItem(...)` 및 `requestChevronExpansion(...)`는 QML에서 행 확장 상태, 스테이블키 파생 및 돌연변이 라우팅을 유지합니다.\n- `beginActivationAttempt(...)`, `activationAttemptCurrent(...)` 및 `shouldSuppressActivation(...)`는 억제 정책을 소유하지 않고도 체브론 상호작용 후 뷰가 안전하게 활성화를 연기하도록 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "이 클래스는 내부 QML 레지스트라가 이를 생성 가능한 QObject 타입으로 노출하고, Qt가 생성 가능한 타입을 `QQmlElement<T>`로 감싸기 때문에 의도적으로 `final`로 표시되지 않았습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`hierarchyInteractionBridge`는 컨트롤러를 기존 계층 구조 CRUD/확장 브리지에 바인딩합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`activeHierarchyIndex`는 활성 사이드바 도메인별로 확장 키를 보존합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`captureExpansionState(...)`, `modelWithPreservedExpansion(...)`, `handleExpansionSignal(...)`, `armExpansionForItem(...)`, `requestChevronExpansionForItem(...)` 및 `requestChevronExpansion(...)`는 QML에서 행 확장 상태, 스테이블키 파생 및 돌연변이 라우팅을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`beginActivationAttempt(...)`, `activationAttemptCurrent(...)` 및 `shouldSuppressActivation(...)`는 억제 정책을 소유하지 않고도 체브론 상호작용 후 뷰가 안전하게 활성화를 연기하도록 합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"signals\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 신호\n",
+      "level": 2,
+      "title": "신호"
+    },
+    {
+      "id": "b000016",
+      "kind": "paragraph",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "컨트롤러는 확장 상태 및 바인딩 변경 신호만 내보냅니다. 바닥글 작업 신호 및 선택한 행 동기화 릴레이 신호는 의도적으로 없습니다. `SidebarHierarchyView.qml`는 바닥글 발송을 소유하고 `Qt.callLater(...)`와의 확장 후 시각적 동기화를 예약합니다.\n"
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/sidebar/SidebarHierarchyInteractionController.hpp`",
+      "anchor": "srcappmodelssidebarsidebarhierarchyinteractioncontrollerhpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "공공 표면",
+      "anchor": "공공-표면",
+      "start_line": 10
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "신호",
+      "anchor": "신호",
+      "start_line": 19
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000006",
+        "line": 6,
+        "text": "`SidebarHierarchyInteractionController`는 시각적 레이아웃 외의 계층 상호작용 정책을 위해 `SidebarHierarchyView.qml`가 사용하는 C++ 계약을 노출한다. 해당 유형은 생성 가능한 내부 QML QObject로 등록되므로 C++ 클래스는 `final`로 선언해서는 안 된다. Qt의 QML 등록 계층이 여기서 내부 `QQmlElement<T>` 래퍼를 파생하기 때문이다.",
+        "basis": "lexical_match",
+        "context": "paragraph"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

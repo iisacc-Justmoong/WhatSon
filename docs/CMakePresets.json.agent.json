@@ -1,0 +1,305 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:caafba63f700056d00c205f0bca6725228e9e007df87c1da7ad2b753eaf9577e",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/CMakePresets.json.md",
+    "sha256": "a3b80301ec2b2c887a1f482fb493ef3a98b8c9c8dac777f507c65d14e0f8ee28",
+    "bytes": 1785,
+    "line_count": 29,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`CMakePresets.json`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `CMakePresets.json`\n",
+      "level": 1,
+      "title": "`CMakePresets.json`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"responsibility\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 책임\n",
+      "level": 2,
+      "title": "책임"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 8,
+      "raw": "- CLion이 `.idea` 상태에 의존하지 않고 가져올 수 있는 저장소 소유 구성 프로필을 제공합니다.\n- 프로젝트 빌드 정책과 일치하도록 `build/`에 고정된 기본 로컬 바이너리 디렉터리를 유지합니다.\n- CMake 빌드 사전 설정을 통해 유지 관리되는 빌드 게이트를 노출하므로 IDE 및 셸 워크플로는 동일한 대상 이름을 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "CLion이 `.idea` 상태에 의존하지 않고 가져올 수 있는 저장소 소유 구성 프로필을 제공합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "프로젝트 빌드 정책과 일치하도록 `build/`에 고정된 기본 로컬 바이너리 디렉터리를 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "CMake 빌드 사전 설정을 통해 유지 관리되는 빌드 게이트를 노출하므로 IDE 및 셸 워크플로는 동일한 대상 이름을 사용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000007",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "html",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "<a id=\"presets\"></a>\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "blank",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "heading",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "## 사전 설정\n",
+      "level": 2,
+      "title": "사전 설정"
+    },
+    {
+      "id": "b000011",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 15,
+      "raw": "- `macos-clion`: `Unix Makefiles` 생성기와 `${sourceDir}/build`를 `binaryDir`로 사용하여 macOS 개발 트리를 구성합니다.\n- `whatson-build-regression`: `macos-clion` 구성 사전 설정에서 유지 관리되는 `whatson_build_regression` 대상을 빌드합니다.\n- `whatson-regression`: `macos-clion` 구성 사전 설정에서 유지 관리되는 `whatson_regression` 대상을 빌드합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`macos-clion`: `Unix Makefiles` 생성기와 `${sourceDir}/build`를 `binaryDir`로 사용하여 macOS 개발 트리를 구성합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson-build-regression`: `macos-clion` 구성 사전 설정에서 유지 관리되는 `whatson_build_regression` 대상을 빌드합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`whatson-regression`: `macos-clion` 구성 사전 설정에서 유지 관리되는 `whatson_regression` 대상을 빌드합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 16,
+      "end_line": 16,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "html",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "<a id=\"invariants\"></a>\n"
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "heading",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "## 불변성\n",
+      "level": 2,
+      "title": "불변성"
+    },
+    {
+      "id": "b000016",
+      "kind": "list",
+      "start_line": 20,
+      "end_line": 22,
+      "raw": "- `build/`에서 기본 사전 설정을 리디렉션하지 마십시오.\n- CLion 구성 문제를 해결하기 위해 `.idea` 프로필 상태를 커밋하지 마십시오; 대신 이 사전 설정 파일에 재현 가능한 계약을 유지하십시오.\n- 루트 `CMakeLists.txt`가 이 프리셋에 사용자 전용 Qt 패치 버전을 고정하는 대신 `QT_ROOT_PATH`와 `/Volumes/Storage/Qt/6.*`를 통해 로컬 Qt 설치를 발견하도록 하십시오.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`build/`에서 기본 사전 설정을 리디렉션하지 마십시오.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "CLion 구성 문제를 해결하기 위해 `.idea` 프로필 상태를 커밋하지 마십시오; 대신 이 사전 설정 파일에 재현 가능한 계약을 유지하십시오.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "루트 `CMakeLists.txt`가 이 프리셋에 사용자 전용 Qt 패치 버전을 고정하는 대신 `QT_ROOT_PATH`와 `/Volumes/Storage/Qt/6.*`를 통해 로컬 Qt 설치를 발견하도록 하십시오.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000017",
+      "kind": "blank",
+      "start_line": 23,
+      "end_line": 23,
+      "raw": "\n"
+    },
+    {
+      "id": "b000018",
+      "kind": "html",
+      "start_line": 24,
+      "end_line": 24,
+      "raw": "<a id=\"verification-notes\"></a>\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "blank",
+      "start_line": 25,
+      "end_line": 25,
+      "raw": "\n"
+    },
+    {
+      "id": "b000020",
+      "kind": "heading",
+      "start_line": 26,
+      "end_line": 26,
+      "raw": "## 확인 메모\n",
+      "level": 2,
+      "title": "확인 메모"
+    },
+    {
+      "id": "b000021",
+      "kind": "list",
+      "start_line": 27,
+      "end_line": 29,
+      "raw": "- 사전 설정 이름이나 스키마를 편집한 후 `cmake --list-presets`를 실행합니다.\n- 캐시 변수 구성을 변경한 후 `cmake --preset macos-clion`를 실행합니다.\n- 빌드 사전 설정 변경 후 `cmake --build --preset whatson-build-regression`를 실행합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "사전 설정 이름이나 스키마를 편집한 후 `cmake --list-presets`를 실행합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "캐시 변수 구성을 변경한 후 `cmake --preset macos-clion`를 실행합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "빌드 사전 설정 변경 후 `cmake --build --preset whatson-build-regression`를 실행합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`CMakePresets.json`",
+      "anchor": "cmakepresetsjson",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "책임",
+      "anchor": "책임",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000010",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "사전 설정",
+      "anchor": "사전-설정",
+      "start_line": 12
+    },
+    {
+      "block_id": "b000015",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "불변성",
+      "anchor": "불변성",
+      "start_line": 19
+    },
+    {
+      "block_id": "b000020",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "확인 메모",
+      "anchor": "확인-메모",
+      "start_line": 26
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

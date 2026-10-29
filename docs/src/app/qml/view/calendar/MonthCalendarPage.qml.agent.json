@@ -1,0 +1,631 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:4ef4adf4ba6ef993166e035ad26fb20f080683faf71c2c70738dde11bbaacb95",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/qml/view/calendar/MonthCalendarPage.qml.md",
+    "sha256": "e2dd7d3b71fb78c0a02898acb9775714279048054af79aeaf41eac6e3a00567a",
+    "bytes": 4625,
+    "line_count": 77,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/qml/view/calendar/MonthCalendarPage.qml`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/qml/view/calendar/MonthCalendarPage.qml`\n",
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/MonthCalendarPage.qml`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"role\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 역할\n",
+      "level": 2,
+      "title": "역할"
+    },
+    {
+      "id": "b000006",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000007",
+      "kind": "paragraph",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "`MonthCalendarPage.qml`는 편집 영역에 대한 월 달력 오버레이 쉘을 렌더링합니다. 표면에 표시되므로 왼쪽/오른쪽으로 스와이프하면 이전 또는 다음 달로 이동합니다.\n"
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "html",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "<a id=\"view-contract\"></a>\n"
+    },
+    {
+      "id": "b000010",
+      "kind": "blank",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "\n"
+    },
+    {
+      "id": "b000011",
+      "kind": "heading",
+      "start_line": 11,
+      "end_line": 11,
+      "raw": "## 계약 보기\n",
+      "level": 2,
+      "title": "계약 보기"
+    },
+    {
+      "id": "b000012",
+      "kind": "blank",
+      "start_line": 12,
+      "end_line": 12,
+      "raw": "\n"
+    },
+    {
+      "id": "b000013",
+      "kind": "list",
+      "start_line": 13,
+      "end_line": 16,
+      "raw": "- 입력: `monthCalendarController`\n- 출력 신호: `noteOpenRequested(string noteId)`\n- 후크 신호: `viewHookRequested(string reason)`\n- 후크 전달자: `requestViewHook(reason)`는 `monthCalendarController.requestMonthView(...)`에 위임합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "입력: `monthCalendarController`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "출력 신호: `noteOpenRequested(string noteId)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후크 신호: `viewHookRequested(string reason)`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "후크 전달자: `requestViewHook(reason)`는 `monthCalendarController.requestMonthView(...)`에 위임합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000014",
+      "kind": "blank",
+      "start_line": 17,
+      "end_line": 17,
+      "raw": "\n"
+    },
+    {
+      "id": "b000015",
+      "kind": "html",
+      "start_line": 18,
+      "end_line": 18,
+      "raw": "<a id=\"pager-model\"></a>\n"
+    },
+    {
+      "id": "b000016",
+      "kind": "blank",
+      "start_line": 19,
+      "end_line": 19,
+      "raw": "\n"
+    },
+    {
+      "id": "b000017",
+      "kind": "heading",
+      "start_line": 20,
+      "end_line": 20,
+      "raw": "## 호출기 모델\n",
+      "level": 2,
+      "title": "호출기 모델"
+    },
+    {
+      "id": "b000018",
+      "kind": "blank",
+      "start_line": 21,
+      "end_line": 21,
+      "raw": "\n"
+    },
+    {
+      "id": "b000019",
+      "kind": "list",
+      "start_line": 22,
+      "end_line": 29,
+      "raw": "- 페이지는 3슬롯 프로젝션 창을 유지합니다.\n    - 지난달\n    - 현재 표시된 달\n    - 다음 달\n- 이러한 예측은 이제 `MonthCalendarController.pagerMonthModels`에서 나옵니다.\n- `ListView` 페이저는 이제 숫자 인덱스로 대리자를 바인딩하고 `monthProjectionForIndex(...)`를 통해 실시간 투영을 해석합니다.\n- 스와이프가 완료된 후, `commitMonthSwipeDelta(...)`는 컨트롤러에서 표시되는 정규 월을 이동한 다음 로컬 호출기를 다시 중간 슬롯으로 되돌리게 합니다.\n- 데스크탑은 동일한 셸을 유지하지만 대화형 스와이프 페이징을 비활성화합니다. 헤더 컨트롤은 여전히 ​​월 변경을 유도합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "페이지는 3슬롯 프로젝션 창을 유지합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "지난달",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "현재 표시된 달",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "다음 달",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "이러한 예측은 이제 `MonthCalendarController.pagerMonthModels`에서 나옵니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`ListView` 페이저는 이제 숫자 인덱스로 대리자를 바인딩하고 `monthProjectionForIndex(...)`를 통해 실시간 투영을 해석합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "스와이프가 완료된 후, `commitMonthSwipeDelta(...)`는 컨트롤러에서 표시되는 정규 월을 이동한 다음 로컬 호출기를 다시 중간 슬롯으로 되돌리게 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데스크탑은 동일한 셸을 유지하지만 대화형 스와이프 페이징을 비활성화합니다. 헤더 컨트롤은 여전히 ​​월 변경을 유도합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000020",
+      "kind": "blank",
+      "start_line": 30,
+      "end_line": 30,
+      "raw": "\n"
+    },
+    {
+      "id": "b000021",
+      "kind": "html",
+      "start_line": 31,
+      "end_line": 31,
+      "raw": "<a id=\"ui-composition\"></a>\n"
+    },
+    {
+      "id": "b000022",
+      "kind": "blank",
+      "start_line": 32,
+      "end_line": 32,
+      "raw": "\n"
+    },
+    {
+      "id": "b000023",
+      "kind": "heading",
+      "start_line": 33,
+      "end_line": 33,
+      "raw": "## UI 구성\n",
+      "level": 2,
+      "title": "UI 구성"
+    },
+    {
+      "id": "b000024",
+      "kind": "blank",
+      "start_line": 34,
+      "end_line": 34,
+      "raw": "\n"
+    },
+    {
+      "id": "b000025",
+      "kind": "list",
+      "start_line": 35,
+      "end_line": 44,
+      "raw": "- 헤더:\n  - 헤더 높이는 `LV.Theme.headerMinHeight - LV.Theme.gap2`(`monthHeaderHeight`)를 통해 확인됩니다.\n  - 왼쪽: 활성 월 제목(`monthLabel, displayedYear`)\n  - 오른쪽: 공유 `CalendarTodayControl`\n- 본체:\n    - 수평 `ListView` 및 `ListView.SnapOneItem`\n    - 각 페이지는 달력 본문을 채웁니다. 뷰포트\n    - 각 페이지는 하나의 `MonthCalendarGridSurface.qml`를 렌더링합니다.\n- 헤더/본문 타이포그래피와 주중/헤더 패딩이 이제 이름이 지정된 `LV.Theme` 텍스트, 헤더 및 갭 토큰을 통해 라우팅되며, 원시 `12/22/39/54px` 리터럴이 아닙니다.\n- 투명한 표면은 이제 `LV.Theme.accentTransparent`를 사용합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "헤더:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더 높이는 `LV.Theme.headerMinHeight - LV.Theme.gap2`(`monthHeaderHeight`)를 통해 확인됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "왼쪽: 활성 월 제목(`monthLabel, displayedYear`)",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "오른쪽: 공유 `CalendarTodayControl`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "본체:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "수평 `ListView` 및 `ListView.SnapOneItem`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 페이지는 달력 본문을 채웁니다. 뷰포트",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "각 페이지는 하나의 `MonthCalendarGridSurface.qml`를 렌더링합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "헤더/본문 타이포그래피와 주중/헤더 패딩이 이제 이름이 지정된 `LV.Theme` 텍스트, 헤더 및 갭 토큰을 통해 라우팅되며, 원시 `12/22/39/54px` 리터럴이 아닙니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "투명한 표면은 이제 `LV.Theme.accentTransparent`를 사용합니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000026",
+      "kind": "blank",
+      "start_line": 45,
+      "end_line": 45,
+      "raw": "\n"
+    },
+    {
+      "id": "b000027",
+      "kind": "html",
+      "start_line": 46,
+      "end_line": 46,
+      "raw": "<a id=\"interactiondata-flow\"></a>\n"
+    },
+    {
+      "id": "b000028",
+      "kind": "blank",
+      "start_line": 47,
+      "end_line": 47,
+      "raw": "\n"
+    },
+    {
+      "id": "b000029",
+      "kind": "heading",
+      "start_line": 48,
+      "end_line": 48,
+      "raw": "## 상호작용/데이터 흐름\n",
+      "level": 2,
+      "title": "상호작용/데이터 흐름"
+    },
+    {
+      "id": "b000030",
+      "kind": "blank",
+      "start_line": 49,
+      "end_line": 49,
+      "raw": "\n"
+    },
+    {
+      "id": "b000031",
+      "kind": "list",
+      "start_line": 50,
+      "end_line": 56,
+      "raw": "1. `Component.onCompleted`는 이미 미리 계산된 호출기를 다시 중앙으로 가져오고 `page-open`를 요청합니다.\n2. 헤더 이전/다음은 여전히 `shiftMonth(-1|1)`를 호출합니다.\n4. `monthViewChanged`는 이제 공유된 `MonthCalendarController`가 이미 업데이트된 `pagerMonthModels`를 소유하고 있기 때문에 호출기만 리퍼에 추가합니다.\n5. 요일 선택은 여전히 `monthCalendarController.setSelectedDateIso(...)`로 다시 위임됩니다.\n6. `YearCalendarPage.qml`에서 열면, 호스트가 이 페이지가 표시되기 전에 `displayedYear`, `displayedMonth` 및 `selectedDateIso`를 사전 로드하므로, 라우팅된 월이 요청된 월/날짜에 열립니다.\n7. `MonthCalendarGridSurface.qml`의 노트칩 탭이 `noteOpenRequested(noteId)`로 위쪽으로 상승하여 호스트가 편집기에서 선택한 노트를 다시 열 수 있도록 합니다.\n8. `visible` 재입력은 페이저를 다시 표시하므로, 월 오버레이를 다시 열어도 헤더가 이미 현재 월을 가리키고 있는 동안 그리드가 전월 페이지에 그대로 남을 수 없습니다.\n",
+      "items": [
+        {
+          "marker": "1.",
+          "text": "`Component.onCompleted`는 이미 미리 계산된 호출기를 다시 중앙으로 가져오고 `page-open`를 요청합니다.",
+          "checked": null
+        },
+        {
+          "marker": "2.",
+          "text": "헤더 이전/다음은 여전히 `shiftMonth(-1|1)`를 호출합니다.",
+          "checked": null
+        },
+        {
+          "marker": "4.",
+          "text": "`monthViewChanged`는 이제 공유된 `MonthCalendarController`가 이미 업데이트된 `pagerMonthModels`를 소유하고 있기 때문에 호출기만 리퍼에 추가합니다.",
+          "checked": null
+        },
+        {
+          "marker": "5.",
+          "text": "요일 선택은 여전히 `monthCalendarController.setSelectedDateIso(...)`로 다시 위임됩니다.",
+          "checked": null
+        },
+        {
+          "marker": "6.",
+          "text": "`YearCalendarPage.qml`에서 열면, 호스트가 이 페이지가 표시되기 전에 `displayedYear`, `displayedMonth` 및 `selectedDateIso`를 사전 로드하므로, 라우팅된 월이 요청된 월/날짜에 열립니다.",
+          "checked": null
+        },
+        {
+          "marker": "7.",
+          "text": "`MonthCalendarGridSurface.qml`의 노트칩 탭이 `noteOpenRequested(noteId)`로 위쪽으로 상승하여 호스트가 편집기에서 선택한 노트를 다시 열 수 있도록 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "8.",
+          "text": "`visible` 재입력은 페이저를 다시 표시하므로, 월 오버레이를 다시 열어도 헤더가 이미 현재 월을 가리키고 있는 동안 그리드가 전월 페이지에 그대로 남을 수 없습니다.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000032",
+      "kind": "blank",
+      "start_line": 57,
+      "end_line": 57,
+      "raw": "\n"
+    },
+    {
+      "id": "b000033",
+      "kind": "html",
+      "start_line": 58,
+      "end_line": 58,
+      "raw": "<a id=\"collaborators\"></a>\n"
+    },
+    {
+      "id": "b000034",
+      "kind": "blank",
+      "start_line": 59,
+      "end_line": 59,
+      "raw": "\n"
+    },
+    {
+      "id": "b000035",
+      "kind": "heading",
+      "start_line": 60,
+      "end_line": 60,
+      "raw": "## 협력자\n",
+      "level": 2,
+      "title": "협력자"
+    },
+    {
+      "id": "b000036",
+      "kind": "list",
+      "start_line": 61,
+      "end_line": 64,
+      "raw": "- `src/app/models/calendar/MonthCalendarController.hpp/.cpp`\n- `src/app/qml/view/calendar/CalendarTodayControl.qml`\n- `src/app/qml/view/calendar/MonthCalendarGridSurface.qml`\n- `src/app/qml/view/panels/ContentViewLayout.qml`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`src/app/models/calendar/MonthCalendarController.hpp/.cpp`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/CalendarTodayControl.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/calendar/MonthCalendarGridSurface.qml`",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "`src/app/qml/view/panels/ContentViewLayout.qml`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000037",
+      "kind": "blank",
+      "start_line": 65,
+      "end_line": 65,
+      "raw": "\n"
+    },
+    {
+      "id": "b000038",
+      "kind": "html",
+      "start_line": 66,
+      "end_line": 66,
+      "raw": "<a id=\"tests\"></a>\n"
+    },
+    {
+      "id": "b000039",
+      "kind": "blank",
+      "start_line": 67,
+      "end_line": 67,
+      "raw": "\n"
+    },
+    {
+      "id": "b000040",
+      "kind": "heading",
+      "start_line": 68,
+      "end_line": 68,
+      "raw": "## 테스트\n",
+      "level": 2,
+      "title": "테스트"
+    },
+    {
+      "id": "b000041",
+      "kind": "blank",
+      "start_line": 69,
+      "end_line": 69,
+      "raw": "\n"
+    },
+    {
+      "id": "b000042",
+      "kind": "list",
+      "start_line": 70,
+      "end_line": 77,
+      "raw": "- 현재 이 저장소에는 자동화된 테스트 파일이 없습니다.\n- 회귀 체크리스트:\n    - 스와이프 완료는 호출기를 측면 슬롯에 주차해 두지 않고 표준 표시된 월을 업데이트해야 합니다.\n    - 데스크톱 월별 보기는 의도하지 않은 가로 스크롤을 허용하지 않고 너비에 맞게 유지되어야 합니다.\n    - 표시되는 월 페이지 내 날짜 선택은 계속해서 `selectedDateIso`를 업데이트해야 합니다.\n    - 연도 캘린더의 월/일 탭에서 페이지를 열면 이전에 표시된 월 대신 요청된 월이 즉시 표시되어야 합니다.\n    - 초기 월 페이지 열기는 헤더에 이미 현재 월 제목이 표시되는 동안 이전 월 그리드를 표시하지 않아야 합니다.\n    - 보이는 월간 메모 칩을 클릭하거나 탭하면 `noteOpenRequested(...)`가 페이지 밖으로 나타나야 합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "현재 이 저장소에는 자동화된 테스트 파일이 없습니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "회귀 체크리스트:",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "스와이프 완료는 호출기를 측면 슬롯에 주차해 두지 않고 표준 표시된 월을 업데이트해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "데스크톱 월별 보기는 의도하지 않은 가로 스크롤을 허용하지 않고 너비에 맞게 유지되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "표시되는 월 페이지 내 날짜 선택은 계속해서 `selectedDateIso`를 업데이트해야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "연도 캘린더의 월/일 탭에서 페이지를 열면 이전에 표시된 월 대신 요청된 월이 즉시 표시되어야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "초기 월 페이지 열기는 헤더에 이미 현재 월 제목이 표시되는 동안 이전 월 그리드를 표시하지 않아야 합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "보이는 월간 메모 칩을 클릭하거나 탭하면 `noteOpenRequested(...)`가 페이지 밖으로 나타나야 합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/qml/view/calendar/MonthCalendarPage.qml`",
+      "anchor": "srcappqmlviewcalendarmonthcalendarpageqml",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "역할",
+      "anchor": "역할",
+      "start_line": 5
+    },
+    {
+      "block_id": "b000011",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "계약 보기",
+      "anchor": "계약-보기",
+      "start_line": 11
+    },
+    {
+      "block_id": "b000017",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "호출기 모델",
+      "anchor": "호출기-모델",
+      "start_line": 20
+    },
+    {
+      "block_id": "b000023",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "UI 구성",
+      "anchor": "ui-구성",
+      "start_line": 33
+    },
+    {
+      "block_id": "b000029",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "상호작용/데이터 흐름",
+      "anchor": "상호작용데이터-흐름",
+      "start_line": 48
+    },
+    {
+      "block_id": "b000035",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "협력자",
+      "anchor": "협력자",
+      "start_line": 60
+    },
+    {
+      "block_id": "b000040",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "테스트",
+      "anchor": "테스트",
+      "start_line": 68
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

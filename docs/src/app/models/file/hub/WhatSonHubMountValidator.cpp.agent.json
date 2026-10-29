@@ -1,0 +1,114 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:9386238910a80d3938ec95a2298acd626a9626cda948f134e1e160f140556b01",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/hub/WhatSonHubMountValidator.cpp.md",
+    "sha256": "e46f88cef397230fb64df80b883ed68778bd7be2985ce3051d640fd9a06e7118",
+    "bytes": 463,
+    "line_count": 7,
+    "encoding": "utf-8",
+    "language": "ko"
+  },
+  "document": {
+    "title": "`src/app/models/file/hub/WhatSonHubMountValidator.cpp`",
+    "role": "guide",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/hub/WhatSonHubMountValidator.cpp`\n",
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubMountValidator.cpp`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "html",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "<a id=\"implementation-notes\"></a>\n"
+    },
+    {
+      "id": "b000004",
+      "kind": "blank",
+      "start_line": 4,
+      "end_line": 4,
+      "raw": "\n"
+    },
+    {
+      "id": "b000005",
+      "kind": "heading",
+      "start_line": 5,
+      "end_line": 5,
+      "raw": "## 구현 노트\n",
+      "level": 2,
+      "title": "구현 노트"
+    },
+    {
+      "id": "b000006",
+      "kind": "list",
+      "start_line": 6,
+      "end_line": 7,
+      "raw": "- 접근이 확보된 후, 검증자는 최소 허브 패키지 계약인 `.wscontents`, `Library.wslibrary`, `.wsresources`, `*.wsstat` 및 `.wscontents` 아래의 핵심 도메인 항목을 확인합니다.\n- 시작 해결과 온보딩 로딩이 이제 별도의 허브 구조 검사를 유지하는 대신 하나의 검증 경로를 공유합니다.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "접근이 확보된 후, 검증자는 최소 허브 패키지 계약인 `.wscontents`, `Library.wslibrary`, `.wsresources`, `*.wsstat` 및 `.wscontents` 아래의 핵심 도메인 항목을 확인합니다.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "시작 해결과 온보딩 로딩이 이제 별도의 허브 구조 검사를 유지하는 대신 하나의 검증 경로를 공유합니다.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/hub/WhatSonHubMountValidator.cpp`",
+      "anchor": "srcappmodelsfilehubwhatsonhubmountvalidatorcpp",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000005",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "구현 노트",
+      "anchor": "구현-노트",
+      "start_line": 5
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}

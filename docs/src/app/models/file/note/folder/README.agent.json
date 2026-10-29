@@ -1,0 +1,196 @@
+{
+  "format": "iisacc.agent-document",
+  "schema_version": 1,
+  "document_id": "urn:iisacc:document:74849929a337caae4cd0ef8abb60124008e663f077f1ea8d8fc0afad236e7979",
+  "project": {
+    "id": "urn:iisacc:project:Product%2F.Deprecated%2FWhatSon",
+    "name": "WhatSon",
+    "root": "Product/.Deprecated/WhatSon",
+    "kind": "application"
+  },
+  "source": {
+    "path": "docs/src/app/models/file/note/folder/README.md",
+    "sha256": "e168aea9a46276767a671779c081da4759865561d117fb189fc52992be0ddccc",
+    "bytes": 406,
+    "line_count": 12,
+    "encoding": "utf-8",
+    "language": "en"
+  },
+  "document": {
+    "title": "`src/app/models/file/note/folder`",
+    "role": "overview",
+    "authority": "markdown_source"
+  },
+  "blocks": [
+    {
+      "id": "b000001",
+      "kind": "heading",
+      "start_line": 1,
+      "end_line": 1,
+      "raw": "# `src/app/models/file/note/folder`\n",
+      "level": 1,
+      "title": "`src/app/models/file/note/folder`"
+    },
+    {
+      "id": "b000002",
+      "kind": "blank",
+      "start_line": 2,
+      "end_line": 2,
+      "raw": "\n"
+    },
+    {
+      "id": "b000003",
+      "kind": "heading",
+      "start_line": 3,
+      "end_line": 3,
+      "raw": "## Scope\n",
+      "level": 2,
+      "title": "Scope"
+    },
+    {
+      "id": "b000004",
+      "kind": "list",
+      "start_line": 4,
+      "end_line": 5,
+      "raw": "- Owns raw folder block inspection semantics only.\n- Keeps raw folder block inspection separate from body serialization and hierarchy controller code.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Owns raw folder block inspection semantics only.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Keeps raw folder block inspection separate from body serialization and hierarchy controller code.",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000005",
+      "kind": "blank",
+      "start_line": 6,
+      "end_line": 6,
+      "raw": "\n"
+    },
+    {
+      "id": "b000006",
+      "kind": "heading",
+      "start_line": 7,
+      "end_line": 7,
+      "raw": "## Files\n",
+      "level": 2,
+      "title": "Files"
+    },
+    {
+      "id": "b000007",
+      "kind": "list",
+      "start_line": 8,
+      "end_line": 8,
+      "raw": "- `WhatSonNoteFolderSemantics.hpp`\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "`WhatSonNoteFolderSemantics.hpp`",
+          "checked": null
+        }
+      ]
+    },
+    {
+      "id": "b000008",
+      "kind": "blank",
+      "start_line": 9,
+      "end_line": 9,
+      "raw": "\n"
+    },
+    {
+      "id": "b000009",
+      "kind": "heading",
+      "start_line": 10,
+      "end_line": 10,
+      "raw": "## Boundary\n",
+      "level": 2,
+      "title": "Boundary"
+    },
+    {
+      "id": "b000010",
+      "kind": "list",
+      "start_line": 11,
+      "end_line": 12,
+      "raw": "- Must not read or update note package metadata.\n- Must not own hierarchy controller state, note body formatting, or hub-level mutation orchestration.\n",
+      "items": [
+        {
+          "marker": "-",
+          "text": "Must not read or update note package metadata.",
+          "checked": null
+        },
+        {
+          "marker": "-",
+          "text": "Must not own hierarchy controller state, note body formatting, or hub-level mutation orchestration.",
+          "checked": null
+        }
+      ]
+    }
+  ],
+  "outline": [
+    {
+      "block_id": "b000001",
+      "parent_id": null,
+      "level": 1,
+      "title": "`src/app/models/file/note/folder`",
+      "anchor": "srcappmodelsfilenotefolder",
+      "start_line": 1
+    },
+    {
+      "block_id": "b000003",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Scope",
+      "anchor": "scope",
+      "start_line": 3
+    },
+    {
+      "block_id": "b000006",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Files",
+      "anchor": "files",
+      "start_line": 7
+    },
+    {
+      "block_id": "b000009",
+      "parent_id": "b000001",
+      "level": 2,
+      "title": "Boundary",
+      "anchor": "boundary",
+      "start_line": 10
+    }
+  ],
+  "indexes": {
+    "directive_candidates": [
+      {
+        "block_id": "b000010",
+        "line": 11,
+        "text": "- Must not read or update note package metadata.",
+        "basis": "lexical_match",
+        "context": "list"
+      },
+      {
+        "block_id": "b000010",
+        "line": 12,
+        "text": "- Must not own hierarchy controller state, note body formatting, or hub-level mutation orchestration.",
+        "basis": "lexical_match",
+        "context": "list"
+      }
+    ],
+    "commands": [],
+    "links": [],
+    "tables": []
+  },
+  "provenance": {
+    "generator": "workspace-docs",
+    "version": "1.0.0",
+    "profile": "lossless-blocks-v1",
+    "derived": true
+  }
+}
